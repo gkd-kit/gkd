@@ -163,6 +163,10 @@ fun GkDesktopWindowFrame(
                     if (!window.isVisible) {
                         window.validate()
                         window.renderImmediately()
+                        // ComposeWindow only renders its own canvas; the caption has a separate scene.
+                        val pane = window.contentPane
+                        ((pane.layout as BorderLayout).getLayoutComponent(BorderLayout.NORTH) as? ComposePanel)
+                            ?.renderImmediately()
                         currentReadyCallback?.invoke()
                     }
                 }
@@ -251,6 +255,7 @@ private fun DesktopTitleHost(
     DisposableEffect(window, controller) {
         val panel = ComposePanel(renderSettings = RenderSettings.SkiaSurface()).apply {
             preferredSize = Dimension(0, 32)
+            background = JavaColor(colors.surfaceContainer.toArgb(), true)
             setContent {
                 MaterialTheme(colorScheme = colors, typography = typography, shapes = shapes) {
                     currentContent()
