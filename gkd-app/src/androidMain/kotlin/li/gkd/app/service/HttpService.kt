@@ -16,8 +16,8 @@ import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.currentDeviceInfo
 import li.gkd.app.network.AppLinks
 import li.gkd.app.network.NetworkAddresses
-import li.gkd.app.network.ServerInfo
-import li.gkd.app.network.configureInspectionServer
+import li.gkd.app.network.inspection.ServerInfo
+import li.gkd.app.network.inspection.configureInspectionServer
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository.settings

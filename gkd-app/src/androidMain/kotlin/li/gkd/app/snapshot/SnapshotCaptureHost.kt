@@ -22,7 +22,8 @@ import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.captureNodeInfoList
 import li.gkd.app.data.currentDeviceInfo
 import li.gkd.app.model.ComplexSnapshot
-import li.gkd.app.model.RpcError
+import li.gkd.app.inspection.InspectionException
+import li.gkd.app.inspection.InspectionFailure
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.priv.privilegeContextFlow
@@ -267,45 +268,41 @@ object SnapshotCaptureHost {
 
     suspend fun capture(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
         val service = A11yRuntime.service
-            ?: throw RpcError(getString(Res.string.service_unavailable_authorize))
+            ?: throw InspectionException(InspectionFailure.AccessibilityAuthorizationRequired)
         val settings = settings.value
-        val captured = try {
-            SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
-                val rootNode = A11yRuntime.getRoot(service)
-                    ?: throw RpcError(getString(Res.string.snapshot_app_a11y_missing))
-                val appId = rootNode.packageName.toString()
-                val screenHeight = ScreenUtils.getHeight()
-                val screenWidth = ScreenUtils.getWidth()
-                val isLandscape = ScreenUtils.isLandscape()
-                coroutineScope {
-                    val nodes = async(Dispatchers.IO) { captureNodeInfoList(rootNode) }
-                    val activityId = async(Dispatchers.IO) { resolveActivityId(appId) }
-                    val screenshot = async(Dispatchers.Default) {
-                        captureScreen(
-                            appId,
-                            service.mode,
-                            forcedCropStatusBar,
-                            settings.hideSnapshotStatusBar,
-                        )
-                    }
-                    val screen = screenshot.await()
-                    SnapshotCaptureInput(
-                        appId = appId,
-                        activityId = activityId.await(),
-                        screenHeight = screenHeight,
-                        screenWidth = screenWidth,
-                        isLandscape = isLandscape,
-                        nodes = nodes.await(),
-                        appInfo = AppInfoRepository.snapshot?.apps?.get(appId),
-                        gkdAppInfo = selfAppInfo,
-                        device = currentDeviceInfo(),
-                        screenshot = screen.bytes,
-                        screenshotStatus = screen.status,
+        val captured = SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
+            val rootNode = A11yRuntime.getRoot(service)
+                ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
+            val appId = rootNode.packageName.toString()
+            val screenHeight = ScreenUtils.getHeight()
+            val screenWidth = ScreenUtils.getWidth()
+            val isLandscape = ScreenUtils.isLandscape()
+            coroutineScope {
+                val nodes = async(Dispatchers.IO) { captureNodeInfoList(rootNode) }
+                val activityId = async(Dispatchers.IO) { resolveActivityId(appId) }
+                val screenshot = async(Dispatchers.Default) {
+                    captureScreen(
+                        appId,
+                        service.mode,
+                        forcedCropStatusBar,
+                        settings.hideSnapshotStatusBar,
                     )
                 }
+                val screen = screenshot.await()
+                SnapshotCaptureInput(
+                    appId = appId,
+                    activityId = activityId.await(),
+                    screenHeight = screenHeight,
+                    screenWidth = screenWidth,
+                    isLandscape = isLandscape,
+                    nodes = nodes.await(),
+                    appInfo = AppInfoRepository.snapshot?.apps?.get(appId),
+                    gkdAppInfo = selfAppInfo,
+                    device = currentDeviceInfo(),
+                    screenshot = screen.bytes,
+                    screenshotStatus = screen.status,
+                )
             }
-        } catch (_: SnapshotCaptureBusyException) {
-            throw RpcError(getString(Res.string.snapshot_save_in_progress))
         }
         val snapshot = captured.snapshot
         val exportDetail = when (val exported = captured.autoExport) {

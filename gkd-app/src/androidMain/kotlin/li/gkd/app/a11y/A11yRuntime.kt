@@ -11,10 +11,10 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.data.ActionPerformer
 import li.gkd.app.model.ActionResult
 import li.gkd.app.model.GkdAction
-import li.gkd.app.model.RpcError
+import li.gkd.app.inspection.InspectionException
+import li.gkd.app.inspection.InspectionFailure
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.resources.*
 import li.gkd.app.service.A11yService
 import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.util.ThreadUtils
@@ -22,7 +22,6 @@ import li.gkd.selector.MatchOptions
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
 import li.gkd.selector.SelectorTypeResult
-import org.jetbrains.compose.resources.getString
 
 object A11yRuntime {
     private val latestServiceMode = atomic(0)
@@ -83,20 +82,20 @@ object A11yRuntime {
     suspend fun execAction(gkdAction: GkdAction): ActionResult {
         val selectorResult = Selector.compile(gkdAction.selector)
         val selector = (selectorResult as? SelectorCompileResult.Success)?.value
-            ?: throw RpcError(getString(Res.string.selector_invalid))
+            ?: throw InspectionException(InspectionFailure.InvalidSelector)
         val typeResult = selector.validateType(selectorTypeModel)
         if (typeResult is SelectorTypeResult.Failure) {
-            throw RpcError(getString(Res.string.selector_type_error, typeResult.error.message))
+            throw InspectionException(InspectionFailure.SelectorTypeError, typeResult.error.message)
         }
-        val service = service ?: throw RpcError(getString(Res.string.service_not_connected))
+        val service = service ?: throw InspectionException(InspectionFailure.AccessibilityUnavailable)
         val root =
-            getRoot(service) ?: throw RpcError(getString(Res.string.screen_nodes_unavailable))
+            getRoot(service) ?: throw InspectionException(InspectionFailure.ScreenNodesUnavailable)
         val targetNode = A11yContext(
             getRoot = { getRoot(service) },
             interruptable = false,
         ).querySelfOrSelector(
             root, selector, MatchOptions(fastQuery = gkdAction.fastQuery)
-        ) ?: throw RpcError(getString(Res.string.selector_node_not_found))
+        ) ?: throw InspectionException(InspectionFailure.TargetNodeNotFound)
         return withContext(Dispatchers.IO) {
             ActionPerformer
                 .getAction(gkdAction.action ?: ActionPerformer.None.action)

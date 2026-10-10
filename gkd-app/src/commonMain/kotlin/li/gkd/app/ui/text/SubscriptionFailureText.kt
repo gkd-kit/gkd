@@ -1,6 +1,7 @@
 package li.gkd.app.ui.text
 
 import androidx.compose.runtime.Composable
+import li.gkd.app.inspection.userMessage
 import li.gkd.app.resources.*
 import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
@@ -93,6 +94,8 @@ fun Throwable.subscriptionMessageResource(): String = when (this) {
 }
 
 suspend fun Throwable.subscriptionMessage(): String = when (this) {
+    is li.gkd.app.inspection.InspectionException -> userMessage()
+    is li.gkd.app.snapshot.SnapshotCaptureBusyException -> getString(Res.string.snapshot_save_in_progress)
     is SubscriptionException -> localizedMessage()
     is li.gkd.app.subscription.SubscriptionPersistence.DeleteException -> cause?.subscriptionMessage() ?: toString()
     else -> displayMessage()

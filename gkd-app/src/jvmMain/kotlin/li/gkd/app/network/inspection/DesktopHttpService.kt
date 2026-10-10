@@ -1,4 +1,4 @@
-package li.gkd.app
+package li.gkd.app.network.inspection
 
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
@@ -9,12 +9,15 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import li.gkd.app.DesktopProfile
+import li.gkd.app.ServicePhase
+import li.gkd.app.SimulatedService
+import li.gkd.app.SimulatorStore
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.DeviceInfo
-import li.gkd.app.model.RpcError
+import li.gkd.app.inspection.InspectionException
+import li.gkd.app.inspection.InspectionFailure
 import li.gkd.app.network.AppLinks
-import li.gkd.app.network.ServerInfo
-import li.gkd.app.network.configureInspectionServer
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
@@ -23,7 +26,6 @@ import li.gkd.app.util.Constants
 import li.gkd.app.util.JsonUtils
 import li.gkd.app.util.LogUtils
 import li.gkd.db.LOCAL_HTTP_SUBS_ID
-import org.jetbrains.compose.resources.getString
 import java.net.BindException
 import javax.swing.SwingUtilities
 
@@ -77,8 +79,8 @@ class DesktopHttpService(
                             false, 0, false, 0),
                     )
                 },
-                captureSnapshot = { throw RpcError(getString(Res.string.platform_action_unsupported)) },
-                execSelector = { throw RpcError(getString(Res.string.platform_action_unsupported)) },
+                captureSnapshot = { throw InspectionException(InspectionFailure.PlatformUnsupported) },
+                execSelector = { throw InspectionException(InspectionFailure.PlatformUnsupported) },
                 scriptUrl = AppLinks.ServerScript,
                 jsonFormat = JsonUtils.keepingNulls,
             )

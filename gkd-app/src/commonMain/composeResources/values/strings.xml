@@ -692,6 +692,9 @@
     <string name="selection_scope">所选</string>
     <string name="selection_select">选中</string>
     <string name="selection_toggle">切换选中</string>
+    <string name="rpc_invalid_request">请求参数无效</string>
+    <string name="rpc_invalid_subscription">订阅内容无效</string>
+    <string name="rpc_internal_error">服务内部错误</string>
     <string name="selector_invalid">非法选择器</string>
     <string name="selector_invalid_detail">非法选择器\n%1$s\n%2$s</string>
     <string name="selector_node_not_found">没有查询到节点</string>
@@ -746,7 +749,6 @@
     <string name="snapshot_save_selected_to_album_confirmation">确定将选中的 %1$s 张截图保存到相册吗？</string>
     <string name="snapshot_save_selected_success">已保存 %1$s 条</string>
     <string name="snapshot_save_selected_partial">已保存 %1$s 条，失败 %2$s 条</string>
-    <string name="snapshot_delete_success">快照删除成功</string>
     <string name="snapshot_event_selector">特征事件选择器</string>
     <string name="snapshot_event_selector_hint">请输入特征事件选择器</string>
     <string name="snapshot_files_incomplete">快照文件不完整: %1$s</string>

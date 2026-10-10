@@ -7,7 +7,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import li.gkd.app.model.RpcError
+import li.gkd.app.inspection.InspectionException
+import li.gkd.app.snapshot.SnapshotCaptureBusyException
 import li.gkd.app.ui.text.subscriptionMessage
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
@@ -27,7 +28,7 @@ fun CoroutineScope.launchUi(
         LogUtils.d(e, loc = loc)
         ToastUtils.show(
             e.subscriptionMessage(),
-            forced = e is RpcError,
+            forced = e is InspectionException || e is SnapshotCaptureBusyException,
             loc = "",
         )
     }

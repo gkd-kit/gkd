@@ -19,6 +19,7 @@ import li.gkd.app.crash.CrashRecorder
 import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.FileCrashStorage
 import li.gkd.app.network.NetworkClients
+import li.gkd.app.network.inspection.DesktopHttpService
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.StorageMaintenance
@@ -46,7 +47,6 @@ class DesktopRuntime(
         SettingsRepository.updateSettings { it.copy(enableStatusService = enabled) }
     }
     private var pendingCrashData = emptyList<CrashData>()
-    val hasPendingCrashReports get() = pendingCrashData.isNotEmpty()
     val crashInitialization = scope.launch(Dispatchers.IO) {
         pendingCrashData = FileCrashStorage.takePending()
     }

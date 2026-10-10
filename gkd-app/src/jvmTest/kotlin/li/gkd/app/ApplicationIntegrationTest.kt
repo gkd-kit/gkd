@@ -27,7 +27,7 @@ import li.gkd.app.backup.BackupManager
 import li.gkd.app.crash.assertCrashReports
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
-import li.gkd.app.network.assertInspectionProtocol
+import li.gkd.app.network.inspection.assertInspectionProtocol
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepositoryChecks
