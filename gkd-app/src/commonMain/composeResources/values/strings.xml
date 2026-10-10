@@ -65,6 +65,9 @@
     <string name="action_install">安装</string>
     <string name="action_log_activity_unknown">界面未记录</string>
     <string name="action_log_description">规则误触可定位关闭</string>
+    <string name="action_log_filter_app">筛选应用</string>
+    <string name="action_log_filter_remove">移除 %1$s 的应用筛选</string>
+    <string name="action_log_filter_selected">已选 %1$s 个应用</string>
     <string name="action_log_open">打开触发记录页面</string>
     <string name="action_log_open_app">查看应用</string>
     <string name="action_log_recent_prefix">最近触发: </string>

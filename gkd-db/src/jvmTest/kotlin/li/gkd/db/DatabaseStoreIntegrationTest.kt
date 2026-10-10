@@ -30,6 +30,7 @@ class DatabaseStoreIntegrationTest {
                 failedImportDoesNotRollBackANormalWriteWaitingForTheTransaction()
             }
             RuntimeRecordStoreChecks().apply {
+                appFiltersKeepSubscriptionScopeAndIncludeGlobalRuleActions()
                 secondVisitFailureRollsBackFirstVisitAndRetryKeepsNewestValue()
                 actionTrimFailureRollsBackInsertAndRetryDoesNotDuplicate()
                 activityTrimFailureRetainsOldRowsAndRollsBackTheWholeBatch()

@@ -51,14 +51,11 @@ data class ActionLog(
         @Query("SELECT * FROM action_log ORDER BY id DESC LIMIT 1000")
         fun query(): Flow<List<ActionLog>>
 
-        @Query("SELECT * FROM action_log ORDER BY id DESC ")
-        fun pagingSource(): PagingSource<Int, ActionLog>
+        @Query("SELECT * FROM action_log WHERE (:subsId IS NULL OR subs_id=:subsId) AND (:filterApps = 0 OR app_id IN (:appIds)) ORDER BY id DESC")
+        fun pagingSource(subsId: Long? = null, appIds: List<String> = emptyList(), filterApps: Boolean = appIds.isNotEmpty()): PagingSource<Int, ActionLog>
 
-        @Query("SELECT * FROM action_log WHERE subs_id=:subsId ORDER BY id DESC ")
-        fun pagingSubsSource(subsId: Long): PagingSource<Int, ActionLog>
-
-        @Query("SELECT * FROM action_log WHERE app_id=:appId ORDER BY id DESC ")
-        fun pagingAppSource(appId: String): PagingSource<Int, ActionLog>
+        @Query("SELECT app_id FROM action_log WHERE (:subsId IS NULL OR subs_id=:subsId) GROUP BY app_id ORDER BY MAX(id) DESC")
+        fun queryAppIds(subsId: Long?): Flow<List<String>>
 
         @Query("SELECT COUNT(*) FROM action_log")
         fun count(): Flow<Int>

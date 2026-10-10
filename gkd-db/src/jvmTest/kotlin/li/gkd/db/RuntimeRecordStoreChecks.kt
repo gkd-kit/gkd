@@ -1,7 +1,9 @@
 package li.gkd.db
 
+import androidx.paging.PagingSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertIs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -15,6 +17,43 @@ class RuntimeRecordStoreChecks {
         ctime = time, appId = "app", subsId = 7, subsVersion = 1,
         groupKey = 2, groupType = RuleGroupType.App, ruleIndex = 0,
     )
+
+    fun appFiltersKeepSubscriptionScopeAndIncludeGlobalRuleActions() = database { db, _, _ ->
+        val dao = db.actionLogDao()
+        // The same app occurs in two subscriptions, and global-rule actions belong to the
+        // foreground app too. Filtering must not leak another subscription or drop those actions.
+        dao.insert(
+            action(1).copy(appId = "known"),
+            action(2).copy(appId = "other"),
+            action(3).copy(appId = "known", subsId = 8),
+            action(4).copy(appId = "known", groupType = RuleGroupType.Global),
+            action(5).copy(appId = "uninstalled", subsId = 8),
+        )
+        assertEquals(listOf("uninstalled", "known", "other"), dao.queryAppIds(null).first())
+        assertEquals(listOf("known", "other"), dao.queryAppIds(7).first())
+        assertEquals(emptyList(), dao.queryAppIds(9).first())
+
+        suspend fun times(subsId: Long? = null, appIds: List<String> = emptyList()): List<Long> {
+            val source = dao.pagingSource(subsId, appIds)
+            try {
+                val page = assertIs<PagingSource.LoadResult.Page<Int, ActionLog>>(
+                    source.load(PagingSource.LoadParams.Refresh(null, 100, false))
+                )
+                return page.data.map { it.ctime }
+            } finally {
+                source.invalidate()
+            }
+        }
+        assertEquals(listOf(5L, 4L, 3L, 2L, 1L), times())
+        assertEquals(listOf(4L, 2L, 1L), times(subsId = 7))
+        assertEquals(listOf(4L, 3L, 1L), times(appIds = listOf("known")))
+        assertEquals(listOf(4L, 1L), times(subsId = 7, appIds = listOf("known")))
+        assertEquals(emptyList(), times(subsId = 7, appIds = listOf("uninstalled")))
+        // Multiple apps form a union; clearing the selection restores the whole current scope.
+        assertEquals(listOf(4L, 3L, 2L, 1L), times(appIds = listOf("known", "other")))
+        assertEquals(listOf(4L, 2L, 1L), times(subsId = 7, appIds = listOf("known", "other")))
+        assertEquals(listOf(4L, 1L), times(subsId = 7, appIds = listOf("known", "uninstalled")))
+    }
 
     fun secondVisitFailureRollsBackFirstVisitAndRetryKeepsNewestValue() = database { db, store, sql ->
         store.writeVisits(listOf(AppLastVisit("old", 1)), false)

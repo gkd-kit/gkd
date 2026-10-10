@@ -45,13 +45,18 @@ import li.gkd.app.ui.home.BottomNavItem
 import li.gkd.app.ui.home.HomeState
 import li.gkd.app.ui.home.HomeViewModel
 import li.gkd.app.ui.navigation.AboutRoute
+import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.HomeRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.subscription.AppConfigViewModel
+import li.gkd.app.ui.subscription.ActionLogViewModel
 import li.gkd.app.ui.update.UpdateStatus
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
+import li.gkd.db.ActionLog
+import li.gkd.db.RuleGroupType
+import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigStore
 import org.jetbrains.compose.resources.getString
 
@@ -119,6 +124,7 @@ class ApplicationIntegrationTest {
                 assertSubscriptionCreationNames()
                 li.gkd.app.subscription.assertUpdateErrorDismissal(runtime.simulator)
                 assertHomeLifecycle()
+                assertActionLogSubscriptionLoadFailure()
                 assertRootNavigationLifecycle(runtime)
                 assertAppRuleParentVisibility()
                 SettingsRepositoryChecks.run(appStorage().store, profile.appName)
@@ -416,6 +422,50 @@ class ApplicationIntegrationTest {
             assertTrue(rootJob.isCancelled)
             assertFailsWith<IllegalStateException> { MainViewModel.requireCurrent() }
         }
+
+    /** A corrupt subscription must show a load failure, while an absent one is confirmed missing. */
+    private suspend fun assertActionLogSubscriptionLoadFailure() {
+        val id = -900003L
+        val owner = ViewModelStore()
+        try {
+            SubscriptionRepository.files.restore(id, "invalid-json".toByteArray())
+            Db.subsItemDao.upsert(SubsItem(id = id, order = 102))
+            SubscriptionRepository.refresh(id)
+            val failure = SubscriptionRepository.awaitSnapshot().loadErrors.getValue(id)
+            val vm = ActionLogViewModel(ActionLogRoute()).also { owner.put("action-log", it) }
+            val log = ActionLog(
+                ctime = 0,
+                appId = "test.alpha",
+                subsId = id,
+                subsVersion = 1,
+                groupKey = 1,
+                groupType = RuleGroupType.App,
+                ruleIndex = 0,
+            )
+            vm.showActionLog(log)
+            val failed = withTimeout(5_000) {
+                vm.dialogStateFlow.first { it?.loadState is Loadable.Failure }
+            }!!
+            assertTrue((failed.loadState as Loadable.Failure).cause === failure)
+            assertEquals(null, failed.subscription)
+
+            vm.showActionLog(log.copy(subsId = id - 1))
+            val missing = withTimeout(5_000) {
+                vm.dialogStateFlow.first { it?.actionLog?.subsId == id - 1 && it.loadState is Loadable.Ready }
+            }!!
+            assertEquals(null, missing.subscription)
+            assertEquals(null, missing.group)
+
+            vm.showActionLog(log.copy(subsId = 13))
+            val ready = withTimeout(5_000) {
+                vm.dialogStateFlow.first { it?.actionLog?.subsId == 13L && it.loadState is Loadable.Ready }
+            }!!
+            assertNotNull(ready.subscription)
+        } finally {
+            owner.clear()
+            SubscriptionRepository.delete(id)
+        }
+    }
 
     private suspend fun assertHomeLifecycle() {
         val owner = ViewModelStore()

@@ -2,6 +2,7 @@ package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
@@ -91,6 +92,7 @@ fun GkModalBottomSheet(
     sheetState: SheetState,
     modifier: Modifier = Modifier,
     sheetGesturesEnabled: Boolean = true,
+    sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     LocalOverlayBackHandler.current(onDismissRequest)
@@ -99,6 +101,7 @@ fun GkModalBottomSheet(
         modifier = modifier,
         sheetState = sheetState,
         sheetGesturesEnabled = sheetGesturesEnabled,
+        sheetMaxWidth = sheetMaxWidth,
         content = content,
     )
 }
