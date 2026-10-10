@@ -694,7 +694,7 @@ private fun SnapshotCard(
                     enableUserInput = false,
                 ) {
                     GkFixedTimeText(
-                        text = snapshot.id.format("HH:mm"),
+                        text = snapshot.id.format("HH:mm:ss"),
                         modifier = (if (selectedMode) Modifier else Modifier.clickable {
                             timeTooltipScope.launch { timeTooltipState.show() }
                         }).semantics { contentDescription = fullTime },
