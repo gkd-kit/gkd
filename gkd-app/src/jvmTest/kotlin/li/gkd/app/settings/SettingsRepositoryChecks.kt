@@ -39,11 +39,13 @@ object SettingsRepositoryChecks {
                 it.copy(
                     enableMatch = false,
                     httpServerPort = 9123,
-                    snapshotDisplayMode = 2
+                    snapshotDisplayMode = 2,
+                    appRuleDisplayMode = 1,
                 )
             }
             repo.awaitPersistence()
             assertEquals(repo.settings.value, diskSettings())
+            assertEquals(1, diskSettings().appRuleDisplayMode)
             val beforeCount = repo.actionCount.value
             coroutineScope { List(200) { async(Dispatchers.Default) { repo.incrementActionCount() } }.awaitAll() }
             repo.awaitPersistence()

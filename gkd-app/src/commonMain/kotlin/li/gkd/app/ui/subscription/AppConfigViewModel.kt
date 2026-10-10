@@ -47,6 +47,15 @@ data class AppConfigUiState(
 class AppConfigViewModel(
     val route: AppConfigRoute,
 ) : BaseViewModel() {
+    val categorySelection: StateFlow<AppRuleCategorySelection>
+        field = MutableStateFlow(
+            if (route.focusLog == null) AppRuleCategorySelection.Global else AppRuleCategorySelection.FocusedRule
+        )
+
+    fun selectCategory(selection: AppRuleCategorySelection) {
+        categorySelection.value = selection
+    }
+
     val revealDisabledRules: StateFlow<Boolean>
         field = MutableStateFlow(false)
 

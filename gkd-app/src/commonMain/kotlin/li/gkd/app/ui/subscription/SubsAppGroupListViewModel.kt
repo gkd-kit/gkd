@@ -37,6 +37,15 @@ data class SubsAppGroupListUiState(
 class SubsAppGroupListViewModel(
     val route: SubsAppGroupListRoute,
 ) : BaseViewModel() {
+    val categorySelection: StateFlow<AppRuleCategorySelection>
+        field = MutableStateFlow(
+            if (route.focusGroupKey == null) AppRuleCategorySelection.All else AppRuleCategorySelection.FocusedRule
+        )
+
+    fun selectCategory(selection: AppRuleCategorySelection) {
+        categorySelection.value = selection
+    }
+
     val showAppSetting: StateFlow<Boolean>
         field = MutableStateFlow(false)
 

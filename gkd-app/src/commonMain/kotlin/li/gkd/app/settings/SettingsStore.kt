@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import li.gkd.app.app.AppGroupFlags
 import li.gkd.app.app.AppSort
 import li.gkd.app.rule.RuleSort
+import li.gkd.app.rule.RuleDisplayMode
 import li.gkd.app.snapshot.SnapshotDisplayMode
 
 @Serializable
@@ -34,6 +35,7 @@ data class SettingsStore(
     val appSort: Int = AppSort.ByUsedTime.value,
     val showBlockApp: Boolean = true,
     val appRuleSort: Int = RuleSort.ByDefault.value,
+    val appRuleDisplayMode: Int = RuleDisplayMode.Flat.value,
     val subsAppSort: Int = AppSort.ByUsedTime.value,
     val subsCategorySort: Int = AppSort.ByUsedTime.value,
     val subsAppShowUninstall: Boolean = false,

@@ -37,10 +37,21 @@ class SettingsCompatibilityTest {
         assertEquals(3, defaults.appSort)
         assertEquals(3, defaults.appGroupType)
         assertEquals(0, defaults.appRuleSort)
+        assertEquals(0, defaults.appRuleDisplayMode)
         assertEquals(0, defaults.updateChannel)
         assertEquals(1, defaults.snapshotDisplayMode)
         val inherited = Json.decodeFromString<SettingsStore>("""{"appGroupType":7}""")
         assertEquals(7, inherited.a11yScopeAppGroupType)
         assertEquals(7, inherited.subsExcludeAppGroupType)
+    }
+
+    @Test
+    fun savedCategoryRuleDisplayKeepsExistingSortPreference() {
+        val store = Json.decodeFromString<SettingsStore>(
+            """{"appRuleSort":2,"appRuleDisplayMode":1}"""
+        )
+        assertEquals(1, store.appRuleDisplayMode)
+        assertEquals(2, store.appRuleSort)
+        assertEquals(store, Json.decodeFromString<SettingsStore>(Json.encodeToString(store)))
     }
 }

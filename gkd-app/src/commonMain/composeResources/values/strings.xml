@@ -369,6 +369,10 @@
     <string name="global_rule_scope_input_hint">每行一项：\n应用 ID 表示手动关闭\n!应用 ID 表示手动开启\n应用 ID/页面 ID 表示精确排除页面\n\n删除应用项后跟随默认。\n规则自带限制由订阅提供。</string>
     <string name="global_rule_shadowed_by_app_rule">当前应用存在匹配的应用规则组，按订阅设置停用此全局规则</string>
     <string name="global_rules">全局规则</string>
+    <string name="rule_display_switch_to_category">切换为按分类显示</string>
+    <string name="rule_display_switch_to_flat">切换为普通列表</string>
+    <string name="rule_category_uncategorized">未分类</string>
+    <string name="rule_category_all">全部</string>
     <string name="global_rules_view_list">查看全局规则列表</string>
     <string name="google_play_label">Google Play</string>
     <string name="group_title">分组</string>

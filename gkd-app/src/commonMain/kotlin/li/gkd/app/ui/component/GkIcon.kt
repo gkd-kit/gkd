@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.ViewStream
 import androidx.compose.material.icons.filled.CenterFocusWeak
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
@@ -197,6 +199,8 @@ object GkIcons {
     val Settings get() = Icons.Outlined.Settings
     val Home get() = Icons.Outlined.Home
     val FormatListBulleted get() = Icons.AutoMirrored.Filled.FormatListBulleted
+    val Category get() = Icons.Filled.Category
+    val ViewStream get() = Icons.Filled.ViewStream
     val CalendarMonth get() = Icons.Outlined.CalendarMonth
     val Apps get() = Icons.Default.Apps
     val Info get() = Icons.Outlined.Info
