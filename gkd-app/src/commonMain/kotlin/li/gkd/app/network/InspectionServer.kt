@@ -30,12 +30,7 @@ import li.gkd.app.model.ActionResult
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.GkdAction
 import li.gkd.app.model.RpcError
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.screenshot_not_found
-import li.gkd.app.resources.snapshot_delete_success
-import li.gkd.app.resources.snapshot_missing_or_deleted
-import li.gkd.app.resources.snapshot_not_found
-import li.gkd.app.resources.subscription_memory
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository

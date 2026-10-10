@@ -1,11 +1,7 @@
 package li.gkd.app.ui.component
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.filter_title
-import li.gkd.app.resources.group_title
-import li.gkd.app.resources.sort_title
-import li.gkd.app.resources.whitelist_title
+import li.gkd.app.resources.*
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.option.AppSortOption
 import li.gkd.app.ui.option.findOption

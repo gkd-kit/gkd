@@ -1,10 +1,7 @@
 package li.gkd.app.ui.page
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_save_to_downloads
-import li.gkd.app.resources.action_share
-import li.gkd.app.resources.google_play_label
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkTextListDialog
 import org.jetbrains.compose.resources.stringResource
 

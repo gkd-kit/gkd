@@ -2,11 +2,7 @@ package li.gkd.app.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.apps_title
-import li.gkd.app.resources.home_title
-import li.gkd.app.resources.settings_title
-import li.gkd.app.resources.subscription_title
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkIcons
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource

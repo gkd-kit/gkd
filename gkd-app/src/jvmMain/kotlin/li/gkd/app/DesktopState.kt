@@ -15,8 +15,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.serialization.Serializable
 import li.gkd.app.network.AppLinks
 import li.gkd.app.platform.writeClipboardText
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.uri_unknown
+import li.gkd.app.resources.*
 import li.gkd.app.permission.SimulatorPermissionRequester
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.ToastState

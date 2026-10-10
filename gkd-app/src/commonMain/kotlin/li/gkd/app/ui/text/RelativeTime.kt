@@ -1,14 +1,7 @@
 package li.gkd.app.ui.text
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.time_days_ago
-import li.gkd.app.resources.time_hours_ago
-import li.gkd.app.resources.time_just_now
-import li.gkd.app.resources.time_minutes_ago
-import li.gkd.app.resources.time_months_ago
-import li.gkd.app.resources.time_weeks_ago
-import li.gkd.app.resources.time_years_ago
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

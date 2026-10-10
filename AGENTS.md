@@ -54,6 +54,7 @@
 - 禁止新增 XML，例外仅 Compose strings/plurals、Android 原生字符串及语言限定资源、app_icon/service 等平台配置。可用 Kotlin 表达的 UI/图标用 `.kt`；页面图标必须 ImageVector，drawable XML 仅限 Manifest 等平台配置及其依赖，即使同图标双用，页面仍用 ImageVector。不确定例外时先问用户。
 - 原生 res 归 gkd-android，gkd-app 不引用其 R；通知小图标通过 Application Manifest `notificationSmallIcon` 的 `android:resource` 注入，运行时校验非零，不持久化 ID。共享颜色用 Kotlin，Compose Resources 位于 gkd-app。
 - 共享及普通 Android Kotlin 文案统一官方 Compose Resources（`Res.string/plurals`），不建自定义 UiString/Desktop 文案表或原生副本；只有 Manifest/平台配置/变体标签保留原生 ID，Kotlin 可按需读取平台标签。语义/参数与持久化数据分离，文案不在枚举、单例或静态初始化解析缓存，语言切换不改写用户模板。
+- 字符串及复数资源统一使用 `import li.gkd.app.resources.*` 导入，不逐项导入 `Res` 或资源访问器；调用保持 `Res.string.xxx` / `Res.plurals.xxx`，文案解析继续使用官方 API。
 - 参数只用 `%1$s`、`%2$s` 等位置文本占位符；禁止数值/精度/补零格式指令，Kotlin 按明确 Locale/精度先格式化。Compose 用官方 Composable API，协程用 suspend getString/getPluralString；getSync 仅限低频同步边界，不用于静态初始化、高频或新增 Compose 路径，不用 runBlocking(Dispatchers.Main)。新增翻译/复数/限定符验证双端选择替换，校验任务不生成平台副本，访问器/打包交官方插件。
 - Kotlin 可见性按实际访问需求收窄，优先使用 private；gkd-app 模块禁止使用 internal 关键字，需要跨文件或类访问的声明使用默认 public，其他模块允许 internal。仅为公开属性收窄可见性/可变性的 `_xxx` 字段改用 Explicit Backing Fields；普通私有缓存、生成命名及 Lambda `_` 不受限。避免循环静态初始化。
 - 工具按职责组织并优先沿用邻近代码风格；无状态工具可用顶级函数，有共享状态或明确命名空间需求时使用 object，不为形式新增包装。XxxExt.kt 只放扩展，普通工具放职责明确的文件；不借规范调整进行无关重构。

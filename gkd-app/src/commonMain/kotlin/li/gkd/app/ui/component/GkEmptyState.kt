@@ -12,8 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.data_empty
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 object GkEmptyStateDefaults {

@@ -15,8 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.page_enter_description
+import li.gkd.app.resources.*
 import li.gkd.app.ui.style.itemPadding
 import org.jetbrains.compose.resources.stringResource
 

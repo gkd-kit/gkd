@@ -20,10 +20,7 @@ import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.priv.AutomationService
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.a11y_enable_failed
-import li.gkd.app.resources.a11y_restart_failed
-import li.gkd.app.resources.secure_settings_permission_required
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.ui.app.showAccessRestrictedSettingsDialog

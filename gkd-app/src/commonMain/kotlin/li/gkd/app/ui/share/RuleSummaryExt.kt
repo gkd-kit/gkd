@@ -1,8 +1,6 @@
 package li.gkd.app.ui.share
 
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.config_loading
-import li.gkd.app.resources.data_load_failed
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleSummary
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.home.HomeDataText

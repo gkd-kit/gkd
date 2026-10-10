@@ -10,12 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import li.gkd.app.model.ExcludeData
 import li.gkd.db.SubsGlobalGroupConfig
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_rule_missing
-import li.gkd.app.resources.delete_named_confirmation
-import li.gkd.app.resources.delete_success
-import li.gkd.app.resources.rule_delete
-import li.gkd.app.resources.rule_missing
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupConfiguration

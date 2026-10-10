@@ -18,11 +18,7 @@ import li.gkd.app.network.AppLinks
 import li.gkd.app.network.GithubCookieException
 import li.gkd.app.network.GithubPoliciesAsset
 import li.gkd.app.network.GithubUploader
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.github_cookie_expired
-import li.gkd.app.resources.update_success
-import li.gkd.app.resources.upload_cancelled
-import li.gkd.app.resources.upload_cookie_required
+import li.gkd.app.resources.*
 import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.ui.component.GithubUploadStatus
 import li.gkd.app.ui.component.GkGithubUploadDialogs

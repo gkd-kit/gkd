@@ -3,14 +3,7 @@ package li.gkd.app.ui.component
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_understood
-import li.gkd.app.resources.automation_service_occupied_description
-import li.gkd.app.resources.permission_go_grant
-import li.gkd.app.resources.permission_restricted
-import li.gkd.app.resources.restricted_settings_permission_description
-import li.gkd.app.resources.startup_failed
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

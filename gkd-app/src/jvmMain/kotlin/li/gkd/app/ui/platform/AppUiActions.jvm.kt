@@ -5,8 +5,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.DesktopRuntime
 import li.gkd.app.SimulatedService
 import li.gkd.app.selectedSimulatedAutomator
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.platform_action_unsupported
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 

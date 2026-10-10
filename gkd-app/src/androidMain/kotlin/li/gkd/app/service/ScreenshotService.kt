@@ -10,8 +10,7 @@ import li.gkd.app.app
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.lifecycle.ResourceSlot
 import li.gkd.app.platform.screenshot.MediaProjectionScreenshotSession
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.screenshot_service
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.LogUtils

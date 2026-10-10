@@ -12,9 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_category_all
-import li.gkd.app.resources.rule_category_uncategorized
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

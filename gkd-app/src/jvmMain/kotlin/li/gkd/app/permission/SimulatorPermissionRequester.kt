@@ -1,8 +1,7 @@
 package li.gkd.app.permission
 
 import li.gkd.app.SimulatorStore
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.platform_action_unsupported
+import li.gkd.app.resources.*
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 

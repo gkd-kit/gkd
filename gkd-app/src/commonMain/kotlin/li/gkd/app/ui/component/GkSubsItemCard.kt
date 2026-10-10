@@ -34,26 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.author_description
-import li.gkd.app.resources.disabled
-import li.gkd.app.resources.enabled
-import li.gkd.app.resources.file_missing
-import li.gkd.app.resources.loading_progress
-import li.gkd.app.resources.not_selected
-import li.gkd.app.resources.selected
-import li.gkd.app.resources.selection_deselect
-import li.gkd.app.resources.selection_mode_enter
-import li.gkd.app.resources.selection_select
-import li.gkd.app.resources.subscription_details_view
-import li.gkd.app.resources.subscription_id_description
-import li.gkd.app.resources.subscription_numbered_name
-import li.gkd.app.resources.subscription_order_description
-import li.gkd.app.resources.subscription_switch_paused_description
-import li.gkd.app.resources.subscription_version_description
-import li.gkd.app.resources.subscription_update_failed
-import li.gkd.app.resources.update_time_description
-import li.gkd.app.resources.version_prefixed
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 data class SubscriptionCardData(

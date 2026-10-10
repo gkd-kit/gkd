@@ -21,16 +21,7 @@ import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.PrivilegeServiceStatus
 import li.gkd.app.priv.privilegeServiceStatusFlow
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.a11y_fault
-import li.gkd.app.resources.a11y_stopped
-import li.gkd.app.resources.a11y_unauthorized
-import li.gkd.app.resources.automation_stopped
-import li.gkd.app.resources.permission_restricted_reauthorize
-import li.gkd.app.resources.persistent_notification
-import li.gkd.app.resources.privilege_service_connection_lost
-import li.gkd.app.resources.rule_matching_pause
-import li.gkd.app.resources.service_partially_disabled_detail
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository.actionCount
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.ui.share.statusText

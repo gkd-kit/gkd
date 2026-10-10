@@ -17,10 +17,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.switch_state_description
-import li.gkd.app.resources.turned_off
-import li.gkd.app.resources.turned_on
+import li.gkd.app.resources.*
 import li.gkd.app.ui.style.itemPadding
 import org.jetbrains.compose.resources.stringResource
 

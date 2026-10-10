@@ -1,21 +1,6 @@
 package li.gkd.app.ui.subscription
 
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.delete_success
-import li.gkd.app.resources.network_unavailable
-import li.gkd.app.resources.subscription_add_success
-import li.gkd.app.resources.subscription_busy_retry
-import li.gkd.app.resources.subscription_data_delete_failed
-import li.gkd.app.resources.subscription_duplicate_link
-import li.gkd.app.resources.subscription_edit_success
-import li.gkd.app.resources.subscription_exists
-import li.gkd.app.resources.subscription_file_delete_cancelled
-import li.gkd.app.resources.subscription_file_download_failed
-import li.gkd.app.resources.subscription_file_parsing_failed
-import li.gkd.app.resources.subscription_file_save_failed
-import li.gkd.app.resources.subscription_id_reserved
-import li.gkd.app.resources.subscriptions_updated_count
-import li.gkd.app.resources.updates_none
+import li.gkd.app.resources.*
 import li.gkd.app.subscription.SubscriptionResult
 import li.gkd.app.ui.text.subscriptionMessage
 import org.jetbrains.compose.resources.getString

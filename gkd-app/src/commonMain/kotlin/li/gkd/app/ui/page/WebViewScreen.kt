@@ -16,10 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.link_copy
-import li.gkd.app.resources.link_open_external
-import li.gkd.app.resources.webview_reload
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkScaffold

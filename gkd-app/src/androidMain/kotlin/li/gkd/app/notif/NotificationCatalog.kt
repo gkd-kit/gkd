@@ -2,20 +2,7 @@ package li.gkd.app.notif
 
 import android.app.Service
 import li.gkd.app.META
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.a11y_events_recording
-import li.gkd.app.resources.a11y_running
-import li.gkd.app.resources.activity_info_showing
-import li.gkd.app.resources.external_call_notification_description
-import li.gkd.app.resources.external_call_processing
-import li.gkd.app.resources.http_service_enabled
-import li.gkd.app.resources.saved_to_downloads
-import li.gkd.app.resources.screenshot_capture_enabled
-import li.gkd.app.resources.screenshot_capture_notification_description
-import li.gkd.app.resources.snapshot_button_enabled
-import li.gkd.app.resources.snapshot_button_notification_description
-import li.gkd.app.resources.snapshot_saved_app
-import li.gkd.app.resources.track_overlay_enabled
+import li.gkd.app.resources.*
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
 import li.gkd.app.service.EventService

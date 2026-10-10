@@ -11,25 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.gkd.app.permission.AppPermissionRestriction
 import li.gkd.app.priv.PrivilegeCapabilities
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.adb_permission_restricted
-import li.gkd.app.resources.app_permission_restricted
-import li.gkd.app.resources.automation_privilege_required_description
-import li.gkd.app.resources.privilege_permissions_unverified
-import li.gkd.app.resources.privilege_service_required
-import li.gkd.app.resources.restriction_adb_app_ops
-import li.gkd.app.resources.restriction_adb_footer
-import li.gkd.app.resources.restriction_adb_grant
-import li.gkd.app.resources.restriction_adb_input
-import li.gkd.app.resources.restriction_adb_intro
-import li.gkd.app.resources.restriction_adb_secure
-import li.gkd.app.resources.restriction_app_accessibility
-import li.gkd.app.resources.restriction_app_footer
-import li.gkd.app.resources.restriction_app_foreground
-import li.gkd.app.resources.restriction_app_intro
-import li.gkd.app.resources.restriction_app_settings
-import li.gkd.app.resources.restriction_details_go
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 

@@ -34,15 +34,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import li.gkd.app.app.ActivityNames.getShowActivityId
 import li.gkd.app.network.AppLinks
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_delete
-import li.gkd.app.resources.action_save_to_album
-import li.gkd.app.resources.action_save_to_downloads
-import li.gkd.app.resources.action_share
-import li.gkd.app.resources.link_copy
-import li.gkd.app.resources.snapshot_generate_link
-import li.gkd.app.resources.snapshot_replace_screenshot
-import li.gkd.app.resources.snapshot_replace_screenshot_description
+import li.gkd.app.resources.*
 import li.gkd.app.time.format
 import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkFixedTimeText

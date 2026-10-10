@@ -28,9 +28,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.details_view
-import li.gkd.app.resources.selection_toggle
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

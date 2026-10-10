@@ -2,9 +2,7 @@ package li.gkd.app.ui.subscription
 
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.remote_rule_delete_unsupported
-import li.gkd.app.resources.selected_rules_reselect
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest

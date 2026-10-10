@@ -49,12 +49,7 @@ import li.gkd.app.data.toA11yEventLog
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.event_log_window_minimize
-import li.gkd.app.resources.event_log_window_restore
-import li.gkd.app.resources.event_pending_count
-import li.gkd.app.resources.event_service_label
-import li.gkd.app.resources.event_service_no_permission
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkEventLogOverlayCard
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton

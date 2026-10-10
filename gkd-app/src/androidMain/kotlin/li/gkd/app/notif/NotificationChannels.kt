@@ -5,8 +5,7 @@ import android.app.NotificationManager
 import androidx.core.app.NotificationManagerCompat
 import li.gkd.app.META
 import li.gkd.app.app
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.snapshot_notification_channel
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import org.jetbrains.compose.resources.StringResource
 

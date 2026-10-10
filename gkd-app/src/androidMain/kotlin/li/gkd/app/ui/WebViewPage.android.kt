@@ -35,10 +35,7 @@ import li.gkd.app.META
 import li.gkd.app.MainActivity
 import li.gkd.app.model.WebViewEnvironment
 import li.gkd.app.network.NetworkClients
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.compatibility_notice
-import li.gkd.app.resources.webview_load_failed
-import li.gkd.app.resources.webview_outdated_notice
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkWebViewErrorContent
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.page.WebViewScreen

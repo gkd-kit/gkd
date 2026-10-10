@@ -5,9 +5,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_save
-import li.gkd.app.resources.dialog_close
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 val LocalEditorWindowInsets = staticCompositionLocalOf<WindowInsets?> { null }

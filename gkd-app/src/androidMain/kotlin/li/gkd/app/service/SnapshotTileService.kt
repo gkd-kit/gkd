@@ -6,11 +6,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.appScope
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.service_not_connected
-import li.gkd.app.resources.snapshot_activity_switch_missing
-import li.gkd.app.resources.snapshot_app_a11y_missing
-import li.gkd.app.resources.snapshot_root_node_failed
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.text.getSync

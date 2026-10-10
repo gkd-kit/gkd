@@ -1,11 +1,7 @@
 package li.gkd.app.ui.home
 
 import li.gkd.app.model.AppInfo
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_count_summary
-import li.gkd.app.resources.rules_empty
-import li.gkd.app.resources.subscription_app_rule_counts
-import li.gkd.app.resources.subscription_global_count
+import li.gkd.app.resources.*
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.text.getSync
 import li.gkd.db.ActionLog

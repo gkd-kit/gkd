@@ -15,16 +15,7 @@ import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.app
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.screenshot_capturing
-import li.gkd.app.resources.screenshot_permission_expired
-import li.gkd.app.resources.screenshot_permission_failed
-import li.gkd.app.resources.screenshot_permission_reuse_forbidden
-import li.gkd.app.resources.screenshot_service_init_failed
-import li.gkd.app.resources.screenshot_service_stopped
-import li.gkd.app.resources.screenshot_service_unavailable
-import li.gkd.app.resources.screenshot_thread_unavailable
-import li.gkd.app.resources.screenshot_virtual_display_failed
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils

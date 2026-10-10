@@ -4,9 +4,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import li.gkd.app.a11y.MAX_CHILD_SIZE
 import li.gkd.app.a11y.currentTopActivity
 import li.gkd.app.model.NodeInfo
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.snapshot_nodes_truncated
-import li.gkd.app.resources.snapshot_too_many_nodes
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils

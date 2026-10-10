@@ -4,9 +4,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.permission_request_title
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import kotlin.coroutines.resume
 

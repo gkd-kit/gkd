@@ -20,11 +20,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_rule_input_hint
-import li.gkd.app.resources.global_rule_input_hint
-import li.gkd.app.resources.rule_add
-import li.gkd.app.resources.rule_edit
+import li.gkd.app.resources.*
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.autoFocus

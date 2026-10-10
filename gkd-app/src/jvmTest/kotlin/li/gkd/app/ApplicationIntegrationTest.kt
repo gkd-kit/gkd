@@ -28,8 +28,7 @@ import li.gkd.app.crash.assertCrashReports
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
 import li.gkd.app.network.assertInspectionProtocol
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.network_unavailable
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepositoryChecks
 import li.gkd.app.state.Loadable

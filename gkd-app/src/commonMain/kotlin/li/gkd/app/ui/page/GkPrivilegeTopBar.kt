@@ -13,14 +13,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_understood
-import li.gkd.app.resources.page_help
-import li.gkd.app.resources.privilege_project_name
-import li.gkd.app.resources.privilege_service
-import li.gkd.app.resources.privilege_service_help_description
-import li.gkd.app.resources.privilege_service_project_prefix
-import li.gkd.app.resources.privilege_service_project_suffix
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons

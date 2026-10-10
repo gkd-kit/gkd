@@ -1,10 +1,7 @@
 package li.gkd.app.ui
 
 import kotlinx.coroutines.runBlocking
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_log_recent_prefix
-import li.gkd.app.resources.app_rule_input_hint
-import li.gkd.app.resources.rule_name_duplicate
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import org.jetbrains.compose.resources.getString
 import kotlin.test.Test

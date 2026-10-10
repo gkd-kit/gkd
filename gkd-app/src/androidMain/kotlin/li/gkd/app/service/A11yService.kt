@@ -29,13 +29,7 @@ import li.gkd.app.platform.lifecycle.LifecycleHooks
 import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.record.RuntimeRecordRepository
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.a11y_automation_mode_notice
-import li.gkd.app.resources.a11y_keep_alive_failed
-import li.gkd.app.resources.a11y_partially_disabled
-import li.gkd.app.resources.a11y_start_timeout
-import li.gkd.app.resources.a11y_started
-import li.gkd.app.resources.a11y_stopped
+import li.gkd.app.resources.*
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.ui.text.getSync

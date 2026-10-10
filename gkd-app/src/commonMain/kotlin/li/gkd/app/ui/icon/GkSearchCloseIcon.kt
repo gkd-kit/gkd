@@ -20,9 +20,7 @@ import androidx.compose.ui.graphics.vector.PathBuilder
 import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.search_close
-import li.gkd.app.resources.search_open
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkTooltipIconButtonBox
 import org.jetbrains.compose.resources.stringResource

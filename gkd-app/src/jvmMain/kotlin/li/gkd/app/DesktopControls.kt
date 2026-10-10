@@ -35,8 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import kotlin.math.roundToInt
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.simulation_accessibility_enabled
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

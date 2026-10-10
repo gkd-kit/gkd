@@ -20,17 +20,7 @@ import androidx.compose.ui.text.withLink
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.network.AppLinks
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.a11y_about
-import li.gkd.app.resources.a11y_usage_description
-import li.gkd.app.resources.action_agree
-import li.gkd.app.resources.action_disagree
-import li.gkd.app.resources.privacy_policy
-import li.gkd.app.resources.terms_accept_conjunction
-import li.gkd.app.resources.terms_accept_prefix
-import li.gkd.app.resources.terms_accept_suffix
-import li.gkd.app.resources.terms_notice
-import li.gkd.app.resources.user_agreement
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

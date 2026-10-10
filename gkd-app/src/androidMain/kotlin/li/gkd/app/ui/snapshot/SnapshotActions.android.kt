@@ -6,8 +6,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.PlatformResult
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.snapshot_share
+import li.gkd.app.resources.*
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.saveToDownloads
 import li.gkd.app.ui.androidState

@@ -25,10 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.link_open_external
-import li.gkd.app.resources.webview_load_failed_description
-import li.gkd.app.resources.webview_retry
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 /** Native browser errors use the same theme and actions as the surrounding app. */

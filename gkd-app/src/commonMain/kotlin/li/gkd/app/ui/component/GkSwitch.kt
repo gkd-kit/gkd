@@ -13,9 +13,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.turned_off
-import li.gkd.app.resources.turned_on
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

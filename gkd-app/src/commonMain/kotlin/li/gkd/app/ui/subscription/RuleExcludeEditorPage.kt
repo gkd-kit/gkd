@@ -7,13 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.config_edit
-import li.gkd.app.resources.global_rule_scope_input_hint
-import li.gkd.app.resources.page_exclusion
-import li.gkd.app.resources.page_exclusion_input_hint
-import li.gkd.app.resources.unchanged
-import li.gkd.app.resources.update_success
+import li.gkd.app.resources.*
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkMultiTextField
 import li.gkd.app.ui.component.GkSubscriptionPageContent

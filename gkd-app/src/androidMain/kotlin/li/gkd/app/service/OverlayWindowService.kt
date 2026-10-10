@@ -45,9 +45,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.a11y.topActivityFlow
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.overlay_screen_denied
-import li.gkd.app.resources.window_minimize
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons

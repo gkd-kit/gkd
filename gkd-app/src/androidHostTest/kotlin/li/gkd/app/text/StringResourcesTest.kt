@@ -1,12 +1,7 @@
 package li.gkd.app.text
 
 import android.app.Application
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_log_recent_prefix
-import li.gkd.app.resources.app_rule_input_hint
-import li.gkd.app.resources.notification_summary_template
-import li.gkd.app.resources.rule_name_duplicate
-import li.gkd.app.resources.selector_invalid_detail
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import org.junit.Assert.assertEquals
 import org.junit.Test

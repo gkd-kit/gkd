@@ -1,24 +1,7 @@
 package li.gkd.app.ui.subscription
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.category_disabled
-import li.gkd.app.resources.category_disabled_description
-import li.gkd.app.resources.category_enabled
-import li.gkd.app.resources.category_enabled_description
-import li.gkd.app.resources.category_follow_subscription
-import li.gkd.app.resources.category_follow_subscription_description
-import li.gkd.app.resources.category_use_group_default
-import li.gkd.app.resources.category_use_group_default_description
-import li.gkd.app.resources.rule_current_app_scope
-import li.gkd.app.resources.rule_group_scope
-import li.gkd.app.resources.rule_switch_changed_counts
-import li.gkd.app.resources.rule_switch_restricted_count_suffix
-import li.gkd.app.resources.rule_switch_skipped_count
-import li.gkd.app.resources.setting_follow_default
-import li.gkd.app.resources.setting_manual_disabled
-import li.gkd.app.resources.setting_manual_enabled
-import li.gkd.app.resources.subscription_app_switch_scope
+import li.gkd.app.resources.*
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleControlScope
 import li.gkd.app.rule.RuleSetting

@@ -1,9 +1,7 @@
 package li.gkd.app.ui.home
 
 import li.gkd.app.backup.BackupManager
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.backup_share
-import li.gkd.app.resources.file_not_selected
+import li.gkd.app.resources.*
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.importBackup
 import li.gkd.app.ui.share.launchFileAction

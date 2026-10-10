@@ -9,10 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_format_error
-import li.gkd.app.resources.rule_invalid_position
-import li.gkd.app.resources.selector_invalid_detail
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.toRuleGroupTarget

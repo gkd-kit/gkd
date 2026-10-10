@@ -17,8 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.permission_request_progress
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.getString
 
 class PermissionRequests(

@@ -6,11 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import li.gkd.app.app.AppInfoRepository
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.remote_rule_delete_unsupported
-import li.gkd.app.resources.selected_rules_no_copyable
-import li.gkd.app.resources.selected_rules_reselect
-import li.gkd.app.resources.subscription_app_not_loaded
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest

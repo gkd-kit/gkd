@@ -5,8 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_missing
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.subscription.RawSubscription

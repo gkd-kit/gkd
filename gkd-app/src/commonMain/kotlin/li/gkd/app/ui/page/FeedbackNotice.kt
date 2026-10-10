@@ -6,12 +6,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.feedback_app_issue_prefix
-import li.gkd.app.resources.feedback_continue_suffix
-import li.gkd.app.resources.feedback_scope
-import li.gkd.app.resources.feedback_subscription_notice
-import li.gkd.app.resources.feedback_thanks_prefix
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.getString
 
 suspend fun feedbackNotice(primary: Color): AnnotatedString = buildAnnotatedString {

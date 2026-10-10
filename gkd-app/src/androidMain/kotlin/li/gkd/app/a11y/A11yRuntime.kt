@@ -14,12 +14,7 @@ import li.gkd.app.model.GkdAction
 import li.gkd.app.model.RpcError
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.screen_nodes_unavailable
-import li.gkd.app.resources.selector_invalid
-import li.gkd.app.resources.selector_node_not_found
-import li.gkd.app.resources.selector_type_error
-import li.gkd.app.resources.service_not_connected
+import li.gkd.app.resources.*
 import li.gkd.app.service.A11yService
 import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.util.ThreadUtils

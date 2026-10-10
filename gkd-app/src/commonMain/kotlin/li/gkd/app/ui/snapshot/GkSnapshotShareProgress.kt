@@ -18,10 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.progress_fraction
-import li.gkd.app.resources.snapshot_share_preparing
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 object GkSnapshotShareProgressDefaults {

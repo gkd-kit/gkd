@@ -8,9 +8,7 @@ import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.service_launch_failed
-import li.gkd.app.resources.wechat_unavailable
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.songe.codeorigin.CallSite
 import kotlin.reflect.KClass

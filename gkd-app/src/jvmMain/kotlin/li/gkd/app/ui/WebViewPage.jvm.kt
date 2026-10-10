@@ -27,10 +27,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.DesktopProfile
 import li.gkd.app.DesktopStorage
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.webview_content
-import li.gkd.app.resources.webview_load_failed
-import li.gkd.app.resources.webview_runtime_install
+import li.gkd.app.resources.*
 import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.component.GkWebViewErrorContent
 import li.gkd.app.ui.navigation.WebViewRoute

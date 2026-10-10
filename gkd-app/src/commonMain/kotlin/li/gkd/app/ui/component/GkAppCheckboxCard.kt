@@ -16,12 +16,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.AppInfo
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_name_description
-import li.gkd.app.resources.list_add
-import li.gkd.app.resources.list_member
-import li.gkd.app.resources.list_not_member
-import li.gkd.app.resources.list_remove
+import li.gkd.app.resources.*
 import li.gkd.app.ui.style.itemPadding
 import org.jetbrains.compose.resources.stringResource
 

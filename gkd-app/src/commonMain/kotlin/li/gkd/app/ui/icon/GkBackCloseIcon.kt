@@ -7,9 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_back
-import li.gkd.app.resources.action_close
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkTooltipIconButtonBox
 import li.songe.morph.compose.AnimatedMorphIcon

@@ -1,9 +1,7 @@
 package li.gkd.app.ui.component
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_display_switch_to_category
-import li.gkd.app.resources.rule_display_switch_to_flat
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

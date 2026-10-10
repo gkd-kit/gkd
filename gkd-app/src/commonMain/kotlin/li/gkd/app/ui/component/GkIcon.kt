@@ -65,21 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_add
-import li.gkd.app.resources.action_back
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_delete
-import li.gkd.app.resources.action_edit
-import li.gkd.app.resources.action_share
-import li.gkd.app.resources.action_turn_on
-import li.gkd.app.resources.help_title
-import li.gkd.app.resources.history_title
-import li.gkd.app.resources.more_actions
-import li.gkd.app.resources.open_new_page
-import li.gkd.app.resources.settings_title
-import li.gkd.app.resources.sort_filter
-import li.gkd.app.resources.text_copy
+import li.gkd.app.resources.*
 import li.gkd.app.ui.icon.AndroidHead
 import li.gkd.app.ui.icon.LinkDiagonal as SharedLinkDiagonal
 import li.songe.morph.compose.AnimatedMorphIcon

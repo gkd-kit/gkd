@@ -1,21 +1,6 @@
 package li.gkd.app.ui.subscription
 
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_continue
-import li.gkd.app.resources.action_notice
-import li.gkd.app.resources.global_rule_enable_builtin_warning
-import li.gkd.app.resources.global_rule_enable_name_list_warning
-import li.gkd.app.resources.global_rule_enable_similar_warning
-import li.gkd.app.resources.global_rule_enable_title
-import li.gkd.app.resources.global_rule_enable_batch_title
-import li.gkd.app.resources.global_rule_enable_batch_apps
-import li.gkd.app.resources.global_rule_enable_batch_groups
-import li.gkd.app.resources.global_rule_enable_attention
-import li.gkd.app.resources.global_rule_enable_risk
-import li.gkd.app.resources.global_rule_enable_similar_risk
-import li.gkd.app.resources.global_rule_enable_qualified_name
-import li.gkd.app.resources.global_rule_similar_group_disabled
-import li.gkd.app.resources.global_rule_similar_group_enabled
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest

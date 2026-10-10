@@ -10,18 +10,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_ignore
-import li.gkd.app.resources.action_install
-import li.gkd.app.resources.download_abort
-import li.gkd.app.resources.download_complete
-import li.gkd.app.resources.download_failed
-import li.gkd.app.resources.image_downloading
-import li.gkd.app.resources.update_download
-import li.gkd.app.resources.update_new_version
-import li.gkd.app.resources.update_ready_to_install
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 sealed interface UpdateDownloadState {

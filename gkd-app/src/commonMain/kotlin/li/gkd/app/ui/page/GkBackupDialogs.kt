@@ -5,11 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_save_to_downloads
-import li.gkd.app.resources.action_share
-import li.gkd.app.resources.backup_export
-import li.gkd.app.resources.backup_import_label
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkTextListDialog
 import org.jetbrains.compose.resources.stringResource
 

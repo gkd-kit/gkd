@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.snapshot_button_service
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons

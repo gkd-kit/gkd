@@ -3,8 +3,7 @@ package li.gkd.app.util
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.intent_launch_failed_prefix
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.songe.codeorigin.CallSite
 

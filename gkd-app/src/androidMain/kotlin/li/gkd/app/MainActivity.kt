@@ -28,9 +28,7 @@ import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.lifecycle.onCreated
 import li.gkd.app.platform.lifecycle.useLogLifecycle
 import li.gkd.app.platform.lifecycle.useMainActivityLifecycle
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.file_saved_to_downloads
-import li.gkd.app.resources.platform_action_unsupported
+import li.gkd.app.resources.*
 import li.gkd.app.service.StatusService
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository.settings

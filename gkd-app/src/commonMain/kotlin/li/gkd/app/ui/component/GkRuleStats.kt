@@ -13,14 +13,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_count
-import li.gkd.app.resources.app_rule_group_enabled_stats
-import li.gkd.app.resources.app_rule_group_stats
-import li.gkd.app.resources.enabled
-import li.gkd.app.resources.global_rule_group_stats
-import li.gkd.app.resources.rules_empty
-import li.gkd.app.resources.total_prefix
+import li.gkd.app.resources.*
 import li.gkd.app.ui.icon.SportsBasketball
 import org.jetbrains.compose.resources.stringResource
 

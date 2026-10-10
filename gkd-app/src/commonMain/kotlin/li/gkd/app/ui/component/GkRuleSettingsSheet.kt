@@ -28,11 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.page_exclusion
-import li.gkd.app.resources.rule_control_view
-import li.gkd.app.resources.rule_enable
-import li.gkd.app.resources.settings_reset_default
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.ui.icon.ResetSettings

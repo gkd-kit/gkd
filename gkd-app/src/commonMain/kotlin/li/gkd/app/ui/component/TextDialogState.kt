@@ -17,11 +17,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_open
-import li.gkd.app.resources.link_view
-import li.gkd.app.resources.text_view
+import li.gkd.app.resources.*
 import li.gkd.app.ui.platform.SystemActionFeedback
 import org.jetbrains.compose.resources.stringResource
 

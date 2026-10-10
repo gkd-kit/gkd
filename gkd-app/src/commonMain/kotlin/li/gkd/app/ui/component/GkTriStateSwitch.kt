@@ -46,10 +46,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_turn_on
-import li.gkd.app.resources.setting_follow
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.util.lerp as ComposeLerp
 

@@ -13,14 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_rule_partial_disable_notice
-import li.gkd.app.resources.app_rule_partial_disable_remove
-import li.gkd.app.resources.app_rule_partial_disable_title
-import li.gkd.app.resources.app_rule_whitelist_follow_notice
-import li.gkd.app.resources.app_rule_whitelist_notice
-import li.gkd.app.resources.whitelist_member
-import li.gkd.app.resources.whitelist_remove
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

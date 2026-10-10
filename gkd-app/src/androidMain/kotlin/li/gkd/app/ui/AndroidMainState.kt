@@ -16,11 +16,7 @@ import li.gkd.app.platform.service.ServiceController
 import li.gkd.app.priv.AutomationService
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.uiAutomationFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.automation_state_check_failed
-import li.gkd.app.resources.backup_import_confirmation
-import li.gkd.app.resources.backup_import_label
-import li.gkd.app.resources.uri_unknown
+import li.gkd.app.resources.*
 import li.gkd.app.service.A11yService
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.FileSource

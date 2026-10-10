@@ -5,10 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.logs_share_file
-import li.gkd.app.resources.logs_title
-import li.gkd.app.resources.upload_busy
+import li.gkd.app.resources.*
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
 import li.gkd.app.storage.createLogArchive

@@ -2,8 +2,7 @@ package li.gkd.app.ui.subscription
 
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.category_missing
+import li.gkd.app.resources.*
 import li.gkd.app.rule.CategoryPolicy
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleGroupConfigService

@@ -7,9 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.FileCrashStorage
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.crash_report_delete_failed
-import li.gkd.app.resources.crash_reports_delete_partially_failed
+import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.state.BaseViewModel
 import org.jetbrains.compose.resources.getString

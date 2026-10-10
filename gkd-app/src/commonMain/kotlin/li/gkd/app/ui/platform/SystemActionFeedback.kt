@@ -2,9 +2,7 @@ package li.gkd.app.ui.platform
 
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.openExternalUri
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.intent_launch_failed_prefix
-import li.gkd.app.resources.platform_action_unsupported
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils

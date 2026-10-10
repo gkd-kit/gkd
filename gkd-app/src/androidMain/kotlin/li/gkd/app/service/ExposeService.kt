@@ -7,9 +7,7 @@ import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.execution_success
-import li.gkd.app.resources.external_call_unknown
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.text.getSync

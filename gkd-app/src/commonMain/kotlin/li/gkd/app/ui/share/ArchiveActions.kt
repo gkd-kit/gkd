@@ -3,9 +3,7 @@ package li.gkd.app.ui.share
 import java.io.File
 import li.gkd.app.backup.BackupManager
 import li.gkd.app.platform.PlatformResult
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.backup_import_progress
-import li.gkd.app.resources.platform_action_unsupported
+import li.gkd.app.resources.*
 import li.gkd.app.storage.FileExports
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.StorageMaintenance

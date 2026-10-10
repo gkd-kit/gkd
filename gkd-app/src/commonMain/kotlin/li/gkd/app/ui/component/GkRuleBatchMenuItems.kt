@@ -1,10 +1,7 @@
 package li.gkd.app.ui.component
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_turn_on
-import li.gkd.app.resources.settings_reset_default
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleSetting
 import org.jetbrains.compose.resources.stringResource
 

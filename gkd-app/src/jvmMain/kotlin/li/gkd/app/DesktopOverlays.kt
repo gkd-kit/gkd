@@ -5,12 +5,7 @@ import li.gkd.app.util.copyText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.permission_reauthorize_to_unrestrict
-import li.gkd.app.resources.simulation_authorization_title
-import li.gkd.app.resources.simulation_authorization_message
-import li.gkd.app.resources.action_agree
-import li.gkd.app.resources.action_cancel
+import li.gkd.app.resources.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton

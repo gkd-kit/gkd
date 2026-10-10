@@ -21,9 +21,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.showActivityId
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_log_activity_unknown
-import li.gkd.app.resources.activity_log_title
+import li.gkd.app.resources.*
 import li.gkd.app.time.format
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText

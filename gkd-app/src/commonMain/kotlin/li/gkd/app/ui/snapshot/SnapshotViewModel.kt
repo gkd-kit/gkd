@@ -9,8 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import li.gkd.app.platform.PlatformResult
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.platform_action_unsupported
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.state.BaseViewModel

@@ -20,10 +20,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.action_ok
-import li.gkd.app.resources.action_understood
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.getString
 import kotlin.coroutines.resume
 

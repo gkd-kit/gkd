@@ -35,16 +35,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import li.gkd.app.model.fixedName
 import li.gkd.app.model.isStateChanged
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.app_id
-import li.gkd.app.resources.event_data
-import li.gkd.app.resources.event_details
-import li.gkd.app.resources.event_log_title
-import li.gkd.app.resources.event_selector
-import li.gkd.app.resources.event_type_prefix
-import li.gkd.app.resources.event_window_content_changed
-import li.gkd.app.resources.event_window_state_changed
+import li.gkd.app.resources.*
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog

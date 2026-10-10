@@ -19,16 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_count
-import li.gkd.app.resources.not_configured
-import li.gkd.app.resources.page_count
-import li.gkd.app.resources.rule_app_or_version_mismatch
-import li.gkd.app.resources.rule_current_restrictions
-import li.gkd.app.resources.rule_partially_inapplicable_prefix
-import li.gkd.app.resources.rule_personal_switch_setting
-import li.gkd.app.resources.rule_scope_and_exclusions
-import li.gkd.app.resources.rule_temporarily_unavailable
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.ui.icon.ResetSettings
 import li.gkd.app.ui.subscription.label

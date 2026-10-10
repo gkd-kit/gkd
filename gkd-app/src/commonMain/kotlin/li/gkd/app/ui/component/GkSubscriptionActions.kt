@@ -13,16 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.app_rule_add
-import li.gkd.app.resources.disabled
-import li.gkd.app.resources.enabled
-import li.gkd.app.resources.global_rule_add
-import li.gkd.app.resources.more_actions
-import li.gkd.app.resources.rule_matching_label
-import li.gkd.app.resources.settings_dialog_open
-import li.gkd.app.resources.subscription_settings
-import li.gkd.app.resources.switch_toggle
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

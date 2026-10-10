@@ -3,11 +3,7 @@ package li.gkd.app.ui.settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.gkd.app.platform.requestAutomatorRestart
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.edit_discard_confirmation
-import li.gkd.app.resources.notice_title
-import li.gkd.app.resources.unchanged
-import li.gkd.app.resources.update_success
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.home.scopeAppSource

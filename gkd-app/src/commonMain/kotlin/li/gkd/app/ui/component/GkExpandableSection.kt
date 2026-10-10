@@ -23,11 +23,7 @@ import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_collapse
-import li.gkd.app.resources.action_expand
-import li.gkd.app.resources.collapsed
-import li.gkd.app.resources.expanded
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 private const val ExpansionDurationMillis = 220

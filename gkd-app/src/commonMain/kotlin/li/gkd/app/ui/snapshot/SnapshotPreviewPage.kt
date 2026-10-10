@@ -26,10 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.app.ActivityNames.getShowActivityId
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.more_label
-import li.gkd.app.resources.snapshot_missing_or_deleted
-import li.gkd.app.resources.snapshot_records
+import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText

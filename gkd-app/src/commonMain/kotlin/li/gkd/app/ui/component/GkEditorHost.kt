@@ -12,11 +12,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.action_confirm
-import li.gkd.app.resources.edit_discard_confirmation
-import li.gkd.app.resources.notice_title
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.subscriptionMessageResource
 import org.jetbrains.compose.resources.stringResource
 

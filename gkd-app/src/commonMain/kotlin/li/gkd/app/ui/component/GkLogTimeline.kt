@@ -32,8 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.data_empty
+import li.gkd.app.resources.*
 import li.gkd.app.time.format
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE

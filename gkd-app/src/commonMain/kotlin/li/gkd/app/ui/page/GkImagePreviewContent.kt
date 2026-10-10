@@ -65,13 +65,7 @@ import coil3.request.crossfade
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.image_decoding
-import li.gkd.app.resources.image_downloading
-import li.gkd.app.resources.image_load_failed_retry
-import li.gkd.app.resources.image_reading
-import li.gkd.app.resources.image_requesting
-import li.gkd.app.resources.progress_fraction
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkTopAppBar

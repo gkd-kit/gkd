@@ -43,9 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.selection_cancel
-import li.gkd.app.resources.selection_count
+import li.gkd.app.resources.*
 import li.gkd.app.ui.icon.GkBackCloseIcon
 import org.jetbrains.compose.resources.stringResource
 

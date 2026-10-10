@@ -25,12 +25,7 @@ import li.gkd.app.network.UpdateClient
 import li.gkd.app.network.isNetworkAvailable
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.requestPackageInstall
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.download_abort
-import li.gkd.app.resources.network_unavailable
-import li.gkd.app.resources.platform_action_unsupported
-import li.gkd.app.resources.update_version_ignored
-import li.gkd.app.resources.updates_none
+import li.gkd.app.resources.*
 import li.gkd.app.settings.FileSettingsStorage
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.appStorage

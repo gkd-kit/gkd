@@ -19,12 +19,7 @@ import li.gkd.app.network.NetworkAddresses
 import li.gkd.app.network.ServerInfo
 import li.gkd.app.network.configureInspectionServer
 import li.gkd.app.notif.NotificationCatalog
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.http_port_occupied
-import li.gkd.app.resources.http_service_compact_label
-import li.gkd.app.resources.http_service_restart_success
-import li.gkd.app.resources.http_service_start_failed
-import li.gkd.app.resources.network_host_failed_prefix
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.subscription.SubscriptionRepository

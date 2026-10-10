@@ -51,12 +51,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_toast
-import li.gkd.app.resources.action_toast_enable
-import li.gkd.app.resources.notification_text
-import li.gkd.app.resources.settings_title
-import li.gkd.app.resources.webview_shutdown_pending
+import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.component.GkEmptyState
 import li.gkd.app.ui.component.GkIcon

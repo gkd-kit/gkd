@@ -17,10 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.more_label
-import li.gkd.app.resources.selection_all
-import li.gkd.app.resources.selection_invert
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

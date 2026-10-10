@@ -12,14 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import li.gkd.app.META
 import li.gkd.app.network.AppLinks
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_continue
-import li.gkd.app.resources.apk_continue_suffix
-import li.gkd.app.resources.apk_download_official_link
-import li.gkd.app.resources.apk_google_services_required
-import li.gkd.app.resources.apk_share
-import li.gkd.app.resources.save_notice
-import li.gkd.app.resources.share_notice
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.page.GkShareAppDialog
 import li.gkd.app.ui.platform.UiHost

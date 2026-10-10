@@ -1,12 +1,6 @@
 package li.gkd.app.ui.rule
 
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_status_action_delay
-import li.gkd.app.resources.rule_status_cooldown
-import li.gkd.app.resources.rule_status_match_delay
-import li.gkd.app.resources.rule_status_match_timeout
-import li.gkd.app.resources.rule_status_maximum_actions
-import li.gkd.app.resources.rule_status_prerequisite
+import li.gkd.app.resources.*
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.rule.RuleStatus
 import li.gkd.app.ui.text.getSync

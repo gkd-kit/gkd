@@ -13,8 +13,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowInsetsControllerCompat
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.fullscreen_dialog
+import li.gkd.app.resources.*
 import li.gkd.app.ui.share.LocalDarkTheme
 import org.jetbrains.compose.resources.stringResource
 

@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import li.gkd.app.app.AppInfoRepository
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.selected_app_rules_no_copyable
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting

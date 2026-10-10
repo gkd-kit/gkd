@@ -9,8 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.gkd.app.priv.AutomationService
 import li.gkd.app.priv.uiAutomationOccupiedFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.permission_reauthorize_to_unrestrict
+import li.gkd.app.resources.*
 import li.gkd.app.service.A11yService
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.component.GkPlatformWarningDialogs

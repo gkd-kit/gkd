@@ -20,14 +20,7 @@ import li.gkd.app.a11y.A11yRuleEngine
 import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.appScope
 import li.gkd.app.record.RuntimeRecordRepository
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.automation_partially_disabled
-import li.gkd.app.resources.automation_permission_restricted
-import li.gkd.app.resources.automation_service_occupied
-import li.gkd.app.resources.automation_start_failed
-import li.gkd.app.resources.automation_started
-import li.gkd.app.resources.automation_state_check_failed
-import li.gkd.app.resources.automation_stopped
+import li.gkd.app.resources.*
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.ui.option.AutomatorModeOption
 import li.gkd.app.ui.text.getSync

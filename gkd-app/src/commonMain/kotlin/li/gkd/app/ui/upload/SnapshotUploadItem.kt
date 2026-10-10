@@ -1,8 +1,7 @@
 package li.gkd.app.ui.upload
 
 import li.gkd.app.network.AppLinks
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.snapshot_upload_changed
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.snapshot.SnapshotUploadArchive
 import li.gkd.db.Snapshot

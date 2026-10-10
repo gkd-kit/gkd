@@ -18,21 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_cancel
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.action_confirm
-import li.gkd.app.resources.cookie_change
-import li.gkd.app.resources.github_cookie_dialog_title
-import li.gkd.app.resources.github_cookie_input_hint
-import li.gkd.app.resources.upload_abort
-import li.gkd.app.resources.upload_batch_progress
-import li.gkd.app.resources.upload_batch_result
-import li.gkd.app.resources.upload_batch_summary
-import li.gkd.app.resources.upload_cancelled
-import li.gkd.app.resources.upload_complete
-import li.gkd.app.resources.upload_failed
-import li.gkd.app.resources.upload_file_progress
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 sealed interface GithubUploadStatus {

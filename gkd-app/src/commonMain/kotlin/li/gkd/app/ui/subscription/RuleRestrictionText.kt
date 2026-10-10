@@ -1,17 +1,7 @@
 package li.gkd.app.ui.subscription
 
 import androidx.compose.runtime.Composable
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.global_rule_group_disabled
-import li.gkd.app.resources.global_rule_shadowed_by_app_rule
-import li.gkd.app.resources.rule_app_excluded
-import li.gkd.app.resources.rule_app_not_applicable
-import li.gkd.app.resources.rule_app_version_mismatch
-import li.gkd.app.resources.rule_invalid_cannot_enable
-import li.gkd.app.resources.rule_invalid_position
-import li.gkd.app.resources.selector_invalid_detail
-import li.gkd.app.resources.subscription_app_disabled
-import li.gkd.app.resources.subscription_disabled
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleRestriction
 import li.gkd.app.subscription.RuleValidationError
 import org.jetbrains.compose.resources.stringResource

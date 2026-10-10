@@ -9,11 +9,7 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.privilege_service_connect_success
-import li.gkd.app.resources.privilege_service_connecting
-import li.gkd.app.resources.privilege_service_disconnected
-import li.gkd.app.resources.privilege_service_state_update_failed
+import li.gkd.app.resources.*
 import li.gkd.app.service.ExposeService
 import li.gkd.app.service.StatusService
 import li.gkd.app.service.currentAppBlocked

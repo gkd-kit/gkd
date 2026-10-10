@@ -16,9 +16,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.rule_missing
-import li.gkd.app.resources.subscription_missing
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting

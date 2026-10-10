@@ -3,9 +3,7 @@ package li.gkd.app.ui.subscription
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.category_removed_back_notice
-import li.gkd.app.resources.category_selected_rules_changed
+import li.gkd.app.resources.*
 import li.gkd.app.rule.CategoryPolicy
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleGroupConfigService

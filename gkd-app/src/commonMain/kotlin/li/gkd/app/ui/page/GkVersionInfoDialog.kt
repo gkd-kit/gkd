@@ -11,14 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.action_close
-import li.gkd.app.resources.build_channel
-import li.gkd.app.resources.code_history
-import li.gkd.app.resources.commit_time
-import li.gkd.app.resources.version_code
-import li.gkd.app.resources.version_info
-import li.gkd.app.resources.version_name
+import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkAlertDialog
 import org.jetbrains.compose.resources.stringResource
 

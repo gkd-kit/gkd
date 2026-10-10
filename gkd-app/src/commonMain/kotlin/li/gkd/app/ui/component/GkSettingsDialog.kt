@@ -16,8 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.dialog_close_description
+import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 private val SettingsDialogCornerSize = 28.dp

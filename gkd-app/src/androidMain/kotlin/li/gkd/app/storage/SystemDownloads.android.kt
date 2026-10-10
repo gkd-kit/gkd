@@ -10,10 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.gkd.app.app
 import li.gkd.app.platform.PlatformResult
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.download_directory_create_failed
-import li.gkd.app.resources.download_file_create_failed
-import li.gkd.app.resources.download_file_open_failed
+import li.gkd.app.resources.*
 import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidTarget
 import java.io.File

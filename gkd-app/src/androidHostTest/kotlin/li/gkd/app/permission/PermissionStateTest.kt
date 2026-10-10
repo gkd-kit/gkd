@@ -1,7 +1,6 @@
 package li.gkd.app.permission
 
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.permission_notifications
+import li.gkd.app.resources.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

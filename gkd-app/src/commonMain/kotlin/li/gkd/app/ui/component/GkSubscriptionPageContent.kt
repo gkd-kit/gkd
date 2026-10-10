@@ -17,8 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.StateFlow
-import li.gkd.app.resources.Res
-import li.gkd.app.resources.subscription_title
+import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.text.subscriptionMessageResource
