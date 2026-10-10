@@ -1059,4 +1059,5 @@
     <string name="simulation_authorization_title">%1$s（模拟授权）</string>
     <string name="simulation_authorization_message">是否允许本次模拟启动？此操作不会获取真实 Android 权限。</string>
     <string name="simulation_accessibility_enabled">无障碍系统开关（模拟，开启后可处于未连接状态）</string>
+    <string name="snapshot_share_preparing">正在准备分享</string>
 </resources>

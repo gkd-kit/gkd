@@ -93,6 +93,7 @@ import li.gkd.app.resources.snapshot_delete_selected_result
 import li.gkd.app.resources.snapshot_generate_link
 import li.gkd.app.resources.snapshot_generate_links_confirmation
 import li.gkd.app.resources.snapshot_records
+import li.gkd.app.resources.snapshot_share
 import li.gkd.app.resources.snapshot_save_selected_partial
 import li.gkd.app.resources.snapshot_save_selected_success
 import li.gkd.app.resources.snapshot_save_selected_to_album_confirmation
@@ -147,6 +148,7 @@ fun SnapshotPage(
             createSnapshotUploadItem(it, it.appId + " · " + it.date)
         }, onFinished)
     val vm = viewModel { SnapshotViewModel() }
+    val shareProgress by vm.shareProgress.collectAsStateWithLifecycle()
 
     val loadableState by vm.uiState.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -259,6 +261,11 @@ fun SnapshotPage(
 
     GkScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = {
+            shareProgress?.let {
+                GkSnapshotShareProgress(it, vm::cancelShare, host.snapshotShareCornerPadding())
+            }
+        },
         topBar = {
             GkMultiSelectionTopAppBar(
                 selectedMode = selectionState.active,
@@ -275,6 +282,14 @@ fun SnapshotPage(
                             keys = allIds,
                             enabled = loadableState is Loadable.Ready,
                         ) { dismiss ->
+                            GkBatchActionMenuItem(
+                                text = stringResource(Res.string.snapshot_share),
+                                enabled = selectedSnapshots.isNotEmpty() && shareProgress == null,
+                                onDismiss = dismiss,
+                                onClick = {
+                                    vm.shareSnapshots(selectedSnapshots, host.snapshotPlatformActions())
+                                },
+                            )
                             GkBatchActionMenuItem(
                                 text = stringResource(Res.string.action_save_to_downloads),
                                 enabled = selectedSnapshots.isNotEmpty(),
@@ -507,7 +522,8 @@ fun SnapshotPage(
             appName = appNames[snapshot.appId] ?: snapshot.appId,
             sheetState = sheetState,
             onDismissRequest = dismiss,
-            onShare = { actions.share(snapshot) },
+            onShare = { vm.shareSnapshots(listOf(snapshot), host.snapshotPlatformActions()) },
+            shareEnabled = shareProgress == null,
             onSaveToDownloads = { actions.saveToDownloads(snapshot) },
             onUpload = { actions.upload(snapshot) },
             onSaveToAlbum = { actions.saveToAlbum(snapshot) },

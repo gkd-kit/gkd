@@ -43,18 +43,6 @@ class SnapshotActionCoordinator(
     private val onDeleteFailed: () -> Unit,
 ) : SnapshotActions {
 
-    override fun share(snapshot: Snapshot) {
-        fileScope.launchUi {
-            // A share target may read the archive after this call returns; cache expiry owns cleanup.
-            val archive =
-                SnapshotStore.createArchive(snapshot.id, snapshot.appId, snapshot.activityId)
-            if (platform.share(archive) == PlatformResult.Unsupported) {
-                SnapshotStore.deleteArchive(archive)
-                ToastUtils.show(getString(Res.string.platform_action_unsupported))
-            }
-        }
-    }
-
     override fun replace(snapshot: Snapshot) {
         fileScope.launchUi {
             val source = platform.pickImage() ?: return@launchUi

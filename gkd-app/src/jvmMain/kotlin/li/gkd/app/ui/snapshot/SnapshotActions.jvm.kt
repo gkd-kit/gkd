@@ -9,7 +9,7 @@ import li.gkd.app.ui.platform.UiHost
 actual fun UiHost.snapshotPlatformActions(): SnapshotPlatformActions =
     object : SnapshotPlatformActions {
         override suspend fun ensureSavePermission() = true
-        override suspend fun share(file: File) = PlatformResult.Unsupported
+        override suspend fun share(files: List<File>) = PlatformResult.Unsupported
         override suspend fun save(file: File) =
             PlatformResult.Success(fileActions.saveAs(file))
 

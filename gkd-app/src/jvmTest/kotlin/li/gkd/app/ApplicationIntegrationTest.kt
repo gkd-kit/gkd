@@ -130,6 +130,7 @@ class ApplicationIntegrationTest {
                     .requestRejectsChangedSwitchesButAcceptsConcurrentPageAndOtherAppEdits()
                 li.gkd.app.snapshot.SnapshotCaptureRepositoryTest(appStorage()).runAll()
                 li.gkd.app.snapshot.SnapshotStoreTest(appStorage()).runAll()
+                li.gkd.app.snapshot.assertSnapshotSharing(appStorage())
                 DesktopAppCatalogTest().profileReloadUsesSharedSelectionAndRecoversFromCorruptFile(
                     profileDir
                 )
