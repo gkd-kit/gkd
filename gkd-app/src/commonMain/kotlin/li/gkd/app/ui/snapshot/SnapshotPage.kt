@@ -397,6 +397,7 @@ fun SnapshotPage(
                                 SnapshotDisplayModeOption.ByTime -> GkIcons.CalendarMonth
                                 SnapshotDisplayModeOption.ByApp -> GkIcons.Apps
                             },
+                            animateMorph = true,
                             modifier = Modifier.semantics { stateDescription = displayModeLabel },
                             contentDescription = when (nextMode) {
                                 SnapshotDisplayModeOption.ByTime -> stringResource(Res.string.snapshot_view_switch_to_time)
@@ -703,7 +704,7 @@ private fun SnapshotCard(
                 }
             } else {
                 GkFixedTimeText(
-                    text = snapshot.date,
+                    text = fullTime,
                     modifier = Modifier.semantics { contentDescription = fullTime },
                     style = MaterialTheme.typography.labelSmall,
                 )
