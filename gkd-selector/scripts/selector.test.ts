@@ -201,6 +201,39 @@ assert.throws(
 const traceSource = "@Root > Button[id='confirm']";
 const traceSelector = Selector.parse(traceSource).value;
 const trace = adapter.matchWithTrace(confirm, traceSelector);
+// Candidate metadata must describe the starting button, not the @ return target.
+assert.equal(trace?.units[0]?.queryNode, confirm);
+assert.equal(trace?.units[0]?.fastQueryList[0]?.value, 'confirm');
+assert.ok(Array.isArray(traceSelector.fastQueryList));
+traceSelector.fastQueryList.splice(0);
+trace!.units[0]!.fastQueryList.splice(0);
+assert.equal(traceSelector.fastQueryList[0]?.value, 'confirm');
+assert.equal(trace?.units[0]?.fastQueryList[0]?.value, 'confirm');
+assert.equal(adapter.querySelector(root, traceSelector, new MatchOptions(true)), root);
+assert.equal(new FastQuery.Id('confirm').accepts('confirm'), true);
+assert.equal(new FastQuery.Vid('confirm').accepts('Confirm'), false);
+for (const [operator, candidate] of [
+  [CompareOperator.Equal, 'firm'],
+  [CompareOperator.Start, 'firmware'],
+  [CompareOperator.Include, 'confirmed'],
+  [CompareOperator.End, 'confirm'],
+] as const) {
+  const query = new FastQuery.Text('firm', operator);
+  assert.equal(query.accepts(candidate), true);
+  assert.equal(query.accepts('cancel'), false);
+}
+const branchSelector = Selector.parse("(Button[id='missing']) || (@Root > Button[id='confirm'])").value;
+const branchTrace = adapter.matchWithTrace(confirm, branchSelector)!;
+assert.equal(branchTrace.units.length, 1);
+assert.equal(branchTrace.units[0]!.queryNode, confirm);
+assert.deepEqual(branchTrace.units[0]!.fastQueryList.map((q) => q.value), ['confirm']);
+const conjunction = adapter.matchWithTrace(confirm, Selector.compile(
+  "(Button[id='confirm']) && (@Root > Button[text='Confirm'])",
+).value)!;
+assert.deepEqual(conjunction.units.map((unit) => unit.queryNode), [confirm, confirm]);
+assert.deepEqual(conjunction.units.map((unit) => unit.fastQueryList.map((q) => q.value)),
+  [['confirm'], ['Confirm']]);
+assert.equal(Selector.compile('Button').value.fastQueryList.length, 0);
 assert.equal(trace?.target, root);
 assert.ok(Array.isArray(trace?.units));
 assert.ok(Array.isArray(trace?.units[0]?.steps));

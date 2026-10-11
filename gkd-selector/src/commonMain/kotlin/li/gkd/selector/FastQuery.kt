@@ -11,6 +11,9 @@ public sealed class FastQuery(
 ) {
     internal abstract val attributeName: String
 
+    /** Tests a candidate attribute value using the same comparison as fast-query traversal. */
+    public fun accepts(value: String): Boolean = acceptValue(value)
+
     internal open fun acceptValue(candidate: Any?): Boolean =
         comparePrimitiveValue(candidate, value)
 

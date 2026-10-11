@@ -506,14 +506,14 @@ class SelectorQueryTest {
     fun fastQueryCombinationFollowsBooleanCandidateSemantics() {
         assertEquals(
             listOf(FastQuery.Id("b"), FastQuery.Id("x")),
-            compileSelector("(Button[id='b']) || (View[id='x'])").fastQueryList,
+            compileSelector("(Button[id='b']) || (View[id='x'])").fastQueryList.toList(),
         )
         assertTrue(
             compileSelector("(Button) || (View[id='x'])").fastQueryList.isEmpty(),
         )
         assertEquals(
             listOf(FastQuery.Id("x")),
-            compileSelector("(Button) && (View[id='x'])").fastQueryList,
+            compileSelector("(Button) && (View[id='x'])").fastQueryList.toList(),
         )
         assertTrue(
             compileSelector("!(View[id='x'])").fastQueryList.isEmpty(),

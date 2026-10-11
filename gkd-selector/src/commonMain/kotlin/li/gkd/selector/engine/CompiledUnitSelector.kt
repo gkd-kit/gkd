@@ -96,6 +96,8 @@ internal class CompiledUnitSelector(
         }
         return SelectorMatchUnit(
             target = matchedContext.get(targetIndex).current,
+            queryNode = context.current,
+            fastQueries = fastQueryList,
             steps = steps,
             range = range,
         )

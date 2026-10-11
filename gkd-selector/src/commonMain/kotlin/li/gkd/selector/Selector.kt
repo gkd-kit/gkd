@@ -42,8 +42,12 @@ public class Selector internal constructor(
         return program.match(MatchContext(node), adapter, options)
     }
 
-    internal val fastQueryList: List<FastQuery>
+    internal val fastQueries: List<FastQuery>
         get() = program.fastQueryList
+
+    /** Candidate filters extracted by the engine; an empty list means none are available. */
+    public val fastQueryList: Array<FastQuery>
+        get() = fastQueries.toTypedArray()
 
     public val isMatchRoot: Boolean
         get() = program.isMatchRoot

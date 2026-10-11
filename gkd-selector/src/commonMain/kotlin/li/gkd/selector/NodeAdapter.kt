@@ -196,8 +196,8 @@ public abstract class NodeAdapter<T : Any> {
         node: T,
         selector: Selector,
         options: MatchOptions,
-    ): Sequence<T> = if (options.fastQuery && selector.fastQueryList.isNotEmpty()) {
-        getFastQueryDescendantsExcludingSelf(node, selector.fastQueryList)
+    ): Sequence<T> = if (options.fastQuery && selector.fastQueries.isNotEmpty()) {
+        getFastQueryDescendantsExcludingSelf(node, selector.fastQueries)
     } else {
         getDescendants(node)
     }

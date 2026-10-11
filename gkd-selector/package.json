@@ -1,6 +1,6 @@
 {
   "name": "@gkd-kit/selector",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "GKD selector parser and matcher",
   "type": "module",
   "main": "./dist/gkd-selector.mjs",

@@ -121,6 +121,16 @@ Enabling fast queries explicitly accepts an implementation-specific query order.
 
 `NodeAdapter.getFastQueryDescendants` on Kotlin and `JsNodeAdapter.getFastQueryDescendants` on JavaScript are correctness-sensitive optimization hooks. An override must return every descendant matching at least one supplied fast query and return each logical node at most once according to `getNodeKey`, but it does not need to preserve the order of `getDescendants`. Selector matching validates every candidate again, so an override may return false positives but must not omit candidates. Kotlin implementations return a `Sequence`; JavaScript implementations return an `Iterable` and can use a synchronous generator method. Both implementations should yield candidates incrementally so first-result helpers can stop before later fast queries run. A one-shot JavaScript iterable must be recreated on each hook call, and its generator must not own resources that require explicit closing.
 
+`selector.fastQueryList` exposes the engine's extracted candidate filters as an array in Kotlin
+and JavaScript. An empty collection means no fast-query filters are available. Returned
+collections are copies; modifying them does not change matching. `query.accepts(value)` tests
+a string attribute using the engine's comparison: exact equality for `Id` and `Vid`, or the
+configured operator for `Text`.
+
+For successful traces, `unit.queryNode` is the unit's starting candidate, which can differ
+from its `@` return target. `unit.fastQueryList` contains that unit's filters as a fresh array.
+These describe candidate eligibility, not proof that Android actually used a fast query.
+
 ## Type validation
 
 Use `selector.validateType(typeModel)` when selectors need to be checked against a host type model. `createDefaultSelectorTypeModel()` provides the built-in GKD model. JavaScript callers can construct a custom immutable model with `JsSelectorTypeModelBuilder`; its `property` and `method` functions accept `JsSelectorType` values created by that same builder.
