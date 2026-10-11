@@ -917,6 +917,10 @@
     <string name="update_check">检查更新</string>
     <string name="update_download">下载更新</string>
     <string name="subscription_update_failed">更新失败</string>
+    <string name="subscription_error_network">网络请求异常</string>
+    <string name="subscription_error_parse">订阅解析异常</string>
+    <string name="subscription_error_heading">%1$s · %2$s</string>
+    <string name="subscription_error_details">查看完整错误</string>
     <string name="subscription_update_error_dismiss">关闭更新错误提示</string>
     <string name="update_interval_daily">每天</string>
     <string name="update_interval_three_days">每3天</string>

@@ -1,4 +1,4 @@
 package li.gkd.app.network
 
-/** A preflight hint, not a guarantee that the subsequent request will succeed. */
-expect suspend fun isNetworkAvailable(): Boolean
+/** Allows the development host to simulate being offline; real hosts attempt the request. */
+expect fun isNetworkRequestAllowed(): Boolean

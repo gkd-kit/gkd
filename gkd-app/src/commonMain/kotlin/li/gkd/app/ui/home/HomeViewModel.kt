@@ -47,13 +47,13 @@ class HomeViewModel : BaseViewModel() {
     init {
         scope.launch {
             appListState.map { it.search }.distinctUntilChanged().debounce(200).collect { query ->
-                appListState.update { it.copy(query = query) }
+                appListState.update { it.copy(query = query.trim()) }
             }
         }
     }
 
     fun setAppSearchText(value: String) {
-        appListState.update { it.copy(search = value.trim()) }
+        appListState.update { it.copy(search = value) }
     }
 
     fun closeAppSearch() {

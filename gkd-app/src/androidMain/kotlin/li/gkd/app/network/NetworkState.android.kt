@@ -1,3 +1,4 @@
 package li.gkd.app.network
 
-actual suspend fun isNetworkAvailable(): Boolean = canReachNetwork()
+// Real requests determine reachability; no unrelated host gates them.
+actual fun isNetworkRequestAllowed(): Boolean = true

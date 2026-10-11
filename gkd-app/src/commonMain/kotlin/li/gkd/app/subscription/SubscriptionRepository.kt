@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.gkd.app.network.NetworkClients
-import li.gkd.app.network.isNetworkAvailable
+import li.gkd.app.network.isNetworkRequestAllowed
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.state.MutexState
@@ -22,6 +22,7 @@ import li.gkd.db.Db
 import li.gkd.db.LOCAL_HTTP_SUBS_ID
 import li.gkd.db.LOCAL_SUBS_ID
 import li.gkd.db.SubsItem
+import li.gkd.db.SubscriptionConfigStore
 import li.songe.json5.decodeFromJson5String
 
 object SubscriptionRepository {
@@ -103,6 +104,17 @@ object SubscriptionRepository {
             Loadable.Loading -> throw SubscriptionException(SubscriptionFailureReason.SubscriptionNotLoaded)
             is Loadable.Failure -> throw state.cause
             is Loadable.Ready -> state.value
+        }
+    }
+
+    suspend fun captureBackup(): SubscriptionBackupSnapshot = withContext(Dispatchers.IO) {
+        // Initialization needs this same lock; wait for it before acquiring the lock.
+        awaitSnapshot()
+        updateMutex.withStateLock {
+            SubscriptionBackupSnapshot(
+                configuration = SubscriptionConfigStore.capture(),
+                subscriptions = awaitSnapshot().subscriptions.values.toList(),
+            )
         }
     }
 
@@ -400,7 +412,7 @@ object SubscriptionRepository {
             val entries = items.map { item ->
                 UpdateEntry(item, snapshot.subscriptions[item.id])
             }
-            if (entries.any { !it.subsItem.isLocal } && !isNetworkAvailable()) {
+            if (entries.any { !it.subsItem.isLocal } && !isNetworkRequestAllowed()) {
                 result = SubscriptionResult.Failure(
                     SubscriptionResult.FailureReason.NetworkUnavailable
                 )

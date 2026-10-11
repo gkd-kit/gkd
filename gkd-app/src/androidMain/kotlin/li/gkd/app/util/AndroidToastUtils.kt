@@ -84,8 +84,8 @@ object AndroidToastUtils {
         Toaster.setStyle(object : WhiteToastStyle() {
             override fun getGravity() = Gravity.BOTTOM
             override fun getYOffset() = toastYOffset
-            override fun getTranslationZ(context: Context?) = 0f
-            override fun createView(context: Context?): View {
+            override fun getTranslationZ(context: Context) = 0f
+            override fun createView(context: Context): View {
                 return super.createView(context).apply {
                     updateStyle()
                 }

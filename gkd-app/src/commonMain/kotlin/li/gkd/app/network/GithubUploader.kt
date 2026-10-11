@@ -1,6 +1,5 @@
 package li.gkd.app.network
 
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -52,7 +51,6 @@ private data class UploadPoliciesAssetsResponse(
 data class GithubCookieException(override val message: String) : Exception(message)
 
 private suspend fun graphqlFetch(
-    client: HttpClient,
     cookie: String,
     data: String,
 ): HttpResponse {
@@ -119,7 +117,7 @@ object GithubUploader {
 
         // send file url text to github comment
         val commentResultResp = graphqlFetch(
-            NetworkClients.client, cookie,
+            cookie,
             """
             {
                 persistedQueryName: 'addCommentMutation',
@@ -150,7 +148,7 @@ object GithubUploader {
 
         // unsubscribe the comment
         graphqlFetch(
-            NetworkClients.client, cookie,
+            cookie,
             """
             {
                 persistedQueryName: 'updateIssueSubscriptionMutation',
@@ -164,7 +162,7 @@ object GithubUploader {
 
         // delete the comment
         graphqlFetch(
-            NetworkClients.client, cookie,
+            cookie,
             """
             {
                 persistedQueryName: 'deleteIssueCommentMutation',

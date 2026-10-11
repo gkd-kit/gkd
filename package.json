@@ -10,7 +10,7 @@
     "test": "node --test ./scripts/desktop/lib/tools.test.ts"
   },
   "dependencies": {
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.5",
     "fflate": "^0.8.3",
     "typescript": "^7.0.2"
   },

@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
-import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.settings.SettingsAppIds
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.state.BaseViewModel
@@ -12,13 +11,7 @@ import li.gkd.app.ui.state.BaseViewModel
 class AppWhitelistViewModel : BaseViewModel() {
     val initialIds = SettingsRepository.blockMatchAppList.value
     val text: StateFlow<String>
-        field = MutableStateFlow(run {
-            val names = AppInfoRepository.snapshot?.apps.orEmpty()
-            initialIds.sorted().sortedBy { if (it in names) 0 else 1 }
-                .joinToString("\n\n", postfix = "\n\n") { id ->
-                    names[id]?.let { "$id\n# ${it.name}" } ?: id
-                }
-        })
+        field = MutableStateFlow(formatAppIdList(initialIds))
 
     val indicatorSize = text.debounce(500).map { SettingsAppIds.decode(it).size }
         .stateInit(SettingsAppIds.decode(text.value).size)

@@ -7,13 +7,13 @@ coil = "3.6.3"
 compose = "1.12.1"
 coroutines = "1.11.0"
 jna = "5.19.1"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 ksp = "2.3.12"
 ktor = "3.6.0"
 lifecycle = "2.11.0"
 nav3 = "1.2.0"
-paging = "3.5.1"
-priv-kit = "0.17.3"
+paging = "3.5.2"
+priv-kit = "0.17.4"
 proguard = "7.10.0"
 remap = "0.1.6"
 room = "3.0.3"
@@ -75,7 +75,7 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-lsposed-hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
+lsposed-hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.2"
 morph-compose = "li.songe.morph:morph-compose:0.4.0"
 kmp-lifecycle = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 kmp-navigation3 = "org.jetbrains.androidx.navigation3:navigation3-ui:1.1.2"
@@ -90,7 +90,7 @@ rikka-shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" 
 rikka-shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 robolectric = "org.robolectric:robolectric:4.17"
 telephoto-zoomable = { module = "me.saket.telephoto:zoomable", version.ref = "telephoto" }
-toaster = "com.github.getActivity:Toaster:15.0"
+toaster = "com.github.getActivity:Toaster:15.2"
 webview2-compose = "li.songe.webview2:webview2-compose:0.1.1"
 
 [plugins]

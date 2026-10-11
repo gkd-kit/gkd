@@ -16,9 +16,11 @@ object AppQuery {
                     (group and (if (app.isSystem) AppGroupFlags.System else AppGroupFlags.User) != 0)
         }
         val showAll = apps.size == visibleApps.size
-        val actionPositions = actionOrder.withIndex().associate { it.value to it.index }
         apps = when (sort) {
-            AppSort.ByActionTime.value -> apps.sortedBy { actionPositions[it.id] ?: Int.MAX_VALUE }
+            AppSort.ByActionTime.value -> {
+                val actionPositions = actionOrder.withIndex().associate { it.value to it.index }
+                apps.sortedBy { actionPositions[it.id] ?: Int.MAX_VALUE }
+            }
             AppSort.ByUsedTime.value -> apps.sortedBy { visitOrder[it.id] ?: Int.MAX_VALUE }
             else -> apps
         }

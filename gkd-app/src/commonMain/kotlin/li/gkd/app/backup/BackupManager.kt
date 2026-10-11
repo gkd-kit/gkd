@@ -40,6 +40,7 @@ object BackupManager {
         withContext(Dispatchers.IO) {
             val tempDir = StorageMaintenance.temporaryDirectory(storage)
             try {
+                val subscriptionBackup = SubscriptionRepository.captureBackup()
                 tempDir.resolve("store").run {
                     mkdir()
                     SettingsRepository.exportBackupEntries().forEach { (filename, text) ->
@@ -48,12 +49,12 @@ object BackupManager {
                 }
                 tempDir.resolve("db.json").writeText(
                     BackupFormat.encode(
-                        BackupDatabaseData.fromSnapshot(SubscriptionConfigStore.capture()),
+                        BackupDatabaseData.fromSnapshot(subscriptionBackup.configuration),
                     ),
                 )
                 tempDir.resolve("subscription").run {
                     mkdir()
-                    SubscriptionRepository.awaitSnapshot().subscriptions.values.forEach { subs ->
+                    subscriptionBackup.subscriptions.forEach { subs ->
                         resolve("${subs.id}.json").writeText(json.encodeToString(subs))
                     }
                 }

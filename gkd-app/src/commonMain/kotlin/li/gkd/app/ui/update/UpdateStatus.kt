@@ -23,7 +23,7 @@ import kotlinx.serialization.json.Json
 import li.gkd.app.error.displayMessage
 import li.gkd.app.network.NewVersion
 import li.gkd.app.network.UpdateClient
-import li.gkd.app.network.isNetworkAvailable
+import li.gkd.app.network.isNetworkRequestAllowed
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.requestPackageInstall
 import li.gkd.app.resources.*
@@ -69,7 +69,7 @@ class UpdateStatus(
             try {
                 lastCheckTime = System.currentTimeMillis()
                 val ignored = ignoreMutex.withLock { withContext(Dispatchers.IO) { readIgnored() } }
-                check(isNetworkAvailable()) { getString(Res.string.network_unavailable) }
+                check(isNetworkRequestAllowed()) { getString(Res.string.network_unavailable) }
                 val url =
                     UpdateChannel.entries.findOption(SettingsRepository.settings.value.updateChannel).url
                 val result = withContext(Dispatchers.IO) { UpdateClient.fetch(url) }

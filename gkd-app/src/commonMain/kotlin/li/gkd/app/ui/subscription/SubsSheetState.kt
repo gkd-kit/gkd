@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
@@ -26,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -45,17 +47,24 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.gkd.app.error.messageResource
+import li.gkd.app.error.BusinessError
+import li.gkd.app.error.ErrorMessage
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
+import li.gkd.app.subscription.SubscriptionException
+import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.time.format
 import li.gkd.app.ui.component.GkIcon
+import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkLazyCopyableText
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkModalBottomSheet
@@ -75,6 +84,7 @@ import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.text.formatTimeAgo
 import li.gkd.app.util.ToastUtils
+import li.gkd.app.util.copyText
 import li.gkd.db.Db
 import li.gkd.db.LOCAL_SUBS_ID
 import li.gkd.db.SubsItem
@@ -460,9 +470,47 @@ private fun ColumnScope.SubsErrorCard(
     error: Exception,
     action: @Composable () -> Unit,
 ) {
+    var showDetails by remember(error) { mutableStateOf(false) }
+    val message = (error as? BusinessError)?.errorMessage
+    val structured = message as? ErrorMessage.WithDetail
+    val category = when ((error as? SubscriptionException)?.reason) {
+        SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed ->
+            stringResource(Res.string.subscription_error_network)
+        SubscriptionFailureReason.TextParseFailed ->
+            stringResource(Res.string.subscription_error_parse)
+        else -> structured?.message?.messageResource()
+    }
+    val heading = if (category != null) {
+        stringResource(Res.string.subscription_error_heading, title, category)
+    } else title
+    val detail = (structured?.detail ?: message)?.messageResource() ?: error.messageResource()
+    if (showDetails) {
+        val fullMessage = if (structured != null) message.messageResource() else detail
+        GkAlertDialog(
+            onDismissRequest = { showDetails = false },
+            title = { Text(title) },
+            text = {
+                GkLazyCopyableText(
+                    text = AnnotatedString(fullMessage),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                    onCopy = ::copyText,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDetails = false }) {
+                    Text(stringResource(Res.string.action_close))
+                }
+            },
+        )
+    }
     Spacer(Modifier.height(8.dp))
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = itemHorizontalPadding),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = itemHorizontalPadding)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(
+                onClickLabel = stringResource(Res.string.subscription_error_details),
+                onClick = { showDetails = true },
+            ),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
     ) {
         Row(
@@ -474,12 +522,18 @@ private fun ColumnScope.SubsErrorCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = title,
+                    text = heading,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = error.messageResource(),
+                    text = detail.replace('\n', ' ').replace('\r', ' '),
                     style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             action()

@@ -4,18 +4,20 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.settings.SettingsAppIds
 import li.gkd.app.settings.SettingsRepository
 
+fun formatAppIdList(ids: Set<String>): String {
+    val apps = AppInfoRepository.snapshot?.apps.orEmpty()
+    return ids.sorted().sortedBy { if (it in apps) 0 else 1 }
+        .joinToString("\n\n", postfix = "\n\n") { id ->
+            apps[id]?.let { "$id\n# ${it.name}" } ?: id
+        }
+}
+
 /** Prepares and persists explicit app ID edits; the owning page ViewModel manages the draft. */
 class AppIdListEditor(
     private val currentIds: () -> Set<String>,
     private val replace: (Set<String>) -> Unit,
 ) {
-    fun initialText(): String {
-        val appNames = AppInfoRepository.snapshot?.apps.orEmpty().mapValues { it.value.name }
-        return currentIds().sorted().sortedBy { if (it in appNames) 0 else 1 }
-            .joinToString("\n\n", postfix = "\n\n") { id ->
-                appNames[id]?.let { "$id\n# $it" } ?: id
-            }
-    }
+    fun initialText(): String = formatAppIdList(currentIds())
 
     fun hasChanges(text: String) = currentIds() != SettingsAppIds.decode(text)
 

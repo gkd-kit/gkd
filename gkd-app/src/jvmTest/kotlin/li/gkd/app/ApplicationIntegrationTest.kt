@@ -146,9 +146,10 @@ class ApplicationIntegrationTest {
                     archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance()
                     materialFailurePreservesCauseAndLeavesFilesForCacheMaintenance()
                 }
+                li.gkd.app.backup.assertBackupSnapshotConsistency()
                 assertBackupRoundTrip(appStorage())
             }
-            assertFailsWith<IllegalStateException> { li.gkd.app.network.isNetworkAvailable() }
+            assertFailsWith<IllegalStateException> { li.gkd.app.network.isNetworkRequestAllowed() }
             assertFailsWith<IllegalStateException> { li.gkd.app.app.openAppCatalog() }
             val logs = appStorage().log.listFiles()!!.associate { it.name to it.readText() }
             LogUtils.d("log-after-close")
@@ -244,7 +245,7 @@ class ApplicationIntegrationTest {
         val file = appStorage().store.resolve("ignore_version_list.json")
         val previous = file.takeIf { it.exists() }?.readBytes()
         val initialRevision = toast.revision
-        assertFalse(li.gkd.app.network.isNetworkAvailable())
+        assertFalse(li.gkd.app.network.isNetworkRequestAllowed())
         val networkUnavailable = getString(Res.string.network_unavailable)
         // This headless runtime has no composition to dispatch global snapshot changes.
         val snapshotChanges = Channel<Unit>(Channel.CONFLATED)
