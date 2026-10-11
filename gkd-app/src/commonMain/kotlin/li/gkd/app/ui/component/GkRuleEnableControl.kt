@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import li.gkd.app.error.messageResource
 import li.gkd.app.model.AppInfo
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleConfigIndex
@@ -29,7 +30,6 @@ import li.gkd.app.rule.RuleRestriction
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.subscription.RawSubscription
-import li.gkd.app.ui.subscription.label
 import li.gkd.db.SubscriptionConfigSnapshot
 import org.jetbrains.compose.resources.stringResource
 
@@ -92,11 +92,11 @@ fun GkRuleEnableControl(
             Res.string.setting_follow_default_value,
             stringResource(if (state.defaultEnabled) Res.string.action_turn_on else Res.string.action_close)
         )
-    } else state.setting.label
+    } else stringResource(state.setting.labelResource)
     val description = configuredLabel + when {
         !state.canEnable -> stringResource(Res.string.rule_unavailable_reason_action_suffix)
         state.configuredEnabled && state.restrictions.isNotEmpty() ->
-            stringResource(Res.string.rule_temporarily_unavailable_prefix) + state.restrictions.map { it.label }.joinToString(
+            stringResource(Res.string.rule_temporarily_unavailable_prefix) + state.restrictions.map { it.message.messageResource() }.joinToString(
                 "，"
             )
 

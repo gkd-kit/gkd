@@ -13,7 +13,6 @@ import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.saveArchive
 import li.gkd.app.ui.share.shareArchive
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.ui.upload.GithubUploadItem
 import li.gkd.app.ui.upload.GithubUploadState
 import li.gkd.app.util.ToastUtils

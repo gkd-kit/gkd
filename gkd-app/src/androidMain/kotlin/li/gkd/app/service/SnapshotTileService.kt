@@ -9,7 +9,6 @@ import li.gkd.app.appScope
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 

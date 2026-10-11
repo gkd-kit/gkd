@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.crash.CrashData
+import li.gkd.app.error.displayMessage
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
@@ -52,7 +53,6 @@ import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.style.surfaceCardColors
-import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.getString

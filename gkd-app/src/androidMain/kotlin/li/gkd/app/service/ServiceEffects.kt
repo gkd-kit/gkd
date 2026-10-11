@@ -3,7 +3,6 @@ package li.gkd.app.service
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.gkd.app.notif.StopServiceReceiver
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 import li.songe.codeorigin.CallSite
 

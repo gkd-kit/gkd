@@ -54,7 +54,6 @@ import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.titleItemPadding
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.Constants
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource

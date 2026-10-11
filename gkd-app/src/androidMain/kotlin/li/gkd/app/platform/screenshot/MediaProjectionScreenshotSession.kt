@@ -16,7 +16,6 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.app
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.isFullTransparent

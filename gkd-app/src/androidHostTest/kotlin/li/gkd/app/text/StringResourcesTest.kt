@@ -2,7 +2,6 @@ package li.gkd.app.text
 
 import android.app.Application
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

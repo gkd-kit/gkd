@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.subscription.CategoryPolicy
 import li.gkd.app.subscription.SubscriptionJson.json
@@ -50,7 +51,6 @@ import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
-import li.gkd.app.ui.text.subscriptionMessageResource
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -86,7 +86,7 @@ fun CategoryEditorPage(
             }
         val error =
             if (conflict) stringResource(Res.string.category_edit_conflict)
-            else validation.exceptionOrNull()?.subscriptionMessageResource()
+            else validation.exceptionOrNull()?.messageResource()
         val previewCategoryKey =
             route.categoryKey ?: preview.getOrNull()?.categories?.maxOfOrNull { it.key }
         val apps =

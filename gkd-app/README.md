@@ -102,12 +102,16 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 ```powershell
 pnpm app:tools services
+# 检查运行中的真实订阅 HTTP 接口（仅 --test 宿主）：
+pnpm app:tools check-subscription-http
 # 在控制窗口将界面服务的启动结果设为“手动完成”后：
 pnpm app:tools service-start --service Activity
 # 将 1 替换为启动输出中的 runtime.Activity.attempt：
 pnpm app:tools service-event --service Activity --event Connected --attempt 1
 pnpm app:tools service-stop --service Activity
 ```
+
+`check-subscription-http` 启动真实 HTTP 服务，验证订阅读写、开关、解析错误和持久化结果，报告写入当前隔离会话的 `reports/subscription-http.json`。开发控制端口使用 `--port`，业务 HTTP 端口使用 `--rpc-port`（默认 8888）。检查会更新内存订阅作为类别配置样本，并在成功后删除本次新增的正式订阅规则。
 
 `GET /services` 返回各服务的 `plans`、`runtime` 和 `[simulation]` 日志。`POST /services/command` 接收 `{"service":"Activity","enabled":true}`；`POST /services/event` 接收 `service`、`type`、`attempt` 及可选 `reason`。HTTP 不接受模拟完成/故障事件，也不使用模拟启动结果，其状态由真实端口绑定结果决定。其他服务事件类型为 `Authorized`、`Cancelled`、`Connected`、`Failed`（启动失败或运行中异常终止），`attempt` 使用当前服务返回的编号，旧请求的完成事件会被忽略。
 

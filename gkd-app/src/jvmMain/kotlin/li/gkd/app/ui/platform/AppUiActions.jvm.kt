@@ -6,7 +6,6 @@ import li.gkd.app.DesktopRuntime
 import li.gkd.app.SimulatedService
 import li.gkd.app.selectedSimulatedAutomator
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 
 @Composable

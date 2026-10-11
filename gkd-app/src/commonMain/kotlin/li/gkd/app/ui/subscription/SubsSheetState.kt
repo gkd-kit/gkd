@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
@@ -73,8 +74,6 @@ import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.text.formatTimeAgo
-import li.gkd.app.ui.text.getSync
-import li.gkd.app.ui.text.subscriptionMessageResource
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.Db
 import li.gkd.db.LOCAL_SUBS_ID
@@ -479,7 +478,7 @@ private fun ColumnScope.SubsErrorCard(
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    text = error.subscriptionMessageResource(),
+                    text = error.messageResource(),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }

@@ -18,11 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import li.gkd.app.error.messageResource
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.ui.icon.ResetSettings
-import li.gkd.app.ui.subscription.label
 import org.jetbrains.compose.resources.stringResource
 
 // Display labels live here; classification never depends on their language.
@@ -92,10 +92,10 @@ object RulePropertyText {
 
     @Composable
     fun restrictionSummary(state: RuleControlState): String? = buildList {
-        addAll(state.restrictions.map { it.label })
+        addAll(state.restrictions.map { it.message.messageResource() })
         if (state.limitations.blockedRules > 0 && !state.limitations.fullyBlocked) {
             add(
-                stringResource(Res.string.rule_partially_inapplicable_prefix) + state.limitations.blockedReasons.map { it.label }
+                stringResource(Res.string.rule_partially_inapplicable_prefix) + state.limitations.blockedReasons.map { it.message.messageResource() }
                     .joinToString("\n")
                     .ifEmpty { stringResource(Res.string.rule_app_or_version_mismatch) })
         }

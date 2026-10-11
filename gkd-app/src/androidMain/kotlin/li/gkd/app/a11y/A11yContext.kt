@@ -8,7 +8,6 @@ import kotlinx.coroutines.CancellationException
 import li.gkd.app.META
 import li.gkd.app.priv.toHidden
 import li.gkd.app.rule.ResolvedRule
-import li.gkd.app.ui.rule.statusText
 import li.gkd.selector.FastQuery
 import li.gkd.selector.MatchOptions
 import li.gkd.selector.NodeAdapter

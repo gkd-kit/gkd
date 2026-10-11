@@ -52,7 +52,6 @@ import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.navigation.WorkModeRoute
-import li.gkd.app.ui.text.getSync
 import li.gkd.db.LOCAL_SUBS_ID
 
 @Serializable

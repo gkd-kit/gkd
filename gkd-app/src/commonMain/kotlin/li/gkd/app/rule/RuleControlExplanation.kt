@@ -1,16 +1,36 @@
 package li.gkd.app.rule
 
+import li.gkd.app.resources.*
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubscriptionConfigSnapshot
+import org.jetbrains.compose.resources.StringResource
 
-enum class RuleControlStepKind {
-    Subscription, App, Restrictions, Own, Category, GroupDefault,
-    GlobalGroup, GlobalApp, DefaultApps, GlobalDefault,
+enum class RuleControlStepKind(
+    val titleResource: StringResource,
+    private val globalTitleResource: StringResource = titleResource,
+) {
+    Subscription(Res.string.rule_control_subscription),
+    App(Res.string.rule_control_app),
+    Restrictions(Res.string.rule_current_restrictions),
+    Own(Res.string.rule_control_own),
+    Category(Res.string.rule_control_category),
+    GroupDefault(Res.string.rule_group_default, Res.string.global_control_default_group),
+    GlobalGroup(Res.string.global_control_group),
+    GlobalApp(Res.string.global_control_app),
+    DefaultApps(Res.string.global_rule_default_apps),
+    GlobalDefault(Res.string.global_control_default_app);
+
+    fun titleResource(global: Boolean): StringResource = if (global) globalTitleResource else titleResource
 }
 
-enum class RuleControlNote {
-    FollowDefault, ManualDisabled, FollowSubscription, CategorySettings, IgnoreCategory, FollowGroup,
+enum class RuleControlNote(val descriptionResource: StringResource) {
+    FollowDefault(Res.string.setting_follow_default),
+    ManualDisabled(Res.string.setting_manual_disabled),
+    FollowSubscription(Res.string.global_rule_default_apps_follow),
+    CategorySettings(Res.string.category_settings),
+    IgnoreCategory(Res.string.category_use_group_default_description),
+    FollowGroup(Res.string.category_use_group_default),
 }
 
 data class RuleControlStep(
@@ -23,6 +43,12 @@ data class RuleControlStep(
 )
 
 data class RuleControlExplanation(val steps: List<RuleControlStep>, val inApp: Boolean) {
+    fun resultResource(global: Boolean): StringResource = when {
+        enabled -> if (global) Res.string.global_control_enabled else Res.string.rule_control_allowed
+        restricted -> Res.string.rule_control_restricted
+        else -> Res.string.rule_control_disabled
+    }
+
     val decidingIndex: Int = steps.indexOfFirst { it.stops }
     val enabled: Boolean = steps[decidingIndex].enabled == true
     val restricted: Boolean = !enabled && when (steps[decidingIndex].kind) {

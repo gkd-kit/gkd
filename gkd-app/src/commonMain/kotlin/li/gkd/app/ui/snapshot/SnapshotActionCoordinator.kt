@@ -3,6 +3,7 @@ package li.gkd.app.ui.snapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import li.gkd.app.error.displayMessage
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
@@ -13,7 +14,6 @@ import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.ui.upload.createSnapshotUploadItem
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils

@@ -94,6 +94,8 @@ class ApplicationIntegrationTest {
             store.resolve("store.json")
                 .writeText("""{"appGroupType":7,"enableDynamicColor":false,"futureOption":123}""")
             store.resolve("overlay_position.json").writeText("""{"legacy":[12,34]}""")
+            // Explicit rejection keeps the acceptance persistence and failed-write checks active.
+            store.resolve("terms_accepted.txt").writeText("false")
             // An Android recovery file without a database row must keep its user-supplied name.
             val subscriptions = DesktopStorage.data.resolve("files/subscription").apply { mkdirs() }
             subscriptions.resolve("${li.gkd.db.LOCAL_SUBS_ID}.json.bak").writeText(

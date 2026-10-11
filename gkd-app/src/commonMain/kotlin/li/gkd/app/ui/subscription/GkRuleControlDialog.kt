@@ -26,13 +26,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlExplanation
 import li.gkd.app.rule.RuleControlStep
 import li.gkd.app.rule.RuleControlStepKind
-import li.gkd.app.rule.RuleControlNote
 import li.gkd.app.rule.RuleControlState
-import li.gkd.app.rule.GlobalAppDefaultOffReason
 import li.gkd.app.rule.RuleLimitationKind
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.component.GkAppNameText
@@ -60,11 +59,7 @@ fun GkRuleControlDialog(
     val inApp = global && appId != null
     val category = if (global) null else subscription.getCategory(group.name)
     val appName = subscription.apps.find { it.id == appId }?.name ?: appId.orEmpty()
-    val result = stringResource(when {
-        explanation.enabled -> if (global) Res.string.global_control_enabled else Res.string.rule_control_allowed
-        explanation.restricted -> Res.string.rule_control_restricted
-        else -> Res.string.rule_control_disabled
-    })
+    val result = stringResource(explanation.resultResource(global))
     GkFullscreenDialog(onDismissRequest) {
         GkScaffold(
             topBar = {
@@ -121,7 +116,7 @@ fun GkRuleControlDialog(
                 explanation.steps.forEachIndexed { index, step ->
                     ControlTimelineStep(
                         step = step,
-                        title = stepTitle(step.kind, global),
+                        title = stringResource(step.kind.titleResource(global)),
                         description = stepDescription(step, subscription.name),
                         appId = appId.takeIf { step.kind == RuleControlStepKind.App },
                         appName = appName,
@@ -153,42 +148,14 @@ fun GkRuleControlDialog(
 
 
 @Composable
-private fun stepTitle(kind: RuleControlStepKind, global: Boolean): String = stringResource(when (kind) {
-    RuleControlStepKind.Subscription -> Res.string.rule_control_subscription
-    RuleControlStepKind.App -> Res.string.rule_control_app
-    RuleControlStepKind.Restrictions -> Res.string.rule_current_restrictions
-    RuleControlStepKind.Own -> Res.string.rule_control_own
-    RuleControlStepKind.Category -> Res.string.rule_control_category
-    RuleControlStepKind.GroupDefault -> if (global) Res.string.global_control_default_group else Res.string.rule_group_default
-    RuleControlStepKind.GlobalGroup -> Res.string.global_control_group
-    RuleControlStepKind.GlobalApp -> Res.string.global_control_app
-    RuleControlStepKind.DefaultApps -> Res.string.global_rule_default_apps
-    RuleControlStepKind.GlobalDefault -> Res.string.global_control_default_app
-})
-
-@Composable
 private fun stepDescription(step: RuleControlStep, subscriptionName: String): String? {
     if (step.kind == RuleControlStepKind.Subscription) return subscriptionName
-    if (step.kind == RuleControlStepKind.Restrictions) return step.restrictions.map { it.label }
+    if (step.kind == RuleControlStepKind.Restrictions) return step.restrictions.map { it.message.messageResource() }
         .joinToString("\n").ifEmpty { stringResource(Res.string.rule_control_restricted) }
     if (step.defaultOffReasons.isNotEmpty()) return step.defaultOffReasons.map { reason ->
-        stringResource(when (reason) {
-            GlobalAppDefaultOffReason.Launcher -> Res.string.global_control_launcher_off
-            GlobalAppDefaultOffReason.SystemApp -> Res.string.global_control_system_off
-            GlobalAppDefaultOffReason.LocalDefault -> Res.string.global_control_local_off
-            GlobalAppDefaultOffReason.SubscriptionDefault -> Res.string.global_control_subscription_off
-            GlobalAppDefaultOffReason.SubscriptionApp -> Res.string.global_control_app_off
-            GlobalAppDefaultOffReason.SameNameAppGroup -> Res.string.global_control_name_off
-        })
+        stringResource(reason.descriptionResource)
     }.joinToString("\n")
-    return step.note?.let { note -> stringResource(when (note) {
-        RuleControlNote.FollowDefault -> Res.string.setting_follow_default
-        RuleControlNote.ManualDisabled -> Res.string.setting_manual_disabled
-        RuleControlNote.FollowSubscription -> Res.string.global_rule_default_apps_follow
-        RuleControlNote.CategorySettings -> Res.string.category_settings
-        RuleControlNote.IgnoreCategory -> Res.string.category_use_group_default_description
-        RuleControlNote.FollowGroup -> Res.string.category_use_group_default
-    }) }
+    return step.note?.let { note -> stringResource(note.descriptionResource) }
 }
 
 @Composable

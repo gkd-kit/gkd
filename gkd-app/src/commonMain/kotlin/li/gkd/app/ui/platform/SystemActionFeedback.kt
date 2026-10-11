@@ -1,10 +1,9 @@
 package li.gkd.app.ui.platform
 
+import li.gkd.app.error.displayMessage
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.openExternalUri
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.displayMessage
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 
 object SystemActionFeedback {

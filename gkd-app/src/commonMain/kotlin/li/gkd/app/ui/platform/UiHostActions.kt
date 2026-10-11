@@ -1,6 +1,6 @@
 package li.gkd.app.ui.platform
 
-import li.gkd.app.ui.option.AutomatorModeOption
+import li.gkd.app.settings.AutomatorMode
 
 expect fun UiHost.setStatusServiceEnabled(enabled: Boolean)
-expect fun UiHost.changeAutomatorMode(mode: AutomatorModeOption)
+expect fun UiHost.changeAutomatorMode(mode: AutomatorMode)

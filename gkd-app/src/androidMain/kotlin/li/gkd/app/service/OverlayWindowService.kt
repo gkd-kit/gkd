@@ -52,7 +52,6 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.icon.DragPan
 import li.gkd.app.ui.style.AppTheme
 import li.gkd.app.ui.style.iconTextSize
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.BarUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.ThreadUtils

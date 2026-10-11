@@ -39,7 +39,6 @@ import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.ui.util.ActionToastTemplate
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource

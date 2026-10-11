@@ -2,7 +2,7 @@ package li.gkd.app.ui.platform
 
 import li.gkd.app.platform.service.ServiceController
 import li.gkd.app.ui.androidState
-import li.gkd.app.ui.option.AutomatorModeOption
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.ui.share.launchUi
 
 actual fun UiHost.setStatusServiceEnabled(enabled: Boolean) {
@@ -10,6 +10,6 @@ actual fun UiHost.setStatusServiceEnabled(enabled: Boolean) {
     else ServiceController.setStatusEnabled(false)
 }
 
-actual fun UiHost.changeAutomatorMode(mode: AutomatorModeOption) {
+actual fun UiHost.changeAutomatorMode(mode: AutomatorMode) {
     mainVm.androidState.updateAutomatorMode(mode)
 }

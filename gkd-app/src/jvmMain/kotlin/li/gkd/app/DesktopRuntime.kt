@@ -25,10 +25,10 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.image.ImageLoaders
 import li.gkd.app.ui.component.ToastState
-import li.gkd.app.ui.text.subscriptionDefaults
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.LOCAL_SUBS_ID
@@ -111,7 +111,7 @@ class DesktopRuntime(
         }
         AppInfoRepository.initialize()
         simulator.onServiceRunningChanged = { service, running ->
-            toast.show(serviceLifecycleToast(service, running))
+            toast.show(service.lifecycleToast(running))
         }
         simulator.onAppCatalogChanged = { AppInfoRepository.requestRefresh() }
         AppInfoRepository.requestRefresh()
@@ -123,7 +123,7 @@ class DesktopRuntime(
     }
 
     val subscriptionInitialization = scope.launch {
-        SubscriptionRepository.initialize(subscriptionDefaults())
+        SubscriptionRepository.initialize(SubscriptionDefaults.fromResources())
         val imported = DesktopStorage.sessionDirectory.resolve("profile-imported")
         if (!imported.exists()) {
             val existing = Db.subsItemDao.queryAll().mapTo(mutableSetOf()) { it.id }

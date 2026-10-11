@@ -28,7 +28,6 @@ import li.gkd.app.rule.RuleSummary
 import li.gkd.app.rule.TopActivity
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.rule.statusText
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.Constants
 import li.gkd.app.util.LogUtils

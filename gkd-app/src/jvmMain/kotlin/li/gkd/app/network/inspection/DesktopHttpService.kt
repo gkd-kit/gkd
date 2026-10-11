@@ -21,7 +21,6 @@ import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.Constants
 import li.gkd.app.util.JsonUtils
 import li.gkd.app.util.LogUtils

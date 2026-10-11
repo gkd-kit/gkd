@@ -6,7 +6,6 @@ import androidx.core.app.NotificationManagerCompat
 import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import org.jetbrains.compose.resources.StringResource
 
 enum class AppNotificationChannel(

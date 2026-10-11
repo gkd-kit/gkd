@@ -22,8 +22,7 @@ import li.gkd.app.appScope
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
 import li.gkd.app.store.AppStore.updateEnableAutomator
-import li.gkd.app.ui.option.AutomatorModeOption
-import li.gkd.app.ui.text.getSync
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.SystemServiceDump
@@ -33,7 +32,7 @@ import li.gkd.app.util.launchLogged
 class AutomationService private constructor(
     private val privilegeContext: PrivilegeContext,
 ) : A11yCommonImpl {
-    override val mode get() = AutomatorModeOption.AutomationMode
+    override val mode get() = AutomatorMode.Automation
     private val handlerThread = HandlerThread("UiAutomatorHandlerThread")
     private val uiAutomationDelegate = lazy {
         UiAutomationHidden(

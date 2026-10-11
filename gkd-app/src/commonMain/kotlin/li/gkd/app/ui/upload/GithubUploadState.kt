@@ -14,6 +14,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.gkd.app.error.displayMessage
 import li.gkd.app.network.AppLinks
 import li.gkd.app.network.GithubCookieException
 import li.gkd.app.network.GithubPoliciesAsset
@@ -23,8 +24,6 @@ import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.ui.component.GithubUploadStatus
 import li.gkd.app.ui.component.GkGithubUploadDialogs
 import li.gkd.app.ui.navigation.AppNavigator
-import li.gkd.app.ui.text.displayMessage
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString

@@ -95,8 +95,8 @@ import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.image.appImageLoader
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
-import li.gkd.app.ui.option.SnapshotDisplayModeOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.snapshot.SnapshotDisplayMode
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.ListPlaceholder
@@ -123,7 +123,7 @@ fun SnapshotPage(
 
     val loadableState by vm.uiState.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val displayMode = SnapshotDisplayModeOption.objects.findOption(settings.snapshotDisplayMode)
+    val displayMode = SnapshotDisplayMode.entries.findOption(settings.snapshotDisplayMode)
     val actionScope = vm.scope
     val firstLoading = loadableState is Loadable.Loading
     val loadError = (loadableState as? Loadable.Failure)?.cause
@@ -373,21 +373,21 @@ fun SnapshotPage(
                             )
                         }
                     } else {
-                        val displayModeLabel = displayMode.label
+                        val displayModeLabel = stringResource(displayMode.labelResource)
                         val nextMode = when (displayMode) {
-                            SnapshotDisplayModeOption.ByTime -> SnapshotDisplayModeOption.ByApp
-                            SnapshotDisplayModeOption.ByApp -> SnapshotDisplayModeOption.ByTime
+                            SnapshotDisplayMode.ByTime -> SnapshotDisplayMode.ByApp
+                            SnapshotDisplayMode.ByApp -> SnapshotDisplayMode.ByTime
                         }
                         GkIconButton(
                             imageVector = when (displayMode) {
-                                SnapshotDisplayModeOption.ByTime -> GkIcons.CalendarMonth
-                                SnapshotDisplayModeOption.ByApp -> GkIcons.Apps
+                                SnapshotDisplayMode.ByTime -> GkIcons.CalendarMonth
+                                SnapshotDisplayMode.ByApp -> GkIcons.Apps
                             },
                             animateMorph = true,
                             modifier = Modifier.semantics { stateDescription = displayModeLabel },
                             contentDescription = when (nextMode) {
-                                SnapshotDisplayModeOption.ByTime -> stringResource(Res.string.snapshot_view_switch_to_time)
-                                SnapshotDisplayModeOption.ByApp -> stringResource(Res.string.snapshot_view_switch_to_app)
+                                SnapshotDisplayMode.ByTime -> stringResource(Res.string.snapshot_view_switch_to_time)
+                                SnapshotDisplayMode.ByApp -> stringResource(Res.string.snapshot_view_switch_to_app)
                             },
                             onClick = {
                                 SettingsRepository.updateSettings {
@@ -438,7 +438,7 @@ fun SnapshotPage(
                     SnapshotCard(
                         imageLoader, snapshot = snapshot,
                         appName = appNames[snapshot.appId] ?: snapshot.appId,
-                        showAppName = displayMode != SnapshotDisplayModeOption.ByApp,
+                        showAppName = displayMode != SnapshotDisplayMode.ByApp,
                         thumbnailVersion = thumbnailVersions[snapshot.id] ?: 0,
                         selectedMode = selectionState.active,
                         selected = snapshot.id in selectedIds,

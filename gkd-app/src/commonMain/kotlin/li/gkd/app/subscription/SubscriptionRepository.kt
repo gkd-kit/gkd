@@ -145,7 +145,8 @@ object SubscriptionRepository {
     suspend fun requestEnabled(id: Long, enabled: Boolean, confirmed: Boolean = false): Boolean =
         updateMutex.withStateLock {
             val items = Db.subsItemDao.queryAll()
-            val item = items.firstOrNull { it.id == id } ?: return@withStateLock true
+            val item = items.firstOrNull { it.id == id }
+                ?: throw SubscriptionException(SubscriptionFailureReason.SubscriptionMissingId, listOf(id.toString()))
             if (enabled && !confirmed && SettingsRepository.settings.value.subsPowerWarn && !item.isLocal) {
                 val subscriptions = snapshotFlow.value.value?.subscriptions.orEmpty()
                 if (items.any { it.id != id && it.enable && !it.isLocal && subscriptions[it.id]?.hasRule != false }) {
@@ -179,6 +180,11 @@ object SubscriptionRepository {
         expected: RawSubscription,
         action: suspend (RawSubscription) -> T,
     ): T = withSubscriptionSnapshots(listOf(expected)) { action(expected) }
+
+    suspend fun <T> withSubscription(
+        id: Long,
+        action: suspend (RawSubscription) -> T,
+    ): T = updateMutex.withStateLock { action(requireSubscription(id)) }
 
     suspend fun <T> withSubscriptionSnapshots(
         expected: Collection<RawSubscription>,
@@ -232,9 +238,7 @@ object SubscriptionRepository {
     ): Boolean = withContext(Dispatchers.IO) {
         var changed = false
         updateMutex.withStateLock {
-            val snapshot = requireSnapshot(id)
-            val current = snapshot.subscriptions[id]
-                ?: throw (snapshot.loadErrors[id] ?: SubscriptionException(SubscriptionFailureReason.SubscriptionMissingId, listOf(id.toString())))
+            val current = requireSubscription(id)
             val next = transform(current)
             require(next.id == id) {
                 throw SubscriptionException(SubscriptionFailureReason.SubscriptionIdImmutable, listOf(id.toString(), next.id.toString()))
@@ -541,6 +545,12 @@ object SubscriptionRepository {
             is Loadable.Failure -> throw state.cause
             is Loadable.Ready -> state.value
         }
+    }
+
+    private fun requireSubscription(id: Long): RawSubscription {
+        val snapshot = requireSnapshot(id)
+        return snapshot.subscriptions[id]
+            ?: throw (snapshot.loadErrors[id] ?: SubscriptionException(SubscriptionFailureReason.SubscriptionMissingId, listOf(id.toString())))
     }
 
     private suspend fun fetchUpdate(entry: UpdateEntry): RawSubscription? {

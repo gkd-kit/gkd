@@ -16,7 +16,6 @@ import li.gkd.app.MainActivity
 import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.componentName

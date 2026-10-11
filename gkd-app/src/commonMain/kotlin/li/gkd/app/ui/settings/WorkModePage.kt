@@ -47,8 +47,8 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.option.AutomatorModeOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.settings.AutomatorMode
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.RefreshPermissions
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.changeAutomatorMode
@@ -64,8 +64,8 @@ fun WorkModePage(host: UiHost) {
     RefreshPermissions()
     val platform = dashboardPlatformState()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val automatorMode: AutomatorModeOption =
-        AutomatorModeOption.objects.findOption(store.automatorMode)
+    val automatorMode: AutomatorMode =
+        AutomatorMode.entries.findOption(store.automatorMode)
 
     val onPrivilege: () -> Unit = { mainVm.navigator.navigate(PrivilegeServiceRoute) }
 
@@ -161,7 +161,7 @@ fun WorkModePage(host: UiHost) {
         ) {
             Card(
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
-                onClick = { host.changeAutomatorMode(AutomatorModeOption.A11yMode) },
+                onClick = { host.changeAutomatorMode(AutomatorMode.A11y) },
                 colors = surfaceCardColors,
             ) {
                 Row(
@@ -175,12 +175,12 @@ fun WorkModePage(host: UiHost) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
-                        selected = automatorMode == AutomatorModeOption.A11yMode,
+                        selected = automatorMode == AutomatorMode.A11y,
                         onClick = null,
                     )
                     Text(
                         modifier = Modifier.padding(start = 12.dp),
-                        text = AutomatorModeOption.A11yMode.label,
+                        text = stringResource(AutomatorMode.A11y.labelResource),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
@@ -280,7 +280,7 @@ fun WorkModePage(host: UiHost) {
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
                 onClick = {
                     if (automationAvailable) {
-                        host.changeAutomatorMode(AutomatorModeOption.AutomationMode)
+                        host.changeAutomatorMode(AutomatorMode.Automation)
                     } else vm.setShowPrivilegeRequired(true)
                 },
                 colors = surfaceCardColors,
@@ -296,12 +296,12 @@ fun WorkModePage(host: UiHost) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
-                        selected = automatorMode == AutomatorModeOption.AutomationMode,
+                        selected = automatorMode == AutomatorMode.Automation,
                         onClick = null,
                     )
                     Text(
                         modifier = Modifier.padding(start = 12.dp),
-                        text = AutomatorModeOption.AutomationMode.label,
+                        text = stringResource(AutomatorMode.Automation.labelResource),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }

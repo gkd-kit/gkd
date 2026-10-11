@@ -62,8 +62,8 @@ import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.option.AppGroupOption
-import li.gkd.app.ui.option.AppSortOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -147,13 +147,13 @@ fun SubsGlobalGroupExcludePage(
                         environment.apps[b]?.name ?: b
                     )
                 }
-            when (AppSortOption.objects.findOption(settings.subsExcludeSort)) {
-                AppSortOption.ByAppName -> named
-                AppSortOption.ByActionTime -> named.sortedBy {
+            when (AppSort.options.findOption(settings.subsExcludeSort)) {
+                AppSort.ByAppName -> named
+                AppSort.ByActionTime -> named.sortedBy {
                     state.appActionOrder[it] ?: Int.MAX_VALUE
                 }
 
-                AppSortOption.ByUsedTime -> named.sortedBy {
+                AppSort.ByUsedTime -> named.sortedBy {
                     visits.value?.get(it) ?: Int.MAX_VALUE
                 }
             }

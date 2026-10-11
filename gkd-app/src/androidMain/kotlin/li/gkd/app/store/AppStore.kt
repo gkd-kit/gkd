@@ -2,7 +2,6 @@ package li.gkd.app.store
 
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 
 object AppStore {

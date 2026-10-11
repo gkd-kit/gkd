@@ -21,6 +21,7 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.captureNodeInfoList
 import li.gkd.app.data.currentDeviceInfo
+import li.gkd.app.error.displayMessage
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
@@ -31,9 +32,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.service.ScreenshotService
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.snapshot.platform.encodeSnapshotScreenshot
-import li.gkd.app.ui.option.AutomatorModeOption
-import li.gkd.app.ui.text.displayMessage
-import li.gkd.app.ui.text.getSync
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
 import li.gkd.app.util.LogUtils
@@ -191,7 +190,7 @@ object SnapshotCaptureHost {
 
     private suspend fun captureScreen(
         appId: String,
-        automatorMode: AutomatorModeOption,
+        automatorMode: AutomatorMode,
         forcedCropStatusBar: Boolean,
         hideStatusBar: Boolean,
     ): ScreenResult {
@@ -199,7 +198,7 @@ object SnapshotCaptureHost {
         // 窗口下回调 IWindowManager.captureDisplay 的 listener，读取 buffer 会等待系统 4 秒后超时。
         // 自动化模式先检查窗口标志，命中后跳过特权截图，避免无意义的等待。
         val checkSecureBeforeCapture =
-            automatorMode == AutomatorModeOption.AutomationMode && AndroidTarget.UPSIDE_DOWN_CAKE
+            automatorMode == AutomatorMode.Automation && AndroidTarget.UPSIDE_DOWN_CAKE
         val focusedWindowSecure = if (checkSecureBeforeCapture) {
             queryFocusedWindowSecure(appId)
         } else {

@@ -1,6 +1,6 @@
 package li.gkd.app.ui.snapshot
 
-import li.gkd.app.ui.option.SnapshotDisplayModeOption
+import li.gkd.app.snapshot.SnapshotDisplayMode
 import li.gkd.db.Snapshot
 import java.time.Instant
 import java.time.ZoneId
@@ -16,19 +16,19 @@ data class SnapshotGroup(
 fun buildSnapshotGroups(
     snapshots: List<Snapshot>,
     appNames: Map<String, String>,
-    displayMode: SnapshotDisplayModeOption,
+    displayMode: SnapshotDisplayMode,
     zoneId: ZoneId = ZoneId.systemDefault(),
 ): List<SnapshotGroup> {
     val sorted = snapshots.sortedByDescending { it.id }
     return when (displayMode) {
-        SnapshotDisplayModeOption.ByTime -> sorted
+        SnapshotDisplayMode.ByTime -> sorted
             .groupBy { Instant.ofEpochMilli(it.id).atZone(zoneId).toLocalDate() }
             .map { (date, items) ->
                 val title = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 SnapshotGroup(key = "date:$title", title = title, snapshots = items)
             }
 
-        SnapshotDisplayModeOption.ByApp -> sorted
+        SnapshotDisplayMode.ByApp -> sorted
             .groupBy { it.appId }
             .map { (appId, items) ->
                 SnapshotGroup(

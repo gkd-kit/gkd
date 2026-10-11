@@ -2,7 +2,6 @@ package li.gkd.app.ui.app
 
 import androidx.compose.runtime.getValue
 import li.gkd.app.util.copyText
-
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -15,7 +14,6 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.component.GkPlatformWarningDialogs
 import li.gkd.app.ui.component.GkTermsAcceptDialog
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 
 @Composable

@@ -1,18 +1,53 @@
 package li.gkd.app
 
 import kotlinx.serialization.Serializable
+import li.gkd.app.resources.*
+import org.jetbrains.compose.resources.StringResource
 
 @Serializable
-enum class SimulatedService { Status, Button, Activity, Event, Track, Screenshot, Http, Accessibility, Automation }
+enum class SimulatedService(
+    val labelResource: StringResource,
+    private val toastNameResource: StringResource = labelResource,
+) {
+    Status(Res.string.persistent_notification),
+    Button(Res.string.snapshot_button_label, Res.string.snapshot_button_service),
+    Activity(Res.string.activity_service_label, Res.string.activity_record_service),
+    Event(Res.string.event_service_label),
+    Track(Res.string.track_overlay),
+    Screenshot(Res.string.screenshot_service),
+    Http(Res.string.http_service_label, Res.string.http_service_compact_label),
+    Accessibility(Res.string.a11y_label),
+    Automation(Res.string.automation_label);
+
+    fun lifecycleToast(running: Boolean): String = when (this) {
+        Accessibility -> (if (running) Res.string.a11y_started else Res.string.a11y_stopped).getSync()
+        Automation -> (if (running) Res.string.automation_started else Res.string.automation_stopped).getSync()
+        else -> (if (running) Res.string.service_started else Res.string.service_stopped).getSync(toastNameResource.getSync())
+    }
+}
 
 @Serializable
-enum class ServicePhase { Stopped, AwaitingAuthorization, Starting, Running, Failed }
+enum class ServicePhase(val labelResource: StringResource) {
+    Stopped(Res.string.simulation_stopped),
+    AwaitingAuthorization(Res.string.simulation_authorizing),
+    Starting(Res.string.simulation_starting),
+    Running(Res.string.simulation_running),
+    Failed(Res.string.simulation_failed),
+}
 
 @Serializable
-enum class ServiceStartResult { Success, Failure, Manual }
+enum class ServiceStartResult(val labelResource: StringResource) {
+    Success(Res.string.simulation_success),
+    Failure(Res.string.simulation_failed),
+    Manual(Res.string.simulation_manual),
+}
 
 @Serializable
-enum class ServiceAuthorization { Allow, Cancel, Manual }
+enum class ServiceAuthorization(val labelResource: StringResource) {
+    Allow(Res.string.action_agree),
+    Cancel(Res.string.action_cancel),
+    Manual(Res.string.simulation_authorization_dialog),
+}
 
 @Serializable
 data class ServiceSimulationPlan(

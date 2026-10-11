@@ -19,6 +19,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleDisplayMode
 import li.gkd.app.rule.RuleConfigIndex
@@ -58,13 +59,12 @@ import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.option.RuleSortOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.rule.RuleSort
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.text.subscriptionMessageResource
 import li.gkd.app.util.SortUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.copyText
@@ -118,16 +118,16 @@ fun AppConfigPage(
                 // App-wide whitelist membership does not turn the rule's own switch off.
                 showDisabledRules || (control.configuredEnabled && control.canEnable && control.restrictions.isEmpty())
             }
-            val sorted = when (RuleSortOption.objects.findOption(store.appRuleSort)) {
-                RuleSortOption.ByDefault -> visible
-                RuleSortOption.ByRuleName -> visible.sortedWith { a, b ->
+            val sorted = when (RuleSort.entries.findOption(store.appRuleSort)) {
+                RuleSort.ByDefault -> visible
+                RuleSort.ByRuleName -> visible.sortedWith { a, b ->
                     SortUtils.collator.compare(
                         a.name,
                         b.name
                     )
                 }
 
-                RuleSortOption.ByActionTime -> visible.sortedByDescending { group ->
+                RuleSort.ByActionTime -> visible.sortedByDescending { group ->
                     state?.latestLogs?.find {
                         it.subsId == entry.subsItem.id && it.groupType == group.groupType && it.groupKey == group.key
                     }?.id ?: 0
@@ -300,11 +300,11 @@ fun AppConfigPage(
                                         inTop = true,
                                         title = stringResource(Res.string.sort_title)
                                     ) {
-                                        val handleItem: (RuleSortOption) -> Unit = vm::setRuleSortType
-                                        RuleSortOption.objects.forEach { option ->
+                                        val handleItem: (RuleSort) -> Unit = vm::setRuleSortType
+                                        RuleSort.entries.forEach { option ->
                                             GkMenuItemRadioButton(
-                                                text = option.label,
-                                                selected = RuleSortOption.objects.findOption(store.appRuleSort) == option,
+                                                text = stringResource(option.labelResource),
+                                                selected = RuleSort.entries.findOption(store.appRuleSort) == option,
                                                 onClick = { handleItem(option) },
                                             )
                                         }
@@ -480,7 +480,7 @@ fun AppConfigPage(
                 if (groupSize == 0 && !firstLoading) {
                     GkEmptyState(
                         text = if (loadError != null) {
-                            loadError.subscriptionMessageResource()
+                            loadError.messageResource()
                         } else if (showDisabledRules) {
                             stringResource(Res.string.data_empty)
                         } else {

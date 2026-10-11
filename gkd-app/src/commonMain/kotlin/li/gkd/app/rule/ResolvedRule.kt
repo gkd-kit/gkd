@@ -1,6 +1,7 @@
 package li.gkd.app.rule
 
 import kotlinx.atomicfu.atomic
+import li.gkd.app.resources.*
 import li.gkd.app.subscription.RawSubscription
 
 sealed class ResolvedRule(
@@ -8,6 +9,11 @@ sealed class ResolvedRule(
     val g: ResolvedGroup,
     protected val runtime: RuleRuntime,
 ) {
+    fun statusText(): String {
+        val description = status.descriptionResource?.getSync() ?: "ok"
+        return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${g.group.key}, gName:${g.group.name}, index:${index}, key:${key}, status:$description"
+    }
+
     private val group get() = g.group
     val subsItem get() = g.subsItem
     val rawSubs get() = g.subscription
@@ -172,4 +178,3 @@ sealed class ResetMatchType(val value: String) {
         val allSubObject by lazy { listOf(Activity, Match, App) }
     }
 }
-

@@ -17,7 +17,6 @@ import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.SubscriptionResult
 import li.gkd.app.ui.option.UpdateTimeOption
-import li.gkd.app.ui.rule.statusText
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.launchLogged

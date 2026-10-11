@@ -25,7 +25,6 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.ui.app.showAccessRestrictedSettingsDialog
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.mapState

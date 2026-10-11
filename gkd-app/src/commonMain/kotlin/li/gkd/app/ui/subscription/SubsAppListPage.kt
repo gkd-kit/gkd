@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
@@ -51,15 +52,14 @@ import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.ui.option.AppSortOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.text.subscriptionMessageResource
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.LOCAL_SUBS_IDS
 import org.jetbrains.compose.resources.getString
@@ -107,7 +107,7 @@ fun SubsAppListPage(
             visits.value.orEmpty(),
             environment.blockedApps,
             { it.subsAppGroupType },
-            { AppSortOption.objects.findOption(it.subsAppSort) },
+            { AppSort.options.findOption(it.subsAppSort) },
             { it.subsAppShowBlock },
         )
     }
@@ -291,7 +291,7 @@ fun SubsAppListPage(
                 if (apps.isEmpty() && !firstLoading) {
                     GkEmptyState(
                         text = if (loadError != null) {
-                            loadError.subscriptionMessageResource()
+                            loadError.messageResource()
                         } else if (searchStr.isNotEmpty()) {
                             if (showAllApps) stringResource(Res.string.search_no_results) else stringResource(
                                 Res.string.search_no_results_filter_hint

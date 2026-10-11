@@ -72,7 +72,6 @@ import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.style.JSON5_LARGE_TEXT_THRESHOLD
 import li.gkd.app.ui.style.getJson5AnnotatedString
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.stringResource
 

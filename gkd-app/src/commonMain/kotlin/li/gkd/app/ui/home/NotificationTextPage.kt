@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.notif.formatNotificationTemplate
 import li.gkd.app.resources.*
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
@@ -35,7 +36,6 @@ import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
@@ -49,7 +49,7 @@ fun NotificationTextPage(
     val count by SettingsRepository.actionCount.collectAsStateWithLifecycle()
     val groups = rules.value?.groups
     val renderPreview: (String) -> String = { text ->
-        HomeDataText.format(
+        formatNotificationTemplate(
             text,
             groups?.globalGroups?.size,
             groups?.appSize,

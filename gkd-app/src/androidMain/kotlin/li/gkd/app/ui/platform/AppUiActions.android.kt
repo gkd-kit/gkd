@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.ToastUtils
 

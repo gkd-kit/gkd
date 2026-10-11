@@ -11,7 +11,6 @@ import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.ui.text.getSync
 
 data class RuleExcludeEditorUiState(
     val subscription: RawSubscription,

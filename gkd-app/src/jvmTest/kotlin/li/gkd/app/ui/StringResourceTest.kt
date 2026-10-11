@@ -2,7 +2,6 @@ package li.gkd.app.ui
 
 import kotlinx.coroutines.runBlocking
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
 import kotlin.test.assertEquals

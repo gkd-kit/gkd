@@ -23,7 +23,6 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.JsonUtils
 import li.gkd.app.util.LogUtils

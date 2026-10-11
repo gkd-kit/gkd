@@ -22,10 +22,9 @@ import li.gkd.app.priv.PrivilegeServiceStatus
 import li.gkd.app.priv.privilegeServiceStatusFlow
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.resources.*
+import li.gkd.app.rule.RuleSummary
 import li.gkd.app.settings.SettingsRepository.actionCount
 import li.gkd.app.settings.SettingsRepository.settings
-import li.gkd.app.ui.share.statusText
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
 import org.jetbrains.compose.resources.getString
 import kotlin.time.Duration.Companion.milliseconds
@@ -87,7 +86,7 @@ class StatusService : LifecycleHookService() {
                 defaultStatusNotification.uri
             )
         } else {
-            Triple(title, ruleSummary.statusText(count), defaultStatusNotification.uri)
+            Triple(title, RuleSummary.statusText(ruleSummary, count), defaultStatusNotification.uri)
         }
     }
 

@@ -13,7 +13,6 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.edit
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.ui.text.getSync
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
 

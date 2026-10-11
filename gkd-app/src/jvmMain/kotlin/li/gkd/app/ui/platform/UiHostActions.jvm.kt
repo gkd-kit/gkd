@@ -3,16 +3,16 @@ package li.gkd.app.ui.platform
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.DesktopRuntime
 import li.gkd.app.SimulatedService
-import li.gkd.app.ui.option.AutomatorModeOption
+import li.gkd.app.settings.AutomatorMode
 
 actual fun UiHost.setStatusServiceEnabled(enabled: Boolean) {
     DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Status, enabled)
 }
 
-actual fun UiHost.changeAutomatorMode(mode: AutomatorModeOption) {
+actual fun UiHost.changeAutomatorMode(mode: AutomatorMode) {
     if (SettingsRepository.settings.value.automatorMode == mode.value) return
     val simulator = state.simulator.settings.value
-    if (mode == AutomatorModeOption.AutomationMode && simulator.privilege.available && simulator.prompts.automationOccupied) {
+    if (mode == AutomatorMode.Automation && simulator.privilege.available && simulator.prompts.automationOccupied) {
         state.overlay = "occupied"
         return
     }

@@ -20,3 +20,5 @@ actual fun defaultSettings(): SettingsStore {
 }
 
 actual fun defaultBlockMatchAppList(): Set<String> = DesktopProfile.blocked
+
+actual fun defaultTermsAccepted(): Boolean = true

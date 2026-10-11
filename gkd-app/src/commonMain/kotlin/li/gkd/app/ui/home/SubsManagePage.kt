@@ -25,6 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.error.messageResource
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.subscription.SubscriptionRepository
@@ -55,12 +56,9 @@ import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.option.UpdateTimeOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.subscription.SubsManageUiState
-import li.gkd.app.ui.subscription.message
 import li.gkd.app.ui.text.formatTimeAgo
-import li.gkd.app.ui.text.getSync
-import li.gkd.app.ui.text.subscriptionMessageResource
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.LOCAL_SUBS_ID
 import org.jetbrains.compose.resources.stringResource
@@ -299,7 +297,7 @@ private fun subsManageContent(
                     if (loadableState !is Loadable.Ready) {
                         item("load-state") {
                             Text(
-                                text = (loadableState as? Loadable.Failure)?.cause?.subscriptionMessageResource()
+                                text = (loadableState as? Loadable.Failure)?.cause?.messageResource()
                                     ?: stringResource(if (loadableState is Loadable.Loading) Res.string.loading_progress else Res.string.data_load_failed),
                                 modifier = Modifier.padding(16.dp),
                             )
@@ -354,7 +352,7 @@ private fun subsManageContent(
                                     appGroups = subsIdToRaw[subItem.id]?.appGroups?.size ?: 0,
                                     updatedAt = formatTimeAgo(subItem.mtime),
                                     appName = appVersion().appName,
-                                    loadError = state?.loadErrors?.get(subItem.id)?.subscriptionMessageResource(),
+                                    loadError = state?.loadErrors?.get(subItem.id)?.messageResource(),
                                     updateFailed = state?.refreshErrors?.containsKey(subItem.id) == true,
                                 ),
                                 matchingEnabled = store.enableMatch,

@@ -10,8 +10,6 @@ import li.gkd.app.service.HttpService
 import li.gkd.app.service.ScreenshotService
 import li.gkd.app.service.TrackService
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
-import li.gkd.app.snapshot.detailText
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.Constants
 import kotlin.reflect.KClass
 

@@ -24,11 +24,10 @@ import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.ui.home.BottomNavItem
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.option.AutomatorModeOption
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.importBackup as importBackupArchive
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.LogUtils
@@ -104,17 +103,17 @@ class AndroidMainState(
 
     private var updateAutomatorModeJob: Job? = null
 
-    private fun applyAutomatorMode(option: AutomatorModeOption) {
+    private fun applyAutomatorMode(option: AutomatorMode) {
         SettingsRepository.updateAutomatorMode(option.value)
         A11yService.instance?.shutdown()
         uiAutomationFlow.value?.shutdown()
     }
 
-    fun updateAutomatorMode(option: AutomatorModeOption) {
+    fun updateAutomatorMode(option: AutomatorMode) {
         updateAutomatorModeJob?.cancel()
         if (SettingsRepository.settings.value.automatorMode == option.value) return
         if (
-            option != AutomatorModeOption.AutomationMode ||
+            option != AutomatorMode.Automation ||
             privilegeContextFlow.value == null
         ) {
             applyAutomatorMode(option)

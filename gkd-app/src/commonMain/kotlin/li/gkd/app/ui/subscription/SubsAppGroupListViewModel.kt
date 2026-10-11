@@ -20,7 +20,6 @@ import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.app.subscription.edit
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.ui.text.getSync
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
 

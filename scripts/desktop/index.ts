@@ -3,6 +3,7 @@ import { repositoryRoot as repo, desktopProfile } from './lib/local-paths.ts';
 import { resolve } from 'node:path';
 import { captureProfile } from './commands/capture-profile.ts';
 import { DesktopClient, type SimulatedService, type ServiceEventType } from './lib/desktop-client.ts';
+import { checkSubscriptionHttp } from './commands/check-subscription-http.ts';
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   help: { type: 'boolean', short: 'h' }, output: { type: 'string' },
@@ -11,12 +12,14 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   install: { type: 'boolean' }, screens: { type: 'boolean' },
   port: { type: 'string', default: '17322' }, service: { type: 'string' },
   event: { type: 'string' }, attempt: { type: 'string' }, reason: { type: 'string' },
+  'rpc-port': { type: 'string', default: '8888' },
 } });
 try {
   const command = positionals[0];
   if (values.help || !command) {
     console.log(`pnpm app:tools capture-profile [--serial SERIAL] [--apps FILE] [--font DEVICE_PATH] [--install] [--screens] [--output DIR]
 pnpm app:tools services [--port 17322]
+pnpm app:tools check-subscription-http [--port 17322] [--rpc-port 8888]
 pnpm app:tools service-start|service-stop --service Activity [--port 17322]
 pnpm app:tools service-event --service Activity --event Connected --attempt 1 [--reason TEXT] [--port 17322]
 
@@ -26,7 +29,12 @@ Events: Authorized, Cancelled, Connected, Failed. Use the attempt returned by se
 Capture requires adb and a built gkdDebug APK. It restores automation settings in finally.
 If recovery fails, keep automation-recovery.json and restore its two fields before retrying.`);
   } else if (positionals.length !== 1) throw new Error('Expected one command');
-  else if (command === 'capture-profile') {
+  else if (command === 'check-subscription-http') {
+    const port = Number(values.port);
+    const rpcPort = Number(values['rpc-port']);
+    for (const value of [port, rpcPort]) if (!Number.isInteger(value) || value < 1024 || value > 65535) throw new Error('Invalid port');
+    console.log(await checkSubscriptionHttp(new DesktopClient(port), rpcPort));
+  } else if (command === 'capture-profile') {
     await captureProfile({ serial: values.serial, apps: values.apps, font: values.font,
       install: !!values.install, screens: !!values.screens,
       output: resolve(values.output ?? desktopProfile) }, repo);

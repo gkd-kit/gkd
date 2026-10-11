@@ -102,7 +102,7 @@ fun SubsAppGroupListPage(
         }
         if (showAppSetting && appExists) {
             GkRuleSettingsSheet(
-                title = app.name ?: appId, subtitle = appControl.scope.label,
+                title = app.name ?: appId, subtitle = stringResource(appControl.scope.labelResource),
                 onDismissRequest = { vm.setShowAppSetting(false) }) {
                 GkRuleSettingsContent(
                     appControl,

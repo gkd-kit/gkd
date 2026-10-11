@@ -2,7 +2,9 @@ package li.gkd.app.rule
 
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
+import li.gkd.app.resources.*
 import li.gkd.app.subscription.RawSubscription
+import org.jetbrains.compose.resources.StringResource
 
 data class GlobalAppScope(
     val enabled: Boolean,
@@ -12,8 +14,13 @@ data class GlobalAppScope(
     val explicitlyIncluded: Boolean = true,
 )
 
-enum class GlobalAppDefaultOffReason {
-    Launcher, SystemApp, LocalDefault, SubscriptionDefault, SubscriptionApp, SameNameAppGroup,
+enum class GlobalAppDefaultOffReason(val descriptionResource: StringResource) {
+    Launcher(Res.string.global_control_launcher_off),
+    SystemApp(Res.string.global_control_system_off),
+    LocalDefault(Res.string.global_control_local_off),
+    SubscriptionDefault(Res.string.global_control_subscription_off),
+    SubscriptionApp(Res.string.global_control_app_off),
+    SameNameAppGroup(Res.string.global_control_name_off),
 }
 
 /** Pure applicability rules shared by execution and the settings UI. */

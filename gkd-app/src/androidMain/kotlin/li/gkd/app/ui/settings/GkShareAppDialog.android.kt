@@ -17,7 +17,6 @@ import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.page.GkShareAppDialog
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUiAction
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ApkUtils
 import org.jetbrains.compose.resources.stringResource
 

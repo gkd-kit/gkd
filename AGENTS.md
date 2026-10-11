@@ -5,7 +5,7 @@
 ## 模块与平台
 
 - 模块统一使用 `gkd-` 前缀，依赖方向为 `gkd-android` → `gkd-app` → `gkd-db` / `gkd-selector`，禁止反向依赖。gkd-app 承载完整应用：commonMain 放业务、UI、ViewModel、导航；androidMain/jvmMain 放平台实现。gkd-android 仅负责 Manifest、原生 res、渠道、签名、打包和设备测试；JVM 启动/打包位于 gkd-app，TypeScript 工具位于根 `scripts/desktop`。
-- Desktop 仅为开发宿主，不另建产品后端、复制页面或仅为它拆共享模块/空壳 Repository；数据库职责留在 gkd-db。领域逻辑不得依赖 Compose、Android Context 或宿主。Android/JVM 共用实现可直接在 commonMain 使用两端支持的 Java API，出现实际差异或非 JVM 目标时再隔离，不增中间源码集。
+- Desktop 仅为开发宿主，不另建产品后端、复制页面或仅为它拆共享模块/空壳 Repository；数据库职责留在 gkd-db。领域逻辑不得依赖 Compose UI/运行时、Android Context 或宿主；允许引用官方 Compose Resources 资源对象，不将资源对象视为 UI 依赖。Android/JVM 共用实现可直接在 commonMain 使用两端支持的 Java API，出现实际差异或非 JVM 目标时再隔离，不增中间源码集。
 - 公共根包及 gkd-app Android namespace 为 `li.gkd.app`，UI/导航/ViewModel 位于 `li.gkd.app.ui.*`；Desktop 同样使用该包层级，以 jvmMain 和职责文件名区分，不设 desktop 包。源码目录与包名一致。gkd-android namespace 为 `li.gkd.android`，Manifest 使用完整组件名。
 - androidMain 普通工具、适配、UI 接入及基类按职责归入 `li.gkd.app.*`；已注册 Application、Activity、Service、磁贴、特权入口及紧密关联实现保留原身份。`com.google.android.accessibility.selecttospeak.SelectToSpeakService` 的包名、路径和注册不变。包名整理不得改变组件、路由序列化名称/参数、AIDL 或持久化兼容标识。
 - Android 权限、Activity Result、通知、悬浮窗、Service 和特权进程位于 gkd-app/src/androidMain，由真实组件管理生命周期。gkd-aidl 只编译 Binder 协议；gkd-hidden-api 只提供 stub。引用 stub 的模块必须独立完成对应字节码的 remap。
@@ -53,7 +53,8 @@
 
 - 禁止新增 XML，例外仅 Compose strings/plurals、Android 原生字符串及语言限定资源、app_icon/service 等平台配置。可用 Kotlin 表达的 UI/图标用 `.kt`；页面图标必须 ImageVector，drawable XML 仅限 Manifest 等平台配置及其依赖，即使同图标双用，页面仍用 ImageVector。不确定例外时先问用户。
 - 原生 res 归 gkd-android，gkd-app 不引用其 R；通知小图标通过 Application Manifest `notificationSmallIcon` 的 `android:resource` 注入，运行时校验非零，不持久化 ID。共享颜色用 Kotlin，Compose Resources 位于 gkd-app。
-- 共享及普通 Android Kotlin 文案统一官方 Compose Resources（`Res.string/plurals`），不建自定义 UiString/Desktop 文案表或原生副本；只有 Manifest/平台配置/变体标签保留原生 ID，Kotlin 可按需读取平台标签。语义/参数与持久化数据分离，文案不在枚举、单例或静态初始化解析缓存，语言切换不改写用户模板。
+- 共享及普通 Android Kotlin 文案统一官方 Compose Resources（`Res.string/plurals`），不建自定义 UiString/Desktop 文案表或原生副本；只有 Manifest/平台配置/变体标签保留原生 ID，Kotlin 可按需读取平台标签。
+- 官方资源对象（如 `StringResource`、`PluralStringResource`）不限于 UI 用途，允许枚举、业务状态、异常、Repository 等对象持有和传递，供 UI、HTTP、后台任务和导出等场景使用；在实际消费或输出边界按需调用官方 API 解析。资源对象与已解析的文案字符串分开处理：不在枚举、单例或静态初始化中解析、缓存文案字符串；语义/参数与持久化数据分离，语言切换不改写用户模板。
 - 字符串及复数资源统一使用 `import li.gkd.app.resources.*` 导入，不逐项导入 `Res` 或资源访问器；调用保持 `Res.string.xxx` / `Res.plurals.xxx`，文案解析继续使用官方 API。
 - 参数只用 `%1$s`、`%2$s` 等位置文本占位符；禁止数值/精度/补零格式指令，Kotlin 按明确 Locale/精度先格式化。Compose 用官方 Composable API，协程用 suspend getString/getPluralString；getSync 仅限低频同步边界，不用于静态初始化、高频或新增 Compose 路径，不用 runBlocking(Dispatchers.Main)。新增翻译/复数/限定符验证双端选择替换，校验任务不生成平台副本，访问器/打包交官方插件。
 - Kotlin 可见性按实际访问需求收窄，优先使用 private；gkd-app 模块禁止使用 internal 关键字，需要跨文件或类访问的声明使用默认 public，其他模块允许 internal。仅为公开属性收窄可见性/可变性的 `_xxx` 字段改用 Explicit Backing Fields；普通私有缓存、生成命名及 Lambda `_` 不受限。避免循环静态初始化。

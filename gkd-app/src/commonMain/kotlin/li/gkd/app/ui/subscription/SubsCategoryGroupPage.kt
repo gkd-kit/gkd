@@ -43,14 +43,13 @@ import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
-import li.gkd.app.ui.option.AppSortOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -88,7 +87,7 @@ fun SubsCategoryGroupPage(
                     appVisitOrderMap = visitOrder.value.orEmpty(),
                     blockSet = blockApps,
                     appGroupType = { it.subsCategoryGroupType },
-                    sortType = { AppSortOption.objects.findOption(it.subsCategorySort) },
+                    sortType = { AppSort.options.findOption(it.subsCategorySort) },
                     showBlockApps = { it.subsCategoryShowBlock },
                 )
             }

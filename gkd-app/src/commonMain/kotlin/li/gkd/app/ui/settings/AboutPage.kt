@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import li.gkd.app.error.displayMessage
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -45,16 +46,14 @@ import li.gkd.app.ui.component.GkSettingItem
 import li.gkd.app.ui.component.GkTextMenu
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.icon.GkAnimatedLogoIcon
-import li.gkd.app.ui.option.UpdateChannelOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.settings.UpdateChannel
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.page.GkVersionInfoDialog
 import li.gkd.app.ui.page.feedbackNotice
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.style.itemPadding
 import li.gkd.app.ui.style.titleItemPadding
-import li.gkd.app.ui.text.displayMessage
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -86,7 +85,7 @@ fun AboutPage(
             }
         }
     }
-    val updateChannel = UpdateChannelOption.objects.findOption(store.updateChannel)
+    val updateChannel = UpdateChannel.entries.findOption(store.updateChannel)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     GkScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -212,7 +211,7 @@ fun AboutPage(
                     onOptionChange = { option ->
                         launchAction {
                             if (
-                                option != UpdateChannelOption.Beta ||
+                                option != UpdateChannel.Beta ||
                                     mainVm.dialogRequests.confirm(
                                         title = getString(Res.string.version_channel),
                                         text = getString(Res.string.beta_channel_warning),

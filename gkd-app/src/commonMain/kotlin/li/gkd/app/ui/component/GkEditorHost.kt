@@ -12,8 +12,8 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.subscriptionMessageResource
 import org.jetbrains.compose.resources.stringResource
 
 /** Shared save/discard/error behavior. Platform adapters supply navigation and keyboard handling. */
@@ -94,7 +94,7 @@ fun GkEditorActions(
     if (error != null) {
         GkAlertDialog(
             onDismissRequest = { error = null },
-            text = { Text(error?.subscriptionMessageResource().orEmpty()) },
+            text = { Text(error?.messageResource().orEmpty()) },
             confirmButton = {
                 TextButton(onClick = {
                     error = null

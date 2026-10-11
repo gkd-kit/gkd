@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.notif.formatNotificationTemplate
 import li.gkd.app.resources.*
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
@@ -30,7 +31,7 @@ import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.option.DarkThemeOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.page.GkBackupDialogs
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.dynamicColorAvailable
@@ -113,7 +114,7 @@ fun settingsPage(
                 val groups = rules.value?.groups
                 val summary = dashboardSummary(rules, count)
                 fun format(text: String) =
-                    HomeDataText.format(
+                    formatNotificationTemplate(
                         text,
                         groups?.globalGroups?.size,
                         groups?.appSize,

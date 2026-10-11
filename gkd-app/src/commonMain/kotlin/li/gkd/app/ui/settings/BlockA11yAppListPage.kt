@@ -56,8 +56,8 @@ import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.icon.LockOpenRight
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.option.AppGroupOption
-import li.gkd.app.ui.option.AppSortOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -189,10 +189,10 @@ fun BlockA11yAppListPage(host: UiHost) {
                                             inTop = true,
                                             title = stringResource(Res.string.sort_title)
                                         ) {
-                                            AppSortOption.objects.forEach { option ->
+                                            AppSort.options.forEach { option ->
                                                 GkMenuItemRadioButton(
-                                                    text = option.label,
-                                                    selected = AppSortOption.objects.findOption(
+                                                    text = stringResource(option.labelResource),
+                                                    selected = AppSort.options.findOption(
                                                         store.a11yAppSort
                                                     ) == option,
                                                     onClick = { vm.setSortType(option) },
@@ -207,7 +207,7 @@ fun BlockA11yAppListPage(host: UiHost) {
                                                 val newValue = option.invert(store.a11yAppGroupType)
                                                 GkMenuItemCheckbox(
                                                     enabled = newValue != 0,
-                                                    text = option.label,
+                                                    text = stringResource(option.labelResource),
                                                     checked = option.include(store.a11yAppGroupType),
                                                     onClick = { vm.setAppGroupType(newValue) },
                                                 )

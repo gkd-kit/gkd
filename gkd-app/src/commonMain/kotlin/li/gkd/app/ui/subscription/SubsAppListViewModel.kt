@@ -11,7 +11,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.navigation.SubsAppListRoute
-import li.gkd.app.ui.option.AppSortOption
+import li.gkd.app.app.AppSort
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionConfigSnapshot
@@ -55,7 +55,7 @@ class SubsAppListViewModel(
         }
     }
 
-    fun setSortType(value: AppSortOption) {
+    fun setSortType(value: AppSort) {
         SettingsRepository.updateSettings { it.copy(subsAppSort = value.value) }
     }
 

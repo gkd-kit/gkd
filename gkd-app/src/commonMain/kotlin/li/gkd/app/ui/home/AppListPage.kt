@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.error.displayMessage
 import li.gkd.app.model.AppInfo
 import li.gkd.app.permission.AppPermission
 import li.gkd.app.resources.*
@@ -74,15 +75,14 @@ import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
 import li.gkd.app.ui.option.AppGroupOption
-import li.gkd.app.ui.option.AppSortOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.getUpDownTransform
 import li.gkd.app.ui.style.itemPadding
-import li.gkd.app.ui.text.displayMessage
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -249,11 +249,11 @@ fun appListPage(
                                 inTop = true,
                                 title = stringResource(Res.string.sort_title),
                             ) {
-                                AppSortOption.objects.forEach { option ->
+                                AppSort.options.forEach { option ->
                                     GkMenuItemRadioButton(
-                                        text = option.label,
+                                        text = stringResource(option.labelResource),
                                         selected =
-                                            AppSortOption.objects.findOption(state.sort) == option,
+                                            AppSort.options.findOption(state.sort) == option,
                                         onClick = { SettingsRepository.updateSettings { it.copy(appSort = option.value) } },
                                     )
                                 }
@@ -263,7 +263,7 @@ fun appListPage(
                                     val newValue = option.invert(state.group)
                                     GkMenuItemCheckbox(
                                         enabled = newValue != 0,
-                                        text = option.label,
+                                        text = stringResource(option.labelResource),
                                         checked = option.include(state.group),
                                         onClick = { SettingsRepository.updateSettings { it.copy(appGroupType = newValue) } },
                                     )

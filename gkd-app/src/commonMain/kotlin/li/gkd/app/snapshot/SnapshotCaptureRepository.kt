@@ -4,15 +4,25 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
+import li.gkd.app.error.BusinessError
+import li.gkd.app.error.ErrorMessage
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.DeviceInfo
 import li.gkd.app.model.NodeInfo
 import li.gkd.app.platform.PlatformResult
+import li.gkd.app.resources.*
 import li.gkd.app.storage.FileExports
 import li.gkd.app.storage.saveToDownloads
+import org.jetbrains.compose.resources.StringResource
 
-enum class SnapshotScreenshotStatus { Captured, Unavailable, LikelyProtected }
+enum class SnapshotScreenshotStatus(val detailResource: StringResource?) {
+    Captured(null),
+    Unavailable(Res.string.screenshot_frame_missing),
+    LikelyProtected(Res.string.screenshot_may_be_protected);
+
+    fun detailText(): String? = detailResource?.getSync()
+}
 
 /** Platform resources must be released before returning this value, including on cancellation. */
 class SnapshotCaptureInput(
@@ -43,7 +53,10 @@ data class SnapshotCaptureResult(
 )
 
 class SnapshotCaptureBusyException :
-    IllegalStateException("Snapshot capture is already in progress")
+    IllegalStateException("Snapshot capture is already in progress"), BusinessError {
+    override val errorCode: String get() = "SNAPSHOT_CAPTURE_BUSY"
+    override val errorMessage: ErrorMessage get() = ErrorMessage.Resource(Res.string.snapshot_save_in_progress)
+}
 
 /** Application-owned orchestration. Callers own coroutines and user feedback. */
 object SnapshotCaptureRepository {

@@ -20,7 +20,6 @@ import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.PrivilegeCapabilities
 import li.gkd.app.priv.queryPrivilegeCapabilities
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.mapState

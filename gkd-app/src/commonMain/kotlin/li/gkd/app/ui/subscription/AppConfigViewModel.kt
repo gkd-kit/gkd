@@ -25,9 +25,8 @@ import li.gkd.app.ui.MainViewModel
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.AppConfigRoute
-import li.gkd.app.ui.option.RuleSortOption
+import li.gkd.app.rule.RuleSort
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.ui.text.getSync
 import li.gkd.db.ActionLog
 import li.gkd.db.Db
 import li.gkd.db.RuleGroupType
@@ -77,7 +76,7 @@ class AppConfigViewModel(
         batchMutex.tryWithStateLock(action)
     }
 
-    fun setRuleSortType(option: RuleSortOption) {
+    fun setRuleSortType(option: RuleSort) {
         SettingsRepository.updateSettings { it.copy(appRuleSort = option.value) }
     }
 

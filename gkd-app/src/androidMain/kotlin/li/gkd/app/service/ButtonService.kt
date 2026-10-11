@@ -17,7 +17,6 @@ import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
 
 class ButtonService : OverlayWindowService(

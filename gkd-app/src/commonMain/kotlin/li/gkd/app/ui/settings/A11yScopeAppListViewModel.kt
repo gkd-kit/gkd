@@ -6,7 +6,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.home.scopeAppSource
-import li.gkd.app.ui.option.AppSortOption
+import li.gkd.app.app.AppSort
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
@@ -64,7 +64,7 @@ class A11yScopeAppListViewModel : BaseViewModel() {
         if (editorState.state.value.draft == draft) editorState.closeEditor()
     }
 
-    fun setSortType(value: AppSortOption) {
+    fun setSortType(value: AppSort) {
         SettingsRepository.updateSettings { it.copy(a11yScopeAppSort = value.value) }
     }
 

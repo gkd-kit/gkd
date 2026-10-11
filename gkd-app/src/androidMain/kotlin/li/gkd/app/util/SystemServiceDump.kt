@@ -8,7 +8,6 @@ import android.view.WindowManager
 import li.gkd.app.app
 import li.gkd.app.permission.AndroidPermissions
 import li.gkd.app.resources.*
-import li.gkd.app.ui.text.getSync
 
 object SystemServiceDump {
     private val systemServiceCache = hashMapOf<String, IBinder>()

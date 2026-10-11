@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import li.gkd.app.resources.*
-import li.gkd.app.rule.CategoryPolicy
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupTarget
@@ -16,9 +15,8 @@ import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
-import li.gkd.app.ui.option.AppSortOption
+import li.gkd.app.app.AppSort
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.ui.text.getSync
 import li.gkd.db.Db
 import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
@@ -40,7 +38,7 @@ data class SubsCategoryGroupUiState(
     val overrideTargets: Set<RuleGroupTarget.App> = targets.filterTo(mutableSetOf()) {
         groupConfigs[it]?.enable != null
     }
-    val setting: CategorySetting = CategoryPolicy.setting(categoryConfig)
+    val setting: CategorySetting = CategorySetting.from(categoryConfig)
 }
 
 class SubsCategoryGroupViewModel(
@@ -92,7 +90,7 @@ class SubsCategoryGroupViewModel(
         }
     }
 
-    fun setSortType(option: AppSortOption) {
+    fun setSortType(option: AppSort) {
         SettingsRepository.updateSettings { it.copy(subsCategorySort = option.value) }
     }
 

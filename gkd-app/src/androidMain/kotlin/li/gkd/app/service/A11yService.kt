@@ -31,8 +31,7 @@ import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
 import li.gkd.app.store.AppStore.updateEnableAutomator
-import li.gkd.app.ui.option.AutomatorModeOption
-import li.gkd.app.ui.text.getSync
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
@@ -43,7 +42,7 @@ import kotlin.coroutines.resume
 abstract class A11yService : AccessibilityService(), A11yCommonImpl {
     private val lifecycleHooks = LifecycleHooks()
     override val scope = MainScope()
-    override val mode get() = AutomatorModeOption.A11yMode
+    override val mode get() = AutomatorMode.A11y
     override val windowNodeInfo: AccessibilityNodeInfo? get() = rootInActiveWindow
     override val windowInfos: List<AccessibilityWindowInfo> get() = windows
     override suspend fun screenshot(): Bitmap? = suspendCancellableCoroutine { cont ->

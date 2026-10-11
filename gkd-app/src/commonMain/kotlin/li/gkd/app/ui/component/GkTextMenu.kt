@@ -16,9 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.option.Option
+import li.gkd.app.model.Option
 import li.gkd.app.ui.option.OptionIcon
 import li.gkd.app.ui.style.itemPadding
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun <T> GkTextMenu(
@@ -51,7 +52,7 @@ fun <T> GkTextMenu(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = option.label,
+                text = stringResource(option.labelResource),
                 style = MaterialTheme.typography.bodyMedium,
             )
             GkIcon(
@@ -71,7 +72,7 @@ fun <T> GkTextMenu(
                             )
                         }) else null,
                         text = {
-                            Text(text = otherOption.label)
+                            Text(text = stringResource(otherOption.labelResource))
                         },
                         onClick = {
                             expanded = false

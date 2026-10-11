@@ -210,12 +210,12 @@ private fun CategoryItemCard(
         onLongClick = onLongClick,
         onSelect = onSelect,
         trailing = {
-            GkTooltipIconButtonBox(contentDescription = summary.setting.label) {
+            GkTooltipIconButtonBox(contentDescription = stringResource(summary.setting.labelResource)) {
                 Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                     GkIcon(
                         imageVector = summary.setting.icon,
                         modifier = Modifier.size(20.dp),
-                        contentDescription = summary.setting.label,
+                        contentDescription = stringResource(summary.setting.labelResource),
                         tint = if (summary.setting == CategorySetting.FollowSubscription)
                             MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                     )

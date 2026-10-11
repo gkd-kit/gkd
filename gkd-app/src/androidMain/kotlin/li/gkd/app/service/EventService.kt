@@ -55,7 +55,6 @@ import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.rememberLazyListAutoFollowState
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.A11yEventLog

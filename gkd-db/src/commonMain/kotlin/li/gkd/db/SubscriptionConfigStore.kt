@@ -5,9 +5,11 @@ import androidx.room3.withWriteTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 import li.gkd.db.Db.database
 
 // A single checkpoint for the subscription metadata and all of its user overrides.
+@Serializable
 data class SubscriptionConfigSnapshot(
     val subsItems: List<SubsItem> = emptyList(),
     val appConfigs: List<SubsAppConfig> = emptyList(),

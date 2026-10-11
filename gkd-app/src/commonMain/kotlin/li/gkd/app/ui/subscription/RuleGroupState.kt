@@ -31,7 +31,6 @@ import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 
 private data class RuleSheetSnapshot(

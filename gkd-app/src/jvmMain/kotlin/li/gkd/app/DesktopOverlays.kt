@@ -1,7 +1,6 @@
 package li.gkd.app
 
 import li.gkd.app.util.copyText
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -13,7 +12,6 @@ import org.jetbrains.compose.resources.stringResource
 import li.gkd.app.ui.component.GkPlatformWarningDialogs
 import li.gkd.app.ui.component.GkTermsAcceptDialog
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.text.getSync
 
 @Composable
 fun DesktopOverlays(state: DesktopState, session: DesktopSession) {
@@ -31,7 +29,7 @@ fun DesktopOverlays(state: DesktopState, session: DesktopSession) {
         }
         AlertDialog(
             onDismissRequest = { respond(ServiceEventType.Cancelled) },
-            title = { Text(stringResource(Res.string.simulation_authorization_title, stringResource(awaiting.label()))) },
+            title = { Text(stringResource(Res.string.simulation_authorization_title, stringResource(awaiting.labelResource))) },
             text = { Text(stringResource(Res.string.simulation_authorization_message)) },
             confirmButton = { TextButton(onClick = { respond(ServiceEventType.Authorized) }) { Text(stringResource(Res.string.action_agree)) } },
             dismissButton = { TextButton(onClick = { respond(ServiceEventType.Cancelled) }) { Text(stringResource(Res.string.action_cancel)) } },

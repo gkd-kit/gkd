@@ -16,7 +16,6 @@ import li.gkd.app.service.currentAppBlocked
 import li.gkd.app.service.currentAppUseA11y
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils

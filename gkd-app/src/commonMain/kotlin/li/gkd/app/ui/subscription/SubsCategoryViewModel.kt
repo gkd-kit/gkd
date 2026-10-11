@@ -3,7 +3,6 @@ package li.gkd.app.ui.subscription
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import li.gkd.app.resources.*
-import li.gkd.app.rule.CategoryPolicy
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.state.MutexState
@@ -11,7 +10,6 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.SubsCategoryRoute
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.ui.text.getSync
 import li.gkd.db.SubscriptionConfigStore
 
 data class CategorySummary(
@@ -71,7 +69,7 @@ class SubsCategoryViewModel(
                             )
                         }
                     },
-                    setting = CategoryPolicy.setting(config),
+                    setting = CategorySetting.from(config),
                 )
             })
         }

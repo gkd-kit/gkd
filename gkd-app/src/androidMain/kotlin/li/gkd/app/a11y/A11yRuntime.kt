@@ -16,7 +16,7 @@ import li.gkd.app.inspection.InspectionFailure
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.service.A11yService
-import li.gkd.app.ui.option.AutomatorModeOption
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.ThreadUtils
 import li.gkd.selector.MatchOptions
 import li.gkd.selector.Selector
@@ -34,8 +34,8 @@ object A11yRuntime {
         latestServiceMode.value == service.mode.value
 
     fun hasOtherService(service: A11yCommonImpl): Boolean = when (service.mode) {
-        AutomatorModeOption.A11yMode -> uiAutomationFlow.value != null
-        AutomatorModeOption.AutomationMode -> A11yService.instance != null
+        AutomatorMode.A11y -> uiAutomationFlow.value != null
+        AutomatorMode.Automation -> A11yService.instance != null
     }
 
     fun onA11yConnected(service: A11yCommonImpl) {
@@ -48,8 +48,8 @@ object A11yRuntime {
         ThreadUtils.runMainOrPost(1000L) {// 共存 1000ms, 等待另一个服务稳定
             if (latestServiceTime.value == serviceTime) {
                 when (service.mode) {
-                    AutomatorModeOption.A11yMode -> uiAutomationFlow.value?.shutdown(true)
-                    AutomatorModeOption.AutomationMode -> A11yService.instance?.shutdown(true)
+                    AutomatorMode.A11y -> uiAutomationFlow.value?.shutdown(true)
+                    AutomatorMode.Automation -> A11yService.instance?.shutdown(true)
                 }
             }
         }

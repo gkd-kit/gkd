@@ -105,7 +105,6 @@ import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.ActionLog
 import li.gkd.db.RuleGroupType

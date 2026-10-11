@@ -17,6 +17,10 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import li.gkd.app.error.BusinessError
+import li.gkd.app.error.ErrorMessage
+import li.gkd.app.error.displayMessage
+import li.gkd.app.error.resolveMessage
 import li.gkd.app.model.ActionResult
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ComplexSnapshot
@@ -24,11 +28,18 @@ import li.gkd.app.model.DeviceInfo
 import li.gkd.app.model.GkdAction
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
+import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureBusyException
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.storage.AppStorageLayout
+import li.gkd.app.storage.BackupIssue
+import li.gkd.app.storage.FileTooLargeException
+import li.gkd.app.storage.StorageException
+import li.gkd.app.subscription.SubscriptionException
+import li.gkd.app.subscription.SubscriptionFailureReason
+import li.gkd.app.subscription.SubscriptionParseException
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.db.Db
 import li.gkd.db.LOCAL_HTTP_SUBS_ID
@@ -42,6 +53,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.jetbrains.compose.resources.getString
+
+/** This exception is unknown to the server; only the shared business-error contract exposes it. */
+private class ProtocolBusinessException : Exception("diagnostic-only"), BusinessError {
+    override val errorCode = "TEST_BUSINESS_ERROR"
+    override val errorPath = "$.input"
+    override val errorMessage = ErrorMessage.WithDetail(
+        ErrorMessage.Resource(Res.string.selector_type_error, listOf(ErrorMessage.Text("50% <&>\n输入"))),
+        ErrorMessage.Resource(Res.string.snapshot_not_found),
+    )
+}
 
 /** Runs inside the storage integration test's isolated database session. */
 suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: SubscriptionRepository) {
@@ -67,9 +89,17 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
                     "fail" -> throw InspectionException(InspectionFailure.InvalidSelector)
                     "busy" -> throw SnapshotCaptureBusyException()
                     "unsupported" -> throw InspectionException(InspectionFailure.PlatformUnsupported)
+                    "generic-business" -> throw ProtocolBusinessException()
+                    "storage-failure" -> throw StorageException(BackupIssue.VersionUnsupported, "50% <&>")
+                    "file-too-large" -> throw FileTooLargeException()
                     "crash" -> throw IllegalStateException("internal-test-failure", IOException("test cause"))
                         .apply { addSuppressed(IllegalArgumentException("test suppressed")) }
                     "stored-invalid" -> throw SerializationException("stored data is corrupt")
+                    "stored-subscription-invalid" -> throw SubscriptionException(
+                        SubscriptionFailureReason.SubscriptionFileParseFailed,
+                        listOf("broken.json"),
+                        SubscriptionParseException("$.id", "Expected an integer"),
+                    )
                     "cancel" -> throw CancellationException("request cancelled")
                 }
                 ActionResult("clickNode", it.selector != "no-action")
@@ -199,6 +229,20 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
         error("execSelector", """{"selector":"fail"}""", "INVALID_SELECTOR")
         error("execSelector", """{"selector":"busy"}""", "SNAPSHOT_CAPTURE_BUSY")
         error("execSelector", """{"selector":"unsupported"}""", "PLATFORM_UNSUPPORTED")
+        // A newly introduced business exception needs no concrete-type branch in the RPC plugin.
+        // Nested resources, literal parameters and the optional path survive the real HTTP response.
+        val business = error("execSelector", """{"selector":"generic-business"}""", "TEST_BUSINESS_ERROR")
+        val expectedMessage = getString(Res.string.selector_type_error, "50% <&>\n输入") + "\n" +
+            getString(Res.string.snapshot_not_found)
+        assertEquals(expectedMessage, business.getValue("message").jsonPrimitive.content)
+        assertEquals("$.input", business.getValue("path").jsonPrimitive.content)
+        assertEquals(expectedMessage, ProtocolBusinessException().resolveMessage())
+        assertEquals(expectedMessage, ProtocolBusinessException().displayMessage())
+        val storage = error("execSelector", """{"selector":"storage-failure"}""", "VersionUnsupported")
+        assertEquals(getString(Res.string.backup_version_unsupported, "50% <&>"), storage.getValue("message").jsonPrimitive.content)
+        assertEquals(JsonNull, storage.getValue("path"))
+        val oversized = error("execSelector", """{"selector":"file-too-large"}""", "FileTooLarge")
+        assertEquals(getString(Res.string.file_too_large), oversized.getValue("message").jsonPrimitive.content)
         assertFalse(request("execSelector", """{"selector":"no-action"}""")
             .getValue("result").jsonPrimitive.boolean)
         // Incoming JSON failures are client errors; corrupt stored JSON remains an internal error.
@@ -212,6 +256,12 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
             .getValue("code").jsonPrimitive.content)
         error("getSnapshot", """{"id":"wrong-type"}""", "INVALID_REQUEST")
         error("execSelector", """{"selector":"stored-invalid"}""", "INTERNAL_ERROR")
+        val storedError = error("execSelector", """{"selector":"stored-subscription-invalid"}""", "SubscriptionFileParseFailed")
+        assertEquals(JsonNull, storedError.getValue("path"))
+        assertEquals(
+            getString(Res.string.subscription_file_parse_failed) + "\n$.id: Expected an integer",
+            storedError.getValue("message").jsonPrimitive.content,
+        )
         // Diagnostic stacks survive JSON transport, including the original cause and suppressed errors.
         val internal = json.parseToJsonElement(
             response("execSelector", """{"selector":"crash"}""", "error").body()
@@ -269,6 +319,9 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
             app.id,
             request("getServerInfo").getValue("gkdAppInfo").jsonObject.getValue("id").jsonPrimitive.content
         )
+        assertSubscriptionRoutes(layout, repository) { method, body, status ->
+            response(method, body, status).body()
+        }
     } finally {
         server.stop(0, 1000)
     }

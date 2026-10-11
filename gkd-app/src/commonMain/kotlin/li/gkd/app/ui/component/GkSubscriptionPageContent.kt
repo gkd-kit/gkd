@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.ui.text.subscriptionMessageResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -42,7 +42,7 @@ fun <T : Any> GkSubscriptionPageContent(
         Loadable.Loading -> SubscriptionStatePage(onBack = onBack)
         is Loadable.Failure -> SubscriptionStatePage(
             onBack = onBack,
-            message = current.cause.subscriptionMessageResource(),
+            message = current.cause.messageResource(),
         )
 
         is Loadable.Ready -> content(current.value)

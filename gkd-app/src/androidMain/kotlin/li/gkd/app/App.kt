@@ -51,8 +51,8 @@ import li.gkd.app.priv.initPrivilege
 import li.gkd.app.service.ExposeService
 import li.gkd.app.service.clearHttpSubs
 import li.gkd.app.service.initA11yWhiteAppList
+import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.ui.text.subscriptionDefaults
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.LogUtils
@@ -291,7 +291,7 @@ class App : Application() {
             PrivilegeUi.startSilently(gkdPrivilegeUiConfig)
         }
         appScope.launchLogged(Dispatchers.IO) {
-            SubscriptionRepository.initialize(subscriptionDefaults())
+            SubscriptionRepository.initialize(SubscriptionDefaults.fromResources())
             clearHttpSubs()
         }
         initA11yWhiteAppList()

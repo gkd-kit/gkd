@@ -45,7 +45,6 @@ import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
-import li.gkd.app.ui.text.getSync
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 

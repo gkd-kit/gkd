@@ -20,6 +20,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import li.gkd.app.error.displayMessage
 import li.gkd.app.network.NewVersion
 import li.gkd.app.network.UpdateClient
 import li.gkd.app.network.isNetworkAvailable
@@ -31,10 +32,8 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.component.GkUpgradeDialogs
 import li.gkd.app.ui.component.UpdateDownloadState
-import li.gkd.app.ui.option.UpdateChannelOption
-import li.gkd.app.ui.option.findOption
-import li.gkd.app.ui.text.displayMessage
-import li.gkd.app.ui.text.getSync
+import li.gkd.app.settings.UpdateChannel
+import li.gkd.app.model.findOption
 import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
@@ -72,7 +71,7 @@ class UpdateStatus(
                 val ignored = ignoreMutex.withLock { withContext(Dispatchers.IO) { readIgnored() } }
                 check(isNetworkAvailable()) { getString(Res.string.network_unavailable) }
                 val url =
-                    UpdateChannelOption.objects.findOption(SettingsRepository.settings.value.updateChannel).url
+                    UpdateChannel.entries.findOption(SettingsRepository.settings.value.updateChannel).url
                 val result = withContext(Dispatchers.IO) { UpdateClient.fetch(url) }
                 if (result.versionCode <= versionCode) {
                     if (manual) ToastUtils.show(getString(Res.string.updates_none))

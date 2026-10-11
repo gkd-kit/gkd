@@ -62,8 +62,8 @@ import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.navigation.WorkModeRoute
-import li.gkd.app.ui.option.AutomatorModeOption
-import li.gkd.app.ui.option.findOption
+import li.gkd.app.settings.AutomatorMode
+import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.setStatusServiceEnabled
 import li.gkd.app.ui.platform.switchAutomator
@@ -137,16 +137,7 @@ fun dashboardPage(
     val latest = latestState.value?.record
     val scroll = rememberColumnScrollState()
     ResetPageScrollOnRequest(vm.homeState, BottomNavItem.Dashboard, scroll::resetScrollAndAwait)
-    val privilegeLabel =
-        stringResource(
-            when (platform.privilegeStatus) {
-                DashboardPrivilegeStatus.Connected -> Res.string.privilege_service_state_connected
-                DashboardPrivilegeStatus.DisconnectedDesired ->
-                    Res.string.privilege_service_state_lost
-                DashboardPrivilegeStatus.Disconnected ->
-                    Res.string.privilege_service_state_disconnected
-            }
-        )
+    val privilegeLabel = stringResource(platform.privilegeStatus.labelResource)
     val openPrivilege = stringResource(Res.string.privilege_service_open)
     val connected = platform.privilegeStatus == DashboardPrivilegeStatus.Connected
     val warningTitle =
@@ -268,7 +259,7 @@ fun dashboardPage(
                             else -> mainVm.navigator.navigate(route)
                         }
                     },
-                    AutomatorModeOption.objects.findOption(store.automatorMode).label,
+                    stringResource(AutomatorMode.entries.findOption(store.automatorMode).labelResource),
                     { mainVm.navigator.navigate(WorkModeRoute) },
                 )
             }

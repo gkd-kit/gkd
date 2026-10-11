@@ -32,13 +32,7 @@ fun GkPermissionRestrictionDialog(
             if (!capabilities.writeSecureSettings) add(Res.string.restriction_adb_secure)
             if (!capabilities.updateAppOps) add(Res.string.restriction_adb_app_ops)
         } else if (appRestricted) {
-            appRestrictions.forEach {
-                add(when (it) {
-                    AppPermissionRestriction.Accessibility -> Res.string.restriction_app_accessibility
-                    AppPermissionRestriction.RestrictedSettings -> Res.string.restriction_app_settings
-                    AppPermissionRestriction.ForegroundService -> Res.string.restriction_app_foreground
-                })
-            }
+            addAll(appRestrictions.map { it.descriptionResource })
         }
     }
     GkAlertDialog(

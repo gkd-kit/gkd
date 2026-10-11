@@ -10,3 +10,5 @@ actual fun defaultSettings() = SettingsStore(
 )
 
 actual fun defaultBlockMatchAppList(): Set<String> = DefaultBlockedApps.query()
+
+actual fun defaultTermsAccepted(): Boolean = false
