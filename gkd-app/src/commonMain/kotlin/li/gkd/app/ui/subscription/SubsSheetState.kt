@@ -86,7 +86,7 @@ import li.gkd.app.ui.text.formatTimeAgo
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.copyText
 import li.gkd.db.Db
-import li.gkd.db.LOCAL_SUBS_ID
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import org.jetbrains.compose.resources.stringResource
 
@@ -438,7 +438,7 @@ class SubsSheetState(
                             dismiss()
                             navigator.navigate(ActionLogRoute(subsId = subsItem.id))
                         })
-                        if (subsItem.id != LOCAL_SUBS_ID) {
+                        if (subsItem.id != SubscriptionIds.LOCAL) {
                             GkIconButton(
                                 imageVector = GkIcons.Delete,
                                 onClick = click@{

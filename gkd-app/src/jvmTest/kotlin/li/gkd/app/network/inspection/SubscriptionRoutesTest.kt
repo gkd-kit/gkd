@@ -56,6 +56,8 @@ suspend fun assertSubscriptionRoutes(
         RawSubscription.parse("""{id:-2,name:'HTTP rules',version:${current.version},categories:[{key:5,name:'HTTP',enable:false}]}""")
     }
     error("getRules", "INVALID_REQUEST", "subsId" to JsonPrimitive(13))
+    // Unknown negative IDs must not acquire the built-in subscriptions' HTTP access.
+    error("getRules", "INVALID_REQUEST", "subsId" to JsonPrimitive(-3))
     error("setRuleGroupSetting", "INVALID_REQUEST", id, "target" to appTarget(0))
     error("setCategorySetting", "INVALID_REQUEST", id, "categoryKey" to JsonPrimitive(5))
 

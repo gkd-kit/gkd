@@ -68,9 +68,9 @@ import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.SortUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.copyText
-import li.gkd.db.LOCAL_SUBS_ID
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.db.SubscriptionIds
 
 @Composable
 fun AppConfigPage(
@@ -348,7 +348,7 @@ fun AppConfigPage(
                 onClick = {
                     mainVm.navigator.navigate(
                         UpsertRuleGroupRoute(
-                            subsId = LOCAL_SUBS_ID,
+                            subsId = SubscriptionIds.LOCAL,
                             groupKey = null,
                             appId = appId
                         )

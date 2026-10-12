@@ -14,10 +14,6 @@ import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
-const val LOCAL_SUBS_ID = -2L
-const val LOCAL_HTTP_SUBS_ID = -1L
-val LOCAL_SUBS_IDS = arrayOf(LOCAL_SUBS_ID, LOCAL_HTTP_SUBS_ID)
-
 @Serializable
 @Entity(
     tableName = "subs_item",
@@ -35,7 +31,7 @@ data class SubsItem(
     ) {
 
     val isLocal: Boolean
-        get() = LOCAL_SUBS_IDS.contains(id)
+        get() = SubscriptionIds.isLocal(id)
 
     @Dao
     interface SubsItemDao {

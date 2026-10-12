@@ -33,13 +33,13 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
-import li.gkd.db.LOCAL_HTTP_SUBS_ID
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import org.jetbrains.compose.resources.getString
 import java.io.IOException
 
 private val httpSubsItem = SubsItem(
-    id = LOCAL_HTTP_SUBS_ID,
+    id = SubscriptionIds.LOCAL_HTTP,
     order = -1,
     enableUpdate = false,
 )
@@ -108,7 +108,7 @@ fun Application.configureInspectionServer(
                 val subscription =
                     RawSubscription.parse(source, json5 = false)
                         .copy(
-                            id = LOCAL_HTTP_SUBS_ID,
+                            id = SubscriptionIds.LOCAL_HTTP,
                             name = getString(Res.string.subscription_memory),
                             version = 0,
                             author = "@gkd-kit/inspect"

@@ -22,7 +22,7 @@ import li.gkd.app.subscription.SubscriptionResult
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.ui.subscription.SubsManageUiState
 import li.gkd.db.Db
-import li.gkd.db.LOCAL_SUBS_ID
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 
 /** Business state owned by the HomeRoute navigation entry. */
@@ -140,7 +140,7 @@ class HomeViewModel : BaseViewModel() {
     suspend fun refreshSubscriptions() = SubscriptionRepository.refresh()
 
     suspend fun deleteSubscriptions(ids: Set<Long>): SubscriptionResult =
-        SubscriptionRepository.delete(*(ids - LOCAL_SUBS_ID).toLongArray())
+        SubscriptionRepository.delete(*(ids - SubscriptionIds.LOCAL).toLongArray())
 
     suspend fun updateOrder(items: List<SubsItem>) = Db.subsItemDao.batchUpdateOrder(items)
 

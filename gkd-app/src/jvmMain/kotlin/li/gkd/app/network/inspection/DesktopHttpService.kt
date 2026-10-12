@@ -24,9 +24,9 @@ import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.Constants
 import li.gkd.app.util.JsonUtils
 import li.gkd.app.util.LogUtils
-import li.gkd.db.LOCAL_HTTP_SUBS_ID
 import java.net.BindException
 import javax.swing.SwingUtilities
+import li.gkd.db.SubscriptionIds
 
 /** The production inspection routes, bound only to the desktop host's loopback interface. */
 class DesktopHttpService(
@@ -111,7 +111,7 @@ class DesktopHttpService(
         server = null
         update(ServicePhase.Stopped)
         if (previous != null && SettingsRepository.settings.value.autoClearMemorySubs) {
-            runBlocking(Dispatchers.IO) { SubscriptionRepository.delete(LOCAL_HTTP_SUBS_ID) }
+            runBlocking(Dispatchers.IO) { SubscriptionRepository.delete(SubscriptionIds.LOCAL_HTTP) }
         }
     }
 

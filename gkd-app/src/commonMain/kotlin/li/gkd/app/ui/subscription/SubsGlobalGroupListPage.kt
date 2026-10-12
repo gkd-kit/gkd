@@ -41,6 +41,7 @@ import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.db.SubscriptionIds
 
 @Composable
 fun SubsGlobalGroupListPage(
@@ -58,7 +59,7 @@ fun SubsGlobalGroupListPage(
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
-        val editable = subsItemId < 0
+        val editable = SubscriptionIds.isLocal(subsItemId)
         val controls = remember(state, environment) {
             subs.globalGroups.associate { group ->
                 group.key to environment.resolve(subs, group, null, state.configs, configIndex)

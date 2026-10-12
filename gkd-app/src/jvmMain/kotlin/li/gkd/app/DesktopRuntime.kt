@@ -31,7 +31,7 @@ import li.gkd.app.ui.image.ImageLoaders
 import li.gkd.app.ui.component.ToastState
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
-import li.gkd.db.LOCAL_SUBS_ID
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import li.gkd.db.initialize
 
@@ -132,7 +132,7 @@ class DesktopRuntime(
                 .orEmpty().filter { it.extension == "json" }.forEachIndexed { index, file ->
                     val value =
                         RawSubscription.parse(file.readText(), json5 = false)
-                    if (value.id in existing && value.id != LOCAL_SUBS_ID) return@forEachIndexed
+                    if (value.id in existing && value.id != SubscriptionIds.LOCAL) return@forEachIndexed
                     val enabled = DesktopProfile.subscriptionEnabled[value.id] ?: true
                     SubscriptionRepository.saveWithItem(
                         value,

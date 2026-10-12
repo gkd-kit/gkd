@@ -11,6 +11,7 @@ import kotlin.test.assertTrue
 import li.gkd.app.subscription.FileSubscriptionFiles
 import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
+import li.gkd.db.SubscriptionIds
 
 class SharedStorageBehaviorTest {
     @Test
@@ -18,7 +19,7 @@ class SharedStorageBehaviorTest {
         val root = Files.createTempDirectory("gkd-subscription-read").toFile()
         try {
             val files = FileSubscriptionFiles(root)
-            for (id in listOf(li.gkd.db.LOCAL_SUBS_ID, li.gkd.db.LOCAL_HTTP_SUBS_ID, 42L)) {
+            for (id in listOf(SubscriptionIds.LOCAL, SubscriptionIds.LOCAL_HTTP, 42L)) {
                 val error = assertFailsWith<SubscriptionException> { files.load(id) }
                 assertEquals(SubscriptionFailureReason.SubscriptionFileMissing, error.reason)
                 assertFalse(root.resolve("$id.json").exists())

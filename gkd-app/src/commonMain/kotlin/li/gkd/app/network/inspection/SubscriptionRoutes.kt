@@ -17,10 +17,10 @@ import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.subscription.SubscriptionInputParser
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.edit
-import li.gkd.db.LOCAL_SUBS_IDS
 import li.gkd.db.RuleGroupType
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
+import li.gkd.db.SubscriptionIds
 
 fun Route.registerSubscriptionRoutes() {
     post("/getRules") {
@@ -145,7 +145,7 @@ fun Route.registerSubscriptionRoutes() {
 }
 
 private fun requireSupportedSubscription(subsId: Long) {
-    if (subsId !in LOCAL_SUBS_IDS) throw BadRequestException("Unsupported subscription ID")
+    if (!SubscriptionIds.isLocal(subsId)) throw BadRequestException("Unsupported subscription ID")
 }
 
 private fun requireAppId(appId: String) {

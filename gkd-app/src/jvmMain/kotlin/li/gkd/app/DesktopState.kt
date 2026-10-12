@@ -52,7 +52,7 @@ import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.navigation.WorkModeRoute
-import li.gkd.db.LOCAL_SUBS_ID
+import li.gkd.db.SubscriptionIds
 
 @Serializable
 data class DesktopEnvironment(
@@ -256,15 +256,15 @@ private val desktopRoutes by lazy {
         "crash-reports" to CrashReportRoute,
         "activity-log" to ActivityLogRoute,
         "event-log" to A11yEventLogRoute,
-        "rule-editor" to UpsertRuleGroupRoute(LOCAL_SUBS_ID),
-        "category-editor" to CategoryEditorRoute(LOCAL_SUBS_ID),
-        "subs-global-groups" to SubsGlobalGroupListRoute(LOCAL_SUBS_ID),
-        "subs-apps" to SubsAppListRoute(LOCAL_SUBS_ID),
-        "subs-app-groups" to SubsAppGroupListRoute(LOCAL_SUBS_ID, "li.gkd"),
-        "subs-categories" to SubsCategoryRoute(LOCAL_SUBS_ID),
-        "subs-category-groups" to SubsCategoryGroupRoute(LOCAL_SUBS_ID, 0),
-        "subs-global-exclude" to SubsGlobalGroupExcludeRoute(LOCAL_SUBS_ID, 0),
-        "rule-exclude-editor" to RuleExcludeEditorRoute(LOCAL_SUBS_ID, 0),
+        "rule-editor" to UpsertRuleGroupRoute(SubscriptionIds.LOCAL),
+        "category-editor" to CategoryEditorRoute(SubscriptionIds.LOCAL),
+        "subs-global-groups" to SubsGlobalGroupListRoute(SubscriptionIds.LOCAL),
+        "subs-apps" to SubsAppListRoute(SubscriptionIds.LOCAL),
+        "subs-app-groups" to SubsAppGroupListRoute(SubscriptionIds.LOCAL, "li.gkd"),
+        "subs-categories" to SubsCategoryRoute(SubscriptionIds.LOCAL),
+        "subs-category-groups" to SubsCategoryGroupRoute(SubscriptionIds.LOCAL, 0),
+        "subs-global-exclude" to SubsGlobalGroupExcludeRoute(SubscriptionIds.LOCAL, 0),
+        "rule-exclude-editor" to RuleExcludeEditorRoute(SubscriptionIds.LOCAL, 0),
         "a11y-scope-apps" to A11YScopeAppListRoute,
         "block-a11y-apps" to BlockA11yAppListRoute,
         "app-config" to AppConfigRoute("li.gkd"),

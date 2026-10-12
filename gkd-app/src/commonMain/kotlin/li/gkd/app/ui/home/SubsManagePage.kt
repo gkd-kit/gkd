@@ -60,10 +60,10 @@ import li.gkd.app.model.findOption
 import li.gkd.app.ui.subscription.SubsManageUiState
 import li.gkd.app.ui.text.formatTimeAgo
 import li.gkd.app.util.ToastUtils
-import li.gkd.db.LOCAL_SUBS_ID
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import li.gkd.db.SubscriptionIds
 
 @Composable
 fun subsManagePage(
@@ -188,7 +188,7 @@ private fun subsManageContent(
                             keys = allIds,
                             enabled = !batchBusy && !refreshing && !reorderSession.dragging,
                         ) { dismiss ->
-                            val canDeleteIds = selectedIds - LOCAL_SUBS_ID
+                            val canDeleteIds = selectedIds - SubscriptionIds.LOCAL
                             GkBatchActionMenuItem(
                                 text = if (canDeleteIds.isEmpty()) stringResource(Res.string.subscription_delete_except_local) else stringResource(
                                     Res.string.action_delete
@@ -200,7 +200,7 @@ private fun subsManageContent(
                                     val text = Res.string.subscriptions_delete_confirmation.getSync(
                                         idsToDelete.size
                                     ) +
-                                            if (LOCAL_SUBS_ID in selectedIds) Res.string.subscriptions_local_excluded_suffix.getSync() else ""
+                                            if (SubscriptionIds.LOCAL in selectedIds) Res.string.subscriptions_local_excluded_suffix.getSync() else ""
                                     vm.scope.launchUi {
                                         vm.runBatchAction {
                                             if (!mainVm.dialogRequests.confirm(
@@ -237,7 +237,7 @@ private fun subsManageContent(
                             onAddAppRule = {
                                 mainVm.navigator.navigate(
                                     UpsertRuleGroupRoute(
-                                        subsId = LOCAL_SUBS_ID,
+                                        subsId = SubscriptionIds.LOCAL,
                                         groupKey = null,
                                         appId = "",
                                         forward = true
@@ -247,7 +247,7 @@ private fun subsManageContent(
                             onAddGlobalRule = {
                                 mainVm.navigator.navigate(
                                     UpsertRuleGroupRoute(
-                                        subsId = LOCAL_SUBS_ID,
+                                        subsId = SubscriptionIds.LOCAL,
                                         groupKey = null,
                                         appId = null,
                                         forward = true

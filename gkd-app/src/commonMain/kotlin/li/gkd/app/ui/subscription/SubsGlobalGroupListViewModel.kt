@@ -15,6 +15,7 @@ import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
+import li.gkd.db.SubscriptionIds
 
 data class SubsGlobalGroupListUiState(
     val subscription: RawSubscription,
@@ -53,7 +54,7 @@ class SubsGlobalGroupListViewModel(
         RuleGroupConfigService.apply(request, setting)
 
     suspend fun deleteSelectedGroups(selectedKeys: Set<Int>): Int {
-        check(route.subsItemId < 0) { Res.string.remote_rule_delete_unsupported.getSync() }
+        check(SubscriptionIds.isLocal(route.subsItemId)) { Res.string.remote_rule_delete_unsupported.getSync() }
         var deletedSize = 0
         subscription.update { current ->
             current.edit {

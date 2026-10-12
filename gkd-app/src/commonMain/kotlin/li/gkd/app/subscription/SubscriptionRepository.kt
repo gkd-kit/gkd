@@ -19,8 +19,7 @@ import li.gkd.app.state.MutexState
 import li.gkd.app.storage.appStorage
 import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
-import li.gkd.db.LOCAL_HTTP_SUBS_ID
-import li.gkd.db.LOCAL_SUBS_ID
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigStore
 import li.songe.json5.decodeFromJson5String
@@ -69,18 +68,18 @@ object SubscriptionRepository {
                         previous = SubscriptionSnapshot(),
                     )
                 }
-                if (items.any { it.id == LOCAL_SUBS_ID }) return@withStateLock
+                if (items.any { it.id == SubscriptionIds.LOCAL }) return@withStateLock
                 val item = SubsItem(
-                    id = LOCAL_SUBS_ID,
+                    id = SubscriptionIds.LOCAL,
                     order = items.minByOrNull { it.order }?.order ?: 0,
                 )
-                if (files.readBytes(LOCAL_SUBS_ID) != null) {
+                if (files.readBytes(SubscriptionIds.LOCAL) != null) {
                     Db.subsItemDao.upsert(item)
                     refreshRawSubscriptions(listOf(item))
                 } else {
                     saveLocked(
                         subscription = RawSubscription(
-                            id = LOCAL_SUBS_ID,
+                            id = SubscriptionIds.LOCAL,
                             name = initialName,
                             version = 0,
                         ),
@@ -350,7 +349,7 @@ object SubscriptionRepository {
                 result = SubscriptionResult.Failure(SubscriptionResult.FailureReason.AlreadyExists)
                 return@tryWithStateLock
             }
-            if (subscription.id < 0) {
+            if (!SubscriptionIds.isRemote(subscription.id)) {
                 result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.InvalidId,
                     detail = subscription.id.toString(),
@@ -475,7 +474,7 @@ object SubscriptionRepository {
         subscription: RawSubscription,
         snapshot: SubscriptionSnapshot,
     ): RawSubscription = if (
-        subscription.id < 0 && snapshot.subscriptions[subscription.id]?.version == subscription.version
+        SubscriptionIds.isLocal(subscription.id) && snapshot.subscriptions[subscription.id]?.version == subscription.version
     ) {
         subscription.copy(
             version = subscription.version + 1,
@@ -502,8 +501,8 @@ object SubscriptionRepository {
                 // Only initialization may create absent built-in files. Existing bytes, including
                 // Android recovery files and user names, always take precedence over defaults.
                 val initialName = when (item.id) {
-                    LOCAL_SUBS_ID -> creationDefaults?.localName
-                    LOCAL_HTTP_SUBS_ID -> creationDefaults?.memoryName
+                    SubscriptionIds.LOCAL -> creationDefaults?.localName
+                    SubscriptionIds.LOCAL_HTTP -> creationDefaults?.memoryName
                     else -> null
                 }
                 if (initialName != null && files.readBytes(item.id) == null) {
@@ -569,7 +568,7 @@ object SubscriptionRepository {
         val item = entry.subsItem
         val current = entry.subscription
         val itemUpdateUrl = item.updateUrl ?: return null
-        if (item.id < 0) return null
+        if (!SubscriptionIds.isRemote(item.id)) return null
         val checkUrl = current?.checkUpdateUrl?.let { check ->
             runCatching { URI(itemUpdateUrl).resolve(check).toString() }.getOrNull()
         }

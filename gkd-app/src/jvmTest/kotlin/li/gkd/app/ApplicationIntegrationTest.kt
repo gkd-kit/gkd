@@ -55,6 +55,7 @@ import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.ActionLog
 import li.gkd.db.RuleGroupType
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigStore
 import org.jetbrains.compose.resources.getString
@@ -98,8 +99,8 @@ class ApplicationIntegrationTest {
             store.resolve("terms_accepted.txt").writeText("false")
             // An Android recovery file without a database row must keep its user-supplied name.
             val subscriptions = DesktopStorage.data.resolve("files/subscription").apply { mkdirs() }
-            subscriptions.resolve("${li.gkd.db.LOCAL_SUBS_ID}.json.bak").writeText(
-                """{"id":${li.gkd.db.LOCAL_SUBS_ID},"name":"My saved rules","version":7}"""
+            subscriptions.resolve("${SubscriptionIds.LOCAL}.json.bak").writeText(
+                """{"id":${SubscriptionIds.LOCAL},"name":"My saved rules","version":7}"""
             )
             val profile = DesktopProfile
             assertEquals(setOf("example.blocked"), profile.blocked)
@@ -205,8 +206,8 @@ class ApplicationIntegrationTest {
     }
 
     private suspend fun assertSubscriptionCreationNames() {
-        val localId = li.gkd.db.LOCAL_SUBS_ID
-        val memoryId = li.gkd.db.LOCAL_HTTP_SUBS_ID
+        val localId = SubscriptionIds.LOCAL
+        val memoryId = SubscriptionIds.LOCAL_HTTP
         assertEquals("My saved rules", SubscriptionRepository.awaitSnapshot().subscriptions.getValue(localId).name)
         val localFile = appStorage().subscription.resolve("$localId.json")
         val originalBytes = localFile.readBytes()

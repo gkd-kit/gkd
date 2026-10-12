@@ -42,7 +42,7 @@ import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.subscription.SubscriptionParseException
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.db.Db
-import li.gkd.db.LOCAL_HTTP_SUBS_ID
+import li.gkd.db.SubscriptionIds
 import java.net.URI
 import java.io.IOException
 import java.net.http.HttpClient
@@ -295,12 +295,12 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
         val updated = response("updateSubscription", """{"id":123,"name":"input","version":9,"apps":[]}""")
         assertEquals("""{"message":"success"}""", updated.body())
         assertTrue(updated.headers().firstValue("Content-Type").orElse("").startsWith("application/json"))
-        val saved = repository.awaitSnapshot().subscriptions.getValue(LOCAL_HTTP_SUBS_ID)
+        val saved = repository.awaitSnapshot().subscriptions.getValue(SubscriptionIds.LOCAL_HTTP)
         assertEquals(0, saved.version)
         assertEquals("@gkd-kit/inspect", saved.author)
-        assertTrue(layout.subscription.resolve("$LOCAL_HTTP_SUBS_ID.json").isFile)
+        assertTrue(layout.subscription.resolve("${SubscriptionIds.LOCAL_HTTP}.json").isFile)
         // Invalid subscription input must not replace the previous committed subscription.
-        val subscriptionFile = layout.subscription.resolve("$LOCAL_HTTP_SUBS_ID.json")
+        val subscriptionFile = layout.subscription.resolve("${SubscriptionIds.LOCAL_HTTP}.json")
         val previousText = subscriptionFile.readText()
         for ((body, path) in listOf(
             "broken-json" to "$",
@@ -313,7 +313,7 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
             assertEquals(path, failure.getValue("path").jsonPrimitive.content)
             assertTrue(failure.getValue("message").jsonPrimitive.content.contains(": "))
             assertEquals(previousText, subscriptionFile.readText())
-            assertEquals(saved, repository.awaitSnapshot().subscriptions.getValue(LOCAL_HTTP_SUBS_ID))
+            assertEquals(saved, repository.awaitSnapshot().subscriptions.getValue(SubscriptionIds.LOCAL_HTTP))
         }
         assertEquals(
             app.id,

@@ -60,6 +60,7 @@ import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.copyText
 import li.gkd.db.RuleGroupType
+import li.gkd.db.SubscriptionIds
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
@@ -135,7 +136,7 @@ fun SubsAppGroupListPage(
             if (byCategory) filterAppRuleSections(categorySections, selectedCategory)
             else buildAppRuleSections(listOf(subs to groups), false)
         }
-        val editable = subsItemId < 0
+        val editable = SubscriptionIds.isLocal(subsItemId)
         val selectionState = rememberMultiSelectionState<Int>()
         val selectableKeys = remember(controls, sections) {
             sections.flatMap { it.subscriptions }.flatMap { it.second }

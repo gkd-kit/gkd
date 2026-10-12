@@ -29,7 +29,7 @@ import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.app.util.mapState
-import li.gkd.db.LOCAL_HTTP_SUBS_ID
+import li.gkd.db.SubscriptionIds
 
 class HttpService : LifecycleHookService() {
     val httpServerPortFlow by lazy {
@@ -46,7 +46,7 @@ class HttpService : LifecycleHookService() {
         onDestroyed {
             if (settings.value.autoClearMemorySubs) {
                 appScope.launchLogged(Dispatchers.IO) {
-                    SubscriptionRepository.delete(LOCAL_HTTP_SUBS_ID)
+                    SubscriptionRepository.delete(SubscriptionIds.LOCAL_HTTP)
                 }
             }
         }
@@ -111,7 +111,7 @@ typealias ServerType = EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine
 suspend fun clearHttpSubs() {
     // Clear abandoned HTTP rules only after the subscription repository has loaded.
     if (!HttpService.isRunning.value && settings.value.autoClearMemorySubs) {
-        SubscriptionRepository.delete(LOCAL_HTTP_SUBS_ID)
+        SubscriptionRepository.delete(SubscriptionIds.LOCAL_HTTP)
     }
 }
 

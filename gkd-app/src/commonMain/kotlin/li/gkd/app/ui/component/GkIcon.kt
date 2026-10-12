@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SyncProblem
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.Add
@@ -198,6 +199,7 @@ object GkIcons {
     val Image get() = Icons.Outlined.Image
     val AddPhotoAlternate get() = Icons.Outlined.AddPhotoAlternate
     val WarningAmber get() = Icons.Default.WarningAmber
+    val SyncProblem get() = Icons.Default.SyncProblem
     val RocketLaunch get() = Icons.Outlined.RocketLaunch
     val CenterFocusWeak get() = Icons.Default.CenterFocusWeak
     val AutoMode get() = Icons.Outlined.AutoMode

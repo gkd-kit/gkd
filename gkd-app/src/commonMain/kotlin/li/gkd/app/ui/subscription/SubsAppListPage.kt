@@ -61,9 +61,9 @@ import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.ToastUtils
-import li.gkd.db.LOCAL_SUBS_IDS
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.db.SubscriptionIds
 
 @Composable
 fun SubsAppListPage(
@@ -219,7 +219,7 @@ fun SubsAppListPage(
                 })
         },
         floatingActionButton = {
-            if (LOCAL_SUBS_IDS.contains(subsItemId) && !selection.active) {
+            if (SubscriptionIds.isLocal(subsItemId) && !selection.active) {
                 FloatingActionButton(onClick = {
                     mainVm.navigator.navigate(
                         UpsertRuleGroupRoute(

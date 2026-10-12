@@ -14,8 +14,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
-import li.gkd.db.LOCAL_SUBS_IDS
 import li.gkd.db.RuleGroupType
+import li.gkd.db.SubscriptionIds
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
 import li.gkd.selector.SelectorTypeResult
@@ -50,7 +50,7 @@ data class RawSubscription(
         get() = globalGroups.isEmpty() && apps.all { it.groups.isEmpty() } && categories.isEmpty()
 
     val isLocal: Boolean
-        get() = LOCAL_SUBS_IDS.contains(id)
+        get() = SubscriptionIds.isLocal(id)
 
     val hasRule get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
 
