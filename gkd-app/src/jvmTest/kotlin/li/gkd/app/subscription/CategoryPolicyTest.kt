@@ -5,7 +5,6 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class CategoryPolicyTest {
-    private val policy = CategoryPolicy()
 
     private val subscription = RawSubscription.parse(
         """
@@ -31,7 +30,7 @@ class CategoryPolicyTest {
 
     @Test
     fun renamingPreviewsCategoryMembershipAndDescription() {
-        val preview = policy.previewEdit(subscription, 0, " 推荐 ", "说明")
+        val preview = CategoryPolicy.previewEdit(subscription, 0, " 推荐 ", "说明")
         assertEquals("推荐", preview.categories.first().name)
         assertEquals("说明", preview.categories.first().desc)
         assertEquals(listOf(3), preview.getCategoryApps(0).single().groups.map { it.key })
@@ -40,7 +39,7 @@ class CategoryPolicyTest {
 
     @Test
     fun addingAnOverlappingPrefixDoesNotStealGroupsFromAnEarlierCategory() {
-        val preview = policy.previewEdit(subscription, null, "广告-横幅", "")
+        val preview = CategoryPolicy.previewEdit(subscription, null, "广告-横幅", "")
         val newCategory = preview.categories.single { it.name == "广告-横幅" }
         assertEquals(emptyList<RawSubscription.RawApp>(), preview.getCategoryApps(newCategory.key))
     }
@@ -48,13 +47,13 @@ class CategoryPolicyTest {
     @Test
     fun staleMissingCategoryAndDuplicateOrBlankNamesCannotProduceAnEdit() {
         assertThrows(SubscriptionException::class.java) {
-            policy.previewEdit(subscription, 99, "新类别", "")
+            CategoryPolicy.previewEdit(subscription, 99, "新类别", "")
         }
         assertThrows(SubscriptionException::class.java) {
-            policy.previewEdit(subscription, 0, " 广告-开屏 ", "")
+            CategoryPolicy.previewEdit(subscription, 0, " 广告-开屏 ", "")
         }
         assertThrows(SubscriptionException::class.java) {
-            policy.previewEdit(subscription, null, " ", "")
+            CategoryPolicy.previewEdit(subscription, null, " ", "")
         }
     }
 }

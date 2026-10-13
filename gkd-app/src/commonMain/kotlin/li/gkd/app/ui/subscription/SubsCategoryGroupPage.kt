@@ -37,7 +37,6 @@ import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.navigation.CategoryEditorRoute
@@ -112,10 +111,11 @@ fun SubsCategoryGroupPage(
         val selectableTargets = remember(visibleTargets, controls) {
             visibleTargets.filterTo(mutableSetOf()) { controls.getValue(it.appId to it.groupKey).canEnable }
         }
-        val selection = rememberMultiSelectionState<RuleGroupTarget.App>()
-        val selected = selection.selectedKeys intersect selectableTargets
+        val selection = vm.selection
+        val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
+        val selected = selectionSnapshot.selectedKeys intersect selectableTargets
         LaunchedEffect(selectableTargets) { selection.retain(selectableTargets) }
-        GkBackHandler(selection.active) { selection.clear() }
+        GkBackHandler(selectionSnapshot.active) { selection.clear() }
         val scroll = rememberListScrollState()
         fun updateGroups(
             targets: Set<RuleGroupTarget.App>,
@@ -177,7 +177,7 @@ fun SubsCategoryGroupPage(
             modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
             topBar = {
                 GkMultiSelectionTopAppBar(
-                    selectedMode = selection.active,
+                    selectedMode = selectionSnapshot.active,
                     selectedCount = selected.size,
                     onExitSelection = selection::clear,
                     onNavigateBack = mainVm.navigator::pop,
@@ -187,8 +187,8 @@ fun SubsCategoryGroupPage(
                     actions = { selectedMode ->
                         if (selectedMode) {
                             GkMultiSelectionActions(
-                                selection,
-                                selectableTargets,
+                                selectionSnapshot.selectedKeys,
+                                selectableTargets, selection::selectAll, selection::invert,
                                 enabled = !busy
                             ) { dismiss ->
                                 GkBatchActionMenuItem(
@@ -249,7 +249,7 @@ fun SubsCategoryGroupPage(
                 apps.forEach { app ->
                     stickyHeader("app:${app.id}") {
                         GkRuleListHeader(
-                            enabled = !selection.active,
+                            enabled = !selectionSnapshot.active,
                             onClickLabel = stringResource(Res.string.app_view_all_rules),
                             onClick = {
                                 mainVm.navigator.navigate(
@@ -285,7 +285,7 @@ fun SubsCategoryGroupPage(
                                         .failureMessage()?.let { ToastUtils.show(it) }
                                 }
                             },
-                            isSelectedMode = selection.active,
+                            isSelectedMode = selectionSnapshot.active,
                             isSelected = target in selected,
                             selectionEnabled = !busy,
                             onLongClick = { if (!busy) selection.select(target) },

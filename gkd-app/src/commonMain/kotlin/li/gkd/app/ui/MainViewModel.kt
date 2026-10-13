@@ -1,5 +1,6 @@
 package li.gkd.app.ui
 
+import li.gkd.app.META
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -13,7 +14,6 @@ import li.gkd.app.ui.component.TextDialogState
 import li.gkd.app.ui.home.HomeNavigation
 import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.navigation.CrashReportRoute
-import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.confirmDelete as confirmRuleDeletion
 import li.gkd.app.ui.share.launchUi
@@ -61,13 +61,7 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
         )
     }
 
-    val updateStatus = appVersion().let { version ->
-        if (version.updateEnabled) UpdateStatus(
-            scope,
-            version.versionCode.toIntOrNull() ?: 0,
-            version.versionName,
-        ) else null
-    }
+    val updateStatus = if (META.updateEnabled) UpdateStatus(scope) else null
 
     val githubUpload = GithubUploadState(
         scope = scope,

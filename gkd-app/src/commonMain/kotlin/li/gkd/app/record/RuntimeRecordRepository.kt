@@ -5,7 +5,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import li.gkd.app.app.applicationId
+import li.gkd.app.META
 import li.gkd.app.app.launcherAppIdFlow
 import li.gkd.app.util.Constants
 import li.gkd.db.ActionLog
@@ -49,7 +49,7 @@ object RuntimeRecordRepository {
     suspend fun recordVisit(input: AppVisitInput) {
         val currentLauncherAppId = launcherAppIdFlow.value
         fun weighted(appId: String, time: Long) = when (appId) {
-            applicationId -> time - 120_000
+            META.appId -> time - 120_000
             currentLauncherAppId, Constants.systemUiAppId -> time - 60_000
             else -> time
         }
@@ -68,7 +68,7 @@ object RuntimeRecordRepository {
 
     suspend fun recordActivity(appId: String, activityId: String?, time: Long) = writer.withLock {
         activities.add(ActivityLog(ctime = time, appId = appId, activityId = activityId))
-        if (activities.size >= 16 || appId == applicationId) flushActivities()
+        if (activities.size >= 16 || appId == META.appId) flushActivities()
     }
 
     suspend fun recordAction(input: ActionRecordInput) {

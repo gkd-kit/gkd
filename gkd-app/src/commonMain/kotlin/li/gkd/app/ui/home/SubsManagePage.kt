@@ -1,5 +1,6 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.META
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -16,9 +17,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -47,12 +46,10 @@ import li.gkd.app.ui.component.GkTextMenu
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.SubscriptionCardData
 import li.gkd.app.ui.component.gkPageBottomSpace
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberPinnedListScrollState
 import li.gkd.app.ui.component.rememberReorderSession
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.option.UpdateTimeOption
@@ -83,7 +80,7 @@ private fun subsManageContent(
     val state = loadableState.value
     val refresh: () -> Unit = { vm.scope.launchUi { vm.refreshSubscriptions().message()?.let { ToastUtils.show(it) } } }
     GkDesktopKeyHandler(Key.F5, onKey = refresh)
-    var settingsDialogVisible by remember { mutableStateOf(false) }
+    val settingsDialogVisible by vm.settingsDialogVisible.collectAsStateWithLifecycle()
     val powerWarningItem by vm.powerWarningItemFlow.collectAsStateWithLifecycle()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val subItems = state?.subItems.orEmpty()
@@ -92,23 +89,23 @@ private fun subsManageContent(
 
     val refreshing by li.gkd.app.subscription.SubscriptionRepository.updating.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
-    // 多选仅属于当前订阅 Tab 的临时交互状态，切换 Tab 后按设计清空，不要改为可保存状态。
-    val selectionState = rememberMultiSelectionState<Long>()
+    val selectionState = vm.selection
+    val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
     val allIds = remember(subItems) { subItems.mapTo(mutableSetOf()) { it.id } }
-    val selectedIds = selectionState.selectedKeys intersect allIds
-    val isSelectedMode = selectionState.active
+    val selectedIds = selectionSnapshot.selectedKeys intersect allIds
+    val isSelectedMode = selectionSnapshot.active
     val reorderSession = rememberReorderSession(subItems) { it.id }
     val orderSubItems = reorderSession.items
     GkBackHandler(isSelectedMode) {
         selectionState.clear()
     }
-    LaunchedEffect(allIds) {
-        selectionState.retain(allIds)
+    LaunchedEffect(allIds, loadableState) {
+        if (loadableState is Loadable.Ready) selectionState.retain(allIds)
     }
 
     if (settingsDialogVisible) {
         GkSettingsDialog(
-            onDismissRequest = { settingsDialogVisible = false },
+            onDismissRequest = { vm.setSettingsDialogVisible(false) },
             title = stringResource(Res.string.subscription_settings),
         ) {
             GkTextMenu(
@@ -184,8 +181,10 @@ private fun subsManageContent(
                 actions = { selectedMode ->
                     if (selectedMode) {
                         GkMultiSelectionActions(
-                            selectionState = selectionState,
+                            selected = selectionSnapshot.selectedKeys,
                             keys = allIds,
+                            onSelectAll = selectionState::selectAll,
+                            onInvert = selectionState::invert,
                             enabled = !batchBusy && !refreshing && !reorderSession.dragging,
                         ) { dismiss ->
                             val canDeleteIds = selectedIds - SubscriptionIds.LOCAL
@@ -229,7 +228,7 @@ private fun subsManageContent(
                         GkSubscriptionActions(
                             matching = store.enableMatch,
                             onToggleMatching = vm::toggleMatching,
-                            onSettings = { settingsDialogVisible = true },
+                            onSettings = { vm.setSettingsDialogVisible(true) },
                             onMenuOpen = {
                                 if (refreshing) ToastUtils.show(Res.string.subscription_refresh_wait.getSync())
                                 !refreshing
@@ -351,7 +350,7 @@ private fun subsManageContent(
                                     apps = subsIdToRaw[subItem.id]?.apps?.size ?: 0,
                                     appGroups = subsIdToRaw[subItem.id]?.appGroups?.size ?: 0,
                                     updatedAt = formatTimeAgo(subItem.mtime),
-                                    appName = appVersion().appName,
+                                    appName = META.appName,
                                     loadError = state?.loadErrors?.get(subItem.id)?.messageResource(),
                                     updateFailed = state?.refreshErrors?.containsKey(subItem.id) == true,
                                 ),

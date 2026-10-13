@@ -19,7 +19,7 @@ class ActivityRuleTest {
             ]}]}],globalGroups:[{key:2,name:'Global',rules:[{matches:'*',order:3}]}]}"""
         )
         return RuleSummaryBuilder.build(
-            RuleGroupPolicy(), runtime,
+            runtime,
             listOf(UsedSubsEntry(SubsItem(1, enable = true, order = 0), sub)),
             mapOf("app.test" to AppInfo("app.test", "Test", 1, "1", false, 0, false, 0)),
             emptyList(), emptyList(), emptyList(),

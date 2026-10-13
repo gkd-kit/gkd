@@ -1,5 +1,6 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.META
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -67,7 +68,6 @@ import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.setStatusServiceEnabled
 import li.gkd.app.ui.platform.switchAutomator
-import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.surfaceCardColors
@@ -115,7 +115,7 @@ fun dashboardPage(
     vm: HomeViewModel,
 ): ScaffoldExt {
     val mainVm = MainViewModel.requireCurrent()
-    val appName = appVersion().appName
+    val appName = META.appName
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val scopeApps by SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
     val platform = dashboardPlatformState()

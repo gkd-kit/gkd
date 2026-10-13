@@ -16,6 +16,7 @@ import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.ui.style.clearJson5TransformationCache
 import li.gkd.app.util.ToastUtils
@@ -29,6 +30,8 @@ data class UpsertRuleGroupUiState(
 class UpsertRuleGroupViewModel(
     val route: UpsertRuleGroupRoute,
 ) : BaseViewModel() {
+    val editorActions = EditorActionsState(scope)
+
     val draft: StateFlow<String?>
         field = MutableStateFlow<String?>(null)
 

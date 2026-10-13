@@ -3,11 +3,9 @@ package li.gkd.app.logging
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import li.gkd.app.META
 import li.gkd.app.data.AndroidLogMetadata
 
 actual fun logMetadata(): LogMetadata = AndroidLogMetadata.create()
-actual fun isLogDebuggable(): Boolean = META.debuggable
 
 actual fun writePlatformLog(tag: String, message: String) {
     Log.d(tag, message)

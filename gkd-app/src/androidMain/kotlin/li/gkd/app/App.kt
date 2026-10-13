@@ -33,22 +33,18 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import li.gkd.app.a11y.initA11yFeat
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.crash.CrashMetadata
 import li.gkd.app.crash.CrashRecorder
 import li.gkd.app.data.AndroidLogMetadata
 import li.gkd.app.data.appinfo.PackageAppCatalog
-import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
-import li.gkd.app.network.AppLinks
 import li.gkd.app.notif.NotificationChannels
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
 import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
-import li.gkd.app.service.ExposeService
 import li.gkd.app.service.clearHttpSubs
 import li.gkd.app.service.initA11yWhiteAppList
 import li.gkd.app.subscription.SubscriptionDefaults
@@ -72,29 +68,6 @@ val app: App
 
 // https://github.com/android-cs/16/blob/main/packages/SettingsLib/src/com/android/settingslib/accessibility/AccessibilityUtils.java#L41
 private const val ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR = ':'
-
-@Serializable
-data class AppMeta(
-    val channel: String = app.getMetaString("channel"),
-    val buildKey: String = app.getMetaString("buildKey"),
-    val commitId: String = app.getMetaString("commitId"),
-    val commitTime: Long = app.getMetaString("commitTime").toLong(),
-    val tagName: String? = app.getMetaString("tagName").takeIf { it.isNotEmpty() },
-    val debuggable: Boolean = app.applicationInfoWithMetadata.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
-    val versionCode: Int = selfAppInfo.versionCode,
-    val versionName: String = selfAppInfo.versionName!!,
-    val appId: String = app.packageName!!,
-    val appName: String = app.applicationInfoWithMetadata.loadLabel(app.packageManager).toString()
-) {
-    val commitUrl = "${AppLinks.Repository}/".run {
-        plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")
-    }
-    val isGkdChannel get() = channel == "gkd"
-    val updateEnabled get() = isGkdChannel
-    val isBeta get() = versionName.contains("beta")
-}
-
-val META by lazy { AppMeta() }
 
 class App : Application() {
     companion object {
@@ -280,13 +253,13 @@ class App : Application() {
     }
 
     private fun initializeRuntimeComponents() {
-        appScope.launchLogged(Dispatchers.IO) {
-            ExposeService.initCommandFile()
-        }
         NotificationChannels.initialize()
         PackageAppCatalog.initialize()
         initA11yFeat()
         initPrivilege()
+        appScope.launchLogged(Dispatchers.IO) {
+            PrivilegeUi.prepareExternalShellScript(gkdPrivilegeUiConfig.manualShellScriptPath)
+        }
         appScope.launchLogged(Dispatchers.IO) {
             PrivilegeUi.startSilently(gkdPrivilegeUiConfig)
         }

@@ -51,7 +51,6 @@ import li.gkd.app.ui.component.GkRuleCategoryTabs
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.animateListItem
 import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.rememberRuleListFocus
 import li.gkd.app.ui.navigation.ActionLogRoute
@@ -165,9 +164,10 @@ fun AppConfigPage(
             groups.map { group -> group.toRuleGroupTarget(subscription.id, appId) }
         }.filterTo(mutableSetOf()) { controls.getValue(it).canEnable }
     }
-    val selectionState = rememberMultiSelectionState<RuleGroupTarget>()
-    val selectedDataSet = selectionState.selectedKeys intersect selectableTargets
-    val isSelectedMode = selectionState.active
+    val selectionState = vm.selection
+    val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
+    val selectedDataSet = selectionSnapshot.selectedKeys intersect selectableTargets
+    val isSelectedMode = selectionSnapshot.active
     LaunchedEffect(selectableTargets, loadableState) {
         if (loadableState is Loadable.Ready) selectionState.retain(selectableTargets)
     }
@@ -252,8 +252,10 @@ fun AppConfigPage(
                     actions = { selectedMode ->
                         if (selectedMode) {
                             GkMultiSelectionActions(
-                                selectionState = selectionState,
+                                selected = selectionSnapshot.selectedKeys,
                                 keys = selectableTargets,
+                                onSelectAll = selectionState::selectAll,
+                                onInvert = selectionState::invert,
                                 enabled = !batchBusy && loadableState is Loadable.Ready,
                             ) { dismiss ->
                                 GkBatchActionMenuItem(

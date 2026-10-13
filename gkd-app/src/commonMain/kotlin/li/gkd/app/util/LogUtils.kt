@@ -2,7 +2,7 @@ package li.gkd.app.util
 
 import li.gkd.app.logging.FileLogWriter
 import li.gkd.app.logging.formatLogValue
-import li.gkd.app.logging.isLogDebuggable
+import li.gkd.app.META
 import li.gkd.app.logging.logMetadata
 import li.gkd.app.logging.writePlatformLog
 import li.gkd.app.storage.appStorage
@@ -23,7 +23,7 @@ object LogUtils {
         val thread = Thread.currentThread().name
         val location = loc.removePrefix("li.gkd.app.")
         val texts = args.map(::formatLogValue)
-        if (closed || isLogDebuggable()) {
+        if (closed || META.debuggable) {
             writePlatformLog(tag, buildString {
                 append("$thread, $location")
                 texts.forEachIndexed { index, text ->

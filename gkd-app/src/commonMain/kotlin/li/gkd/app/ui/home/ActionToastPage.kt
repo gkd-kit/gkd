@@ -74,7 +74,7 @@ fun ActionToastPage(
         ),
         navigator = mainVm.navigator,
         hideIme = host::hideIme,
-        scope = mainVm.scope,
+        actions = vm.editorActions,
     ) { padding ->
         Column(
             modifier =

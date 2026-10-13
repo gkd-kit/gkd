@@ -22,7 +22,7 @@ class RuleDelaySchedulerTest {
             apps:[{id:'app.test',groups:[{key:1,name:'Test',rules:[{matches:'*'}]}]}]}"""
         )
         return RuleSummaryBuilder.build(
-            RuleGroupPolicy(), runtime,
+            runtime,
             listOf(UsedSubsEntry(SubsItem(1, enable = true, order = 0), sub)),
             mapOf("app.test" to AppInfo("app.test", "Test", 1, "1", false, 0, false, 0)),
             emptyList(), emptyList(), emptyList(),

@@ -29,7 +29,6 @@ data class RuleGroupConfiguration(
 )
 
 object RuleGroupConfigService {
-    val policy by lazy { RuleGroupPolicy() }
     fun groupConfiguration(target: RuleGroupTarget): Flow<RuleGroupConfiguration> =
         SubscriptionConfigStore.observe().map { snapshot ->
             RuleGroupConfiguration(
@@ -196,7 +195,7 @@ object RuleGroupConfigService {
                     val category = subscription.getCategory(it.name)
                     SimilarAppGroup(
                         it.name,
-                        policy.getGroupEnabled(
+                        RuleGroupPolicy.getGroupEnabled(
                             it, configIndex.groupConfig(RuleGroupTarget.App(target.subsId, target.appId, it.key)),
                             category, configIndex.categoryConfig(target.subsId, category?.key),
                         )
@@ -284,7 +283,7 @@ object RuleGroupConfigService {
                     throw SubscriptionException(SubscriptionFailureReason.SubscriptionAppMissing)
                 }
             }
-            val state = if (group != null) policy.controlState(
+            val state = if (group != null) RuleGroupPolicy.controlState(
                 subscription, group, groupTarget.pageAppId, snapshot,
                 appInfos[groupTarget.pageAppId],
                 launcher, systemApps, groupTarget.pageAppId in blockedApps, configIndex,

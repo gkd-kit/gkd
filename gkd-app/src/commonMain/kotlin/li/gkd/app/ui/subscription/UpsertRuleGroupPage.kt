@@ -60,7 +60,7 @@ fun UpsertRuleGroupPage(
             onSaved = vm::onSaved,
             navigator = mainVm.navigator,
             hideIme = host::hideIme,
-            scope = mainVm.scope,
+            actions = vm.editorActions,
         ) { paddingValues ->
             val textColors =
                 TextFieldDefaults.colors(

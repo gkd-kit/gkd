@@ -273,7 +273,6 @@
     <string name="crash_reports_clear">清空崩溃记录</string>
     <string name="crash_reports_clear_confirmation">确定删除全部崩溃记录？</string>
     <string name="crash_reports_delete_partially_failed">部分崩溃记录删除失败</string>
-    <string name="crash_reports_description">应用异常退出记录</string>
     <string name="crash_reports_empty">暂无崩溃记录</string>
     <string name="crash_thread_description">线程：%1$s</string>
     <string name="crash_version_thread">v%1$s (%2$s) · %3$s</string>
@@ -326,7 +325,7 @@
     <string name="expanded">已展开</string>
     <string name="external_call_notification_description">任务完成后自动关闭</string>
     <string name="external_call_processing">正在处理外部调用</string>
-    <string name="external_call_unknown">未知调用: expose=%1$s data=%2$s</string>
+    <string name="external_call_unknown">未知调用: method=%1$s data=%2$s</string>
     <string name="feedback_app_issue_prefix">如果您已经确信是 GKD 应用本体的问题</string>
     <string name="feedback_continue_suffix">，可点击下方继续反馈</string>
     <string name="feedback_notice">反馈须知</string>
@@ -759,7 +758,6 @@
     <string name="snapshot_not_found">对应快照不存在</string>
     <string name="snapshot_notification_channel">保存快照通知</string>
     <string name="snapshot_records">快照记录</string>
-    <string name="snapshot_records_description">应用界面节点信息及截图</string>
     <string name="snapshot_replace_screenshot">替换截图</string>
     <string name="snapshot_replace_screenshot_description">分享前可处理隐私内容</string>
     <string name="snapshot_root_node_failed">获取信息根节点失败</string>
@@ -773,7 +771,6 @@
     <string name="snapshot_screenshot_trigger_description">截屏时保存快照</string>
     <string name="snapshot_screenshot_unavailable">截图不可用</string>
     <string name="snapshot_settings">快照设置</string>
-    <string name="snapshot_settings_description">触发方式、截图处理与导出</string>
     <string name="snapshot_share">分享快照文件</string>
     <string name="snapshot_title">快照</string>
     <string name="snapshot_too_many_nodes">节点数量过多</string>
@@ -1069,4 +1066,14 @@
     <string name="simulation_authorization_message">是否允许本次模拟启动？此操作不会获取真实 Android 权限。</string>
     <string name="simulation_accessibility_enabled">无障碍系统开关（模拟，开启后可处于未连接状态）</string>
     <string name="snapshot_share_preparing">正在准备分享</string>
+    <string name="external_calls_title">外部调用</string>
+    <string name="external_calls_notice">通过 Shell 命令调用 GKD，复制所需功能的命令即可。</string>
+    <string name="external_calls_snapshot">抓取快照</string>
+    <string name="external_calls_snapshot_hint">保存当前界面的节点信息及截图。</string>
+    <string name="external_calls_token_title">访问凭证</string>
+    <string name="external_calls_token_hint">命令已包含 token，请仅提供给可信应用。重置后，旧命令立即失效。</string>
+    <string name="external_calls_reset_token">重置 token</string>
+    <string name="external_calls_reset_success">重置成功</string>
+    <string name="external_calls_reset_notice">重置后，旧 token 和已复制的调用命令将立即失效。</string>
+    <string name="external_calls_invalid_token">外部调用被拒绝：token 缺失或无效</string>
 </resources>

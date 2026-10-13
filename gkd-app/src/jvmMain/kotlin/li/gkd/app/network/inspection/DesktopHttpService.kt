@@ -9,7 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
-import li.gkd.app.DesktopProfile
+import li.gkd.app.META
 import li.gkd.app.ServicePhase
 import li.gkd.app.SimulatedService
 import li.gkd.app.SimulatorStore
@@ -73,8 +73,8 @@ class DesktopHttpService(
                 serverInfo = {
                     ServerInfo(
                         DeviceInfo("Desktop", System.getProperty("os.arch"), "", "Desktop", 0, System.getProperty("os.name")),
-                        AppInfo(DesktopProfile.appId, DesktopProfile.appName,
-                            DesktopProfile.versionCode.toIntOrNull() ?: 0, DesktopProfile.versionName,
+                        AppInfo(META.appId, META.appName,
+                            META.versionCode, META.versionName,
                             false, 0, false, 0),
                     )
                 },

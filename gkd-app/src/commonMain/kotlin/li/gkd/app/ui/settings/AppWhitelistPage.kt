@@ -40,7 +40,7 @@ fun AppWhitelistPage(
         ),
         navigator = mainVm.navigator,
         hideIme = host::hideIme,
-        scope = mainVm.scope,
+        actions = vm.editorActions,
     ) { padding ->
         GkMultiTextField(
             modifier = Modifier.scaffoldPadding(padding),

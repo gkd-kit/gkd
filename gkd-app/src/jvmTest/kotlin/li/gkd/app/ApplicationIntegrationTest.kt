@@ -129,11 +129,12 @@ class ApplicationIntegrationTest {
                 assertActionLogSubscriptionLoadFailure()
                 assertRootNavigationLifecycle(runtime)
                 assertAppRuleParentVisibility()
-                SettingsRepositoryChecks.run(appStorage().store, profile.appName)
+                SettingsRepositoryChecks.run(appStorage().store, META.appName)
                 li.gkd.app.network.assertUpdateClient(session.resolve("update-client"))
                 assertIgnoredVersionsRetry(runtime.toast)
                 assertCrashReports()
                 assertCookiePersistence(appStorage().privateStore)
+                li.gkd.app.external.assertExternalCalls()
                 li.gkd.app.rule.RuleSwitchPolicyTest()
                     .requestRejectsChangedSwitchesButAcceptsConcurrentPageAndOtherAppEdits()
                 li.gkd.app.snapshot.SnapshotCaptureRepositoryTest(appStorage()).runAll()
@@ -256,9 +257,7 @@ class ApplicationIntegrationTest {
         }
         try {
             file.writeText("invalid-json")
-            val update = UpdateStatus(
-                this, 1, "test",
-            )
+            val update = UpdateStatus(this)
             suspend fun checkManually() {
                 val previousRevision = toast.revision
                 update.checkUpdate(manual = true)
@@ -477,6 +476,18 @@ class ApplicationIntegrationTest {
         val second = li.gkd.db.SubsItem(id = 900002, order = 101)
         try {
             val vm = HomeViewModel().also { owner.put("home", it) }
+            // A retained page keeps selection; both user and host tab changes clear it.
+            vm.homeState.selectTab(BottomNavItem.SubsManage)
+            vm.selection.select(first.id)
+            vm.homeState.clickTab(BottomNavItem.SubsManage)
+            assertEquals(setOf(first.id), vm.selection.state.value.selectedKeys)
+            assertEquals(setOf(first.id), (owner["home"] as HomeViewModel).selection.state.value.selectedKeys)
+            vm.homeState.clickTab(BottomNavItem.Settings)
+            assertFalse(vm.selection.state.value.active)
+            vm.homeState.selectTab(BottomNavItem.SubsManage)
+            vm.selection.select(second.id)
+            vm.homeState.selectTab(BottomNavItem.AppList)
+            assertFalse(vm.selection.state.value.active)
             withTimeout(5_000) { vm.appsState.first { it.value?.apps?.size == 2 } }
             withTimeout(5_000) { vm.latestState.first { it is li.gkd.app.state.Loadable.Ready } }
             withTimeout(5_000) { vm.subscriptionsState.first { it is li.gkd.app.state.Loadable.Ready } }

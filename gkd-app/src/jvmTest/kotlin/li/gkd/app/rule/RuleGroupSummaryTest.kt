@@ -14,7 +14,6 @@ import li.gkd.db.SubsItem
 class RuleGroupSummaryTest {
     @Test
     fun summariesAggregateSubscriptionsAndReactToCategoryAndGroupChanges() {
-        val policy = RuleGroupPolicy()
 
         fun sub(id: Long) =
             RawSubscription.parse("""{id:$id,name:'Test',version:1,categories:[{key:1,name:'Example'}],apps:[{id:'app.example',groups:[{key:1,name:'Example rule',rules:[{matches:'*'}]}]}]}""")
@@ -32,7 +31,7 @@ class RuleGroupSummaryTest {
             categories: List<SubsCategoryConfig> = emptyList(),
             groups: List<SubsGroupConfig> = emptyList()
         ) =
-            RuleGroupSummaryBuilder.build(policy, entries, apps, emptyList(), groups, categories)
+            RuleGroupSummaryBuilder.build(entries, apps, emptyList(), groups, categories)
         assertEquals(2, summary().appGroupSize)
         assertEquals(1, summary().appSize)
         assertEquals(
@@ -64,7 +63,6 @@ class RuleGroupSummaryTest {
             RawSubscription.parse("""{id:1,name:'Test',version:1,apps:[{id:'app.example',groups:[{key:1,name:'On',rules:[{matches:'*'}]},{key:2,name:'Off',rules:[{matches:'*'}]}]}]}""")
         val summary =
             RuleGroupSummaryBuilder.build(
-                RuleGroupPolicy(),
                 listOf(UsedSubsEntry(SubsItem(id = 1, enable = true, order = 0), subscription)),
                 apps.associateBy { it.id },
                 emptyList(),

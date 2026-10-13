@@ -94,7 +94,7 @@ class StatusService : LifecycleHookService() {
         useServicePresence(
             stateFlow = isRunning,
             name = Res.string.persistent_notification.getSync(),
-            startToastDelayMillis = if (app.justStarted) 1000 else 0,
+            showStartToast = !app.justStarted,
         )
         onCreated {
             if (!defaultStatusNotification.startForeground()) return@onCreated

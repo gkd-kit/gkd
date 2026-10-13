@@ -12,8 +12,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RulePropertyStateTest {
-    private val policy = RuleGroupPolicy()
-    private val limitationsPolicy = RuleLimitationPolicy()
 
     private val emptyExclusions = ExcludeData(emptyMap(), emptySet())
     private val info = AppInfo("app.id", "App", 10, "1.0", false, 1, false, 0)
@@ -26,7 +24,7 @@ class RulePropertyStateTest {
     private val group = subscription.globalGroups.single()
 
     private fun state(config: SubsGlobalGroupConfig?, appId: String? = "app.id") =
-        policy.controlState(
+        RuleGroupPolicy.controlState(
             subscription, group, appId,
             SubscriptionConfigSnapshot(
                 subsItems = listOf(SubsItem(-2, order = 0, enable = true)),
@@ -86,10 +84,10 @@ class RulePropertyStateTest {
     @Test
     fun implicitGlobalDefaultsDoNotLookLikeExtraSubscriptionRestrictions() {
         val implicit =
-            limitationsPolicy.resolve(subscription, group, "app.id", emptyExclusions, info)
+            RuleLimitationPolicy.resolve(subscription, group, "app.id", emptyExclusions, info)
         assertTrue(implicit.builtIn.isNotEmpty()) // They remain available in the details.
         assertFalse(implicit.hasBuiltInProperties)
-        val explicit = limitationsPolicy.resolve(
+        val explicit = RuleLimitationPolicy.resolve(
             subscription,
             group.copy(matchSystemApp = false), "app.id", emptyExclusions, info
         )
@@ -106,9 +104,9 @@ class RulePropertyStateTest {
         }"""
         )
         val raw = sub.apps.single().groups.single()
-        val cleared = limitationsPolicy.resolve(sub, raw, "app.id", emptyExclusions, info)
+        val cleared = RuleLimitationPolicy.resolve(sub, raw, "app.id", emptyExclusions, info)
         assertFalse(cleared.hasBuiltInProperties)
-        val inherited = limitationsPolicy.resolve(
+        val inherited = RuleLimitationPolicy.resolve(
             sub,
             raw.copy(rules = listOf(raw.rules.single().copy(excludeActivityIds = null))),
             "app.id", emptyExclusions, info

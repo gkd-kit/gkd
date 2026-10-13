@@ -1,5 +1,7 @@
 package li.gkd.app.ui.settings
 
+import li.gkd.app.META
+import li.gkd.app.time.format
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +66,6 @@ fun AboutPage(
 ) {
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AboutViewModel() }
-    val version = appVersion()
     val showVersionInfoDialog by vm.showVersionInfoDialog.collectAsStateWithLifecycle()
     val showShareAppDialog by vm.showShareAppDialog.collectAsStateWithLifecycle()
     val store by settings.collectAsStateWithLifecycle()
@@ -138,9 +139,9 @@ fun AboutPage(
                             .padding(horizontal = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(text = version.appName, style = MaterialTheme.typography.titleMedium)
+                    Text(text = META.appName, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = version.versionName,
+                        text = META.versionName,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -154,7 +155,7 @@ fun AboutPage(
                     mainVm.textDialog.showUrl(AppLinks.Repository)
                 },
             )
-            if (version.isGkdChannel) {
+            if (META.isGkdChannel) {
                 GkSettingItem(
                     imageVector = null,
                     title = stringResource(Res.string.donate),
@@ -243,12 +244,12 @@ fun AboutPage(
 
     GkVersionInfoDialog(
         showVersionInfoDialog,
-        version.channel,
-        version.versionCode,
-        version.versionName,
-        version.commitLabel,
-        version.commitTime,
-        { mainVm.textDialog.showUrl(version.commitUrl) },
+        META.channel,
+        META.versionCode.toString(),
+        META.versionName,
+        META.tagName ?: META.commitId.take(16),
+        META.commitTime.format("yyyy-MM-dd HH:mm:ss ZZ"),
+        { mainVm.textDialog.showUrl(META.commitUrl) },
         { vm.setShowVersionInfoDialog(false) },
     )
     host.GkShareAppDialog(

@@ -6,9 +6,12 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import li.gkd.app.settings.SettingsAppIds
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.state.BaseViewModel
 
 class AppWhitelistViewModel : BaseViewModel() {
+    val editorActions = EditorActionsState(scope)
+
     val initialIds = SettingsRepository.blockMatchAppList.value
     val text: StateFlow<String>
         field = MutableStateFlow(formatAppIdList(initialIds))

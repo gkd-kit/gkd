@@ -62,7 +62,6 @@ fun CategoryEditorPage(
 ) {
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { CategoryEditorViewModel(route) }
-    val policy = remember { CategoryPolicy() }
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { subscription ->
         val category = subscription.categories.find { it.key == route.categoryKey }
         val categorySnapshot = remember(category) { category?.let { json.encodeToString(it) } }
@@ -78,11 +77,11 @@ fun CategoryEditorPage(
         val conflict = route.categoryKey != null && categorySnapshot != draft.originalCategory
         val validation =
             remember(subscription, route.categoryKey, name) {
-                runCatching { policy.validateEdit(subscription, route.categoryKey, name) }
+                runCatching { CategoryPolicy.validateEdit(subscription, route.categoryKey, name) }
             }
         val preview =
             remember(subscription, route.categoryKey, previewName) {
-                runCatching { policy.previewEdit(subscription, route.categoryKey, previewName, "") }
+                runCatching { CategoryPolicy.previewEdit(subscription, route.categoryKey, previewName, "") }
             }
         val error =
             if (conflict) stringResource(Res.string.category_edit_conflict)
@@ -123,7 +122,7 @@ fun CategoryEditorPage(
             ),
             navigator = mainVm.navigator,
             hideIme = host::hideIme,
-            scope = mainVm.scope,
+            actions = vm.editorActions,
         ) { padding ->
             Column(
                 modifier =

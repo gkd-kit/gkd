@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.META
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -75,7 +76,6 @@ import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.navigation.ConfirmDeletion
-import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.ui.navigation.SubsCategoryRoute
@@ -220,7 +220,7 @@ class SubsSheetState(
                     }
                     AnimatedSheetSection(subscription) { subscription ->
                         val timeStr = formatTimeAgo(subsItem.mtime)
-                        val author = if (subsItem.isLocal) appVersion().appName else subscription.author
+                        val author = if (subsItem.isLocal) META.appName else subscription.author
                             ?: stringResource(Res.string.unknown)
                         val metadataDescription = stringResource(
                             Res.string.subscription_metadata_description,

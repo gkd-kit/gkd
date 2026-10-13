@@ -21,7 +21,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import li.gkd.app.model.WebViewEnvironment
-import li.gkd.app.network.AppLinks
 import org.jetbrains.skia.Image
 
 /** Local development imports are intentionally kept outside source control. */
@@ -39,24 +38,15 @@ object DesktopProfile {
         ?.mapKeys { it.key.toLong() }?.mapValues { it.value.jsonPrimitive.boolean }.orEmpty()
 
     val launcherAppId = profile["launcherAppId"]?.jsonPrimitive?.contentOrNull.orEmpty()
-    val channel = profile["channel"]?.jsonPrimitive?.content ?: "desktop"
-    val appId = profile["appId"]?.jsonPrimitive?.content ?: "li.songe.gkd"
-    val debuggable = true
-    val versionCode = profile["versionCode"]?.jsonPrimitive?.content ?: "—"
-    val commitLabel = profile["commitId"]?.jsonPrimitive?.content?.take(16) ?: "—"
-    val commitTime = profile["commitTimeText"]?.jsonPrimitive?.content ?: "—"
-    val commitUrl = profile["commitUrl"]?.jsonPrimitive?.content ?: AppLinks.Repository
-    val versionName = profile["versionName"]?.jsonPrimitive?.content ?: "Desktop 开发版本"
-    val appName = profile["appName"]?.jsonPrimitive?.content ?: "GKD"
     val webViewEnvironmentJson by lazy {
         WebViewEnvironment(
             platform = "desktop",
-            appId = appId,
-            appName = appName,
-            versionCode = versionCode.toIntOrNull() ?: 0,
-            versionName = versionName,
-            channel = channel,
-            debuggable = debuggable,
+            appId = META.appId,
+            appName = META.appName,
+            versionCode = META.versionCode,
+            versionName = META.versionName,
+            channel = META.channel,
+            debuggable = META.debuggable,
         ).toJson()
     }
     val statusBar = profile["statusBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.statusBarHeight

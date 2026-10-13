@@ -7,6 +7,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.explainControl
 import li.gkd.app.rule.RuleGroupTarget
@@ -69,7 +70,7 @@ class RuleControlDialogState {
                         group = group,
                         appId = target.pageAppId,
                         control = control,
-                        explanation = RuleGroupConfigService.policy.explainControl(
+                        explanation = RuleGroupPolicy.explainControl(
                             subscription, group, target.pageAppId, snapshot, control,
                         ),
                         onDismissRequest = { dismiss(current) },

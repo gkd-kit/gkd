@@ -44,7 +44,6 @@ import li.gkd.app.ui.component.GkSubsAppCard
 import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
@@ -117,14 +116,17 @@ fun SubsAppListPage(
                 .contains(searchStr, true)
         }
     }
-    val selection = rememberMultiSelectionState<String>()
+    val selection = vm.selection
+    val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
     val visibleTargets = apps.mapTo(mutableSetOf()) { it.id }
-    val selected = selection.selectedKeys intersect visibleTargets
-    LaunchedEffect(visibleTargets) { selection.retain(visibleTargets) }
-    GkBackHandler(showSearchBar && !selection.active) {
+    val selected = selectionSnapshot.selectedKeys intersect visibleTargets
+    LaunchedEffect(visibleTargets, loadableState) {
+        if (loadableState is Loadable.Ready) selection.retain(visibleTargets)
+    }
+    GkBackHandler(showSearchBar && !selectionSnapshot.active) {
         if (!host.hideIme()) closeSearch()
     }
-    GkBackHandler(selection.active) { if (!busy) selection.clear() }
+    GkBackHandler(selectionSnapshot.active) { if (!busy) selection.clear() }
     val updateSelected: (RuleSetting) -> Unit = { setting ->
         val request = vm.prepareSwitches(checkNotNull(state), selected)
         scope.launchUi {
@@ -154,7 +156,7 @@ fun SubsAppListPage(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             GkMultiSelectionTopAppBar(
-                selectedMode = selection.active, selectedCount = selected.size,
+                selectedMode = selectionSnapshot.active, selectedCount = selected.size,
                 onExitSelection = selection::clear,
                 onNavigateBack = { if (showSearchBar) closeSearch() else mainVm.navigator.pop() },
                 onTitleClick = if (showSearchBar) null else pageScrollState::resetScroll,
@@ -178,7 +180,7 @@ fun SubsAppListPage(
                     }
                 }, actions = { selectedMode ->
                     if (selectedMode) {
-                        GkMultiSelectionActions(selection, visibleTargets, !busy) { dismiss ->
+                        GkMultiSelectionActions(selectionSnapshot.selectedKeys, visibleTargets, selection::selectAll, selection::invert, !busy) { dismiss ->
                             GkRuleBatchMenuItems(!busy, dismiss, updateSelected)
                         }
                     } else {
@@ -219,7 +221,7 @@ fun SubsAppListPage(
                 })
         },
         floatingActionButton = {
-            if (SubscriptionIds.isLocal(subsItemId) && !selection.active) {
+            if (SubscriptionIds.isLocal(subsItemId) && !selectionSnapshot.active) {
                 FloatingActionButton(onClick = {
                     mainVm.navigator.navigate(
                         UpsertRuleGroupRoute(
@@ -264,7 +266,7 @@ fun SubsAppListPage(
                         checkNotNull(configIndex)
                     ),
                     selectionEnabled = !busy,
-                    selectedMode = selection.active,
+                    selectedMode = selectionSnapshot.active,
                     selected = app.id in selected,
                     onLongClick = {
                         if (!busy) {

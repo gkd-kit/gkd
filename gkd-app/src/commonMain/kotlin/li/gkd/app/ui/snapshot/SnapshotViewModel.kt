@@ -1,5 +1,7 @@
 package li.gkd.app.ui.snapshot
 
+import li.gkd.app.ui.component.SheetRequest
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -28,6 +30,19 @@ data class SnapshotDeleteResult(
 data class SnapshotShareProgress(val completed: Int, val total: Int)
 
 class SnapshotViewModel : BaseViewModel() {
+    val actionRequest: StateFlow<SheetRequest<Long>?>
+        field = MutableStateFlow(null)
+
+    fun showActions(snapshotId: Long) {
+        actionRequest.value = SheetRequest(snapshotId)
+    }
+
+    fun dismissActions(request: SheetRequest<Long>) {
+        actionRequest.compareAndSet(request, null)
+    }
+
+    val selection = MultiSelectionState<Long>()
+
     val uiState = Db.snapshotDao.query().stateLoadable()
 
     val shareProgress: StateFlow<SnapshotShareProgress?>

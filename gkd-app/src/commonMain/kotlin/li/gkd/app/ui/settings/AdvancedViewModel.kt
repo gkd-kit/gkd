@@ -15,8 +15,20 @@ class AdvancedViewModel : BaseViewModel() {
     val showEditPortDialog: StateFlow<Boolean>
         field = MutableStateFlow(false)
 
-    fun setShowEditPortDialog(value: Boolean) {
-        showEditPortDialog.value = value
+    val portDraft: StateFlow<String>
+        field = MutableStateFlow("")
+
+    fun editPort(port: Int) {
+        portDraft.value = port.toString()
+        showEditPortDialog.value = true
+    }
+
+    fun setPortDraft(value: String) {
+        portDraft.value = value.filter(Char::isDigit).take(5)
+    }
+
+    fun closeEditPortDialog() {
+        showEditPortDialog.value = false
     }
 
     val showHttpSettingsDialog: StateFlow<Boolean>

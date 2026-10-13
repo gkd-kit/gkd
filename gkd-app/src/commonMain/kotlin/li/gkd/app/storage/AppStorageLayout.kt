@@ -14,7 +14,6 @@ class AppStorageLayout(
 
     val db get() = directory(files, "db")
     val database get() = db.resolve("gkd.db")
-    val sh get() = directory(files, "sh")
     val store get() = directory(files, "store")
     val subscription get() = directory(files, "subscription")
     val snapshot get() = directory(files, "snapshot")

@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,8 @@ data class SubsAppGroupListUiState(
 class SubsAppGroupListViewModel(
     val route: SubsAppGroupListRoute,
 ) : BaseViewModel() {
+    val selection = MultiSelectionState<Int>()
+
     val categorySelection: StateFlow<AppRuleCategorySelection>
         field = MutableStateFlow(
             if (route.focusGroupKey == null) AppRuleCategorySelection.All else AppRuleCategorySelection.FocusedRule

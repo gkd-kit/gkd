@@ -59,6 +59,21 @@ data class ActionLogAppOption(val id: String, val name: String)
 class ActionLogViewModel(
     val route: ActionLogRoute,
 ) : BaseViewModel() {
+    val showAppFilter: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    val showFilterSearch: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    fun setShowFilterSearch(value: Boolean) {
+        showFilterSearch.value = value
+    }
+
+    fun setShowAppFilter(value: Boolean) {
+        if (value && !showAppFilter.value) showFilterSearch.value = false
+        showAppFilter.value = value
+    }
+
 
     val filterAppIds: StateFlow<Set<String>>
         field = MutableStateFlow(emptySet())

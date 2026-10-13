@@ -27,14 +27,14 @@ class GlobalGroupAppScopeTest {
         assertEquals(expected, group.rules.map {
             GlobalRule(it, resolved, apps, RuleRuntime()).matchActivity(info.id, "app.id.Main")
         })
-        val control = RuleGroupPolicy().controlState(
+        val control = RuleGroupPolicy.controlState(
             sub, group, info.id,
             SubscriptionConfigSnapshot(subsItems = listOf(item), globalGroupConfigs = listOf(config)),
             info, "launcher", emptySet(),
         )
         assertEquals(expected.any { it }, control.available)
         val summary = RuleGroupSummaryBuilder.build(
-            RuleGroupPolicy(), listOf(UsedSubsEntry(item, sub)), apps,
+            listOf(UsedSubsEntry(item, sub)), apps,
             emptyList(), listOf(config), emptyList(), "launcher",
         )
         assertEquals(if (expected.any { it }) 1 else 0, summary.appIdToGlobalGroupCount[info.id])
@@ -97,7 +97,7 @@ class GlobalGroupAppScopeTest {
         assertEquals(listOf("1.0"), app.versionName!!.include)
         assertEquals(listOf(".Other"), RuleScopePolicy.globalApp(group, group.rules.first(), "other.app")!!.excludeActivityIds)
         check(sub, listOf(true, false))
-        val limits = RuleLimitationPolicy().resolve(sub, group, info.id, ExcludeData(emptyMap(), emptySet()), info)
+        val limits = RuleLimitationPolicy.resolve(sub, group, info.id, ExcludeData(emptyMap(), emptySet()), info)
         assertEquals(1, limits.blockedRules)
         assertEquals(listOf(RuleRestriction.VersionMismatch), limits.blockedReasons)
         val code = limits.builtIn.single { it.versionCode?.minimum == 1 }

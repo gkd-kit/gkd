@@ -2,6 +2,7 @@ package li.gkd.app
 
 import kotlinx.serialization.json.Json
 import li.gkd.app.app.AppCatalogQuery
+import li.gkd.app.META
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
 import li.gkd.app.platform.PlatformResult
@@ -21,7 +22,7 @@ class DesktopAppCatalog(
         } else {
             AppInventory(
                 apps = listOf(
-                    AppInfo("li.songe.gkd", "GKD", 1, "1.0", false, 0, false, 0),
+                    AppInfo(META.appId, META.appName, META.versionCode, META.versionName, false, 0, false, 0),
                     AppInfo("com.android.settings", "设置", 1, "1.0", true, 0, false, 0),
                 )
             )

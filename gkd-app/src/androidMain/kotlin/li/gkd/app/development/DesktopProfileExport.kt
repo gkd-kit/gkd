@@ -161,9 +161,6 @@ object DesktopProfileExport {
             put("density", density)
             put("statusBar", statusInset / density)
             put("navigationBar", navigationInset / density)
-            put("appName", META.appName)
-            put("versionName", META.versionName)
-            put("versionCode", META.versionCode)
             put("launcherAppId", launcherAppIdFlow.value)
             put(
                 "dark",

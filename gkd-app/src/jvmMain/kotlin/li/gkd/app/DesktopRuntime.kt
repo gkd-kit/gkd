@@ -92,8 +92,8 @@ class DesktopRuntime(
             device = "Desktop " + System.getProperty("os.name"),
             osCode = 0,
             osName = System.getProperty("os.version"),
-            versionCode = DesktopProfile.versionCode.toIntOrNull() ?: 0,
-            versionName = DesktopProfile.versionName
+            versionCode = META.versionCode,
+            versionName = META.versionName
         )
     )
     private val previousCrashHandler = Thread.getDefaultUncaughtExceptionHandler()

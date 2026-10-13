@@ -1,6 +1,7 @@
 import li.gkd.gradle.CollectConsumerProguardRulesTask
 import li.gkd.gradle.ValidateStringResourcesTask
 import li.gkd.gradle.buildProperty
+import li.gkd.gradle.gitInfo
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -26,6 +27,15 @@ tasks.matching { it.name == "prepareComposeResourcesTaskForCommonMain" }.configu
     dependsOn(validateStringResources)
 }
 
+val generateDesktopAppMeta = tasks.register<WriteProperties>("generateDesktopAppMeta") {
+    destinationFile.set(layout.buildDirectory.file("generated/desktopAppMeta/app-meta.properties"))
+    property("versionCode", rootProject.extra["gkdVersionCode"] as Int)
+    property("versionName", rootProject.extra["gkdVersionName"] as String)
+    property("commitId", project.gitInfo.commitId)
+    property("commitTime", project.gitInfo.commitTime)
+    property("tagName", project.gitInfo.tagName.orEmpty())
+}
+
 kotlin {
     android {
         namespace = "li.gkd.app"
@@ -36,6 +46,9 @@ kotlin {
     }
     jvm()
     sourceSets {
+        jvmMain {
+            resources.srcDir(generateDesktopAppMeta.map { it.destinationFile.get().asFile.parentFile })
+        }
         commonMain.dependencies {
             compileOnly(libs.codeorigin)
             api(libs.cmp.resources)

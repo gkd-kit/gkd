@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -17,6 +18,7 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.app.AppSort
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionConfigSnapshot
@@ -40,6 +42,10 @@ data class SubsGlobalGroupExcludeUiState(
 class SubsGlobalGroupExcludeViewModel(
     val route: SubsGlobalGroupExcludeRoute,
 ) : BaseViewModel() {
+    val editorActions = EditorActionsState(scope)
+
+    val selection = MultiSelectionState<String>()
+
     val draft: StateFlow<RuleExcludeEditorDraft?>
         field = MutableStateFlow(null)
     private var saveSession = EditorSaveSession<Boolean>()

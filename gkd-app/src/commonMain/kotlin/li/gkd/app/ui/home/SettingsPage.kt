@@ -1,5 +1,6 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.META
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -32,11 +33,11 @@ import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.option.DarkThemeOption
 import li.gkd.app.model.findOption
+import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.page.GkBackupDialogs
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.dynamicColorAvailable
 import li.gkd.app.ui.platform.privilegeAvailable
-import li.gkd.app.ui.settings.appVersion
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
 import org.jetbrains.compose.resources.getString
@@ -49,16 +50,17 @@ fun settingsPage(
 ): ScaffoldExt {
     val mainVm = MainViewModel.requireCurrent()
     val scope = rememberCoroutineScope()
-    val appName = appVersion().appName
+    val appName = META.appName
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val privilegeAvailable = privilegeAvailable()
-    val showBackup by vm.showBackup.collectAsStateWithLifecycle()
+    val backupDialog by vm.backupDialog.collectAsStateWithLifecycle()
     GkBackupDialogs(
-        showBackup,
-        { vm.setShowBackup(false) },
-        host::importAppBackup,
-        host::shareAppBackup,
-        host::saveAppBackup,
+        dialog = backupDialog,
+        onDismiss = { vm.setBackupDialog(null) },
+        onExport = { vm.setBackupDialog(BackupDialog.Export) },
+        onImport = host::importAppBackup,
+        onShare = host::shareAppBackup,
+        onSaveDownloads = host::saveAppBackup,
     )
     fun setExcludeFromRecents(enabled: Boolean) {
         scope.launchUi {
@@ -222,7 +224,7 @@ fun settingsPage(
                 GkSettingItem(
                     title = stringResource(Res.string.backup_restore),
                     onClick = {
-                        { vm.setShowBackup(true) }()
+                        vm.setBackupDialog(BackupDialog.Main)
                     },
                 )
 

@@ -9,16 +9,14 @@ import li.songe.codeorigin.CallSite
 fun LifecycleHookService.useServicePresence(
     stateFlow: MutableStateFlow<Boolean>,
     name: String,
-    startToastDelayMillis: Long = 0L,
+    showStartToast: Boolean = true,
     @CallSite loc: String = "",
 ) {
     onCreated {
         stateFlow.value = true
-        ToastUtils.show(
-            Res.string.service_started.getSync(name),
-            delayMillis = startToastDelayMillis,
-            loc = loc
-        )
+        if (showStartToast) {
+            ToastUtils.show(Res.string.service_started.getSync(name), loc = loc)
+        }
     }
     onDestroyed(loc = loc) {
         stateFlow.value = false

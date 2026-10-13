@@ -1,5 +1,6 @@
 package li.gkd.app.record
 
+import li.gkd.app.META
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -50,7 +51,7 @@ suspend fun assertRuntimeRecords(database: File) = coroutineScope {
             ActionRecordInput("app", null, 7, 9, 3, 2, index, null, index.toLong())
         try {
             clear()
-            val self = li.gkd.app.app.applicationId
+            val self = META.appId
             val launcher = li.gkd.app.app.launcherAppIdFlow.value
             val records = RuntimeRecordRepository
             records.recordVisit(AppVisitInput(self, launcher, 200_000))

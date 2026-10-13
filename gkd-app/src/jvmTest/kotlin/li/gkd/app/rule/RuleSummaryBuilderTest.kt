@@ -9,7 +9,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class RuleSummaryBuilderTest {
-    private val policy = RuleGroupPolicy()
     private val runtime = RuleRuntime()
 
     @Test
@@ -30,7 +29,7 @@ class RuleSummaryBuilderTest {
 
         val summary = RuleSummaryBuilder.build(
 
-            policy, runtime,
+            runtime,
             subscriptions = listOf(
                 UsedSubsEntry(
                     subsItem = SubsItem(id = subscription.id, enable = true, order = 0),

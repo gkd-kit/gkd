@@ -29,7 +29,6 @@ import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.animateListItem
 import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.rememberRuleListFocus
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
@@ -67,10 +66,11 @@ fun SubsGlobalGroupListPage(
         }
         val globalGroups = subs.globalGroups
 
-        val selectionState = rememberMultiSelectionState<Int>()
+        val selectionState = vm.selection
+        val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
         val selectableKeys = remember(controls) { controls.filterValues { it.canEnable }.keys }
-        val selectedKeys = selectionState.selectedKeys intersect selectableKeys
-        val isSelectedMode = selectionState.active
+        val selectedKeys = selectionSnapshot.selectedKeys intersect selectableKeys
+        val isSelectedMode = selectionSnapshot.active
         LaunchedEffect(selectableKeys) {
             selectionState.retain(selectableKeys)
         }
@@ -138,8 +138,10 @@ fun SubsGlobalGroupListPage(
                     actions = { selectedMode ->
                         if (selectedMode) {
                             GkMultiSelectionActions(
-                                selectionState = selectionState,
+                                selected = selectionSnapshot.selectedKeys,
                                 keys = selectableKeys,
+                                onSelectAll = selectionState::selectAll,
+                                onInvert = selectionState::invert,
                                 enabled = !batchBusy,
                             ) { dismiss ->
                                 GkRuleBatchMenuItems(

@@ -2,7 +2,7 @@ package li.gkd.app.settings
 
 interface SettingsStorage {
     fun read(filename: String): String?
-    suspend fun writeAtomically(filename: String, text: String)
+    fun writeAtomically(filename: String, text: String)
 }
 
 class SettingsWriteException(val filename: String, cause: Throwable) :

@@ -25,7 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.resources.*
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.ui.component.GkEditorActions
+import li.gkd.app.ui.component.GkEditorDialogs
 import li.gkd.app.ui.component.GkMultiTextField
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.isFullVisible
@@ -55,7 +55,6 @@ import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.RuleProperty
 import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
@@ -96,12 +95,13 @@ fun SubsGlobalGroupExcludePage(
         host.hideIme()
     }
 
-    val selection = rememberMultiSelectionState<String>()
+    val selection = vm.selection
+    val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
     val scroll = rememberListScrollState(canScroll = { draft == null })
-    GkBackHandler(showSearchBar && !selection.active) {
+    GkBackHandler(showSearchBar && !selectionSnapshot.active) {
         if (!host.hideIme()) closeSearch()
     }
-    GkBackHandler(selection.active) {
+    GkBackHandler(selectionSnapshot.active) {
         if (!busy) selection.clear()
     }
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
@@ -161,7 +161,7 @@ fun SubsGlobalGroupExcludePage(
         scroll.ResetOnListChange(visibleIds, key = { it })
         val selectableTargets =
             visibleIds.filterTo(mutableSetOf()) { controls.getValue(it).canEnable }
-        val selected = selection.selectedKeys intersect selectableTargets
+        val selected = selectionSnapshot.selectedKeys intersect selectableTargets
         LaunchedEffect(selectableTargets) { selection.retain(selectableTargets) }
         fun applyToApps(ids: Set<String>, setting: RuleSetting, confirm: Boolean = false) {
             val request = vm.prepareSwitches(state, ids)
@@ -178,196 +178,204 @@ fun SubsGlobalGroupExcludePage(
                 }
             }
         }
-        GkEditorActions(
-            hasChanges = { editing != null && ExcludeData.parse(editing.text) != editing.expected },
-            onSave = {
-                if (editing != null) {
-                    val changed = vm.saveEditor(editing)
-                    ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
-                }
-            },
-            onClose = vm::closeEditor,
-            beforeClose = { host.hideIme() },
-            backHandler = { GkBackHandler(editing != null, onBack = it) },
-            actionScope = vm.scope,
-        ) { closeEditor, saveEditor ->
-            GkScaffold(
-                modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
-                topBar = {
-                    GkMultiSelectionTopAppBar(
-                        selectedMode = selection.active,
-                        selectedCount = selected.size,
-                        onExitSelection = selection::clear,
-                        onNavigateBack = {
-                            when {
-                                editing != null -> closeEditor()
-                                showSearchBar -> closeSearch()
-                                else -> mainVm.navigator.pop()
-                            }
-                        },
-                        backOrClose = editing == null && !selection.active,
-                        canScroll = editing == null,
-                        onTitleClick = if (showSearchBar || editing != null) null else scroll::resetScroll,
-                        scrollBehavior = scroll.scrollBehavior,
-                        title = {
-                            val firstShowSearchBar = remember { showSearchBar }
-                            if (editing == null && showSearchBar) {
-                                GkAppBarTextField(
-                                    value = query,
-                                    onValueChange = {
-                                        // 关闭时失焦可能回传旧文本，不能恢复已清空的搜索条件。
-                                        if (showSearchBar) vm.setQuery(it)
-                                    },
-                                    hint = stringResource(Res.string.app_search_hint),
-                                    modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
-                                )
-                            } else {
-                                GkTwoLineText(group.name, RuleProperty.Personal.label)
-                            }
-                        },
-                        actions = { selectedMode ->
-                            GkAnimatedBooleanContent(
-                                targetState = editing != null,
-                                contentAlignment = Alignment.TopEnd,
-                                contentTrue = {
-                                    GkIconButton(
-                                        imageVector = GkIcons.Check,
-                                        contentDescription = stringResource(Res.string.action_save),
-                                        onClick = saveEditor,
-                                    )
+        val editorDialog by vm.editorActions.dialog.collectAsStateWithLifecycle()
+        val closeEditor: () -> Unit = {
+            vm.editorActions.requestClose(
+                hasChanges = { editing != null && ExcludeData.parse(editing.text) != editing.expected },
+                beforeClose = { host.hideIme() },
+                onClose = vm::closeEditor,
+            )
+        }
+        val saveEditor: () -> Unit = {
+            vm.editorActions.save(
+                onSave = {
+                    if (editing != null) {
+                        val changed = vm.saveEditor(editing)
+                        ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
+                    }
+                },
+                beforeClose = { host.hideIme() },
+                onSaved = vm::closeEditor,
+            )
+        }
+        GkBackHandler(editing != null, onBack = closeEditor)
+        GkScaffold(
+            modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
+            topBar = {
+                GkMultiSelectionTopAppBar(
+                    selectedMode = selectionSnapshot.active,
+                    selectedCount = selected.size,
+                    onExitSelection = selection::clear,
+                    onNavigateBack = {
+                        when {
+                            editing != null -> closeEditor()
+                            showSearchBar -> closeSearch()
+                            else -> mainVm.navigator.pop()
+                        }
+                    },
+                    backOrClose = editing == null && !selectionSnapshot.active,
+                    canScroll = editing == null,
+                    onTitleClick = if (showSearchBar || editing != null) null else scroll::resetScroll,
+                    scrollBehavior = scroll.scrollBehavior,
+                    title = {
+                        val firstShowSearchBar = remember { showSearchBar }
+                        if (editing == null && showSearchBar) {
+                            GkAppBarTextField(
+                                value = query,
+                                onValueChange = {
+                                    // 关闭时失焦可能回传旧文本，不能恢复已清空的搜索条件。
+                                    if (showSearchBar) vm.setQuery(it)
                                 },
-                                contentFalse = {
-                                    Row {
-                                        if (selectedMode) {
-                                            GkMultiSelectionActions(
-                                                selection,
-                                                selectableTargets,
-                                                !busy
-                                            ) { dismiss ->
-                                                GkRuleBatchMenuItems(
-                                                    !busy,
-                                                    dismiss,
-                                                    { applyToApps(selected, it, true) })
-                                            }
-                                        } else {
-                                            GkSearchCloseIconButton(
-                                                isSearchOpen = showSearchBar,
-                                                contentDescription = if (!showSearchBar) stringResource(Res.string.search_open) else if (query.isEmpty()) stringResource(
-                                                    Res.string.search_close
-                                                ) else stringResource(Res.string.search_clear),
-                                                onClick = {
-                                                    if (!showSearchBar) vm.setShowSearchBar(true)
-                                                    else if (query.isNotEmpty()) vm.setQuery("")
-                                                    else closeSearch()
-                                                },
-                                            )
-                                            var menu by remember { mutableStateOf(false) }
-                                            Box {
-                                                GkFilterIconButton(
-                                                    filtered = filteredIds.size < controls.size,
-                                                    enabled = !busy, onClick = { menu = true })
-                                                DropdownMenu(menu, onDismissRequest = { menu = false }) {
-                                                    GkAppFilterContent(
-                                                        sort = settings.subsExcludeSort,
-                                                        groupType = settings.subsExcludeAppGroupType,
-                                                        showBlockApps = settings.subsExcludeShowBlockApp,
-                                                        onSort = vm::setSortType,
-                                                        onAppGroup = vm::setAppGroupType,
-                                                        onToggleBlock = vm::toggleShowBlockApps,
-                                                        includeUninstalled = false,
-                                                        allowEmptyGroups = true,
-                                                    )
-                                                }
+                                hint = stringResource(Res.string.app_search_hint),
+                                modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
+                            )
+                        } else {
+                            GkTwoLineText(group.name, RuleProperty.Personal.label)
+                        }
+                    },
+                    actions = { selectedMode ->
+                        GkAnimatedBooleanContent(
+                            targetState = editing != null,
+                            contentAlignment = Alignment.TopEnd,
+                            contentTrue = {
+                                GkIconButton(
+                                    imageVector = GkIcons.Check,
+                                    contentDescription = stringResource(Res.string.action_save),
+                                    onClick = saveEditor,
+                                )
+                            },
+                            contentFalse = {
+                                Row {
+                                    if (selectedMode) {
+                                        GkMultiSelectionActions(
+                                            selectionSnapshot.selectedKeys,
+                                            selectableTargets, selection::selectAll, selection::invert,
+                                            !busy
+                                        ) { dismiss ->
+                                            GkRuleBatchMenuItems(
+                                                !busy,
+                                                dismiss,
+                                                { applyToApps(selected, it, true) })
+                                        }
+                                    } else {
+                                        GkSearchCloseIconButton(
+                                            isSearchOpen = showSearchBar,
+                                            contentDescription = if (!showSearchBar) stringResource(Res.string.search_open) else if (query.isEmpty()) stringResource(
+                                                Res.string.search_close
+                                            ) else stringResource(Res.string.search_clear),
+                                            onClick = {
+                                                if (!showSearchBar) vm.setShowSearchBar(true)
+                                                else if (query.isNotEmpty()) vm.setQuery("")
+                                                else closeSearch()
+                                            },
+                                        )
+                                        var menu by remember { mutableStateOf(false) }
+                                        Box {
+                                            GkFilterIconButton(
+                                                filtered = filteredIds.size < controls.size,
+                                                enabled = !busy, onClick = { menu = true })
+                                            DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                                                GkAppFilterContent(
+                                                    sort = settings.subsExcludeSort,
+                                                    groupType = settings.subsExcludeAppGroupType,
+                                                    showBlockApps = settings.subsExcludeShowBlockApp,
+                                                    onSort = vm::setSortType,
+                                                    onAppGroup = vm::setAppGroupType,
+                                                    onToggleBlock = vm::toggleShowBlockApps,
+                                                    includeUninstalled = false,
+                                                    allowEmptyGroups = true,
+                                                )
                                             }
                                         }
                                     }
-                                },
-                            )
-                        },
-                    )
-                },
-                floatingActionButton = {
-                    GkAnimatedFloatingActionButton(
-                        visible = editing == null && !selection.active && !showSearchBar && scroll.scrollBehavior.isFullVisible,
-                        imageVector = GkIcons.Edit,
-                        contentDescription = stringResource(Res.string.action_edit),
-                        onClick = { if (draft == null) vm.startEditing(state) },
-                    )
-                },
-            ) { padding ->
-                if (editing != null) {
-                    GkMultiTextField(
-                        modifier = Modifier.scaffoldPadding(padding),
-                        text = editing.text,
-                        onTextChange = vm::setDraftText,
-                        immediateFocus = true,
-                        placeholderText = stringResource(Res.string.global_rule_scope_input_hint),
-                    )
-                } else {
-                    LazyColumn(Modifier.scaffoldPadding(padding), state = scroll.listState) {
-                        items(visibleIds, key = { it }) { appId ->
-                            val control = controls.getValue(appId)
-                            GkRuleListItem(
-                                onClick = { mainVm.showRuleGroup(subs.id, appId, group, appId) },
-                                selectedMode = selection.active, selected = appId in selected,
-                                selectable = control.canEnable,
-                                selectionEnabled = !busy,
-                                onSelect = { selection.toggle(appId) },
-                                onLongClick = {
-                                    if (!busy && control.canEnable) {
-                                        focusManager.clearFocus()
-                                        host.hideIme()
-                                        selection.select(appId)
-                                    }
-                                },
-                                leading = { GkAppIcon(appId, 32.dp) },
-                                trailing = { switchModifier ->
-                                    GkRuleEnableControl(
-                                        control, onSettingChange = { setting ->
-                                            val request = vm.prepareSwitches(state, setOf(appId))
-                                            vm.scope.launchUi {
-                                                vm.applySwitches(request, setting)
-                                                    ?.failureMessage()
-                                                    ?.let { ToastUtils.show(it) }
-                                            }
-                                        }, modifier = switchModifier,
-                                        identity = RuleSwitchTarget.GlobalApp(
-                                            subs.id,
-                                            group.key,
-                                            appId
-                                        )
-                                    )
-                                },
-                            ) {
-                                val appInfo = environment.apps[appId]
-                                Row(
-                                    Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        appInfo?.name ?: appId,
-                                        modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (appInfo == null) GkRulePropertyIndicators(control)
                                 }
-                                if (appInfo != null) GkRuleSupportingContent(control, appId)
-                            }
-                        }
-                        item("empty") {
-                            if (visibleIds.isEmpty()) {
-                                GkEmptyState(
-                                    if (matchingIds.isEmpty()) stringResource(Res.string.apps_no_matches)
-                                    else stringResource(Res.string.apps_no_matches_filter_hint)
+                            },
+                        )
+                    },
+                )
+            },
+            floatingActionButton = {
+                GkAnimatedFloatingActionButton(
+                    visible = editing == null && !selectionSnapshot.active && !showSearchBar && scroll.scrollBehavior.isFullVisible,
+                    imageVector = GkIcons.Edit,
+                    contentDescription = stringResource(Res.string.action_edit),
+                    onClick = { if (draft == null) vm.startEditing(state) },
+                )
+            },
+        ) { padding ->
+            if (editing != null) {
+                GkMultiTextField(
+                    modifier = Modifier.scaffoldPadding(padding),
+                    text = editing.text,
+                    onTextChange = vm::setDraftText,
+                    immediateFocus = true,
+                    placeholderText = stringResource(Res.string.global_rule_scope_input_hint),
+                )
+            } else {
+                LazyColumn(Modifier.scaffoldPadding(padding), state = scroll.listState) {
+                    items(visibleIds, key = { it }) { appId ->
+                        val control = controls.getValue(appId)
+                        GkRuleListItem(
+                            onClick = { mainVm.showRuleGroup(subs.id, appId, group, appId) },
+                            selectedMode = selectionSnapshot.active, selected = appId in selected,
+                            selectable = control.canEnable,
+                            selectionEnabled = !busy,
+                            onSelect = { selection.toggle(appId) },
+                            onLongClick = {
+                                if (!busy && control.canEnable) {
+                                    focusManager.clearFocus()
+                                    host.hideIme()
+                                    selection.select(appId)
+                                }
+                            },
+                            leading = { GkAppIcon(appId, 32.dp) },
+                            trailing = { switchModifier ->
+                                GkRuleEnableControl(
+                                    control, onSettingChange = { setting ->
+                                        val request = vm.prepareSwitches(state, setOf(appId))
+                                        vm.scope.launchUi {
+                                            vm.applySwitches(request, setting)
+                                                ?.failureMessage()
+                                                ?.let { ToastUtils.show(it) }
+                                        }
+                                    }, modifier = switchModifier,
+                                    identity = RuleSwitchTarget.GlobalApp(
+                                        subs.id,
+                                        group.key,
+                                        appId
+                                    )
                                 )
+                            },
+                        ) {
+                            val appInfo = environment.apps[appId]
+                            Row(
+                                Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    appInfo?.name ?: appId,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (appInfo == null) GkRulePropertyIndicators(control)
                             }
-                            GkPageBottomSpace()
+                            if (appInfo != null) GkRuleSupportingContent(control, appId)
                         }
+                    }
+                    item("empty") {
+                        if (visibleIds.isEmpty()) {
+                            GkEmptyState(
+                                if (matchingIds.isEmpty()) stringResource(Res.string.apps_no_matches)
+                                else stringResource(Res.string.apps_no_matches_filter_hint)
+                            )
+                        }
+                        GkPageBottomSpace()
                     }
                 }
             }
         }
+        GkEditorDialogs(editorDialog, vm.editorActions::dismissDialog, vm::closeEditor)
     }
 }

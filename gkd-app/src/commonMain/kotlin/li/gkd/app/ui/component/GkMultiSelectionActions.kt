@@ -22,13 +22,15 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun <K> RowScope.GkMultiSelectionActions(
-    selectionState: MultiSelectionState<K>,
+    selected: Set<K>,
     keys: Set<K>,
+    onSelectAll: (Set<K>) -> Unit,
+    onInvert: (Set<K>) -> Unit,
     enabled: Boolean = true,
     menuContent: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedKeys = selectionState.selectedKeys intersect keys
+    val selectedKeys = selected intersect keys
     LaunchedEffect(enabled, selectedKeys.isEmpty()) {
         if (!enabled || selectedKeys.isEmpty()) expanded = false
     }
@@ -36,13 +38,13 @@ fun <K> RowScope.GkMultiSelectionActions(
         imageVector = Icons.Outlined.SelectAll,
         contentDescription = stringResource(Res.string.selection_all),
         enabled = enabled && keys.isNotEmpty() && selectedKeys != keys,
-        onClick = { selectionState.selectAll(keys) },
+        onClick = { onSelectAll(keys) },
     )
     GkIconButton(
         imageVector = Icons.Outlined.FlipToBack,
         contentDescription = stringResource(Res.string.selection_invert),
         enabled = enabled && keys.isNotEmpty(),
-        onClick = { selectionState.invert(keys) },
+        onClick = { onInvert(keys) },
     )
     Box {
         GkIconButton(

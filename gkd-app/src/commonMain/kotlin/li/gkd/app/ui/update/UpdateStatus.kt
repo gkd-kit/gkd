@@ -20,6 +20,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import li.gkd.app.META
 import li.gkd.app.error.displayMessage
 import li.gkd.app.network.NewVersion
 import li.gkd.app.network.UpdateClient
@@ -41,8 +42,6 @@ import org.jetbrains.compose.resources.getString
 /** App-owned update workflow; only package installation belongs to the platform. */
 class UpdateStatus(
     private val scope: CoroutineScope,
-    private val versionCode: Int,
-    private val versionName: String,
 ) {
     private val storage by lazy { FileSettingsStorage(appStorage().store) }
     private val directory get() = appStorage().sharedCache
@@ -73,7 +72,7 @@ class UpdateStatus(
                 val url =
                     UpdateChannel.entries.findOption(SettingsRepository.settings.value.updateChannel).url
                 val result = withContext(Dispatchers.IO) { UpdateClient.fetch(url) }
-                if (result.versionCode <= versionCode) {
+                if (result.versionCode <= META.versionCode) {
                     if (manual) ToastUtils.show(getString(Res.string.updates_none))
                 } else if (manual || result.versionCode !in ignored) {
                     lastManual = manual; versionUrl = url; newVersion.value = result
@@ -150,8 +149,8 @@ class UpdateStatus(
         val version by newVersion.collectAsStateWithLifecycle()
         val status by downloadStatus.collectAsStateWithLifecycle()
         val text = version?.let { value ->
-            val logs = value.versionLogs.takeWhile { it.code > versionCode }
-            ("v$versionName -> v${value.versionName}\n\n" + when {
+            val logs = value.versionLogs.takeWhile { it.code > META.versionCode }
+            ("v${META.versionName} -> v${value.versionName}\n\n" + when {
                 logs.size > 1 -> logs.joinToString("\n\n") { "v${it.name}\n${it.desc}" }
                 logs.isNotEmpty() -> logs.first().desc
                 else -> ""

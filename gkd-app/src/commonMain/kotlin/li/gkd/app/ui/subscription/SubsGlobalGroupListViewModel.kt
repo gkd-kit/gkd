@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import li.gkd.app.resources.*
@@ -25,6 +26,8 @@ data class SubsGlobalGroupListUiState(
 class SubsGlobalGroupListViewModel(
     val route: SubsGlobalGroupListRoute,
 ) : BaseViewModel() {
+    val selection = MultiSelectionState<Int>()
+
     private val batchMutex = MutexState()
     val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
 

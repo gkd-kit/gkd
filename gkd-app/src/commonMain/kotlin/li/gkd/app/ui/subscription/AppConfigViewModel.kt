@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,6 +46,8 @@ data class AppConfigUiState(
 class AppConfigViewModel(
     val route: AppConfigRoute,
 ) : BaseViewModel() {
+    val selection = MultiSelectionState<RuleGroupTarget>()
+
     val categorySelection: StateFlow<AppRuleCategorySelection>
         field = MutableStateFlow(
             if (route.focusLog == null) AppRuleCategorySelection.Global else AppRuleCategorySelection.FocusedRule

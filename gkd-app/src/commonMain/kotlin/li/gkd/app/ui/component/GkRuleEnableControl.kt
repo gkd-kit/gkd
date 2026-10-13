@@ -25,7 +25,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleControlScope
 import li.gkd.app.rule.RuleControlState
-import li.gkd.app.rule.RuleGroupConfigService
+import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleRestriction
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
@@ -44,7 +44,7 @@ data class RuleControlEnvironment(
         appId: String?, configs: SubscriptionConfigSnapshot,
         configIndex: RuleConfigIndex = RuleConfigIndex(configs)
     ): RuleControlState =
-        RuleGroupConfigService.policy.controlState(
+        RuleGroupPolicy.controlState(
             subscription, group, appId, configs, apps[appId],
             launcherAppId, systemApps, appId in blockedApps, configIndex
         )

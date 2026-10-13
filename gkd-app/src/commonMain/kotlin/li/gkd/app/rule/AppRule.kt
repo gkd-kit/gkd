@@ -1,5 +1,6 @@
 package li.gkd.app.rule
 
+import li.gkd.app.META
 import li.gkd.app.model.AppInfo
 import li.gkd.app.subscription.RawSubscription
 

@@ -38,7 +38,6 @@ object RuleGroupSources {
         subscriptions: Flow<Loadable<SubscriptionSnapshot>>,
         environment: Flow<RuleAppEnvironment>,
         configs: Flow<SubscriptionConfigSnapshot>,
-        policy: RuleGroupPolicy,
     ): Flow<Loadable<RuleGroupSnapshot>> =
         combine(subscriptions, environment, configs) { loaded, input, config ->
             when (loaded) {
@@ -47,7 +46,6 @@ object RuleGroupSources {
                 is Loadable.Ready -> Loadable.Ready(
                     RuleGroupSnapshot(
                         RuleGroupSummaryBuilder.build(
-                            policy,
                             usedSubscriptions(config.subsItems, loaded.value.subscriptions),
                             input.apps,
                             config.appConfigs,
@@ -67,6 +65,6 @@ val ruleGroupState: StateFlow<Loadable<RuleGroupSnapshot>> by lazy {
         combine(AppInfoRepository.appInfoMapFlow, launcherAppIdFlow) { apps, launcher ->
             RuleAppEnvironment(apps, launcher)
         },
-        SubscriptionConfigStore.observe(), RuleGroupConfigService.policy,
+        SubscriptionConfigStore.observe(),
     ).stateIn(applicationScope(), SharingStarted.Eagerly, Loadable.Loading)
 }

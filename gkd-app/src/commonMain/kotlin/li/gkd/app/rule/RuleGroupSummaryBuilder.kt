@@ -1,5 +1,6 @@
 package li.gkd.app.rule
 
+import li.gkd.app.META
 import li.gkd.app.model.AppInfo
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.UsedSubsEntry
@@ -11,7 +12,6 @@ import li.gkd.db.SubsGroupConfig
 
 object RuleGroupSummaryBuilder {
     fun build(
-        policy: RuleGroupPolicy,
         subscriptions: List<UsedSubsEntry>,
         appInfoById: Map<String, AppInfo>,
         appConfigs: List<SubsAppConfig>,
@@ -34,7 +34,7 @@ object RuleGroupSummaryBuilder {
 
         subscriptions.forEach { (subsItem, subscription) ->
             subscription.globalGroups.filter { group ->
-                policy.getGroupEnabled(group, globalConfigByKey[subsItem.id to group.key])
+                RuleGroupPolicy.getGroupEnabled(group, globalConfigByKey[subsItem.id to group.key])
             }.forEach { group ->
                 val resolvedGroup = ResolvedGlobalGroup(
                     group = group,
@@ -62,7 +62,7 @@ object RuleGroupSummaryBuilder {
                         subsItem = subsItem,
                         config = config,
                         app = app,
-                        enable = policy.getGroupEnabled(
+                        enable = RuleGroupPolicy.getGroupEnabled(
                             group,
                             config,
                             category,
@@ -91,7 +91,7 @@ object RuleGroupSummaryBuilder {
         val globalCounts =
             if (globalGroups.isEmpty()) emptyMap() else appInfoById.mapValues { (appId, info) ->
                 globalGroups.count { resolved ->
-                    policy.getGlobalGroupChecked(
+                    RuleGroupPolicy.getGlobalGroupChecked(
                         resolved.subscription, resolved.excludeData, resolved.group,
                         appId, launcherAppId, systemAppIds, info,
                         resolved.matchAnyApp,

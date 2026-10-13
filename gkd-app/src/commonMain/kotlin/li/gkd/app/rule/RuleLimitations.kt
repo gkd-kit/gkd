@@ -1,5 +1,6 @@
 package li.gkd.app.rule
 
+import li.gkd.app.META
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
@@ -44,7 +45,7 @@ data class RuleLimitations(
         get() = personal.any { it.kind != RuleLimitationKind.DefaultScope }
 }
 
-class RuleLimitationPolicy {
+object RuleLimitationPolicy {
     fun resolve(
         subscription: RawSubscription,
         group: RawSubscription.RawGroupProps,

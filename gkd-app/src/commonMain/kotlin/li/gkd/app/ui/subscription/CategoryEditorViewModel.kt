@@ -8,6 +8,7 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.CategoryEditorRoute
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.state.BaseViewModel
 
 data class CategoryEditorDraft(
@@ -21,6 +22,8 @@ data class CategoryEditorDraft(
 class CategoryEditorViewModel(
     private val route: CategoryEditorRoute,
 ) : BaseViewModel() {
+    val editorActions = EditorActionsState(scope)
+
     val draft: StateFlow<CategoryEditorDraft?>
         field = MutableStateFlow(null)
 

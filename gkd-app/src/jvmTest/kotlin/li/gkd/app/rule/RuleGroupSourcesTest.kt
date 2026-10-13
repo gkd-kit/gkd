@@ -30,8 +30,7 @@ class RuleGroupSourcesTest {
             RuleGroupSources.observe(
                 subscriptions,
                 environment,
-                configs,
-                RuleGroupPolicy()
+                configs
             ).collect { events.add(it) }
         }
         try {

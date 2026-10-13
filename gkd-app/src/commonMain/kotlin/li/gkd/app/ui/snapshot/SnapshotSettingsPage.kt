@@ -16,10 +16,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -62,21 +59,25 @@ fun SnapshotSettingsPage(
 
     val showCaptureScreenshotDialog by vm.showCaptureScreenshotDialog.collectAsStateWithLifecycle()
 
+    val appIdDraft by vm.appIdDraft.collectAsStateWithLifecycle()
+    val eventSelectorDraft by vm.eventSelectorDraft.collectAsStateWithLifecycle()
     if (showCaptureScreenshotDialog) {
         CaptureScreenshotConfigDialog(
-            appId = store.screenshotTargetAppId,
-            eventSelector = store.screenshotEventSelector,
+            appIdValue = appIdDraft,
+            eventSelectorValue = eventSelectorDraft,
+            onAppIdChange = vm::setAppIdDraft,
+            onEventSelectorChange = vm::setEventSelectorDraft,
             onOpenHelp = {
-                vm.setShowCaptureScreenshotDialog(false)
+                vm.closeCaptureScreenshotDialog()
                 mainVm.navigator.openWebPage(AppLinks.SnapshotHelp)
             },
-            onDismissRequest = { vm.setShowCaptureScreenshotDialog(false) },
+            onDismissRequest = { vm.closeCaptureScreenshotDialog() },
             onConfirm = { appId, selector ->
                 when (SettingsRepository.saveCaptureScreenshotConfig(appId, selector)) {
-                    ScreenshotConfigResult.Unchanged -> vm.setShowCaptureScreenshotDialog(false)
+                    ScreenshotConfigResult.Unchanged -> vm.closeCaptureScreenshotDialog()
                     ScreenshotConfigResult.Saved -> {
                         ToastUtils.show(Res.string.update_success.getSync())
-                        vm.setShowCaptureScreenshotDialog(false)
+                        vm.closeCaptureScreenshotDialog()
                     }
                     ScreenshotConfigResult.InvalidApp -> ToastUtils.show(Res.string.app_id_invalid.getSync())
                     ScreenshotConfigResult.InvalidSelector ->
@@ -139,7 +140,7 @@ fun SnapshotSettingsPage(
                         size = 32.dp,
                         iconSize = 20.dp,
                         onClickLabel = stringResource(Res.string.snapshot_screenshot_settings_open),
-                        onClick = { vm.setShowCaptureScreenshotDialog(true) },
+                        onClick = { vm.editCaptureScreenshot(store.screenshotTargetAppId, store.screenshotEventSelector) },
                         imageVector = GkIcons.PageInfo,
                         contentDescription =
                             stringResource(Res.string.snapshot_screenshot_settings),
@@ -209,14 +210,14 @@ expect suspend fun UiHost.ensureSnapshotSavePermission(): Boolean
 
 @Composable
 private fun CaptureScreenshotConfigDialog(
-    appId: String,
-    eventSelector: String,
+    appIdValue: String,
+    eventSelectorValue: String,
+    onAppIdChange: (String) -> Unit,
+    onEventSelectorChange: (String) -> Unit,
     onOpenHelp: () -> Unit,
     onDismissRequest: () -> Unit,
     onConfirm: (String, String) -> Unit,
 ) {
-    var appIdValue by remember { mutableStateOf(appId) }
-    var eventSelectorValue by remember { mutableStateOf(eventSelector) }
     GkAlertDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
         title = {
@@ -238,7 +239,7 @@ private fun CaptureScreenshotConfigDialog(
                     label = { Text(stringResource(Res.string.app_id)) },
                     value = appIdValue,
                     placeholder = { Text(text = stringResource(Res.string.target_app_id_hint)) },
-                    onValueChange = { appIdValue = it },
+                    onValueChange = onAppIdChange,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -249,7 +250,7 @@ private fun CaptureScreenshotConfigDialog(
                     placeholder = {
                         Text(text = stringResource(Res.string.snapshot_event_selector_hint))
                     },
-                    onValueChange = { eventSelectorValue = it },
+                    onValueChange = onEventSelectorChange,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth().autoFocus(),
                 )

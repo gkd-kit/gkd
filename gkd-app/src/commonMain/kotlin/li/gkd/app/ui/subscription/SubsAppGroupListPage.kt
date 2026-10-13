@@ -48,7 +48,6 @@ import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.RulePropertyText
 import li.gkd.app.ui.component.animateListItem
 import li.gkd.app.ui.component.rememberListScrollState
-import li.gkd.app.ui.component.rememberMultiSelectionState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.component.rememberRuleListFocus
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
@@ -137,13 +136,14 @@ fun SubsAppGroupListPage(
             else buildAppRuleSections(listOf(subs to groups), false)
         }
         val editable = SubscriptionIds.isLocal(subsItemId)
-        val selectionState = rememberMultiSelectionState<Int>()
+        val selectionState = vm.selection
+        val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
         val selectableKeys = remember(controls, sections) {
             sections.flatMap { it.subscriptions }.flatMap { it.second }
                 .filter { controls.getValue(it.key).canEnable }.mapTo(mutableSetOf()) { it.key }
         }
-        val selectedKeys = selectionState.selectedKeys intersect selectableKeys
-        val isSelectedMode = selectionState.active
+        val selectedKeys = selectionSnapshot.selectedKeys intersect selectableKeys
+        val isSelectedMode = selectionSnapshot.active
         LaunchedEffect(selectableKeys) {
             selectionState.retain(selectableKeys)
         }
@@ -230,8 +230,10 @@ fun SubsAppGroupListPage(
                         actions = { selectedMode ->
                             if (selectedMode) {
                                 GkMultiSelectionActions(
-                                    selectionState = selectionState,
+                                    selected = selectionSnapshot.selectedKeys,
                                     keys = selectableKeys,
+                                    onSelectAll = selectionState::selectAll,
+                                    onInvert = selectionState::invert,
                                     enabled = !batchBusy,
                                 ) { dismiss ->
                                     GkBatchActionMenuItem(

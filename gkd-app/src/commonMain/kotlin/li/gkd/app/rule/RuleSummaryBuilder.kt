@@ -8,14 +8,12 @@ import li.gkd.db.SubsGroupConfig
 
 object RuleSummaryBuilder {
     fun build(
-        policy: RuleGroupPolicy,
         runtime: RuleRuntime,
         subscriptions: List<UsedSubsEntry>, appInfoById: Map<String, AppInfo>,
         appConfigs: List<SubsAppConfig>, groupConfigs: List<SubsGroupConfig>,
         categoryConfigs: List<SubsCategoryConfig>, launcherAppId: String = "",
     ): RuleSummary {
         val groups = RuleGroupSummaryBuilder.build(
-            policy,
             subscriptions, appInfoById, appConfigs, groupConfigs, categoryConfigs, launcherAppId
         )
         return build(groups, appInfoById, runtime)

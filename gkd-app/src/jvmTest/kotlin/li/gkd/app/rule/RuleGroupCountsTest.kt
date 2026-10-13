@@ -9,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class RuleGroupCountsTest {
-    private val policy = RuleGroupPolicy()
 
     @Test
     fun globalCountsRespectAppOverridesAndCountGroupsRatherThanChildren() {
@@ -26,7 +25,6 @@ class RuleGroupCountsTest {
             AppInfo(it, it, 10, "1.0", it == "app.system", 1, false, 0)
         }
         val summary = RuleGroupSummaryBuilder.build(
-            policy,
             listOf(UsedSubsEntry(SubsItem(id = 1, enable = true, order = 0), sub)),
             apps,
             emptyList(),
@@ -58,7 +56,6 @@ class RuleGroupCountsTest {
 
         fun count(version: Int, launcher: String): Int = RuleGroupSummaryBuilder.build(
 
-            policy,
             listOf(UsedSubsEntry(SubsItem(id = 1, enable = true, order = 0), sub)),
             mapOf(
                 "app.one" to AppInfo(

@@ -13,7 +13,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RuleControlExplanationTest {
-    private val policy = RuleGroupPolicy()
     private val info = AppInfo("app.id", "App", 10, "1.0", false, 1, false, 0)
     private val subscription = RawSubscription.parse("""{
       id:1,name:'Test',version:1,categories:[{key:1,name:'Ad',enable:false}],
@@ -32,8 +31,8 @@ class RuleControlExplanationTest {
                     categoryConfigs = listOfNotNull(category),
                     appGroupConfigs = listOf(SubsAppGroupConfig(1, info.id, 1, own)),
                 )
-                val control = policy.controlState(subscription, group, info.id, config, info, "", emptySet())
-                val explanation = policy.explainControl(subscription, group, info.id, config, control)
+                val control = RuleGroupPolicy.controlState(subscription, group, info.id, config, info, "", emptySet())
+                val explanation = RuleGroupPolicy.explainControl(subscription, group, info.id, config, control)
                 assertEquals(control.available, explanation.enabled)
                 val expected = when {
                     own != null -> RuleControlStepKind.Own
@@ -61,8 +60,8 @@ class RuleControlExplanationTest {
                             subsItems = listOf(SubsItem(1, order = 0, enable = subscriptionEnabled)),
                             globalGroupConfigs = listOf(SubsGlobalGroupConfig(1, 1, groupEnabled, exclude)),
                         )
-                        val control = policy.controlState(subscription, group, info.id, config, info, "", emptySet())
-                        val explanation = policy.explainControl(subscription, group, info.id, config, control)
+                        val control = RuleGroupPolicy.controlState(subscription, group, info.id, config, info, "", emptySet())
+                        val explanation = RuleGroupPolicy.explainControl(subscription, group, info.id, config, control)
                         assertEquals(control.available, explanation.enabled)
                         if (!subscriptionEnabled) assertEquals(RuleControlStepKind.Subscription,
                             explanation.steps[explanation.decidingIndex].kind)
@@ -84,9 +83,9 @@ class RuleControlExplanationTest {
         val config = SubscriptionConfigSnapshot(globalGroupConfigs = listOf(
             SubsGlobalGroupConfig(1, 1, exclude = "!app.id"),
         ))
-        val control = policy.controlState(subscription, group, info.id, config, info, "", emptySet(), blockedApp = true)
+        val control = RuleGroupPolicy.controlState(subscription, group, info.id, config, info, "", emptySet(), blockedApp = true)
         assertFalse(control.available)
-        val explanation = policy.explainControl(subscription, group, info.id, config, control)
+        val explanation = RuleGroupPolicy.explainControl(subscription, group, info.id, config, control)
         assertTrue(explanation.enabled)
         assertEquals(null, explanation.steps[explanation.decidingIndex].note)
     }

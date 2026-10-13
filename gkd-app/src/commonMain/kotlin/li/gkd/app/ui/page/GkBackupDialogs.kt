@@ -1,34 +1,33 @@
 package li.gkd.app.ui.page
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkTextListDialog
 import org.jetbrains.compose.resources.stringResource
 
+enum class BackupDialog { Main, Export }
+
 @Composable
 fun GkBackupDialogs(
-    visible: Boolean, onDismiss: () -> Unit, onImport: () -> Unit,
-    onShare: () -> Unit, onSaveDownloads: () -> Unit
+    dialog: BackupDialog?,
+    onDismiss: () -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+    onShare: () -> Unit,
+    onSaveDownloads: () -> Unit,
 ) {
-    var exporting by remember { mutableStateOf(false) }
-    if (visible) {
-        GkTextListDialog(
-            onDismiss = onDismiss, textList = listOf(
+    if (dialog == null) return
+    GkTextListDialog(
+        onDismiss = onDismiss,
+        textList = when (dialog) {
+            BackupDialog.Main -> listOf(
                 stringResource(Res.string.backup_import_label) to onImport,
-                stringResource(Res.string.backup_export) to { exporting = true },
+                stringResource(Res.string.backup_export) to onExport,
             )
-        )
-    }
-    if (exporting) {
-        GkTextListDialog(
-            onDismiss = { exporting = false }, textList = listOf(
+            BackupDialog.Export -> listOf(
                 stringResource(Res.string.action_share) to onShare,
                 stringResource(Res.string.action_save_to_downloads) to onSaveDownloads,
             )
-        )
-    }
+        },
+    )
 }

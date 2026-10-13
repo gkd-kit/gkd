@@ -20,7 +20,6 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 class RuleSwitchPolicyTest {
-    private val policy = RuleGroupPolicy()
 
     @get:Rule
     val temporaryFolder = TemporaryFolder(TestFiles.root)
@@ -48,7 +47,7 @@ class RuleSwitchPolicyTest {
         ) as SubsGlobalGroupConfig
         val configs = initial.copy(globalGroupConfigs = listOf(next))
         assertEquals(RuleSetting.Enabled, RuleConfigIndex(configs).setting(target))
-        assertTrue(policy.getGroupEnabled(group.copy(enable = false), next))
+        assertTrue(RuleGroupPolicy.getGroupEnabled(group.copy(enable = false), next))
         assertEquals(RuleSetting.FollowDefault, RuleConfigIndex(initial).setting(target))
     }
 
@@ -84,14 +83,14 @@ class RuleSwitchPolicyTest {
         assertNull(reset.enable)
         assertEquals(original.exclude, reset.exclude)
         assertTrue(
-            policy.getGroupEnabled(
+            RuleGroupPolicy.getGroupEnabled(
                 sub.apps.single().groups.single(),
                 reset,
                 sub.categories.single()
             )
         )
         assertFalse(
-            policy.getGroupEnabled(
+            RuleGroupPolicy.getGroupEnabled(
                 sub.apps.single().groups.single(), reset, sub.categories.single(),
                 SubsCategoryConfig(false, sub.id, 1)
             )
@@ -106,7 +105,7 @@ class RuleSwitchPolicyTest {
             appConfigs = listOf(SubsAppConfig(false, sub.id, "app.id")),
             appGroupConfigs = listOf(SubsAppGroupConfig(sub.id, "app.id", 2, true))
         )
-        val state = policy.controlState(sub, group, "app.id", configs, info, "launcher", emptySet())
+        val state = RuleGroupPolicy.controlState(sub, group, "app.id", configs, info, "launcher", emptySet())
         assertEquals(RuleSetting.Enabled, state.setting)
         assertTrue(state.configuredEnabled)
         assertTrue(state.canEnable)
@@ -118,7 +117,7 @@ class RuleSwitchPolicyTest {
     fun globalAppPreferenceDoesNotEnableTheGlobalGroupTotalSwitch() {
         val group = sub.globalGroups.single()
         val config = SubsGlobalGroupConfig(sub.id, group.key, false, "!app.id")
-        val state = policy.controlState(
+        val state = RuleGroupPolicy.controlState(
             sub,
             group,
             "app.id",

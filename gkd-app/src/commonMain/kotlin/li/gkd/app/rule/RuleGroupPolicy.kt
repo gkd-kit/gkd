@@ -9,8 +9,7 @@ import li.gkd.db.SubsGroupConfig
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubscriptionConfigSnapshot
 
-class RuleGroupPolicy {
-    private val limitationsPolicy = RuleLimitationPolicy()
+object RuleGroupPolicy {
     fun controlState(
         subscription: RawSubscription,
         group: RawSubscription.RawGroupProps,
@@ -28,7 +27,7 @@ class RuleGroupPolicy {
         val category = subscription.getCategory(group.name)
         val categoryConfig = configIndex.categoryConfig(subscription.id, category?.key)
         val inApp = group is RawSubscription.RawGlobalGroup && appId != null
-        val limitations = limitationsPolicy.resolve(
+        val limitations = RuleLimitationPolicy.resolve(
             subscription,
             group,
             appId,

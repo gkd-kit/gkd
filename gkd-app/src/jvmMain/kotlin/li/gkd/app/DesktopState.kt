@@ -27,6 +27,7 @@ import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.ActionToastRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
+import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
@@ -279,6 +280,7 @@ private val desktopRoutes by lazy {
 
 fun routeFor(page: String): AppRoute = desktopRoutes.getValue(page)
 fun routeName(route: AppRoute): String = when (route) {
+    ExternalCallsRoute -> "external-calls"
     is SubsGlobalGroupListRoute -> "subs-global-groups"
     is SubsAppListRoute -> "subs-apps"
     is SubsAppGroupListRoute -> "subs-app-groups"

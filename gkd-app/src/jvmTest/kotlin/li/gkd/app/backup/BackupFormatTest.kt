@@ -19,7 +19,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupFormatTest {
-    private val policy = RuleGroupPolicy()
 
     // Frozen V1 archive payload: identity, discriminator and omitted nulls are a compatibility contract.
     private val legacy = """
@@ -69,14 +68,13 @@ class BackupFormatTest {
         )
         val group = subscription.apps.single().groups.single()
         val category = subscription.categories.single()
-        val uiEnabled = policy.getGroupEnabled(
+        val uiEnabled = RuleGroupPolicy.getGroupEnabled(
             group,
             data.appGroupConfigs.find { it.groupKey == group.key },
             category,
             data.categoryConfigs.find { it.categoryKey == category.key },
         )
         val summary = RuleGroupSummaryBuilder.build(
-            policy,
             subscriptions = listOf(UsedSubsEntry(data.subsItems.single(), subscription)),
             appInfoById = emptyMap(),
             appConfigs = data.appConfigs,

@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,7 +33,6 @@ import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.LocalEditorWindowInsets
-import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.image.appImageLoader
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.ImagePreviewItem
@@ -62,7 +60,7 @@ fun SnapshotPreviewPage(
     val catalog by li.gkd.app.app.AppInfoRepository.state.collectAsStateWithLifecycle()
     Box(modifier = Modifier.fillMaxSize()) {
         key(route) {
-            var actionRequest by remember { mutableStateOf<SheetRequest<Long>?>(null) }
+            val actionRequest by vm.actionRequest.collectAsStateWithLifecycle()
             var imageVersion by remember { mutableIntStateOf(0) }
             val snapshotsById = state?.associateBy { it.id }.orEmpty()
             val previewSnapshots = route.snapshotIds.mapNotNull(snapshotsById::get)
@@ -116,7 +114,7 @@ fun SnapshotPreviewPage(
                                 imageVector = GkIcons.MoreVert,
                                 contentDescription = stringResource(Res.string.more_label),
                                 colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
-                                onClick = { actionRequest = SheetRequest(item.id) },
+                                onClick = { vm.showActions(item.id) },
                             )
                         }
                     },
@@ -130,7 +128,7 @@ fun SnapshotPreviewPage(
                     snapshot = actionSnapshot,
                     missing = actionRequest != null && actionSnapshot == null,
                     onDismissRequest = { request ->
-                        if (actionRequest === request) actionRequest = null
+                        vm.dismissActions(request)
                     },
                 ) { _, snapshot, sheetState, dismiss ->
                     val routeAfterDelete = if (previewSnapshots.size == 1) {

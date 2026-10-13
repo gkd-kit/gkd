@@ -26,7 +26,6 @@ import li.songe.json5.decodeFromJson5String
 
 object SubscriptionRepository {
     val files by lazy { FileSubscriptionFiles(appStorage().subscription) }
-    private val categoryPolicy by lazy { CategoryPolicy() }
 
     private val updateMutex = MutexState()
 
@@ -220,7 +219,7 @@ object SubscriptionRepository {
         check(current == expected) {
             throw SubscriptionException(SubscriptionFailureReason.SubscriptionPreviewConflict)
         }
-        categoryPolicy.previewEdit(current, categoryKey, name, description)
+        CategoryPolicy.previewEdit(current, categoryKey, name, description)
     }
 
     suspend fun deleteCategory(expected: RawSubscription, categoryKey: Int): Boolean =

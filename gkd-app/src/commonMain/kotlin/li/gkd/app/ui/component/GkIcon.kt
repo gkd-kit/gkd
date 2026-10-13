@@ -60,6 +60,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -174,6 +175,7 @@ object GkIcons {
     val Sort get() = Icons.AutoMirrored.Filled.Sort
     val Add get() = Icons.Outlined.Add
     val KeyboardArrowRight get() = Icons.AutoMirrored.Filled.KeyboardArrowRight
+    val Key get() = Icons.Outlined.Key
     val ContentCopy get() = Icons.Outlined.ContentCopy
     val MoreVert get() = Icons.Default.MoreVert
     val ArrowBack get() = Icons.AutoMirrored.Filled.ArrowBack

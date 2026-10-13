@@ -30,7 +30,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.skiaCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.platform.LocalDensity
@@ -221,7 +221,7 @@ private fun GkAndroidStatusBar(system: AndroidWindow, dark: Boolean) {
                             val text = system.batteryPercent.toString()
                             // Center the visible glyphs in the body, excluding the terminal and font leading.
                             val bounds = font.measureText(text)
-                            drawContext.canvas.nativeCanvas.drawString(
+                            drawContext.canvas.skiaCanvas.drawString(
                                 text,
                                 38f * unit - (bounds.left + bounds.right) / 2,
                                 22.5f * unit - (bounds.top + bounds.bottom) / 2,

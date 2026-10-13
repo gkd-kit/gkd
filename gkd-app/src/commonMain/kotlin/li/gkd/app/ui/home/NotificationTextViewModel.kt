@@ -3,9 +3,12 @@ package li.gkd.app.ui.home
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.state.BaseViewModel
 
 class NotificationTextViewModel : BaseViewModel() {
+    val editorActions = EditorActionsState(scope)
+
     private val initial = SettingsRepository.settings.value
 
     val enabled: StateFlow<Boolean>

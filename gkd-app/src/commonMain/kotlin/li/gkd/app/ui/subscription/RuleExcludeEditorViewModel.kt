@@ -10,6 +10,7 @@ import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.state.BaseViewModel
 
 data class RuleExcludeEditorUiState(
@@ -21,6 +22,8 @@ data class RuleExcludeEditorUiState(
 class RuleExcludeEditorViewModel(
     private val route: RuleExcludeEditorRoute,
 ) : BaseViewModel() {
+    val editorActions = EditorActionsState(scope)
+
     val draft: StateFlow<RuleExcludeEditorDraft?>
         field = MutableStateFlow(null)
 

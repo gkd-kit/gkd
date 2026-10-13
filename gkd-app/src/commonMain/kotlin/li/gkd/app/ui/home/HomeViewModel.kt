@@ -1,5 +1,6 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ import li.gkd.app.state.Loadable
 import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.SubscriptionResult
+import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.ui.subscription.SubsManageUiState
 import li.gkd.db.Db
@@ -27,11 +29,20 @@ import li.gkd.db.SubsItem
 
 /** Business state owned by the HomeRoute navigation entry. */
 class HomeViewModel : BaseViewModel() {
-    val showBackup: StateFlow<Boolean>
+    val settingsDialogVisible: StateFlow<Boolean>
         field = MutableStateFlow(false)
 
-    fun setShowBackup(value: Boolean) {
-        showBackup.value = value
+    fun setSettingsDialogVisible(value: Boolean) {
+        settingsDialogVisible.value = value
+    }
+
+    val selection = MultiSelectionState<Long>()
+
+    val backupDialog: StateFlow<BackupDialog?>
+        field = MutableStateFlow(null)
+
+    fun setBackupDialog(value: BackupDialog?) {
+        backupDialog.value = value
     }
 
     val showRestrictionDetails: StateFlow<Boolean>
@@ -82,7 +93,9 @@ class HomeViewModel : BaseViewModel() {
         }
     }
 
-    val homeState = HomeState()
+    val homeState = HomeState(onTabChanged = { tab ->
+        if (tab != BottomNavItem.SubsManage) selection.clear()
+    })
     val latestState = HomeDataSources.observeLatest().stateInit(Loadable.Loading)
 
     val appsState = AppListSources.observe(

@@ -1,5 +1,6 @@
 package li.gkd.app.settings
 
+import li.gkd.app.META
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -12,8 +13,8 @@ actual fun defaultSettings(): SettingsStore {
     return settingsJson.decodeFromJsonElement(
         JsonObject(
             mapOf(
-                "actionToast" to JsonPrimitive(DesktopProfile.appName),
-                "customNotifTitle" to JsonPrimitive(DesktopProfile.appName),
+                "actionToast" to JsonPrimitive(META.appName),
+                "customNotifTitle" to JsonPrimitive(META.appName),
             ) + DesktopProfile.settings
         )
     )

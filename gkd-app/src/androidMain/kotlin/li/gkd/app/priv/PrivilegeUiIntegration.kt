@@ -36,6 +36,7 @@ val privilegeServiceStatusFlow by lazy {
 
 val gkdPrivilegeUiConfig: PrivilegeUiConfig by lazy {
     PrivilegeUiConfig(
+        manualShellScriptPath = "priv.sh",
         externalStartProviders = listOf(
             GkdShizukuExternalStartProvider,
         ),

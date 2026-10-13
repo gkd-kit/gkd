@@ -1,6 +1,6 @@
 package li.gkd.app.subscription
 
-class CategoryPolicy {
+object CategoryPolicy {
     fun validateEdit(
         subscription: RawSubscription,
         categoryKey: Int?,

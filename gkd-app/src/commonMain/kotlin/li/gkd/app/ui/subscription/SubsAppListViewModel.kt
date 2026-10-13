@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -26,6 +27,8 @@ data class SubsAppListUiState(
 class SubsAppListViewModel(
     val route: SubsAppListRoute,
 ) : BaseViewModel() {
+    val selection = MultiSelectionState<String>()
+
     val searchStr: StateFlow<String>
         field = MutableStateFlow("")
 

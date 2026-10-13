@@ -32,12 +32,12 @@ class GlobalDefaultAppScopeTest {
             GlobalRule(it, resolved, apps, runtime).matchActivity(appId, "$appId.Main")
         })
         val configs = SubscriptionConfigSnapshot(subsItems = listOf(item), globalGroupConfigs = listOf(config))
-        val control = RuleGroupPolicy().controlState(
+        val control = RuleGroupPolicy.controlState(
             subscription, group, appId, configs, apps[appId], "app.launcher", setOf("app.system"),
         )
         assertEquals(expectedRules.any { it }, control.available)
         val summary = RuleGroupSummaryBuilder.build(
-            RuleGroupPolicy(), listOf(UsedSubsEntry(item, subscription)), apps,
+            listOf(UsedSubsEntry(item, subscription)), apps,
             emptyList(), listOf(config), emptyList(), "app.launcher",
         )
         assertEquals(if (expectedRules.any { it }) 1 else 0, summary.appIdToGlobalGroupCount[appId])
@@ -77,14 +77,14 @@ class GlobalDefaultAppScopeTest {
     fun localDefaultDoesNotEnableADisabledGroupAndIsExposedAsAPersonalProperty() {
         val config = SubsGlobalGroupConfig(1, 1, enable = false, matchAnyApp = true)
         val configs = SubscriptionConfigSnapshot(subsItems = listOf(item), globalGroupConfigs = listOf(config))
-        val control = RuleGroupPolicy().controlState(
+        val control = RuleGroupPolicy.controlState(
             subscription, group, "app.ordinary", configs, apps["app.ordinary"], "app.launcher", setOf("app.system"),
         )
         assertEquals(false, control.available)
         assertEquals(true, control.defaultEnabled)
         assertEquals(true, control.limitations.personal.single().appOverride)
         val summary = RuleGroupSummaryBuilder.build(
-            RuleGroupPolicy(), listOf(UsedSubsEntry(item, subscription)), apps,
+            listOf(UsedSubsEntry(item, subscription)), apps,
             emptyList(), listOf(config), emptyList(), "app.launcher",
         )
         assertEquals(emptyList<ResolvedGlobalGroup>(), summary.globalGroups)
@@ -92,7 +92,7 @@ class GlobalDefaultAppScopeTest {
     // Reasons must follow the same scope priority as the effective default, including overlaps.
     @Test
     fun defaultOffReasonsRespectSpecificAppAndPlatformPriority() {
-        fun reasons(appId: String, local: Boolean? = null) = RuleGroupPolicy().controlState(
+        fun reasons(appId: String, local: Boolean? = null) = RuleGroupPolicy.controlState(
             subscription, group, appId,
             SubscriptionConfigSnapshot(globalGroupConfigs = listOf(
                 SubsGlobalGroupConfig(1, 1, matchAnyApp = local),
@@ -117,7 +117,7 @@ class GlobalDefaultAppScopeTest {
           globalGroups:[{key:1,name:'Ad',matchAnyApp:false,disableIfAppGroupMatch:'',
             apps:[{id:'app.disabled',enable:false}],rules:[{matches:'*'}]}]
         }""")
-        val control = RuleGroupPolicy().controlState(
+        val control = RuleGroupPolicy.controlState(
             sub, sub.globalGroups.single(), "app.disabled", SubscriptionConfigSnapshot(),
             apps["app.disabled"], "app.disabled", setOf("app.disabled"),
         )

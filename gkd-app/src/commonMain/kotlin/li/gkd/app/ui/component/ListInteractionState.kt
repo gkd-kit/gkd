@@ -1,5 +1,7 @@
 package li.gkd.app.ui.component
 
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -8,31 +10,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
-@Stable
+data class MultiSelectionSnapshot<K>(
+    val active: Boolean = false,
+    val selectedKeys: Set<K> = emptySet(),
+)
+
 class MultiSelectionState<K> {
-    private data class Selection<K>(
-        val active: Boolean = false,
-        val keys: Set<K> = emptySet(),
-    )
+    val state: StateFlow<MultiSelectionSnapshot<K>>
+        field = MutableStateFlow(MultiSelectionSnapshot<K>())
 
-    private var selection by mutableStateOf(Selection<K>())
+    private val selectedKeys: Set<K>
+        get() = state.value.selectedKeys
 
-    val selectedKeys: Set<K>
-        get() = selection.keys
-
-    val active: Boolean
-        get() = selection.active
+    private val active: Boolean
+        get() = state.value.active
 
     fun select(key: K) {
-        selection = Selection(active = true, keys = selectedKeys + key)
+        state.value = MultiSelectionSnapshot(active = true, selectedKeys = selectedKeys + key)
     }
 
     fun selectMany(keys: Iterable<K>) {
-        selection = Selection(active = true, keys = selectedKeys + keys)
+        state.value = MultiSelectionSnapshot(active = true, selectedKeys = selectedKeys + keys)
     }
 
     fun deselectMany(keys: Iterable<K>) {
-        selection = selection.copy(keys = selectedKeys - keys.toSet())
+        state.value = state.value.copy(selectedKeys = selectedKeys - keys.toSet())
     }
 
     fun toggle(key: K) {
@@ -41,15 +43,15 @@ class MultiSelectionState<K> {
         } else {
             selectedKeys + key
         }
-        selection = Selection(active = true, keys = keys)
+        state.value = MultiSelectionSnapshot(active = true, selectedKeys = keys)
     }
 
     fun selectAll(keys: Iterable<K>) {
-        selection = Selection(active = true, keys = keys.toSet())
+        state.value = MultiSelectionSnapshot(active = true, selectedKeys = keys.toSet())
     }
 
     fun invert(keys: Iterable<K>) {
-        selection = Selection(active = true, keys = keys.toSet() - selectedKeys)
+        state.value = MultiSelectionSnapshot(active = true, selectedKeys = keys.toSet() - selectedKeys)
     }
 
     // Only reconcile a loaded list. An empty selection alone does not end selection mode.
@@ -57,23 +59,18 @@ class MultiSelectionState<K> {
         if (keys.isEmpty()) {
             clear()
         } else {
-            selection = selection.copy(keys = selectedKeys intersect keys)
+            state.value = state.value.copy(selectedKeys = selectedKeys intersect keys)
         }
     }
 
     fun removeDeleted(keys: Set<K>) {
         val remaining = selectedKeys - keys
-        selection = Selection(active = active && remaining.isNotEmpty(), keys = remaining)
+        state.value = MultiSelectionSnapshot(active = active && remaining.isNotEmpty(), selectedKeys = remaining)
     }
 
     fun clear() {
-        selection = Selection()
+        state.value = MultiSelectionSnapshot()
     }
-}
-
-@Composable
-fun <K> rememberMultiSelectionState(): MultiSelectionState<K> = remember {
-    MultiSelectionState()
 }
 
 @Stable

@@ -1,5 +1,6 @@
 package li.gkd.app.ui.settings
 
+import li.gkd.app.META
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -69,7 +70,7 @@ fun WorkModePage(host: UiHost) {
 
     val onPrivilege: () -> Unit = { mainVm.navigator.navigate(PrivilegeServiceRoute) }
 
-    val appName: String = appVersion().appName
+    val appName: String = META.appName
 
     val automationAvailable =
         platform.privilegeAvailable && platform.privilegeCapabilities?.restricted != true

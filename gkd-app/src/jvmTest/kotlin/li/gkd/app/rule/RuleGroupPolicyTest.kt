@@ -10,7 +10,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RuleGroupPolicyTest {
-    private val policy = RuleGroupPolicy()
 
     @Test
     fun subscriptionInheritanceYieldsToExplicitGroupDefaultsAndManualOverrides() {
@@ -19,19 +18,19 @@ class RuleGroupPolicyTest {
         val explicitDefault = SubsCategoryConfig(null, subscription.id, category.key)
         assertEquals(
             false,
-            policy.getGroupEnabled(group, null, category, null)
+            RuleGroupPolicy.getGroupEnabled(group, null, category, null)
         )
         assertEquals(
             true,
-            policy.getGroupEnabled(group, null, category, explicitDefault)
+            RuleGroupPolicy.getGroupEnabled(group, null, category, explicitDefault)
         )
         assertEquals(
             false,
-            policy.getGroupEnabled(group, null, category, explicitDefault.copy(enable = false))
+            RuleGroupPolicy.getGroupEnabled(group, null, category, explicitDefault.copy(enable = false))
         )
         assertEquals(
             true,
-            policy.getGroupEnabled(
+            RuleGroupPolicy.getGroupEnabled(
                 group, SubsAppGroupConfig(subscription.id, "app.id", group.key, true),
                 category, explicitDefault.copy(enable = false)
             )
@@ -70,10 +69,10 @@ class RuleGroupPolicyTest {
         val group = subscription.apps.single().groups.single()
         val category = subscription.categories.single()
 
-        assertFalse(policy.getGroupEnabled(group, null, category, null))
+        assertFalse(RuleGroupPolicy.getGroupEnabled(group, null, category, null))
         assertEquals(
             true,
-            policy.getGroupEnabled(
+            RuleGroupPolicy.getGroupEnabled(
                 group,
                 null,
                 category,
@@ -86,7 +85,7 @@ class RuleGroupPolicyTest {
         )
         assertEquals(
             false,
-            policy.getGroupEnabled(
+            RuleGroupPolicy.getGroupEnabled(
                 group,
                 SubsAppGroupConfig(
                     enable = false,
@@ -114,9 +113,9 @@ class RuleGroupPolicyTest {
             categoryKey = category.key,
         )
 
-        assertEquals(false, policy.getCategoryEnabled(category, null))
-        assertNull(policy.getCategoryEnabled(category, config))
-        assertEquals(true, policy.getGroupEnabled(group, null, category, config))
+        assertEquals(false, RuleGroupPolicy.getCategoryEnabled(category, null))
+        assertNull(RuleGroupPolicy.getCategoryEnabled(category, config))
+        assertEquals(true, RuleGroupPolicy.getGroupEnabled(group, null, category, config))
     }
 
     @Test
@@ -129,9 +128,9 @@ class RuleGroupPolicyTest {
             categoryKey = category.key,
         )
 
-        assertEquals(true, policy.getCategoryEnabled(category, null))
-        assertNull(policy.getCategoryEnabled(category, config))
-        assertFalse(policy.getGroupEnabled(group, null, category, config))
+        assertEquals(true, RuleGroupPolicy.getCategoryEnabled(category, null))
+        assertNull(RuleGroupPolicy.getCategoryEnabled(category, config))
+        assertFalse(RuleGroupPolicy.getGroupEnabled(group, null, category, config))
     }
 
     @Test
@@ -141,7 +140,7 @@ class RuleGroupPolicyTest {
 
         assertEquals(
             true,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 ExcludeData(mapOf("blocked.app" to false), emptySet()),
                 group,
@@ -152,7 +151,7 @@ class RuleGroupPolicyTest {
         )
         assertEquals(
             true,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 ExcludeData(mapOf("ordinary.app" to false), emptySet()),
                 group,
@@ -163,7 +162,7 @@ class RuleGroupPolicyTest {
         )
         assertEquals(
             false,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 ExcludeData(mapOf("ordinary.app" to true), emptySet()),
                 group,
@@ -174,7 +173,7 @@ class RuleGroupPolicyTest {
         )
         assertEquals(
             true,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 emptyExclude,
                 group,
@@ -186,7 +185,7 @@ class RuleGroupPolicyTest {
         // Launcher permission does not bypass matchAnyApp for unspecified apps.
         assertEquals(
             false,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 emptyExclude,
                 group,
@@ -197,7 +196,7 @@ class RuleGroupPolicyTest {
         )
         assertEquals(
             false,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 emptyExclude,
                 group,
@@ -208,7 +207,7 @@ class RuleGroupPolicyTest {
         )
         assertEquals(
             false,
-            policy.getGlobalGroupChecked(
+            RuleGroupPolicy.getGlobalGroupChecked(
                 subscription,
                 emptyExclude,
                 group,
