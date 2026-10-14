@@ -3,6 +3,7 @@ package li.gkd.app.window
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
+import com.sun.jna.ptr.IntByReference
 import com.sun.jna.platform.win32.WinDef.HMENU
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinDef.LPARAM
@@ -47,6 +48,7 @@ interface WindowsNativeApi : StdCallLibrary {
 
 interface WindowsDwmApi : StdCallLibrary {
     fun DwmExtendFrameIntoClientArea(window: HWND, margins: Margins): Int
+    fun DwmSetWindowAttribute(window: HWND, attribute: Int, value: IntByReference, size: Int): Int
 
     @Structure.FieldOrder("left", "right", "top", "bottom")
     class Margins : Structure() {
@@ -66,6 +68,9 @@ interface WindowsDwmApi : StdCallLibrary {
     }
 
     companion object {
+        const val DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        const val DWMWA_BORDER_COLOR = 34
+        const val DWMWA_COLOR_DEFAULT = -1
         val instance: WindowsDwmApi by lazy { Native.load("dwmapi", WindowsDwmApi::class.java) }
     }
 }

@@ -4,6 +4,7 @@ import androidx.compose.ui.awt.ComposeWindow
 import com.sun.jna.CallbackReference
 import com.sun.jna.Native
 import com.sun.jna.Pointer
+import com.sun.jna.ptr.IntByReference
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinDef.LPARAM
@@ -45,6 +46,19 @@ class WindowsWindowFrameController(private val window: ComposeWindow) : AutoClos
             close()
             throw error
         }
+    }
+
+    fun updateTheme(dark: Boolean, borderArgb: Int) {
+        setFrameAttribute(WindowsDwmApi.DWMWA_USE_IMMERSIVE_DARK_MODE, if (dark) 1 else 0)
+        // COLORREF is 0x00BBGGRR, unlike Compose's 0xAARRGGBB.
+        val borderColor = ((borderArgb and 0xff) shl 16) or
+                (borderArgb and 0xff00) or ((borderArgb ushr 16) and 0xff)
+        setFrameAttribute(WindowsDwmApi.DWMWA_BORDER_COLOR, borderColor)
+    }
+
+    private fun setFrameAttribute(attribute: Int, value: Int) {
+        // Older Windows versions may reject these optional appearance attributes.
+        WindowsDwmApi.instance.DwmSetWindowAttribute(hwnd, attribute, IntByReference(value), 4)
     }
 
     private fun refreshFrame() {
@@ -231,6 +245,8 @@ class WindowsWindowFrameController(private val window: ComposeWindow) : AutoClos
             // Restore children before the frame; retain callbacks if restoration ever fails.
             hooks.asReversed().forEach { it.restore() }
             hooks.clear()
+            setFrameAttribute(WindowsDwmApi.DWMWA_USE_IMMERSIVE_DARK_MODE, 0)
+            setFrameAttribute(WindowsDwmApi.DWMWA_BORDER_COLOR, WindowsDwmApi.DWMWA_COLOR_DEFAULT)
             WindowsDwmApi.instance.DwmExtendFrameIntoClientArea(
                 hwnd,
                 WindowsDwmApi.Margins().apply { left = 0; right = 0; top = 0; bottom = 0 })
