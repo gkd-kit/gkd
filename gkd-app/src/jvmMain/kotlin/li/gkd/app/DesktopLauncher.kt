@@ -64,7 +64,6 @@ import li.gkd.app.ui.component.GkToastHost
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.GkTriStateSwitch
 import li.gkd.app.ui.component.LocalOverlayBackHandler
-import li.gkd.app.ui.icon.Logo
 import li.gkd.app.ui.navigation.GkAppNavigation
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.LocalIsTalkbackEnabled

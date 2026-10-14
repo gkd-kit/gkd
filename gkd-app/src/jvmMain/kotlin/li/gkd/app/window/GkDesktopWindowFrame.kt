@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import li.gkd.app.ui.component.GkIcons
-import li.gkd.app.ui.icon.Logo
 import java.awt.Rectangle
 import java.awt.BorderLayout
 import java.awt.Dimension

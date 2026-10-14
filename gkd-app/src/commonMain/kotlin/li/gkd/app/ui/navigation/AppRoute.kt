@@ -91,6 +91,9 @@ data object AdvancedPageRoute : AppRoute
 data object ExternalCallsRoute : AppRoute
 
 @Serializable
+data object QuickSettingsTilesRoute : AppRoute
+
+@Serializable
 data object WorkModeRoute : AppRoute
 
 @Serializable

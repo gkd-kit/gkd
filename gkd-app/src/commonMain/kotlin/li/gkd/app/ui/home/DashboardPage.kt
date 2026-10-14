@@ -33,7 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -153,7 +153,7 @@ fun dashboardPage(
     val openRestrictionDetails = stringResource(Res.string.restriction_details_open)
     return ScaffoldExt(
         BottomNavItem.Dashboard,
-        modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.gkTopAppBarScroll(scroll.scrollBehavior),
         topBar = {
             GkTopAppBar(
                 scrollBehavior = scroll.scrollBehavior,

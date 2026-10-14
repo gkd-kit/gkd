@@ -70,6 +70,7 @@ import androidx.compose.ui.semantics.semantics
 import li.gkd.app.resources.*
 import li.gkd.app.ui.icon.AndroidHead
 import li.gkd.app.ui.icon.LinkDiagonal as SharedLinkDiagonal
+import li.gkd.app.ui.icon.Logo as SharedLogo
 import li.songe.morph.compose.AnimatedMorphIcon
 import org.jetbrains.compose.resources.stringResource
 import li.gkd.app.ui.icon.CollapseContent as SharedCollapseContent
@@ -79,6 +80,12 @@ import li.gkd.app.ui.icon.FlashOn as SharedFlashOn
 import li.gkd.app.ui.icon.Flowchart as SharedFlowchart
 import li.gkd.app.ui.icon.PageInfo as SharedPageInfo
 import li.gkd.app.ui.icon.StackedDocuments as SharedStackedDocuments
+import li.gkd.app.ui.icon.TileStatus as SharedTileStatus
+import li.gkd.app.ui.icon.TileCapture as SharedTileCapture
+import li.gkd.app.ui.icon.TileHttp as SharedTileHttp
+import li.gkd.app.ui.icon.TileButton as SharedTileButton
+import li.gkd.app.ui.icon.TileActivity as SharedTileActivity
+import li.gkd.app.ui.icon.TileEvent as SharedTileEvent
 
 @Composable
 fun GkIcon(
@@ -158,6 +165,13 @@ fun getIconDefaultDesc(imageVector: ImageVector): String? = when (imageVector) {
 }
 
 object GkIcons {
+    val Logo get() = SharedLogo
+    val TileStatus get() = SharedTileStatus
+    val TileCapture get() = SharedTileCapture
+    val TileHttp get() = SharedTileHttp
+    val TileButton get() = SharedTileButton
+    val TileActivity get() = SharedTileActivity
+    val TileEvent get() = SharedTileEvent
     val PlayArrow get() = Icons.Filled.PlayArrow
     val Link get() = Icons.Outlined.Link
     val LinkDiagonal get() = SharedLinkDiagonal

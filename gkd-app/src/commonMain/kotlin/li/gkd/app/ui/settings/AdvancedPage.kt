@@ -19,7 +19,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +45,7 @@ import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
+import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotSettingsRoute
 import li.gkd.app.ui.platform.UiHost
@@ -148,7 +149,7 @@ fun AdvancedPage(
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     GkScaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
         topBar = {
             GkTopAppBar(
                 scrollBehavior = scrollBehavior,
@@ -216,6 +217,10 @@ fun AdvancedPage(
             GkSettingItem(
                 title = stringResource(Res.string.external_calls_title),
                 onClick = { mainVm.navigator.navigate(ExternalCallsRoute) },
+            )
+            GkSettingItem(
+                title = stringResource(Res.string.quick_settings_tiles_title),
+                onClick = { mainVm.navigator.navigate(QuickSettingsTilesRoute) },
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))

@@ -39,6 +39,7 @@ import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.HomeRoute
 import li.gkd.app.ui.navigation.ImagePreviewRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
+import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
@@ -248,6 +249,7 @@ private val desktopRoutes by lazy {
         "home" to HomeRoute,
         "action-toast" to ActionToastRoute,
         "notification-text" to NotificationTextRoute,
+        "quick-settings-tiles" to QuickSettingsTilesRoute,
         "edit-whitelist" to EditBlockAppListRoute,
         "about" to AboutRoute,
         "block-a11y-setup" to BlockA11ySetupRoute,

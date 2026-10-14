@@ -62,12 +62,12 @@ fun DesktopControls(
                 .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "控制项只影响开发环境；模拟状态不代表真机状态。",
+                "控制项只影响开发环境；模拟状态不代表真机状态",
                 style = MaterialTheme.typography.bodySmall
             )
             if (saveStatus.error != null) {
                 Text(
-                    "模拟设置保存失败：${saveStatus.error}。当前预览已保留，尚未写入磁盘。",
+                    "模拟设置保存失败：${saveStatus.error}。当前预览已保留，尚未写入磁盘",
                     color = MaterialTheme.colorScheme.error
                 )
                 OutlinedButton(onClick = flushSettings) { Text("重试保存") }

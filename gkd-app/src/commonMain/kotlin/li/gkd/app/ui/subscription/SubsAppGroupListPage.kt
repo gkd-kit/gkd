@@ -13,7 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -208,7 +208,7 @@ fun SubsAppGroupListPage(
         )
         pageScrollState.ResetOnChange(app.groups.isEmpty(), selectedCategory, enabled = !focus.pending)
         GkScaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
             topBar = {
                 Column {
                     GkMultiSelectionTopAppBar(

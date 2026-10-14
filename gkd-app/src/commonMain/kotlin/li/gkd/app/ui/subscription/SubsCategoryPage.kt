@@ -14,7 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,7 +77,7 @@ fun SubsCategoryPage(
             }
         }
         GkScaffold(
-            modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.gkTopAppBarScroll(scroll.scrollBehavior),
             topBar = {
                 GkMultiSelectionTopAppBar(
                     selectedMode = selectionSnapshot.active,

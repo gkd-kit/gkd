@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.notif.formatNotificationTemplate
@@ -79,7 +79,7 @@ fun settingsPage(
     ResetPageScrollOnRequest(vm.homeState, BottomNavItem.Settings, scroll::resetScrollAndAwait)
     return ScaffoldExt(
         BottomNavItem.Settings,
-        modifier = Modifier.nestedScroll(scroll.scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.gkTopAppBarScroll(scroll.scrollBehavior),
         topBar = {
             GkTopAppBar(
                 scrollBehavior = scroll.scrollBehavior,
