@@ -47,15 +47,11 @@ fun Project.registerSourcePathsTask(commitId: String): TaskProvider<GenerateSour
             ),
         )
     }.map { output ->
+        // This index is packaged with Android builds; include only their production source sets.
+        val androidSourcePath = Regex("gkd-[^/]+/src/(main|commonMain|androidMain)/.+\\.kt")
         output
             .split('\u0000')
-            .filter { it.endsWith(".kt") }
-            .filterNot { path ->
-                "/jvmTest/kotlin/" in path ||
-                        "/androidTest/kotlin/" in path ||
-                        "/test/kotlin/" in path ||
-                        "/li/songe/gradle/" in path
-            }
+            .filter(androidSourcePath::matches)
             .sorted()
     }
     val generatedAssetsDirectory = layout.buildDirectory.dir("generated/assets/sourcePaths")

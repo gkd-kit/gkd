@@ -87,10 +87,14 @@ object PackageAppCatalog {
     }
 
     fun initialize() {
-        AppChangeMonitor.register { AppInfoRepository.packagesChanged(setOf(it)) }
+        AppChangeMonitor.register { appId, source ->
+            AppInfoRepository.packagesChanged(setOf(appId), source)
+        }
         AppInfoRepository.requestRefresh()
         appScope.launch(Dispatchers.IO) {
-            privilegeContextFlow.drop(1).collect { AppInfoRepository.privilegeChanged() }
+            privilegeContextFlow.drop(1).collect {
+                AppInfoRepository.privilegeChanged(source = "privilegeContextFlow(connected=${it != null})")
+            }
         }
     }
 }

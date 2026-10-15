@@ -9,4 +9,9 @@ enum class SnapshotDisplayMode(override val value: Int, override val labelResour
     ByTime(1, Res.string.snapshot_view_time), ByApp(2, Res.string.snapshot_view_app);
 
     override val options get() = entries
+
+    companion object {
+        fun switch(value: Int): Int =
+            if (value == ByApp.value) ByTime.value else ByApp.value
+    }
 }

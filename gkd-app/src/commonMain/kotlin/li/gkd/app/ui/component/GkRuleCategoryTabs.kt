@@ -20,7 +20,7 @@ fun GkRuleCategoryTabs(
     categories: List<String?>,
     selectedIndex: Int,
     visible: Boolean,
-    firstTabTitle: String = stringResource(Res.string.rule_category_all),
+    firstTabTitle: String?,
     onSelect: (Int) -> Unit,
 ) {
     AnimatedVisibility(
@@ -29,15 +29,16 @@ fun GkRuleCategoryTabs(
         exit = shrinkVertically(tween(300), shrinkTowards = Alignment.Top) + fadeOut(tween(300)),
     ) {
         PrimaryScrollableTabRow(selectedTabIndex = selectedIndex, edgePadding = 8.dp) {
-            Tab(
+            if (firstTabTitle != null) Tab(
                 selected = selectedIndex == 0,
                 onClick = { onSelect(0) },
                 text = { Text(firstTabTitle, maxLines = 1) },
             )
             categories.forEachIndexed { index, name ->
+                val tabIndex = index + if (firstTabTitle != null) 1 else 0
                 Tab(
-                    selected = selectedIndex == index + 1,
-                    onClick = { onSelect(index + 1) },
+                    selected = selectedIndex == tabIndex,
+                    onClick = { onSelect(tabIndex) },
                     text = { Text(name ?: stringResource(Res.string.rule_category_uncategorized), maxLines = 1) },
                 )
             }

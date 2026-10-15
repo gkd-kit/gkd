@@ -55,7 +55,7 @@ fun GkAppCheckboxCard(
             verticalArrangement = Arrangement.Center
         ) {
             appName()
-            Text(
+            if (appInfo.name != appInfo.id) Text(
                 text = appInfo.id,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

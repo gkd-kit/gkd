@@ -375,10 +375,9 @@ fun SnapshotPage(
                         }
                     } else {
                         val displayModeLabel = stringResource(displayMode.labelResource)
-                        val nextMode = when (displayMode) {
-                            SnapshotDisplayMode.ByTime -> SnapshotDisplayMode.ByApp
-                            SnapshotDisplayMode.ByApp -> SnapshotDisplayMode.ByTime
-                        }
+                        val nextMode = SnapshotDisplayMode.entries.findOption(
+                            SnapshotDisplayMode.switch(settings.snapshotDisplayMode)
+                        )
                         GkIconButton(
                             imageVector = when (displayMode) {
                                 SnapshotDisplayMode.ByTime -> GkIcons.CalendarMonth
@@ -392,7 +391,7 @@ fun SnapshotPage(
                             },
                             onClick = {
                                 SettingsRepository.updateSettings {
-                                    it.copy(snapshotDisplayMode = nextMode.value)
+                                    it.copy(snapshotDisplayMode = SnapshotDisplayMode.switch(it.snapshotDisplayMode))
                                 }
                                 resetScroll()
                             },

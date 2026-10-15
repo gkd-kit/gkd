@@ -5,13 +5,13 @@ import li.gkd.app.util.SortUtils
 import li.gkd.app.rule.RuleSort
 import li.gkd.app.rule.toRuleGroupTarget
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,7 +33,7 @@ import li.gkd.app.ui.component.GkAppNameText
 import li.gkd.app.ui.component.GkAppRuleRestrictionCard
 import li.gkd.app.ui.component.GkBatchActionMenuItem
 import li.gkd.app.ui.component.GkEmptyState
-import li.gkd.app.ui.component.GkRuleSectionHeader
+import li.gkd.app.ui.component.GkCollapsingRuleList
 import li.gkd.app.ui.component.GkRuleDisplayIconButton
 import li.gkd.app.ui.component.GkRuleCategoryTabs
 import li.gkd.app.ui.component.GkIcons
@@ -83,13 +83,12 @@ fun SubsAppGroupListPage(
     val whitelist by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
     val a11yWhitelist by SettingsRepository.blockA11yAppList.collectAsStateWithLifecycle()
     val restrictionSettings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val byCategory = restrictionSettings.appRuleDisplayMode == RuleDisplayMode.ByCategory.value
+    val byCategory = restrictionSettings.subsAppRuleDisplayMode == RuleDisplayMode.ByCategory.value
     val whitelisted = appId in whitelist
     val partialFollowsWhitelist =
         restrictionSettings.enableBlockA11yAppList && restrictionSettings.blockA11yAppListFollowMatch
     val partialDisabled =
         restrictionSettings.enableBlockA11yAppList && !restrictionSettings.blockA11yAppListFollowMatch && appId in a11yWhitelist
-    val showAppRestriction = whitelisted || partialDisabled
     val showAppSetting by vm.showAppSetting.collectAsStateWithLifecycle()
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
@@ -139,10 +138,11 @@ fun SubsAppGroupListPage(
         val tabCategory = resolveAppRuleCategory(
             categorySelection, categorySections,
             focusGroupKey?.let { Triple(subsItemId, RuleGroupType.App, it) },
-        )
+        ) ?: categorySections.firstOrNull { it.showHeader }?.let {
+            AppRuleCategorySelection.Category(it.categoryName)
+        }
         val selectedCategory = tabCategory.takeIf { byCategory }
-        val selectedTabIndex = tabCategory?.let { categories.indexOf(it.name) + 1 } ?: 0
-        val showCategoryHeaders = selectedCategory == null
+        val selectedTabIndex = tabCategory?.let { categories.indexOf(it.name) } ?: 0
         val sections = remember(subs, groups, categorySections, byCategory, selectedCategory) {
             if (byCategory) filterAppRuleSections(categorySections, selectedCategory)
             else buildAppRuleSections(listOf(subs to groups), false)
@@ -193,15 +193,13 @@ fun SubsAppGroupListPage(
                 }
             }
         }
+        val headerState = rememberTopAppBarState(initialHeightOffsetLimit = 0f)
         val pageScrollState = rememberListScrollState()
         val scrollBehavior = pageScrollState.scrollBehavior
         val listState = pageScrollState.listState
-        val itemKeys = remember(sections, appExists, showAppRestriction, showCategoryHeaders) {
+        val itemKeys = remember(sections) {
             buildList {
-                if (showAppRestriction) add("app-restrictions")
-                if (appExists) add("app-switch")
                 sections.forEach { section ->
-                    if (section.showHeader && showCategoryHeaders) add(section.key)
                     section.subscriptions.forEach { (_, sectionGroups) ->
                         addAll(sectionGroups.map { it.key })
                     }
@@ -212,114 +210,103 @@ fun SubsAppGroupListPage(
             requestKey = focusGroupKey.takeIf { categorySelection == AppRuleCategorySelection.FocusedRule },
             onTargetMissing = { ToastUtils.show(getString(Res.string.rule_focus_missing)) },
             scrollState = pageScrollState,
+            onBeforePosition = { headerState.heightOffset = headerState.heightOffsetLimit },
             itemKeys = itemKeys,
             targetExists = app.groups.any { it.key == focusGroupKey },
-            stickyHeaderKeys = remember(sections, showCategoryHeaders) {
-                sections.filter { it.showHeader && showCategoryHeaders }.mapTo(mutableSetOf()) { it.key }
-            },
         )
         pageScrollState.ResetOnChange(app.groups.isEmpty(), selectedCategory, enabled = !focus.pending)
         GkScaffold(
             modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
             topBar = {
-                Column {
-                    GkMultiSelectionTopAppBar(
-                        selectedMode = isSelectedMode,
-                        selectedCount = selectedKeys.size,
-                        onExitSelection = selectionState::clear,
-                        scrollBehavior = scrollBehavior,
-                        onNavigateBack = { mainVm.navigator.pop() },
-                        onTitleClick = pageScrollState::resetScroll,
-                        title = {
-                            GkTwoLineText(
-                                title = subs.name,
-                                subtitle = appId,
-                                showApp = true,
-                                appContent = { id, name -> GkAppNameText(id, name) },
-                                appFallbackName = app.name,
-                            )
-                        },
-                        actions = { selectedMode ->
-                            if (selectedMode) {
-                                GkMultiSelectionActions(
-                                    selected = selectionSnapshot.selectedKeys,
-                                    keys = selectableKeys,
-                                    onSelectAll = selectionState::selectAll,
-                                    onInvert = selectionState::invert,
+                GkMultiSelectionTopAppBar(
+                    selectedMode = isSelectedMode,
+                    selectedCount = selectedKeys.size,
+                    onExitSelection = selectionState::clear,
+                    scrollBehavior = scrollBehavior,
+                    onNavigateBack = { mainVm.navigator.pop() },
+                    onTitleClick = {
+                        headerState.heightOffset = 0f
+                        pageScrollState.resetScroll()
+                    },
+                    title = {
+                        GkTwoLineText(
+                            title = subs.name,
+                            subtitle = appId,
+                            showApp = true,
+                            appContent = { id, name -> GkAppNameText(id, name) },
+                            appFallbackName = app.name,
+                        )
+                    },
+                    actions = { selectedMode ->
+                        if (selectedMode) {
+                            GkMultiSelectionActions(
+                                selected = selectionSnapshot.selectedKeys,
+                                keys = selectableKeys,
+                                onSelectAll = selectionState::selectAll,
+                                onInvert = selectionState::invert,
+                                enabled = !batchBusy,
+                            ) { dismiss ->
+                                GkBatchActionMenuItem(
+                                    text = stringResource(Res.string.action_copy),
+                                    onDismiss = dismiss,
+                                    onClick = {
+                                        val keysToCopy = selectedKeys
+                                        scope.launchUi {
+                                            vm.runBatchAction {
+                                                copyText(vm.buildSelectedGroupsText(keysToCopy))
+                                            }
+                                        }
+                                    },
+                                )
+                                GkRuleBatchMenuItems(
                                     enabled = !batchBusy,
-                                ) { dismiss ->
+                                    onDismiss = dismiss,
+                                    onUpdate = updateSelected,
+                                )
+                                if (editable) {
                                     GkBatchActionMenuItem(
-                                        text = stringResource(Res.string.action_copy),
+                                        text = stringResource(Res.string.action_delete),
                                         onDismiss = dismiss,
                                         onClick = {
-                                            val keysToCopy = selectedKeys
+                                            val keysToDelete = selectedKeys
                                             scope.launchUi {
                                                 vm.runBatchAction {
-                                                    copyText(vm.buildSelectedGroupsText(keysToCopy))
+                                                    if (!mainVm.dialogRequests.confirm(
+                                                            title = getString(Res.string.rule_delete),
+                                                            text = getString(
+                                                                Res.string.rule_groups_delete_confirmation,
+                                                                keysToDelete.size.toString()
+                                                            ),
+                                                            error = true,
+                                                        )
+                                                    ) return@runBatchAction
+                                                    val deletedSize =
+                                                        vm.deleteSelectedGroups(keysToDelete)
+                                                    selectionState.removeDeleted(keysToDelete)
+                                                    ToastUtils.show(
+                                                        if (deletedSize > 0) getString(
+                                                            Res.string.rule_groups_deleted_count,
+                                                            deletedSize.toString()
+                                                        ) else getString(Res.string.selected_rules_changed)
+                                                    )
                                                 }
                                             }
                                         },
                                     )
-                                    GkRuleBatchMenuItems(
-                                        enabled = !batchBusy,
-                                        onDismiss = dismiss,
-                                        onUpdate = updateSelected,
-                                    )
-                                    if (editable) {
-                                        GkBatchActionMenuItem(
-                                            text = stringResource(Res.string.action_delete),
-                                            onDismiss = dismiss,
-                                            onClick = {
-                                                val keysToDelete = selectedKeys
-                                                scope.launchUi {
-                                                    vm.runBatchAction {
-                                                        if (!mainVm.dialogRequests.confirm(
-                                                                title = getString(Res.string.rule_delete),
-                                                                text = getString(
-                                                                    Res.string.rule_groups_delete_confirmation,
-                                                                    keysToDelete.size.toString()
-                                                                ),
-                                                                error = true,
-                                                            )
-                                                        ) return@runBatchAction
-                                                        val deletedSize =
-                                                            vm.deleteSelectedGroups(keysToDelete)
-                                                        selectionState.removeDeleted(keysToDelete)
-                                                        ToastUtils.show(
-                                                            if (deletedSize > 0) getString(
-                                                                Res.string.rule_groups_deleted_count,
-                                                                deletedSize.toString()
-                                                            ) else getString(Res.string.selected_rules_changed)
-                                                        )
-                                                    }
-                                                }
-                                            },
-                                        )
-                                    }
-                                }
-                            } else {
-                                GkRuleSortButton(sort, vm::setSort)
-                                GkRuleDisplayIconButton(byCategory) {
-                                    SettingsRepository.updateSettings {
-                                        it.copy(
-                                            appRuleDisplayMode = if (it.appRuleDisplayMode == RuleDisplayMode.ByCategory.value)
-                                                RuleDisplayMode.Flat.value else RuleDisplayMode.ByCategory.value,
-                                        )
-                                    }
                                 }
                             }
-                        },
-                    )
-                    GkRuleCategoryTabs(
-                        categories, selectedTabIndex,
-                        visible = byCategory && categories.isNotEmpty(),
-                    ) { index ->
-                        vm.selectCategory(
-                            if (index == 0) AppRuleCategorySelection.All
-                            else AppRuleCategorySelection.Category(categories[index - 1])
-                        )
-                    }
-                }
+                        } else {
+                            GkRuleDisplayIconButton(byCategory) {
+                                SettingsRepository.updateSettings {
+                                    it.copy(
+                                        subsAppRuleDisplayMode = RuleDisplayMode.switch(it.subsAppRuleDisplayMode),
+                                    )
+                                }
+                            }
+                            GkRuleSortButton(sort, vm::setSort)
+                        }
+                    },
+                )
             },
             floatingActionButton = {
                 if (editable) {
@@ -339,44 +326,39 @@ fun SubsAppGroupListPage(
                     )
                 }
             }) { contentPadding ->
-            LazyColumn(
-                modifier = Modifier.scaffoldPadding(contentPadding).fillMaxSize(),
-                state = listState,
-            ) {
-                if (showAppRestriction) {
-                    item("app-restrictions") {
-                        GkAppRuleRestrictionCard(
-                            whitelisted = whitelisted,
-                            partialDisabled = partialDisabled,
-                            partialFollowsWhitelist = partialFollowsWhitelist,
-                            onRemoveWhitelist = {
-                                scope.launchUi {
-                                    if (mainVm.dialogRequests.confirm(
-                                            title = getString(Res.string.whitelist_remove),
-                                            text = if (partialFollowsWhitelist) getString(Res.string.app_rule_whitelist_remove_follow_confirm)
-                                            else getString(Res.string.app_rule_whitelist_remove_confirm),
-                                            confirmText = getString(Res.string.app_rule_restriction_remove),
-                                            dismissOnRequest = true,
-                                        )
-                                    ) vm.removeFromWhitelist()
-                                }
-                            },
-                            onRemovePartialDisable = {
-                                scope.launchUi {
-                                    if (mainVm.dialogRequests.confirm(
-                                            title = getString(Res.string.app_rule_partial_disable_remove),
-                                            text = getString(Res.string.app_rule_partial_disable_remove_confirm),
-                                            confirmText = getString(Res.string.app_rule_restriction_remove),
-                                            dismissOnRequest = true,
-                                        )
-                                    ) vm.removeFromPartialDisable()
-                                }
-                            },
-                        )
-                    }
-                }
-                if (appExists) {
-                    item("app-switch") {
+            GkCollapsingRuleList(
+                headerState = headerState,
+                modifier = Modifier.scaffoldPadding(contentPadding),
+                header = {
+                    GkAppRuleRestrictionCard(
+                        whitelisted = whitelisted,
+                        partialDisabled = partialDisabled,
+                        partialFollowsWhitelist = partialFollowsWhitelist,
+                        onRemoveWhitelist = {
+                            scope.launchUi {
+                                if (mainVm.dialogRequests.confirm(
+                                        title = getString(Res.string.whitelist_remove),
+                                        text = if (partialFollowsWhitelist) getString(Res.string.app_rule_whitelist_remove_follow_confirm)
+                                        else getString(Res.string.app_rule_whitelist_remove_confirm),
+                                        confirmText = getString(Res.string.app_rule_restriction_remove),
+                                        dismissOnRequest = true,
+                                    )
+                                ) vm.removeFromWhitelist()
+                            }
+                        },
+                        onRemovePartialDisable = {
+                            scope.launchUi {
+                                if (mainVm.dialogRequests.confirm(
+                                        title = getString(Res.string.app_rule_partial_disable_remove),
+                                        text = getString(Res.string.app_rule_partial_disable_remove_confirm),
+                                        confirmText = getString(Res.string.app_rule_restriction_remove),
+                                        dismissOnRequest = true,
+                                    )
+                                ) vm.removeFromPartialDisable()
+                            }
+                        },
+                    )
+                    if (appExists) {
                         GkRuleListItem(
                             onClick = { if (!isSelectedMode) vm.setShowAppSetting(true) },
                             trailing = {
@@ -403,60 +385,68 @@ fun SubsAppGroupListPage(
                             }
                         }
                     }
-                }
-                sections.forEach { section ->
-                    if (section.showHeader && showCategoryHeaders) {
-                        stickyHeader(section.key) {
-                            GkRuleSectionHeader(
-                                title = section.categoryName
-                                    ?: stringResource(Res.string.rule_category_uncategorized),
-                                groupCount = section.groupCount,
+                },
+                tabs = {
+                    GkRuleCategoryTabs(
+                        categories, selectedTabIndex,
+                        visible = byCategory && categories.isNotEmpty(),
+                        firstTabTitle = null,
+                    ) { index ->
+                        vm.selectCategory(
+                            AppRuleCategorySelection.Category(categories[index])
+                        )
+                    }
+                },
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                ) {
+                    sections.forEach { section ->
+                        items(section.subscriptions.single().second, { it.key }) { group ->
+                            GkRuleGroupCard(
+                                modifier = Modifier.animateListItem(),
+                                subs = subs,
+                                appId = appId,
+                                group = group,
+                                triggerSummary = state.triggerStats.group(group.toRuleGroupTarget(subs.id, appId)),
+                                hideCategoryPrefix = section.type == AppRuleSectionType.Category,
+                                control = controls.getValue(group.key),
+                                onOpen = {
+                                    mainVm.showRuleGroup(subs.id, appId, group, appId)
+                                },
+                                onSettingChange = { setting ->
+                                    val request = vm.prepareSwitches(state, setOf(group.key))
+                                    scope.launchUi {
+                                        vm.applySwitches(request, setting)
+                                            .failureMessage()?.let { ToastUtils.show(it) }
+                                    }
+                                },
+                                highlighted = !isSelectedMode && focus.highlightedKey == group.key,
+                                isSelectedMode = isSelectedMode,
+                                selectionEnabled = !batchBusy,
+                                isSelected = group.key in selectedKeys,
+                                onLongClick = {
+                                    if (!batchBusy) {
+                                        selectionState.select(group.key)
+                                    }
+                                },
+                                onSelectedChange = {
+                                    selectionState.toggle(group.key)
+                                }
                             )
                         }
                     }
-                    items(section.subscriptions.single().second, { it.key }) { group ->
-                        GkRuleGroupCard(
-                            modifier = Modifier.animateListItem(),
-                            subs = subs,
-                            appId = appId,
-                            group = group,
-                            triggerSummary = state.triggerStats.group(group.toRuleGroupTarget(subs.id, appId)),
-                            hideCategoryPrefix = section.type == AppRuleSectionType.Category,
-                            control = controls.getValue(group.key),
-                            onOpen = {
-                                mainVm.showRuleGroup(subs.id, appId, group, appId)
-                            },
-                            onSettingChange = { setting ->
-                                val request = vm.prepareSwitches(state, setOf(group.key))
-                                scope.launchUi {
-                                    vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { ToastUtils.show(it) }
-                                }
-                            },
-                            highlighted = !isSelectedMode && focus.highlightedKey == group.key,
-                            isSelectedMode = isSelectedMode,
-                            selectionEnabled = !batchBusy,
-                            isSelected = group.key in selectedKeys,
-                            onLongClick = {
-                                if (!batchBusy) {
-                                    selectionState.select(group.key)
-                                }
-                            },
-                            onSelectedChange = {
-                                selectionState.toggle(group.key)
-                            }
-                        )
-                    }
-                }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    if (groups.isEmpty()) {
-                        GkEmptyState(
-                            text = if (app.groups.isEmpty()) stringResource(Res.string.rules_empty) else stringResource(
-                                Res.string.rules_no_filter_matches
+                    item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                        if (groups.isEmpty()) {
+                            GkEmptyState(
+                                text = if (app.groups.isEmpty()) stringResource(Res.string.rules_empty) else stringResource(
+                                    Res.string.rules_no_filter_matches
+                                )
                             )
-                        )
-                    } else {
-                        GkPageBottomSpace()
+                        } else {
+                            GkPageBottomSpace()
+                        }
                     }
                 }
             }

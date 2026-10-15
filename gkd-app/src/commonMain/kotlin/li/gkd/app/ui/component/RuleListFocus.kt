@@ -31,12 +31,14 @@ fun rememberRuleListFocus(
     ready: Boolean = true,
     stickyHeaderKeys: Set<Any> = emptySet(),
     onRevealTarget: () -> Unit = {},
+    onBeforePosition: () -> Unit = {},
 ): RuleListFocus {
     var handled by remember(requestKey) { mutableStateOf(requestKey == null) }
     var positionedKey by remember(requestKey) { mutableStateOf<Any?>(null) }
     var highlightedKey by remember(requestKey) { mutableStateOf<Any?>(null) }
     val revealTarget by rememberUpdatedState(onRevealTarget)
     val notifyTargetMissing by rememberUpdatedState(onTargetMissing)
+    val beforePosition by rememberUpdatedState(onBeforePosition)
     val currentStickyHeaderKeys by rememberUpdatedState(stickyHeaderKeys)
     val listState = scrollState.listState
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -59,6 +61,7 @@ fun rememberRuleListFocus(
         snapshotFlow { listState.layoutInfo }.first {
             it.totalItemsCount >= itemKeys.size && it.viewportSize.height > 0
         }
+        beforePosition()
         scrollState.scrollToItemAndAwait(index)
         val layout = snapshotFlow { listState.layoutInfo }.first { info ->
             info.visibleItemsInfo.any { it.key == requestKey }

@@ -9,6 +9,8 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
 import li.gkd.app.model.AppUser
+import li.gkd.app.storage.appStorage
+import li.gkd.app.util.LogUtils
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
@@ -50,13 +52,34 @@ class DesktopAppCatalogTest {
                     )
                 )
             )
-            repository.packagesChanged(setOf("same"))
+            repository.packagesChanged(setOf("same"), source = "catalog-test.same.broadcast")
             delay(1_000)
             assertEquals("primary", repository.snapshot!!.apps.getValue("same").name)
-            repository.packagesChanged(setOf("hidden"))
+            repository.packagesChanged(setOf("hidden"), source = "catalog-test.hidden.broadcast")
             delay(2_200)
             assertEquals("primary", repository.snapshot!!.apps.getValue("same").name)
-            withTimeout(5_000) { repository.state.first { it.snapshot?.apps?.get("same")?.name == "package-updated" } }
+            // A new package extends the 3s window; new/repeated sources for pending
+            // packages must not extend it again (otherwise this 2s wait times out).
+            repository.packagesChanged(setOf("same"), source = "catalog-test.same.launcher")
+            repository.packagesChanged(setOf("same"), source = "catalog-test.same.launcher")
+            repository.packagesChanged(setOf("hidden"), source = "catalog-test.hidden.broadcast")
+            withTimeout(2_000) { repository.state.first { it.snapshot?.apps?.get("same")?.name == "package-updated" } }
+            // Snapshot publication precedes the completion log; wait for that log too.
+            var completionLog: String? = null
+            withTimeout(2_000) {
+                do {
+                    LogUtils.flush()
+                    completionLog = appStorage().log.listFiles().orEmpty()
+                        .filter { it.extension == "log" }.joinToString("\n") { it.readText() }
+                        .split("\n\n").singleOrNull {
+                            it.contains("应用列表更新完成") && it.contains("catalog-test.same.broadcast")
+                        }
+                    if (completionLog == null) delay(25)
+                } while (completionLog == null)
+            }
+            val updateLog = assertNotNull(completionLog)
+            assertTrue(updateLog.contains("same=[catalog-test.same.broadcast, catalog-test.same.launcher]"), updateLog)
+            assertTrue(updateLog.contains("hidden=[catalog-test.hidden.broadcast]"), updateLog)
             file.writeText("{broken")
             assertFails { repository.refresh() }
             assertEquals("package-updated", repository.snapshot!!.apps.getValue("same").name)

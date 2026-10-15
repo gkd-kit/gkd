@@ -132,7 +132,7 @@
     <string name="app_list_update_success">应用列表更新成功</string>
     <string name="app_name_description">应用：%1$s</string>
     <string name="app_name_id_input_hint">请输入应用名称/ID</string>
-    <string name="app_profile_name">「%1$s」</string>
+    <string name="app_profile_name">· %1$s</string>
     <string name="app_rule_add">添加应用规则</string>
     <string name="app_rule_breadcrumb">%1$s/应用规则/%2$s</string>
     <string name="app_rule_group_enabled_stats">已启用 %1$s 组应用规则，共 %2$s 组</string>
@@ -377,7 +377,6 @@
     <string name="rule_display_switch_to_category">切换为按分类显示</string>
     <string name="rule_display_switch_to_flat">切换为普通列表</string>
     <string name="rule_category_uncategorized">未分类</string>
-    <string name="rule_category_all">全部</string>
     <string name="global_rules_view_list">查看全局规则列表</string>
     <string name="google_play_label">Google Play</string>
     <string name="group_title">分组</string>

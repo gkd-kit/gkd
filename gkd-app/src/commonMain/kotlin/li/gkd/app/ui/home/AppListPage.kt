@@ -18,8 +18,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import li.gkd.app.ui.component.GkPullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -139,7 +138,6 @@ fun appListPage(
 
     val showSearchBar = state.showSearchBar
     val refreshing = state.refreshing
-    val pullToRefreshState = rememberPullToRefreshState()
     val editWhiteListMode = state.editWhiteListMode
     val pageScrollState = rememberListScrollState()
     val scrollBehavior = pageScrollState.scrollBehavior
@@ -305,9 +303,8 @@ fun appListPage(
             )
         },
     ) { contentPadding ->
-        PullToRefreshBox(
+        GkPullToRefreshBox(
             modifier = Modifier.padding(contentPadding),
-            state = pullToRefreshState,
             isRefreshing = refreshing,
             onRefresh = ::refresh,
         ) {
@@ -390,13 +387,18 @@ fun GkAppListItem(
     val count = triggerSummary?.count?.takeIf { it > 0 && !editWhiteListMode }
     val countText = count?.toString()
     val statsDescription = stats?.takeIf { it.hasRules }?.description
+    val appIdText = appInfo.id.takeIf { it != appInfo.name }
+    val supportingDescription = listOfNotNull(
+        statsDescription ?: appIdText,
+        countText?.let { stringResource(Res.string.trigger_count_value, it) },
+    ).joinToString("，")
     val description =
-        if (editWhiteListMode) appInfo.name
+        if (editWhiteListMode || supportingDescription.isEmpty()) appInfo.name
         else
             stringResource(
                 Res.string.app_whitelist_state_description,
                 appInfo.name,
-                listOfNotNull(statsDescription ?: appInfo.id, countText?.let { stringResource(Res.string.trigger_count_value, it) }).joinToString("，"),
+                supportingDescription,
             )
     val member = stringResource(Res.string.whitelist_member)
     val notMember = stringResource(Res.string.whitelist_not_member)
@@ -433,10 +435,10 @@ fun GkAppListItem(
         ) {
             name()
             if (stats != null) {
-                GkRuleStats(stats, emptyText = appInfo.id)
-            } else {
+                GkRuleStats(stats, emptyText = appIdText.orEmpty())
+            } else if (appIdText != null) {
                 Text(
-                    text = appInfo.id,
+                    text = appIdText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

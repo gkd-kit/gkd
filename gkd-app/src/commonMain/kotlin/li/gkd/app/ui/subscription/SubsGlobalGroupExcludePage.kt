@@ -356,6 +356,7 @@ fun SubsGlobalGroupExcludePage(
                             },
                         ) {
                             val appInfo = environment.apps[appId]
+                            val showAppId = appInfo != null && appInfo.name != appId
                             Row(
                                 Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -367,9 +368,9 @@ fun SubsGlobalGroupExcludePage(
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (appInfo == null) GkRulePropertyIndicators(control)
+                                if (!showAppId) GkRulePropertyIndicators(control)
                             }
-                            if (appInfo != null) GkRuleSupportingContent(control, appId)
+                            if (showAppId) GkRuleSupportingContent(control, appId)
                         }
                     }
                     item("empty") {

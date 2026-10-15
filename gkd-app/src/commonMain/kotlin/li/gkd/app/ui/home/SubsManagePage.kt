@@ -12,8 +12,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import li.gkd.app.ui.component.GkPullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,7 +87,6 @@ private fun subsManageContent(
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
     val refreshing by li.gkd.app.subscription.SubscriptionRepository.updating.collectAsStateWithLifecycle()
-    val pullToRefreshState = rememberPullToRefreshState()
     val selectionState = vm.selection
     val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
     val allIds = remember(subItems) { subItems.mapTo(mutableSetOf()) { it.id } }
@@ -283,9 +281,8 @@ private fun subsManageContent(
             }
         Column(modifier = Modifier.padding(contentPadding).fillMaxSize()) {
             GkMatchingBanner(store.enableMatch, vm::enableMatching)
-            PullToRefreshBox(
+            GkPullToRefreshBox(
                 modifier = Modifier.weight(1f),
-                state = pullToRefreshState,
                 isRefreshing = refreshing,
                 onRefresh = refresh,
             ) {

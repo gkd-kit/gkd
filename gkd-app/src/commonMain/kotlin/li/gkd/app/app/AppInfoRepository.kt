@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
@@ -20,13 +21,17 @@ import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.util.LogUtils
+import li.songe.codeorigin.CallSite
+import kotlin.time.TimeSource
 
 object AppInfoRepository {
     fun initialize() {
         applicationScope().launch {
-            pending.debounce(3_000).filter { it.isNotEmpty() }.collect { ids ->
-                background { update(appIds = ids) }
-            }
+            // Source changes must not restart the package-ID debounce window.
+            pending.map { it.keys }.distinctUntilChanged()
+                .debounce(3_000).filter { it.isNotEmpty() }.collect { ids ->
+                    background { update(source = "packagesChanged", appIds = ids) }
+                }
         }
     }
 
@@ -41,11 +46,13 @@ object AppInfoRepository {
     val visibleAppInfosFlow = snapshots.map { it.visibleApps }
 
     private val mutex = Mutex()
-    private val pending = MutableStateFlow(emptySet<String>())
+    private val pending = MutableStateFlow(emptyMap<String, Set<String>>())
 
 
-    fun packagesChanged(ids: Set<String>) {
-        pending.update { it + ids }
+    fun packagesChanged(ids: Set<String>, @CallSite source: String = "") {
+        pending.update { queued ->
+            queued + ids.associateWith { queued[it].orEmpty() + source }
+        }
     }
 
     private suspend fun background(block: suspend () -> Unit) {
@@ -53,32 +60,40 @@ object AppInfoRepository {
             block()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            LogUtils.d("app catalog refresh failed", e)
+        } catch (_: Exception) {
+            // update records the failure and retains it in state.
         }
     }
 
-    fun requestRefresh() {
-        applicationScope().launch { background { refresh() } }
+    fun requestRefresh(@CallSite source: String = "") {
+        applicationScope().launch { background { update(source = source) } }
     }
 
-    fun privilegeChanged() {
-        applicationScope().launch { background { update(otherUsersOnly = true) } }
+    fun privilegeChanged(@CallSite source: String = "") {
+        applicationScope().launch { background { update(source = source, otherUsersOnly = true) } }
     }
 
-    suspend fun refresh() = update()
+    suspend fun refresh(@CallSite source: String = "") {
+        update(source = source)
+    }
 
     private suspend fun update(
+        source: String,
         appIds: Set<String>? = null,
         otherUsersOnly: Boolean = false,
     ): Unit = withContext(Dispatchers.IO) {
         mutex.withLock {
-            if (appIds != null) pending.update { it - appIds }
+            val startedAt = TimeSource.Monotonic.markNow()
+            val packageSources = appIds?.let { ids ->
+                pending.getAndUpdate { it - ids }.filterKeys { it in ids }
+            }.orEmpty()
+            val old = snapshot
+            val queryAll = (appIds == null && !otherUsersOnly) || old == null
+            val logContext = "source=$source appIds=$appIds " +
+                    "otherUsersOnly=$otherUsersOnly queryAll=$queryAll packageSources=$packageSources"
             state.update { it.copy(refreshing = true, failure = null) }
             try {
                 val query = openAppCatalog()
-                val old = snapshot
-                val queryAll = (appIds == null && !otherUsersOnly) || old == null
                 val primary = if (queryAll) {
                     query.primaryApps().associateByTo(linkedMapOf()) { it.id }
                 } else {
@@ -124,11 +139,24 @@ object AppInfoRepository {
                 if (query.isCurrent()) {
                     query.committed(next)
                     state.value = AppCatalogState(snapshot = next)
+                    LogUtils.d(
+                        "应用列表更新完成 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds} " +
+                                "primary=${next.inventory.apps.size} otherUsers=${next.inventory.otherUsers.size} " +
+                                "others=${next.inventory.othersApps.size} visible=${next.visibleApps.size} " +
+                                "queryPackagesAbnormal=$abnormal canQueryPackages=${query.canQueryPackages}",
+                    )
+                } else {
+                    LogUtils.d(
+                        "应用列表更新未提交：查询期间平台状态变化 $logContext " +
+                                "durationMs=${startedAt.elapsedNow().inWholeMilliseconds}",
+                    )
                 }
             } catch (e: CancellationException) {
+                LogUtils.d("应用列表更新已取消 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds}")
                 throw e
             } catch (e: Exception) {
                 state.update { it.copy(failure = e) }
+                LogUtils.d("应用列表更新失败 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds}", e)
                 throw e
             } finally {
                 state.update { it.copy(refreshing = false) }

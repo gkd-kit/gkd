@@ -10,12 +10,14 @@ import androidx.core.content.ContextCompat
 import li.gkd.app.app
 
 object AppChangeMonitor {
-    fun register(onChanged: (String) -> Unit) {
+    fun register(onChanged: (String, String) -> Unit) {
         ContextCompat.registerReceiver(
             app,
             object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    intent.data?.schemeSpecificPart?.let(onChanged)
+                    intent.data?.schemeSpecificPart?.let { packageName ->
+                        onChanged(packageName, "broadcast:${intent.action}")
+                    }
                 }
             },
             IntentFilter().apply {
@@ -32,15 +34,15 @@ object AppChangeMonitor {
         // 某些设备 ACTION_PACKAGE_ADDED 接收不到，使用 LauncherApps.Callback 作为补充。
         app.launcherApps.registerCallback(object : LauncherApps.Callback() {
             override fun onPackageAdded(packageName: String, user: UserHandle) {
-                onChanged(packageName)
+                onChanged(packageName, "LauncherApps.onPackageAdded(user=$user)")
             }
 
             override fun onPackageChanged(packageName: String, user: UserHandle) {
-                onChanged(packageName)
+                onChanged(packageName, "LauncherApps.onPackageChanged(user=$user)")
             }
 
             override fun onPackageRemoved(packageName: String, user: UserHandle) {
-                onChanged(packageName)
+                onChanged(packageName, "LauncherApps.onPackageRemoved(user=$user)")
             }
 
             override fun onPackagesAvailable(
