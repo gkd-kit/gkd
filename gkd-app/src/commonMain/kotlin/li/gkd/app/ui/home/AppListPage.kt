@@ -1,5 +1,7 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.ui.component.GkTriggerCount
+import li.gkd.app.record.TriggerSummary
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +93,7 @@ data class AppListContentState(
     val appInfos: List<AppInfo>,
     val listState: Loadable<Unit> = Loadable.Ready(Unit),
     val ruleStatsFailed: Boolean = false,
+    val triggerStats: li.gkd.app.record.TriggerStats? = null,
     val searchText: String = "",
     val showSearchBar: Boolean = false,
     val editWhiteListMode: Boolean = false,
@@ -337,6 +340,7 @@ fun appListPage(
                         icon = { GkAppIcon(appInfo.id, 32.dp) },
                         name = { GkAppNameText(appInfo = appInfo) },
                         stats = stats,
+                        triggerSummary = if (editWhiteListMode) null else state.triggerStats?.app(appInfo.id),
                         editWhiteListMode = editWhiteListMode,
                         inWhiteList = appInfo.id in state.whiteListAppIds,
                         onClick = {
@@ -378,10 +382,13 @@ fun GkAppListItem(
     icon: @Composable () -> Unit,
     name: @Composable () -> Unit,
     stats: GkRuleStatsData?,
+    triggerSummary: TriggerSummary? = null,
     editWhiteListMode: Boolean,
     inWhiteList: Boolean,
     onClick: () -> Unit,
 ) {
+    val count = triggerSummary?.count?.takeIf { it > 0 && !editWhiteListMode }
+    val countText = count?.toString()
     val statsDescription = stats?.takeIf { it.hasRules }?.description
     val description =
         if (editWhiteListMode) appInfo.name
@@ -389,7 +396,7 @@ fun GkAppListItem(
             stringResource(
                 Res.string.app_whitelist_state_description,
                 appInfo.name,
-                statsDescription ?: appInfo.id,
+                listOfNotNull(statsDescription ?: appInfo.id, countText?.let { stringResource(Res.string.trigger_count_value, it) }).joinToString("，"),
             )
     val member = stringResource(Res.string.whitelist_member)
     val notMember = stringResource(Res.string.whitelist_not_member)
@@ -443,12 +450,20 @@ fun GkAppListItem(
                 key = appInfo.id,
                 checked = inWhiteList,
             )
-        } else if (inWhiteList) {
-            GkIcon(
-                modifier = Modifier.padding(2.dp).size(20.dp),
-                imageVector = GkIcons.Block,
-                tint = MaterialTheme.colorScheme.secondary,
-            )
+        } else if (countText != null || inWhiteList) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (count != null) GkTriggerCount(count, lastTriggerTime = triggerSummary.lastTime)
+                if (inWhiteList) {
+                    GkIcon(
+                        modifier = Modifier.padding(2.dp).size(20.dp),
+                        imageVector = GkIcons.Block,
+                        tint = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+            }
         }
     }
 }

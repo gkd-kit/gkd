@@ -66,12 +66,39 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun everyExportedSchemaMigratesToVersion17() = runBlocking {
+    fun everyExportedSchemaMigratesToVersion18() = runBlocking {
         // Protects the persisted schema compatibility contract for every released version.
-        for (startVersion in 1 until 17) {
+        for (startVersion in 1 until 18) {
             val helper = migrationHelper("all-migrations-$startVersion.db")
             helper.createDatabase(startVersion).close()
-            helper.runMigrationsAndValidate(17, listOf(Migration14To15)).close()
+            helper.runMigrationsAndValidate(18, listOf(Migration14To15)).close()
+        }
+    }
+
+    @Test
+    fun migration17To18StartsEmptyWithoutRecountingRetainedLogsAndPersistsNewCounts() = runBlocking {
+        val name = "trigger-statistics.db"
+        val helper = migrationHelper(name)
+        helper.createDatabase(17).use {
+            it.execSQL("INSERT INTO action_log (ctime, app_id, subs_id, subs_version, group_key, group_type, rule_index) VALUES (100, 'app', 7, 1, 2, 2, 0)")
+        }
+        helper.runMigrationsAndValidate(18).close()
+        val db = openDatabase(name)
+        try {
+            assertEquals(1, db.actionLogDao().count().first())
+            assertEquals(emptyList(), db.ruleTriggerStatsDao().observe().first())
+            db.withWriteTransaction {
+                db.ruleTriggerStatsDao().insertIfAbsent(RuleTriggerStats(7, RuleGroupType.App, 2, "app", 0, 200))
+                db.ruleTriggerStatsDao().increment(7, RuleGroupType.App, 2, "app", 200)
+            }
+        } finally {
+            db.close()
+        }
+        val reopened = openDatabase(name)
+        try {
+            assertEquals(RuleTriggerStats(7, RuleGroupType.App, 2, "app", 1, 200), reopened.ruleTriggerStatsDao().observe().first().single())
+        } finally {
+            reopened.close()
         }
     }
 

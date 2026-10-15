@@ -74,6 +74,7 @@ fun A11yScopeAppListPage(host: UiHost) {
             AppQuery.select(
                 loaded.value.apps, query, store.a11yScopeAppGroupType, store.a11yScopeAppSort,
                 actionOrder = loaded.value.actionOrder, visitOrder = loaded.value.visitOrder,
+                triggerCounts = loaded.value.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
             )
         )
 

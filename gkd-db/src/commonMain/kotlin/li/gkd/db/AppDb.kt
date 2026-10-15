@@ -13,7 +13,7 @@ import androidx.room3.migration.AutoMigrationSpec
 import kotlinx.serialization.json.Json
 
 @Database(
-    version = 17,
+    version = 18,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
         SubsGlobalGroupConfig::class,
         SubsCategoryConfig::class,
         ActionLog::class,
+        RuleTriggerStats::class,
         ActivityLog::class,
         SubsAppConfig::class,
         AppLastVisit::class,
@@ -42,6 +43,7 @@ import kotlinx.serialization.json.Json
         AutoMigration(from = 13, to = 14),
         AutoMigration(from = 15, to = 16, spec = Migration15To16Spec::class),
         AutoMigration(from = 16, to = 17),
+        AutoMigration(from = 17, to = 18),
     ]
 )
 @ColumnTypeConverters(DbConverters::class)
@@ -54,6 +56,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun subsAppConfigDao(): SubsAppConfig.SubsAppConfigDao
     abstract fun subsCategoryConfigDao(): SubsCategoryConfig.SubsCategoryConfigDao
     abstract fun actionLogDao(): ActionLog.ActionLogDao
+    abstract fun ruleTriggerStatsDao(): RuleTriggerStatsDao
     abstract fun activityLogDao(): ActivityLog.ActivityLogDao
     abstract fun appLastVisitDao(): AppLastVisit.AppLastVisitDao
     abstract fun a11yEventLogDao(): A11yEventLog.A11yEventLogDao

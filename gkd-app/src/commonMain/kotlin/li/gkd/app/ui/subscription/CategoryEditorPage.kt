@@ -199,17 +199,16 @@ fun CategoryEditorPage(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(apps.size.toString(), style = MaterialTheme.typography.bodyMedium)
                             GkIcon(
                                 imageVector = GkIcons.Android,
                                 modifier = Modifier.size(18.dp),
                                 contentDescription =
                                     stringResource(Res.string.app_count, apps.size),
                             )
+                            Text(apps.size.toString(), style = MaterialTheme.typography.bodyMedium)
                             val groupCount = apps.sumOf { it.groups.size }
-                            Text(groupCount.toString(), style = MaterialTheme.typography.bodyMedium)
                             GkIcon(
-                                imageVector = GkIcons.FlashOn,
+                                imageVector = GkIcons.Rule,
                                 modifier = Modifier.size(18.dp),
                                 contentDescription =
                                     stringResource(
@@ -217,6 +216,7 @@ fun CategoryEditorPage(
                                         groupCount,
                                     ),
                             )
+                            Text(groupCount.toString(), style = MaterialTheme.typography.bodyMedium)
                         }
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth().weight(1f),

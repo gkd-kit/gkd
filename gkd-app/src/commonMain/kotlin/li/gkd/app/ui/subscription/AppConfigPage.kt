@@ -118,6 +118,9 @@ fun AppConfigPage(
                 showDisabledRules || (control.configuredEnabled && control.canEnable && control.restrictions.isEmpty())
             }
             val sorted = when (RuleSort.entries.findOption(store.appRuleSort)) {
+                RuleSort.ByTriggerCount -> visible.sortedByDescending { group ->
+                    state?.triggerStats?.group(group.toRuleGroupTarget(entry.subsItem.id, appId))?.count ?: 0L
+                }
                 RuleSort.ByDefault -> visible
                 RuleSort.ByRuleName -> visible.sortedWith { a, b ->
                     SortUtils.collator.compare(
@@ -449,6 +452,7 @@ fun AppConfigPage(
                             subs = subscription,
                             appId = appId,
                             group = group,
+                            triggerSummary = state?.triggerStats?.group(group.toRuleGroupTarget(subsId, appId)),
                             hideCategoryPrefix = section.type == AppRuleSectionType.Category,
                             control = controls.getValue(group.toRuleGroupTarget(subsId, appId)),
                             onOpen = {

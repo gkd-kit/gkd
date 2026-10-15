@@ -80,6 +80,7 @@ fun BlockA11yAppListPage(host: UiHost) {
             AppQuery.select(
                 loaded.value.apps, query, store.a11yAppGroupType, store.a11yAppSort,
                 actionOrder = loaded.value.actionOrder, visitOrder = loaded.value.visitOrder,
+                triggerCounts = loaded.value.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
             )
         )
 

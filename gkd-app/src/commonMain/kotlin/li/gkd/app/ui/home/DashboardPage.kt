@@ -48,6 +48,8 @@ import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkGroupNameText
+import li.gkd.app.ui.component.GkRuleStats
+import li.gkd.app.ui.component.GkRuleStatsData
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
@@ -271,7 +273,26 @@ fun dashboardPage(
                 host::setStatusServiceEnabled,
             )
             TriggerOverviewCard(
-                dashboardSummary(rules, actionCount),
+                {
+                    when (val state = rules) {
+                        is Loadable.Ready -> {
+                            val groups = state.value.groups
+                            GkRuleStats(
+                                stats = GkRuleStatsData(
+                                    globalGroups = groups.globalGroups.size,
+                                    apps = groups.appSize,
+                                    appGroups = groups.appGroupSize,
+                                ),
+                                triggerCount = actionCount,
+                                emptyText = "",
+                                textStyle = MaterialTheme.typography.bodySmall,
+                                showTooltips = true,
+                            )
+                        }
+                        is Loadable.Loading -> Unit
+                        is Loadable.Failure -> Text(stringResource(Res.string.data_load_failed))
+                    }
+                },
                 HomeDataText.latest(
                     latest,
                     subscriptions.value?.subscriptions.orEmpty(),
@@ -493,7 +514,7 @@ private fun IconTextCard(
 
 @Composable
 private fun TriggerOverviewCard(
-    subsStatus: String,
+    statistics: @Composable () -> Unit,
     latestRecordDesc: String?,
     latestRecordIsGlobal: Boolean,
     onOpenActionLog: () -> Unit,
@@ -548,37 +569,31 @@ private fun TriggerOverviewCard(
                 contentDescription = null,
             )
         }
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = itemVerticalPadding)) {
-            AnimatedVisibility(subsStatus.isNotEmpty()) {
-                Text(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    text = subsStatus,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .clickable(
+                    enabled = latestRecordDesc != null,
+                    onClickLabel = stringResource(Res.string.app_rule_summary_open),
+                    onClick = onOpenLatestRecord,
                 )
-            }
+                .padding(horizontal = itemVerticalPadding + 8.dp)
+                .padding(bottom = itemVerticalPadding),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            statistics()
 
             if (latestLoadFailed) {
                 Text(
                     text =
                         stringResource(Res.string.action_log_recent_prefix) +
                             stringResource(Res.string.data_load_failed),
-                    modifier = Modifier.padding(horizontal = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
             }
             if (latestRecordDesc != null) {
                 Row(
-                    modifier =
-                        Modifier.padding(horizontal = 4.dp)
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .clickable(
-                                onClickLabel = stringResource(Res.string.app_rule_summary_open),
-                                onClick = onOpenLatestRecord,
-                            )
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         GkGroupNameText(
@@ -597,7 +612,6 @@ private fun TriggerOverviewCard(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(itemVerticalPadding))
         }
     }
 }

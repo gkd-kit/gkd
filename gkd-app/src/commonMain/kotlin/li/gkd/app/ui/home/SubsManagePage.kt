@@ -349,6 +349,7 @@ private fun subsManageContent(
                                     globalGroups = subsIdToRaw[subItem.id]?.globalGroups?.size ?: 0,
                                     apps = subsIdToRaw[subItem.id]?.apps?.size ?: 0,
                                     appGroups = subsIdToRaw[subItem.id]?.appGroups?.size ?: 0,
+                                    triggerCount = state?.triggerCounts?.get(subItem.id) ?: 0L,
                                     updatedAt = formatTimeAgo(subItem.mtime),
                                     appName = META.appName,
                                     loadError = state?.loadErrors?.get(subItem.id)?.messageResource(),

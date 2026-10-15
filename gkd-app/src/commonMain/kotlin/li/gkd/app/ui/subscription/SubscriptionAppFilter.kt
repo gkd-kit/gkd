@@ -17,6 +17,7 @@ fun filterSubsApps(
     appGroupType: (SettingsStore) -> Int,
     sortType: (SettingsStore) -> AppSort,
     showBlockApps: (SettingsStore) -> Boolean,
+    triggerCounts: Map<String, Long> = emptyMap(),
 ): List<RawSubscription.RawApp> {
     var result = apps.sortedWith { a, b ->
         // 默认顺序: 已安装(有名字->无名字)->未安装(有名字(来自订阅)->无名字)
@@ -31,6 +32,7 @@ fun filterSubsApps(
             result.sortedBy { appActionOrderMap[it.id] ?: Int.MAX_VALUE }
         }
 
+        AppSort.ByTriggerCount -> result.sortedByDescending { triggerCounts[it.id] ?: 0L }
         AppSort.ByAppName -> result
 
         AppSort.ByUsedTime -> {

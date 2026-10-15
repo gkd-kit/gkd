@@ -44,6 +44,7 @@ fun GkRuleListItem(
     onSelect: () -> Unit = {},
     leading: (@Composable () -> Unit)? = null,
     trailing: @Composable (Modifier) -> Unit,
+    trailingInfo: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val containerColor by animateColorAsState(
@@ -90,6 +91,7 @@ fun GkRuleListItem(
                 leading?.invoke()
                 Column(Modifier.weight(1f), content = content)
             }
+            if (!selectedMode) trailingInfo?.invoke()
             // Include the switch's surrounding space in its hit target, up to the card edges.
             // 52 dp switch + 8 dp on either side matches the content inset.
             Box(Modifier.width(68.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {

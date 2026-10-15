@@ -1,8 +1,12 @@
 package li.gkd.app.ui.subscription
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import li.gkd.app.rule.RuleSort
+import li.gkd.app.record.TriggerStats
+import li.gkd.db.Db
+import kotlinx.coroutines.flow.combine
 import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleSetting
@@ -21,11 +25,17 @@ import li.gkd.db.SubscriptionIds
 data class SubsGlobalGroupListUiState(
     val subscription: RawSubscription,
     val configs: SubscriptionConfigSnapshot,
+    val triggerStats: TriggerStats,
 )
 
 class SubsGlobalGroupListViewModel(
     val route: SubsGlobalGroupListRoute,
 ) : BaseViewModel() {
+    val sort: StateFlow<RuleSort>
+        field = MutableStateFlow(RuleSort.ByDefault)
+
+    fun setSort(value: RuleSort) { sort.value = value }
+
     val selection = MultiSelectionState<Int>()
 
     private val batchMutex = MutexState()
@@ -38,10 +48,11 @@ class SubsGlobalGroupListViewModel(
     private val subscription = RequiredSubscription(route.subsItemId, scope)
 
     val uiState = subscription.buildUiState { rawSubscription ->
-        SubscriptionConfigStore.observe().map { configs ->
+        combine(SubscriptionConfigStore.observe(), Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = li.gkd.db.RuleGroupType.Global)) { configs, records ->
             SubsGlobalGroupListUiState(
                 subscription = rawSubscription,
                 configs = configs,
+                triggerStats = TriggerStats(records),
             )
         }
     }

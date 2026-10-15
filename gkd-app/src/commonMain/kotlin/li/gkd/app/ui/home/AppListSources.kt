@@ -1,5 +1,6 @@
 package li.gkd.app.ui.home
 
+import li.gkd.app.record.TriggerStats
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -17,14 +18,16 @@ object AppListSources {
         rules: Flow<Loadable<T>>,
         actionOrder: Flow<List<String>>,
         visits: Flow<List<String>>,
+        triggerStats: Flow<List<li.gkd.db.RuleTriggerStats>>,
         globalGroupCounts: (T) -> Map<String, Int>,
         appGroups: (T) -> Map<String, List<ResolvedAppGroup>>,
     ): Flow<Loadable<AppListSource>> = combine(
         catalog,
         rules,
         loadOrder(actionOrder),
-        loadOrder(visits)
-    ) { state, loaded, order, visited ->
+        loadOrder(visits),
+        triggerStats,
+    ) { state, loaded, order, visited, records ->
         val snapshot = state.snapshot
         when {
             snapshot == null && state.failure != null -> Loadable.Failure(state.failure)
@@ -35,12 +38,13 @@ object AppListSources {
                     loaded.value?.let(globalGroupCounts), loaded.value?.let(appGroups).orEmpty(),
                     snapshot.canQueryPackages, snapshot.queryPackagesAbnormal, state.refreshing,
                 ).copy(
+                    triggerStats = TriggerStats(records),
                     actionOrderState = order.mapUnit(), visitOrderState = visited.mapUnit(),
                     ruleStatsFailed = loaded is Loadable.Failure,
                 )
             )
         }
-    }
+    }.catch { emit(Loadable.Failure(it)) }
 
     private fun loadOrder(source: Flow<List<String>>): Flow<Loadable<List<String>>> = source
         .map<List<String>, Loadable<List<String>>> { Loadable.Ready(it) }

@@ -8,5 +8,6 @@ data class SubsManageUiState(
     val subscriptions: Map<Long, RawSubscription>,
     val loadErrors: Map<Long, Exception>,
     val refreshErrors: Map<Long, Exception>,
+    val triggerCounts: Map<Long, Long>,
 )
 

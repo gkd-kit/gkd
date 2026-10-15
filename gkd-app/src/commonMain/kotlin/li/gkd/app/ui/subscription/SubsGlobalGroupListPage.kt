@@ -1,5 +1,9 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.GkRuleSortButton
+import li.gkd.app.util.SortUtils
+import li.gkd.app.rule.RuleSort
+import li.gkd.app.rule.toRuleGroupTarget
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,6 +56,7 @@ fun SubsGlobalGroupListPage(
 
     val vm = viewModel { SubsGlobalGroupListViewModel(route) }
     val scope = vm.scope
+    val sort by vm.sort.collectAsStateWithLifecycle()
     val environment = rememberRuleControlEnvironment()
     val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
@@ -64,7 +69,14 @@ fun SubsGlobalGroupListPage(
                 group.key to environment.resolve(subs, group, null, state.configs, configIndex)
             }
         }
-        val globalGroups = subs.globalGroups
+        val globalGroups = remember(subs.globalGroups, state.triggerStats, sort) {
+            when (sort) {
+                RuleSort.ByDefault -> subs.globalGroups
+                RuleSort.ByRuleName -> subs.globalGroups.sortedWith { a, b -> SortUtils.collator.compare(a.name, b.name) }
+                RuleSort.ByActionTime -> subs.globalGroups.sortedByDescending { state.triggerStats.group(it.toRuleGroupTarget(subs.id, null)).lastTime ?: 0L }
+                RuleSort.ByTriggerCount -> subs.globalGroups.sortedByDescending { state.triggerStats.group(it.toRuleGroupTarget(subs.id, null)).count }
+            }
+        }
 
         val selectionState = vm.selection
         val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
@@ -136,6 +148,7 @@ fun SubsGlobalGroupListPage(
                         )
                     },
                     actions = { selectedMode ->
+                        if (!selectedMode) GkRuleSortButton(sort, vm::setSort)
                         if (selectedMode) {
                             GkMultiSelectionActions(
                                 selected = selectionSnapshot.selectedKeys,
@@ -214,6 +227,7 @@ fun SubsGlobalGroupListPage(
                         subs = subs,
                         appId = null,
                         group = group,
+                            triggerSummary = state.triggerStats.group(group.toRuleGroupTarget(subs.id)),
                         highlighted = !isSelectedMode && focus.highlightedKey == group.key,
                         control = controls.getValue(group.key),
                         onOpen = {

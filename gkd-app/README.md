@@ -170,7 +170,7 @@ Invoke-RestMethod -NoProxy "$api/semantics?window=app"
 
 回放接口仅注入业务输入，不能代替控件点击验证：
 
-- `/runtime-records/replay` 接收 `activities`（appId/activityId/time）、`visits`（oldAppId/newAppId/time）、`actions`（appId/activityId/subsId/subsVersion/groupKey/groupType/ruleIndex/ruleKey/time）。空请求提交 Activity 缓冲并查询数据库；不执行真实动作、不增加累计动作次数。
+- `/runtime-records/replay` 接收 `activities`（appId/activityId/time）、`visits`（oldAppId/newAppId/time）、`actions`（appId/activityId/subsId/subsVersion/groupKey/groupType/ruleIndex/ruleKey/time）。空请求提交 Activity 缓冲并查询数据库；不执行真实动作、不增加旧的全局累计动作次数；`actions` 通过生产记录事务增加应用和规则组的累计触发统计。
 - `/snapshot-capture/replay` 接收 `source`（ComplexSnapshot，忽略原 ID）、与屏幕尺寸一致的 `screenshotBase64` 及可选 `autoExport`。共享流程生成并保存新快照，返回 `snapshot` 和 `exportResult`；系统下载不支持时仍保留已保存快照。
 
 ## 故障处理与验收边界

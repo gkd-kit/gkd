@@ -108,6 +108,7 @@ fun SubsAppListPage(
             { it.subsAppGroupType },
             { AppSort.options.findOption(it.subsAppSort) },
             { it.subsAppShowBlock },
+            triggerCounts = state?.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
         )
     }
     val apps = remember(sortedApps, searchStr, appInfoMap) {
@@ -260,6 +261,7 @@ fun SubsAppListPage(
                     subsId = subsItemId,
                     rawApp = app,
                     enabledGroupCount = enabledGroupCount,
+                    triggerSummary = state?.triggerStats?.app(app.id),
                     appInfo = appInfoMap[app.id],
                     control = environment.app(
                         subsItemId, app.id, checkNotNull(state).configs,

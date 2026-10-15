@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.record.TriggerStats
 import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ data class AppConfigUiState(
     val configs: SubscriptionConfigSnapshot,
     val subsPairs: List<Pair<AppRuleSubscription, List<RawSubscription.RawGroupProps>>>,
     val latestLogs: List<ActionLog>,
+    val triggerStats: TriggerStats,
 )
 
 class AppConfigViewModel(
@@ -92,10 +94,11 @@ class AppConfigViewModel(
             when (source) {
                 Loadable.Loading -> flowOf(Loadable.Loading)
                 is Loadable.Failure -> flowOf(source)
-                is Loadable.Ready -> combine<SubscriptionConfigSnapshot, List<ActionLog>, Loadable<AppConfigUiState>>(
+                is Loadable.Ready -> combine<SubscriptionConfigSnapshot, List<ActionLog>, List<li.gkd.db.RuleTriggerStats>, Loadable<AppConfigUiState>>(
                     SubscriptionConfigStore.observe(),
                     Db.actionLogDao.queryLatestByAppId(route.appId),
-                ) { configs, logs ->
+                    Db.ruleTriggerStatsDao.observe(appId = route.appId),
+                ) { configs, logs, records ->
                     val globalConfigs =
                         configs.globalGroupConfigs.associateBy { it.subsId to it.groupKey }
                     Loadable.Ready(
@@ -121,6 +124,7 @@ class AppConfigViewModel(
                                     ) to groups).takeIf { groups.isNotEmpty() }
                                 },
                             latestLogs = logs,
+                            triggerStats = TriggerStats(records),
                         )
                     )
                 }.catch { emit(Loadable.Failure(it)) }

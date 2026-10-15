@@ -10,6 +10,7 @@ object AppQuery {
         visibleApps: List<AppInfo>, search: String, group: Int, sort: Int,
         showBlocked: Boolean = true, blocked: Set<String> = emptySet(),
         actionOrder: List<String> = emptyList(), visitOrder: Map<String, Int> = emptyMap(),
+        triggerCounts: Map<String, Long> = emptyMap(),
     ): Result {
         var apps = visibleApps.filter { app ->
             (showBlocked || app.id !in blocked) &&
@@ -21,6 +22,7 @@ object AppQuery {
                 val actionPositions = actionOrder.withIndex().associate { it.value to it.index }
                 apps.sortedBy { actionPositions[it.id] ?: Int.MAX_VALUE }
             }
+            AppSort.ByTriggerCount.value -> apps.sortedByDescending { triggerCounts[it.id] ?: 0L }
             AppSort.ByUsedTime.value -> apps.sortedBy { visitOrder[it.id] ?: Int.MAX_VALUE }
             else -> apps
         }

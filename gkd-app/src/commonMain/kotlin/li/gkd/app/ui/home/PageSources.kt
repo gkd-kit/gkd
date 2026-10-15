@@ -13,9 +13,10 @@ val scopeAppSource by lazy {
     combine(
         AppInfoRepository.visibleAppInfosFlow,
         Db.actionLogDao.queryLatestUniqueAppIds(),
-        Db.appLastVisitDao.query()
-    ) { apps, order, visits ->
-        AppListSources.build(apps, order, visits)
+        Db.appLastVisitDao.query(),
+        Db.ruleTriggerStatsDao.observe()
+    ) { apps, order, visits, records ->
+        AppListSources.build(apps, order, visits).copy(triggerStats = li.gkd.app.record.TriggerStats(records))
     }
 }
 

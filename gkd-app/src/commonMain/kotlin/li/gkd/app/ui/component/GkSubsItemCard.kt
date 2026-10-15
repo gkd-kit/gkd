@@ -45,6 +45,7 @@ data class SubscriptionCardData(
     val author: String? = null, val globalGroups: Int = 0, val apps: Int = 0,
     val appGroups: Int = 0, val updatedAt: String, val appName: String,
     val loadError: String? = null, val updateFailed: Boolean = false,
+    val triggerCount: Long = 0,
 )
 
 @Composable
@@ -167,7 +168,8 @@ fun GkSubsItemCard(
                             globalGroups = data.globalGroups,
                             apps = data.apps,
                             appGroups = data.appGroups,
-                        )
+                        ),
+                        triggerCount = data.triggerCount,
                     )
                     SubsStatusLine(data) {
                         Row(

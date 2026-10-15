@@ -35,7 +35,8 @@ data class AppListPageState(
             settings.showBlockApp,
             editingFilter ?: blocked,
             input?.actionOrder.orEmpty(),
-            input?.visitOrder.orEmpty()
+            input?.visitOrder.orEmpty(),
+            triggerCounts = input?.triggerStats?.byApp.orEmpty().mapValues { it.value.count }
         )
         return AppListContentState(
             appInfos = result.apps,
@@ -44,6 +45,7 @@ data class AppListPageState(
             editWhiteListMode = editingFilter != null,
             showAllApps = result.showAllApps,
             ruleStats = input?.ruleStats.orEmpty(),
+            triggerStats = input?.triggerStats,
             whiteListAppIds = blocked,
             canQueryPackages = input?.canQueryPackages ?: true,
             queryPackagesAbnormal = input?.queryPackagesAbnormal ?: false,

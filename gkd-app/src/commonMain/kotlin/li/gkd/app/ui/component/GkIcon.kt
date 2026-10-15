@@ -53,6 +53,8 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.ToggleOff
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.automirrored.outlined.Rule
 import androidx.compose.material.icons.outlined.ToggleOn
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Icon
@@ -183,6 +185,8 @@ object GkIcons {
     val FlashOff get() = SharedFlashOff
     val Block get() = Icons.Default.Block
     val History get() = Icons.Default.History
+    val Bolt get() = Icons.Outlined.Bolt
+    val Rule get() = Icons.AutoMirrored.Outlined.Rule
     val Schedule get() = Icons.Outlined.Schedule
     val CollapseContent get() = SharedCollapseContent
     val ExpandContent get() = SharedExpandContent

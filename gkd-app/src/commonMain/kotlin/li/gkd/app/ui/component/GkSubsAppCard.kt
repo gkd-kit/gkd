@@ -2,6 +2,7 @@ package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
@@ -21,6 +22,7 @@ fun GkSubsAppCard(
     appInfo: AppInfo?,
     control: RuleControlState,
     enabledGroupCount: Int,
+    triggerSummary: li.gkd.app.record.TriggerSummary? = null,
     onClick: (() -> Unit),
     onSettingChange: (RuleSetting) -> Unit,
     selectedMode: Boolean = false,
@@ -37,6 +39,11 @@ fun GkSubsAppCard(
         selectionEnabled = selectionEnabled,
         onLongClick = onLongClick, onSelect = onSelect,
         leading = appIcon,
+        trailingInfo = {
+            triggerSummary?.takeIf { it.count > 0 }?.let {
+                GkTriggerCount(it.count, Modifier.padding(horizontal = 8.dp), lastTriggerTime = it.lastTime)
+            }
+        },
         trailing = {
             GkRuleEnableControl(
                 control, onSettingChange, modifier = it,

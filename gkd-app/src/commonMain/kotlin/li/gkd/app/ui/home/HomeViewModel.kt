@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -103,6 +104,7 @@ class HomeViewModel : BaseViewModel() {
         ruleGroupState,
         Db.actionLogDao.queryLatestUniqueAppIds(),
         Db.appLastVisitDao.query(),
+        Db.ruleTriggerStatsDao.observe(),
         globalGroupCounts = { it.groups.appIdToGlobalGroupCount },
         appGroups = { it.groups.appIdToAllGroups },
     ).stateInit(Loadable.Loading)
@@ -122,12 +124,17 @@ class HomeViewModel : BaseViewModel() {
             when (snapshotState) {
                 Loadable.Loading -> flowOf(Loadable.Loading)
                 is Loadable.Failure -> flowOf(snapshotState)
-                is Loadable.Ready -> Db.subsItemDao.query().map { subItems ->
+                is Loadable.Ready -> combine(
+                    Db.subsItemDao.query(),
+                    Db.ruleTriggerStatsDao.observe(),
+                ) { subItems, records ->
                     SubsManageUiState(
                         subItems = subItems,
                         subscriptions = snapshotState.value.subscriptions,
                         loadErrors = snapshotState.value.loadErrors,
                         refreshErrors = snapshotState.value.updateErrors,
+                        triggerCounts = records.groupBy { it.subsId }
+                            .mapValues { (_, rows) -> rows.sumOf { it.triggerCount } },
                     )
                 }.map<SubsManageUiState, Loadable<SubsManageUiState>> { Loadable.Ready(it) }
                     .catch { emit(Loadable.Failure(it)) }

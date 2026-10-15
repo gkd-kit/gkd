@@ -1,5 +1,8 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.GkTriggerCount
+import li.gkd.app.record.TriggerSummary
+import li.gkd.app.state.Loadable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
@@ -89,6 +92,7 @@ fun GkRuleGroupDialog(
     onClickEdit: () -> Unit = {},
     onClickEditExclude: () -> Unit,
     control: RuleControlState?,
+    triggerStats: Loadable<TriggerSummary>,
     onSettingChange: (RuleSetting) -> Unit,
     matchAnyApp: Boolean?,
     onMatchAnyAppChange: (Boolean?) -> Unit,
@@ -131,11 +135,30 @@ fun GkRuleGroupDialog(
         sheetState = sheetState,
         title = title,
         titleContent = {
-            GkGroupNameText(
-                text = title,
-                isGlobal = group is RawSubscription.RawGlobalGroup,
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GkGroupNameText(
+                    text = title,
+                    modifier = Modifier.weight(1f),
+                    isGlobal = group is RawSubscription.RawGlobalGroup,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                when (triggerStats) {
+                    is Loadable.Ready -> GkTriggerCount(
+                        count = triggerStats.value.count,
+                        lastTriggerTime = triggerStats.value.lastTime,
+                    )
+                    is Loadable.Loading -> Unit
+                    is Loadable.Failure -> Text(
+                        stringResource(Res.string.data_load_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         },
         subtitle = group.desc?.takeIf { it.isNotBlank() },
         footerLeadingContent = if (category != null) {

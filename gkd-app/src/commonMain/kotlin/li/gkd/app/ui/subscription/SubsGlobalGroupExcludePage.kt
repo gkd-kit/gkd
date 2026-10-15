@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.resources.*
+import li.gkd.app.ui.component.GkTriggerCount
+import androidx.compose.foundation.layout.padding
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.ui.component.GkEditorDialogs
 import li.gkd.app.ui.component.GkMultiTextField
@@ -138,6 +140,7 @@ fun SubsGlobalGroupExcludePage(
             environment,
             settings,
             state.appActionOrder,
+            state.triggerStats,
             visits
         ) {
             val named = matchingIds.filter { it in filteredIds }
@@ -148,6 +151,7 @@ fun SubsGlobalGroupExcludePage(
                     )
                 }
             when (AppSort.options.findOption(settings.subsExcludeSort)) {
+                AppSort.ByTriggerCount -> named.sortedByDescending { state.triggerStats.app(it).count }
                 AppSort.ByAppName -> named
                 AppSort.ByActionTime -> named.sortedBy {
                     state.appActionOrder[it] ?: Int.MAX_VALUE
@@ -329,6 +333,10 @@ fun SubsGlobalGroupExcludePage(
                                 }
                             },
                             leading = { GkAppIcon(appId, 32.dp) },
+                            trailingInfo = {
+                                val summary = state.triggerStats.app(appId)
+                                GkTriggerCount(summary.count, Modifier.padding(horizontal = 8.dp), lastTriggerTime = summary.lastTime)
+                            },
                             trailing = { switchModifier ->
                                 GkRuleEnableControl(
                                     control, onSettingChange = { setting ->

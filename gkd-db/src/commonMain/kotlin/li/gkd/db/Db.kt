@@ -18,6 +18,7 @@ object Db {
     val subsGlobalGroupConfigDao get() = database.subsGlobalGroupConfigDao()
     val snapshotDao get() = database.snapshotDao()
     val actionLogDao get() = database.actionLogDao()
+    val ruleTriggerStatsDao get() = database.ruleTriggerStatsDao()
     val subsCategoryConfigDao get() = database.subsCategoryConfigDao()
     val activityLogDao get() = database.activityLogDao()
     val subsAppConfigDao get() = database.subsAppConfigDao()

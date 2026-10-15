@@ -6,8 +6,46 @@ import kotlin.test.assertFails
 import kotlin.test.assertIs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class RuntimeRecordStoreChecks {
+    fun triggerCountsAreAtomicScopedAndSurviveLogAndSubscriptionDeletion() = database { db, store, sql ->
+        // Concurrent successful events must each count once, even with identical timestamps.
+        coroutineScope {
+            (0 until 120).map { async(Dispatchers.Default) { store.writeAction(action(100), false) } }.awaitAll()
+        }
+        store.writeAction(action(90).copy(subsVersion = 2, ruleIndex = 4, ruleKey = 9), false)
+        store.writeAction(action(200).copy(groupType = RuleGroupType.Global), false)
+        store.writeAction(action(300).copy(groupType = RuleGroupType.Global, appId = "other"), false)
+        store.writeAction(action(400).copy(subsId = 8), false)
+        val stats = db.ruleTriggerStatsDao()
+        val appGroup = stats.observe(7, "app", RuleGroupType.App, 2).first().single()
+        assertEquals(121L, appGroup.triggerCount)
+        assertEquals(100L, appGroup.lastTriggerTime)
+        assertEquals(123L, stats.observe(appId = "app").first().sumOf { it.triggerCount })
+        assertEquals(2L, stats.observe(7, groupType = RuleGroupType.Global).first().sumOf { it.triggerCount })
+        // Failure while updating an existing counter rolls back the newly inserted log too.
+        val before = db.actionLogDao().count().first()
+        sql("CREATE TRIGGER fail_stats BEFORE UPDATE ON rule_trigger_stats BEGIN SELECT RAISE(ABORT, 'injected failure'); END")
+        try {
+            assertFails { store.writeAction(action(500), false) }
+            assertEquals(before, db.actionLogDao().count().first())
+            assertEquals(appGroup, stats.observe(7, "app", RuleGroupType.App, 2).first().single())
+        } finally {
+            sql("DROP TRIGGER fail_stats")
+        }
+        // Retention and subscription deletion must never subtract cumulative history.
+        repeat(501) { store.writeAction(action(600), false) }
+        store.writeAction(action(700), true)
+        assertEquals(500, db.actionLogDao().count().first())
+        db.actionLogDao().deleteBySubsId(7)
+        sql("DELETE FROM subs_item WHERE id = 7")
+        assertEquals(623L, stats.observe(7, "app", RuleGroupType.App, 2).first().single().triggerCount)
+    }
+
     private fun database(block: suspend (AppDb, RuntimeRecordStore, (String) -> Unit) -> Unit) = runBlocking {
         DatabaseStoreTestSession.clear()
         block(Db.database, RuntimeRecordStore, DatabaseStoreTestSession::execute)
@@ -72,10 +110,12 @@ class RuntimeRecordStoreChecks {
         db.actionLogDao().insert(*(0L until 501).map(::action).toTypedArray())
         sql("CREATE TRIGGER fail_trim BEFORE DELETE ON action_log BEGIN SELECT RAISE(ABORT, 'injected failure'); END")
         assertFails { store.writeAction(action(999), true) }
+        assertEquals(emptyList(), db.ruleTriggerStatsDao().observe().first())
         assertEquals(501, db.actionLogDao().count().first())
         assertEquals(500, db.actionLogDao().queryLatest().first()!!.ctime)
         sql("DROP TRIGGER fail_trim")
         store.writeAction(action(999), true)
+        assertEquals(1L, db.ruleTriggerStatsDao().observe().first().single().triggerCount)
         assertEquals(500, db.actionLogDao().count().first())
         assertEquals(1, db.actionLogDao().query().first().count { it.ctime == 999L })
     }

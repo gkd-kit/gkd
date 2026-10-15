@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.record.TriggerStats
 import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,7 @@ data class SubsGlobalGroupExcludeUiState(
     val group: RawSubscription.RawGlobalGroup,
     val configs: SubscriptionConfigSnapshot,
     val appActionOrder: Map<String, Int>,
+    val triggerStats: TriggerStats,
 ) {
     private val config = configs.globalGroupConfigs.find {
         it.subsId == subscription.id && it.groupKey == group.key
@@ -95,14 +97,16 @@ class SubsGlobalGroupExcludeViewModel(
     val uiState = RequiredSubscription(route.subsItemId, scope).buildUiState { subscription ->
         combine(
             SubscriptionConfigStore.observe(),
-            Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId, route.groupKey)
-        ) { configs, ids ->
+            Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId, route.groupKey),
+            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = li.gkd.db.RuleGroupType.Global, groupKey = route.groupKey)
+        ) { configs, ids, records ->
             SubsGlobalGroupExcludeUiState(
                 subscription,
                 subscription.globalGroups.find { it.key == route.groupKey }
                     ?: error(Res.string.global_rule_missing.getSync()),
                 configs,
-                ids.mapIndexed { i, id -> id to i }.toMap()
+                ids.mapIndexed { i, id -> id to i }.toMap(),
+                TriggerStats(records)
             )
         }
     }

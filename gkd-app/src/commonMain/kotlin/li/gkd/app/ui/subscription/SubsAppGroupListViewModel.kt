@@ -1,10 +1,13 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.rule.RuleSort
+import li.gkd.app.record.TriggerStats
+import li.gkd.db.Db
+import kotlinx.coroutines.flow.combine
 import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.resources.*
@@ -29,11 +32,17 @@ data class SubsAppGroupListUiState(
     val subscription: RawSubscription,
     val app: RawSubscription.RawApp,
     val configs: SubscriptionConfigSnapshot,
+    val triggerStats: TriggerStats,
 )
 
 class SubsAppGroupListViewModel(
     val route: SubsAppGroupListRoute,
 ) : BaseViewModel() {
+    val sort: StateFlow<RuleSort>
+        field = MutableStateFlow(RuleSort.ByDefault)
+
+    fun setSort(value: RuleSort) { sort.value = value }
+
     val selection = MultiSelectionState<Int>()
 
     val categorySelection: StateFlow<AppRuleCategorySelection>
@@ -70,7 +79,7 @@ class SubsAppGroupListViewModel(
     private val subscription = RequiredSubscription(route.subsItemId, scope)
 
     val uiState = subscription.buildUiState { rawSubscription ->
-        SubscriptionConfigStore.observe().map { configs ->
+        combine(SubscriptionConfigStore.observe(), Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, appId = route.appId, groupType = li.gkd.db.RuleGroupType.App)) { configs, records ->
             SubsAppGroupListUiState(
                 subscription = rawSubscription,
                 app = rawSubscription.getApp(
@@ -78,6 +87,7 @@ class SubsAppGroupListViewModel(
                     AppInfoRepository.snapshot?.apps.orEmpty()[route.appId]?.name
                 ),
                 configs = configs,
+                triggerStats = TriggerStats(records),
             )
         }
     }

@@ -2,8 +2,11 @@ package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +28,7 @@ fun GkRuleGroupCard(
     appId: String?,
     group: RawSubscription.RawGroupProps,
     control: RuleControlState,
+    triggerSummary: li.gkd.app.record.TriggerSummary? = null,
     onOpen: () -> Unit,
     onSettingChange: (RuleSetting) -> Unit,
     highlighted: Boolean = false,
@@ -41,6 +45,20 @@ fun GkRuleGroupCard(
         selectable = control.canEnable,
         selectionEnabled = selectionEnabled,
         onLongClick = onLongClick, onSelect = onSelectedChange,
+        trailingInfo = {
+            val count = triggerSummary?.count ?: 0L
+            val hasIndicators = control.limitations.hasPersonalExclusions
+            if (count > 0 || hasIndicators) {
+                Row(
+                    Modifier.padding(start = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    GkTriggerCount(count, lastTriggerTime = triggerSummary?.lastTime)
+                    if (hasIndicators) GkRulePropertyIndicators(control)
+                }
+            }
+        },
         trailing = {
             GkRuleEnableControl(
                 control, onSettingChange, modifier = it,
@@ -63,24 +81,22 @@ fun GkRuleGroupCard(
             }
         } else group.desc?.takeIf { it.isNotBlank() }
 
-        Row(
-            Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            GkGroupNameText(
-                text = group.name, modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge,
-                isGlobal = group is RawSubscription.RawGlobalGroup, maxLines = 2,
-                categoryName = if (group is RawSubscription.RawAppGroup) subs.getCategory(group.name)?.name else null,
-                hideCategoryPrefix = hideCategoryPrefix,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (description == null) GkRulePropertyIndicators(control)
-        }
+        GkGroupNameText(
+            text = group.name, modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.bodyLarge,
+            isGlobal = group is RawSubscription.RawGlobalGroup, maxLines = 2,
+            categoryName = if (group is RawSubscription.RawAppGroup) subs.getCategory(group.name)?.name else null,
+            hideCategoryPrefix = hideCategoryPrefix,
+            overflow = TextOverflow.Ellipsis
+        )
         if (description != null) {
-            GkRuleSupportingContent(
-                control, text = description,
-                textColor = if (group.valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+            Text(
+                text = description,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 20.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (group.valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

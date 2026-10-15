@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.rule.toRuleGroupTarget
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -77,7 +78,7 @@ fun SubsCategoryGroupPage(
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val category = state.category
         val sortedApps =
-            remember(state.apps, appMap, settings, state.appActionOrder, visitOrder, blockApps) {
+            remember(state.apps, appMap, settings, state.appActionOrder, state.triggerStats, visitOrder, blockApps) {
                 filterSubsApps(
                     apps = state.apps,
                     appMap = appMap,
@@ -88,6 +89,7 @@ fun SubsCategoryGroupPage(
                     appGroupType = { it.subsCategoryGroupType },
                     sortType = { AppSort.options.findOption(it.subsCategorySort) },
                     showBlockApps = { it.subsCategoryShowBlock },
+                    triggerCounts = state.triggerStats.byApp.mapValues { it.value.count },
                 )
             }
         val controls = remember(state, environment) {
@@ -275,6 +277,7 @@ fun SubsCategoryGroupPage(
                             subs = subs,
                             appId = app.id,
                             group = group,
+                            triggerSummary = state.triggerStats.group(target),
                             control = controls.getValue(app.id to group.key),
                             hideCategoryPrefix = true,
                             onOpen = { mainVm.showRuleGroup(subs.id, app.id, group, app.id) },

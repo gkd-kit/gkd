@@ -1,5 +1,9 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.component.GkRuleSortButton
+import li.gkd.app.util.SortUtils
+import li.gkd.app.rule.RuleSort
+import li.gkd.app.rule.toRuleGroupTarget
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -74,6 +78,7 @@ fun SubsAppGroupListPage(
 
     val vm = viewModel { SubsAppGroupListViewModel(route) }
     val scope = vm.scope
+    val sort by vm.sort.collectAsStateWithLifecycle()
     val environment = rememberRuleControlEnvironment()
     val whitelist by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
     val a11yWhitelist by SettingsRepository.blockA11yAppList.collectAsStateWithLifecycle()
@@ -116,7 +121,14 @@ fun SubsAppGroupListPage(
                 group.key to environment.resolve(subs, group, appId, state.configs, configIndex)
             }
         }
-        val groups = app.groups
+        val groups = remember(app.groups, state.triggerStats, sort) {
+            when (sort) {
+                RuleSort.ByDefault -> app.groups
+                RuleSort.ByRuleName -> app.groups.sortedWith { a, b -> SortUtils.collator.compare(a.name, b.name) }
+                RuleSort.ByActionTime -> app.groups.sortedByDescending { state.triggerStats.group(it.toRuleGroupTarget(subs.id, appId)).lastTime ?: 0L }
+                RuleSort.ByTriggerCount -> app.groups.sortedByDescending { state.triggerStats.group(it.toRuleGroupTarget(subs.id, appId)).count }
+            }
+        }
         val categorySelection by vm.categorySelection.collectAsStateWithLifecycle()
         val categorySections = remember(subs, groups) {
             buildAppRuleSections(listOf(subs to groups), true)
@@ -286,6 +298,7 @@ fun SubsAppGroupListPage(
                                     }
                                 }
                             } else {
+                                GkRuleSortButton(sort, vm::setSort)
                                 GkRuleDisplayIconButton(byCategory) {
                                     SettingsRepository.updateSettings {
                                         it.copy(
@@ -407,6 +420,7 @@ fun SubsAppGroupListPage(
                             subs = subs,
                             appId = appId,
                             group = group,
+                            triggerSummary = state.triggerStats.group(group.toRuleGroupTarget(subs.id, appId)),
                             hideCategoryPrefix = section.type == AppRuleSectionType.Category,
                             control = controls.getValue(group.key),
                             onOpen = {

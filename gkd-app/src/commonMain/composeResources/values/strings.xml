@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="trigger_count_value">已触发 %1$s 次</string>
+    <string name="trigger_last_time">最近触发：%1$s</string>
+    <string name="trigger_count_sort">按触发次数</string>
     <string name="global_rule_default_apps">在应用中默认启用</string>
     <string name="global_rule_default_apps_follow">跟随订阅</string>
     <string name="global_rule_default_apps_follow_enabled">跟随订阅：默认开启</string>

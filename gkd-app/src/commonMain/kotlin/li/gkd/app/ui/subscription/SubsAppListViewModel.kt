@@ -1,5 +1,6 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.record.TriggerStats
 import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ data class SubsAppListUiState(
     val subscription: RawSubscription,
     val configs: SubscriptionConfigSnapshot,
     val appActionOrder: Map<String, Int>,
+    val triggerStats: TriggerStats,
 )
 
 class SubsAppListViewModel(
@@ -52,9 +54,10 @@ class SubsAppListViewModel(
     val uiState = RequiredSubscription(route.subsItemId, scope).buildUiState { subscription ->
         combine(
             SubscriptionConfigStore.observe(),
-            Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId)
-        ) { configs, ids ->
-            SubsAppListUiState(subscription, configs, ids.mapIndexed { i, id -> id to i }.toMap())
+            Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId),
+            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = li.gkd.db.RuleGroupType.App)
+        ) { configs, ids, records ->
+            SubsAppListUiState(subscription, configs, ids.mapIndexed { i, id -> id to i }.toMap(), TriggerStats(records))
         }
     }
 

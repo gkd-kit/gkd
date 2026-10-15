@@ -1,5 +1,10 @@
 package li.gkd.app.ui.subscription
 
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import li.gkd.app.record.TriggerSummary
+import li.gkd.app.record.summarizeTriggers
+import li.gkd.db.Db
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -39,6 +44,7 @@ private data class RuleSheetSnapshot(
     val group: RawSubscription.RawGroupProps,
     val configuration: RuleGroupConfiguration,
     val control: RuleControlState,
+    val triggerStats: Loadable<TriggerSummary>,
 )
 
 class RuleGroupState(
@@ -119,6 +125,15 @@ class RuleGroupState(
         }
         val configuration =
             key(requested) { configurationFlow.collectAsStateWithLifecycle(null).value }
+        val statsFlow = remember(target) {
+            if (target == null) flowOf<Loadable<TriggerSummary>>(Loadable.Loading)
+            else Db.ruleTriggerStatsDao.observe(
+                subsId = target.subsId, appId = target.pageAppId,
+                groupType = target.groupType, groupKey = target.groupKey,
+            ).map<List<li.gkd.db.RuleTriggerStats>, Loadable<TriggerSummary>> { Loadable.Ready(it.summarizeTriggers()) }
+                .catch { emit(Loadable.Failure(it)) }
+        }
+        val stats = key(requested) { statsFlow.collectAsStateWithLifecycle(Loadable.Loading).value }
         val snapshot =
             if (target != null && subscription != null && group != null && configuration != null) {
                 RuleSheetSnapshot(
@@ -128,7 +143,8 @@ class RuleGroupState(
                         group,
                         target.pageAppId,
                         configuration.snapshot
-                    )
+                    ),
+                    stats
                 )
             } else null
         GkRetainedSheet(
@@ -155,6 +171,7 @@ class RuleGroupState(
                 excludeAppId = showGroupState.appId,
                 onDismissRequest = dismiss,
                 control = displayed.control,
+                triggerStats = displayed.triggerStats,
                 matchAnyApp = (subsConfig as? SubsGlobalGroupConfig)?.matchAnyApp,
                 onMatchAnyAppChange = { value ->
                     scope.launchUi {
