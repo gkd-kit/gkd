@@ -286,7 +286,6 @@ fun dashboardPage(
                                 triggerCount = actionCount,
                                 emptyText = "",
                                 textStyle = MaterialTheme.typography.bodySmall,
-                                showTooltips = true,
                             )
                         }
                         is Loadable.Loading -> Unit

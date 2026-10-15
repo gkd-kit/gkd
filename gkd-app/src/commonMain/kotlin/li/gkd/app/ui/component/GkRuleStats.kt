@@ -57,16 +57,15 @@ fun GkRuleStats(
     emptyText: String = stringResource(Res.string.rules_empty),
     triggerCount: Long = 0,
     textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
-    showTooltips: Boolean = false,
 ) {
     val entries = buildList {
         stats.globalGroups?.takeIf { it > 0 || stats.showZeroCounts }
-            ?.let { add(Triple(SportsBasketball, it.toString(), Res.string.global_rules)) }
+            ?.let { add(SportsBasketball to it.toString()) }
         stats.apps?.takeIf { it > 0 || stats.showZeroCounts }
-            ?.let { add(Triple(GkIcons.Android, it.toString(), Res.string.apps_title)) }
+            ?.let { add(GkIcons.Android to it.toString()) }
         stats.appGroups?.takeIf { it > 0 || stats.showZeroCounts }?.let {
-            add(Triple(GkIcons.Rule, stats.enabledAppGroups?.let { enabled -> "$enabled/$it" }
-                ?: it.toString(), Res.string.app_rules))
+            add(GkIcons.Rule to (stats.enabledAppGroups?.let { enabled -> "$enabled/$it" }
+                ?: it.toString()))
         }
     }
     val description = listOfNotNull(
@@ -90,7 +89,7 @@ fun GkRuleStats(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
-            entries.forEachIndexed { index, (icon, count, label) ->
+            entries.forEachIndexed { index, (icon, count) ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -98,20 +97,13 @@ fun GkRuleStats(
                     if (index > 0) {
                         Text("·", style = textStyle, color = color)
                     }
-                    GkTooltipIconButtonBox(if (showTooltips) stringResource(label) else null) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            GkIcon(
-                                icon,
-                                modifier = Modifier.size(16.dp),
-                                contentDescription = null,
-                                tint = color
-                            )
-                            Text(count, style = textStyle, color = color)
-                        }
-                    }
+                    GkIcon(
+                        icon,
+                        modifier = Modifier.size(16.dp),
+                        contentDescription = null,
+                        tint = color
+                    )
+                    Text(count, style = textStyle, color = color)
                 }
             }
             if (triggerCount > 0) {
@@ -122,7 +114,7 @@ fun GkRuleStats(
                     if (entries.isNotEmpty()) {
                         Text("·", style = textStyle, color = color)
                     }
-                    GkTriggerCount(triggerCount)
+                    GkTriggerCount(triggerCount, showTooltip = false)
                 }
             }
         }

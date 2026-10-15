@@ -20,6 +20,7 @@ fun GkTriggerCount(
     count: Long,
     modifier: Modifier = Modifier,
     lastTriggerTime: Long? = null,
+    showTooltip: Boolean = true,
 ) {
     if (count == 0L) return
     val text = count.toString()
@@ -30,7 +31,9 @@ fun GkTriggerCount(
         stringResource(Res.string.trigger_count_value, text),
         timeDescription,
     ).joinToString("，")
-    GkTooltipIconButtonBox(timeDescription ?: stringResource(Res.string.notification_variable_triggers)) {
+    GkTooltipIconButtonBox(
+        if (showTooltip) timeDescription ?: stringResource(Res.string.notification_variable_triggers) else null
+    ) {
         Row(
             modifier.clearAndSetSemantics { contentDescription = description },
             horizontalArrangement = Arrangement.spacedBy(4.dp),

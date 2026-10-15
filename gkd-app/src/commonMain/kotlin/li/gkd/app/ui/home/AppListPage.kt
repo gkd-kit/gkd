@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.key.Key
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -424,7 +425,8 @@ fun GkAppListItem(
                         action = null,
                     )
                 }
-                .itemPadding(),
+                .itemPadding()
+                .alpha(if (inWhiteList && !editWhiteListMode) 0.65f else 1f),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
