@@ -27,8 +27,8 @@ plugins {
     alias(libs.plugins.littlerobots.version)
 }
 
-extra["gkdVersionName"] = "1.13.0-beta-1" + project.gitInfo.versionNameSuffix.orEmpty()
-extra["gkdVersionCode"] = 93
+extra["gkdVersionName"] = "1.13.0-beta-2" + project.gitInfo.versionNameSuffix.orEmpty()
+extra["gkdVersionCode"] = 94
 
 object Cfg {
     val compileSdk get() = 37
