@@ -234,7 +234,9 @@
     <string name="category_follow_subscription_description">使用订阅中的类别默认值，再使用规则组默认值</string>
     <string name="category_groups_empty">此类别暂无规则组</string>
     <string name="category_help">类别说明</string>
-    <string name="category_help_description">类别按应用规则组名称前缀匹配；重叠时归入订阅顺序中的第一个类别。全局规则不参与分类。\n\n类别设置作用于整个类别，保留规则组的单独配置。要重新跟随类别，可在详情中清除单独配置。\n\n跟随订阅：类别默认值 → 规则组默认值。\n使用规则组默认：跳过类别默认值。\n\n类别设置和规则组开关表示配置状态，不代表规则当前正在运行</string>
+    <string name="category_icon_legend">图标说明</string>
+    <string name="category_help_description">类别按应用规则组名称前缀匹配；重叠时归入订阅顺序中的第一个类别。全局规则不参与分类。\n\n类别设置作用于整个类别，保留规则组的单独配置。要重新跟随类别，可在详情中清除单独配置。</string>
+    <string name="category_help_state_note">图标表示类别设置，不代表规则正在运行；规则组的单独配置优先。</string>
     <string name="category_key_exhausted">类别编号已用尽</string>
     <string name="category_match_preview">匹配预览</string>
     <string name="category_membership_changes">新增匹配 %1$s 个规则组 · 移出 %2$s 个规则组</string>

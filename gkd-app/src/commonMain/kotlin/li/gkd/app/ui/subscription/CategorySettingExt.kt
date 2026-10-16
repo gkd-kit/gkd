@@ -9,5 +9,5 @@ val CategorySetting.icon: ImageVector
         CategorySetting.FollowSubscription -> GkIcons.StackedDocuments
         CategorySetting.Enabled -> GkIcons.CheckCircle
         CategorySetting.Disabled -> GkIcons.RemoveCircleOutline
-        CategorySetting.GroupDefault -> GkIcons.FlashOn
+        CategorySetting.GroupDefault -> GkIcons.Rule
     }
