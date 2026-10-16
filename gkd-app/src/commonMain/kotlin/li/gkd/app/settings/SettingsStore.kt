@@ -13,6 +13,7 @@ data class SettingsStore(
     val automatorMode: Int = AutomatorMode.A11y.value,
     val enableMatch: Boolean = true,
     val enableStatusService: Boolean = false,
+    val enableStatusOverlay: Boolean = true,
     val excludeFromRecents: Boolean = false,
     val captureScreenshot: Boolean = false,
     val screenshotTargetAppId: String = "",

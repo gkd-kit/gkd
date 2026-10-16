@@ -168,9 +168,16 @@ fun AdvancedPage(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(contentPadding)
         ) {
             AdvancedSectionTitle(
-                stringResource(Res.string.advanced_snapshot_capture),
+                stringResource(Res.string.advanced_background_running),
                 showTop = false,
             )
+            GkTextSwitch(
+                title = stringResource(Res.string.status_overlay_keep_alive),
+                checked = store.enableStatusOverlay,
+                onCheckedChange = vm::requestStatusOverlayEnabled,
+            )
+
+            AdvancedSectionTitle(stringResource(Res.string.advanced_snapshot_capture))
             GkSettingItem(
                 title = stringResource(Res.string.snapshot_records),
                 onClick = { mainVm.navigator.navigate(SnapshotPageRoute) },

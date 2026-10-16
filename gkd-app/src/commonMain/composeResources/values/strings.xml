@@ -897,6 +897,12 @@
     <string name="toast_text_input_hint">请输入提示内容</string>
     <string name="toast_use_system_style">使用系统样式</string>
     <string name="total_prefix">共</string>
+    <string name="advanced_background_running">后台运行</string>
+    <string name="status_overlay_keep_alive">透明悬浮窗保活</string>
+    <string name="status_overlay_enable_title">开启透明悬浮窗保活？</string>
+    <string name="status_overlay_enable_description">开启后，使用透明悬浮窗减少系统对应用后台运行的限制，但可能触发系统“正在其它应用的上层显示内容”通知</string>
+    <string name="status_overlay_disable_title">关闭透明悬浮窗保活？</string>
+    <string name="status_overlay_disable_description">关闭后，应用后台运行可能受到系统限制，影响服务持续运行</string>
     <string name="advanced_snapshot_capture">快照采集</string>
     <string name="advanced_live_debug">实时调试</string>
     <string name="advanced_logs_diagnostics">日志排查</string>

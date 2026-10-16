@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import li.gkd.app.META
 import li.gkd.app.a11y.useA11yServiceEnabledFlow
@@ -102,11 +103,17 @@ class StatusService : LifecycleHookService() {
                 combine(
                     A11yService.isRunning,
                     KeepAliveOverlayCoordinator.accessibilityAttached,
-                ) { a11yRunning, a11yOverlayAttached ->
-                    a11yRunning to a11yOverlayAttached
+                    settings.map { it.enableStatusOverlay }.distinctUntilChanged(),
+                ) { a11yRunning, a11yOverlayAttached, overlayEnabled ->
+                    Triple(a11yRunning, a11yOverlayAttached, overlayEnabled)
                 }.distinctUntilChanged().collectLatest {
-                    val (a11yRunning, a11yOverlayAttached) = it
-                    if (a11yRunning && a11yOverlayAttached) {
+                    val (a11yRunning, a11yOverlayAttached, overlayEnabled) = it
+                    if (!overlayEnabled) {
+                        KeepAliveOverlayCoordinator.release(
+                            source = KeepAliveOverlayCoordinator.Source.Status,
+                            owner = this@StatusService,
+                        )
+                    } else if (a11yRunning && a11yOverlayAttached) {
                         KeepAliveOverlayCoordinator.releaseAfterHandoff(
                             source = KeepAliveOverlayCoordinator.Source.Status,
                             owner = this@StatusService,
