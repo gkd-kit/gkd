@@ -233,7 +233,7 @@ fun ActionLogPage(
                     appIcon = { GkAppIcon(it, 24.dp) },
                     appName = { id, modifier ->
                         GkAppNameText(
-                            id,
+                            appId = id,
                             modifier = modifier,
                             style = MaterialTheme.typography.titleSmall
                         )

@@ -106,7 +106,7 @@ fun GkAppNameText(
 
 @Composable
 fun GkAppNameText(
-    appId: String? = null,
+    appId: String,
     fallbackName: String? = null,
     modifier: Modifier = Modifier,
     style: TextStyle = LocalTextStyle.current,
@@ -117,7 +117,7 @@ fun GkAppNameText(
     val info =
         appInfo ?: catalog?.apps?.get(appId)
     val showSystemIcon = info?.isSystem == true
-    val appName = (info?.name ?: fallbackName ?: appId ?: error("appId is required"))
+    val appName = info?.name ?: fallbackName ?: appId
     val userName = info?.userId?.let { userId ->
         if (userId == catalog?.inventory?.userId) {
             null

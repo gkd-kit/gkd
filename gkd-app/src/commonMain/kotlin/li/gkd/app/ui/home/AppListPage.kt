@@ -336,7 +336,7 @@ fun appListPage(
                     GkAppListItem(
                         appInfo = appInfo,
                         icon = { GkAppIcon(appInfo.id, 32.dp) },
-                        name = { GkAppNameText(appInfo = appInfo) },
+                        name = { GkAppNameText(appId = appInfo.id, appInfo = appInfo) },
                         stats = stats,
                         triggerSummary = if (editWhiteListMode) null else state.triggerStats?.app(appInfo.id),
                         editWhiteListMode = editWhiteListMode,
