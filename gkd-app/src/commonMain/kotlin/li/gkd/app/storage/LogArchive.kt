@@ -1,7 +1,6 @@
 package li.gkd.app.storage
 
 import java.io.File
-import java.io.IOException
 import java.nio.file.Files
 
 object LogArchive {
@@ -18,18 +17,13 @@ object LogArchive {
 
     private fun buildArchive(metadata: File, additionalDirectories: List<File>): File {
         val files = (listOf(layout.db, layout.store, layout.subscription, layout.log, layout.crash, layout.startupLog) + additionalDirectories)
-            .filter { directory ->
-                if (Files.notExists(directory.toPath())) return@filter false
-                val entries = directory.list()
-                    ?: throw IOException("Cannot list directory: $directory")
-                entries.isNotEmpty()
-            } + metadata
+            .filter { directory -> !Files.notExists(directory.toPath()) } + metadata
         val archive = ExportFileNames.reserve(
             layout.sharedCache,
             "gkd-log-${ExportFileNames.timestamp(System.currentTimeMillis())}",
             "zip"
         )
-        ZipArchive.zipFiles(files, archive)
+        ZipArchive.zipFiles(files, archive, includeEmptyDirectories = false)
         return archive
     }
 }

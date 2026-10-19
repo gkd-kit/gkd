@@ -23,19 +23,20 @@ object ZipArchive {
         srcFile: File,
         rawRootPath: String,
         zos: ZipOutputStream,
+        includeEmptyDirectories: Boolean,
     ) {
         val rootPath =
             rawRootPath + (if (rawRootPath.isBlank()) "" else "/") + srcFile.getName()
         if (srcFile.isDirectory()) {
             val fileList = srcFile.listFiles()
                 ?: throw IOException("Cannot list directory: $srcFile")
-            if (fileList.isEmpty()) {
+            if (fileList.isEmpty() && includeEmptyDirectories) {
                 val entry = ZipEntry("$rootPath/")
                 zos.putNextEntry(entry)
                 zos.closeEntry()
             } else {
                 for (file in fileList) {
-                    zipFile(file, rootPath, zos)
+                    zipFile(file, rootPath, zos, includeEmptyDirectories)
                 }
             }
         } else {
@@ -52,10 +53,10 @@ object ZipArchive {
         }
     }
 
-    fun zipFiles(srcFiles: Collection<File>, zipFile: File) {
+    fun zipFiles(srcFiles: Collection<File>, zipFile: File, includeEmptyDirectories: Boolean = true) {
         ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
             for (srcFile in srcFiles) {
-                zipFile(srcFile, "", zos)
+                zipFile(srcFile, "", zos, includeEmptyDirectories)
             }
         }
     }
