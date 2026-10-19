@@ -23,7 +23,7 @@
     <string name="a11y_partial_disable_help">「局部关闭」可在白名单应用内关闭服务，来解决界面异常，游戏掉帧或无障碍检测的问题</string>
     <string name="a11y_partial_disable_touch_warning">切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单</string>
     <string name="a11y_partially_disabled">无障碍局部关闭</string>
-    <string name="a11y_permission_grant">授予「无障碍权限」</string>
+    <string name="a11y_permission_grant">单次授予「无障碍权限」</string>
     <string name="a11y_permission_ready">无障碍权限已就绪</string>
     <string name="a11y_permission_regrant_description">无障碍关闭后需重新授权</string>
     <string name="a11y_restart_failed">重启无障碍失败</string>
@@ -676,7 +676,7 @@
     <string name="search_no_results_filter_hint">暂无搜索结果，或修改筛选</string>
     <string name="search_open">打开搜索</string>
     <string name="secure_settings_permission_description">应用可自行控制开关无障碍</string>
-    <string name="secure_settings_permission_grant">授予「写入安全设置权限」</string>
+    <string name="secure_settings_permission_grant">永久授予「写入安全设置权限」</string>
     <string name="secure_settings_permission_granted">已授予写入安全设置权限</string>
     <string name="secure_settings_permission_required">请先授予「写入安全设置权限」</string>
     <string name="selected">已选中</string>
@@ -970,8 +970,8 @@
     <string name="whitelist_text_edit_mode_enter">进入白名单文本编辑模式</string>
     <string name="whitelist_title">白名单</string>
     <string name="window_minimize">缩小窗口</string>
-    <string name="work_mode_basic">基础</string>
-    <string name="work_mode_enhanced">增强</string>
+    <string name="work_mode_basic">手动开启</string>
+    <string name="work_mode_enhanced">自动开启</string>
     <string name="work_mode_open">前往工作模式页面</string>
     <string name="work_mode_title">工作模式</string>
     <string name="partial_disable_intro">在白名单应用内自动关闭无障碍服务</string>

@@ -201,14 +201,7 @@ fun WorkModePage(host: UiHost) {
                 )
                 GkAnimatedBooleanContent(
                     targetState = platform.writeSecureSettings || platform.a11yRunning,
-                    contentTrue = {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp),
-                            text = stringResource(Res.string.a11y_permission_ready),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
+                    contentTrue = {},
                     contentFalse = {
                         FlowRow(
                             modifier =
@@ -247,18 +240,6 @@ fun WorkModePage(host: UiHost) {
                             stringResource(Res.string.secure_settings_permission_grant),
                             stringResource(Res.string.secure_settings_permission_description),
                         ),
-                )
-                GkAnimatedBooleanContent(
-                    targetState = platform.writeSecureSettings,
-                    contentTrue = {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp),
-                            text = stringResource(Res.string.secure_settings_permission_granted),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    contentFalse = {},
                 )
                 FlowRow(
                     modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp),
@@ -316,18 +297,6 @@ fun WorkModePage(host: UiHost) {
                             stringResource(Res.string.automation_undetectable_a11y),
                             stringResource(Res.string.automation_scope_compatibility_hint),
                         ),
-                )
-                GkAnimatedBooleanContent(
-                    targetState = platform.privilegeAvailable,
-                    contentTrue = {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp),
-                            text = stringResource(Res.string.privilege_service_connected),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    contentFalse = {},
                 )
                 FlowRow(
                     modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp),
