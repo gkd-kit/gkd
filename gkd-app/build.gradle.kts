@@ -91,6 +91,7 @@ kotlin {
             api(libs.androidx.lifecycle.service)
             api(libs.compose.activity)
             api(libs.rikka.shizuku.api)
+            api(libs.rikka.shizuku.provider)
             api(libs.lsposed.hiddenapibypass)
             api(libs.google.accompanist.drawablepainter)
             api(libs.androidx.splashscreen)
