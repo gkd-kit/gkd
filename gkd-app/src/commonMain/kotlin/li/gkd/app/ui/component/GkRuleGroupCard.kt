@@ -1,6 +1,7 @@
 package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +37,8 @@ fun GkRuleGroupCard(
     isSelectedMode: Boolean = false,
     isSelected: Boolean = false,
     selectionEnabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
+    handlesLongPress: Boolean = true,
     onLongClick: () -> Unit = {},
     onSelectedChange: () -> Unit = {},
 ) {
@@ -44,6 +47,8 @@ fun GkRuleGroupCard(
         selectedMode = isSelectedMode, selected = isSelected, highlighted = highlighted,
         selectable = control.canEnable,
         selectionEnabled = selectionEnabled,
+        interactionSource = interactionSource,
+        handlesLongPress = handlesLongPress,
         onLongClick = onLongClick, onSelect = onSelectedChange,
         trailingInfo = {
             val count = triggerSummary?.count ?: 0L

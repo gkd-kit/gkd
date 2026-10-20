@@ -134,4 +134,17 @@ class SubsAppGroupListViewModel(
         }
         return deletedSize
     }
+
+    suspend fun reorderGroups(keys: List<Int>) {
+        check(SubscriptionIds.isLocal(route.subsItemId))
+        subscription.update { current ->
+            current.edit {
+                updateApp(route.appId) {
+                    val byKey = groups.associateBy { it.key }
+                    val orderedKeys = keys.toSet()
+                    copy(groups = keys.mapNotNull(byKey::get) + groups.filter { it.key !in orderedKeys })
+                }
+            }
+        }
+    }
 }

@@ -301,8 +301,8 @@ private fun subsManageContent(
                     }
                     itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
                         // Keep the initial gesture alive after it enters selection mode.
-                        val canDrag = reorderSession.dragging ||
-                                (!refreshing && !batchBusy && !isSelectedMode && orderSubItems.size > 1)
+                        val canDrag = orderSubItems.size > 1 && (reorderSession.dragging ||
+                                (!refreshing && !batchBusy && !isSelectedMode))
                         ReorderableItem(
                             state = reorderableLazyColumnState,
                             key = subItem.id,

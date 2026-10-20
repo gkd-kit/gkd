@@ -129,6 +129,7 @@ class ApplicationIntegrationTest {
                 assertActionLogSubscriptionLoadFailure()
                 assertRootNavigationLifecycle(runtime)
                 assertAppRuleParentVisibility()
+                assertAppRuleReorderPersistence()
                 SettingsRepositoryChecks.run(appStorage().store, META.appName)
                 li.gkd.app.network.assertUpdateClient(session.resolve("update-client"))
                 assertIgnoredVersionsRetry(runtime.toast)
@@ -324,6 +325,55 @@ class ApplicationIntegrationTest {
         } finally {
             blocked.delete()
             store.save(original)
+        }
+    }
+
+    // Reordering persists array positions while preserving keys, order values and latest content.
+    private suspend fun assertAppRuleReorderPersistence() {
+        val id = SubscriptionIds.LOCAL
+        val previous = SubscriptionRepository.awaitSnapshot().subscriptions.getValue(id)
+        val original = RawSubscription.parse(
+            """{id:$id,name:'Reorder',version:1,apps:[{id:'test.alpha',groups:[
+                {key:1,name:'First',order:9,rules:[{order:7,matches:'[text="Ad"]'}]},
+                {key:2,name:'Second',order:-3,rules:[{matches:'[text="Ad"]'}]},
+                {key:3,name:'Third',rules:[{matches:'[text="Ad"]'}]}
+            ]}]}"""
+        )
+        val owner = ViewModelStore()
+        try {
+            SubscriptionRepository.update(id) { original }
+            val vm = li.gkd.app.ui.subscription.SubsAppGroupListViewModel(
+                li.gkd.app.ui.navigation.SubsAppGroupListRoute(id, "test.alpha")
+            ).also { owner.put("reorder", it) }
+            withTimeout(5_000) { vm.uiState.first { it is Loadable.Ready } }
+            // A content edit after the drag snapshot must survive saving the requested keys.
+            SubscriptionRepository.update(id) { current ->
+                current.copy(apps = current.apps.map { app ->
+                    app.copy(groups = app.groups.map { if (it.key == 2) it.copy(name = "Edited") else it })
+                })
+            }
+            val beforeReorder = SubscriptionRepository.awaitSnapshot().subscriptions.getValue(id)
+            vm.reorderGroups(listOf(3, 1, 2))
+            val saved = SubscriptionRepository.files.load(id)
+            val expectedGroups = original.apps.single().groups.let {
+                listOf(it[2], it[0], it[1].copy(name = "Edited"))
+            }
+            assertEquals(
+                Json.encodeToString(beforeReorder.copy(
+                    version = beforeReorder.version + 1,
+                    apps = listOf(original.apps.single().copy(groups = expectedGroups)),
+                )),
+                Json.encodeToString(saved),
+            )
+            assertEquals(
+                Json.encodeToString(saved),
+                Json.encodeToString(SubscriptionRepository.awaitSnapshot().subscriptions.getValue(id)),
+            )
+            vm.reorderGroups(listOf(2, 3, 1))
+            assertEquals(listOf(2, 3, 1), SubscriptionRepository.files.load(id).apps.single().groups.map { it.key })
+        } finally {
+            owner.clear()
+            SubscriptionRepository.update(id) { previous }
         }
     }
 

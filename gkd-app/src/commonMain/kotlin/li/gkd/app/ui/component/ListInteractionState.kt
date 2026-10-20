@@ -106,6 +106,10 @@ class ReorderSession<T, K>(
         moved = false
     }
 
+    fun reset() {
+        items = sourceItems
+    }
+
     fun move(fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex || fromIndex !in items.indices || toIndex !in items.indices) {
             return
