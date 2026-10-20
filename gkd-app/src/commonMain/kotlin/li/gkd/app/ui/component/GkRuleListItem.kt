@@ -43,7 +43,7 @@ fun GkRuleListItem(
     onLongClick: (() -> Unit)? = null,
     onSelect: () -> Unit = {},
     leading: (@Composable () -> Unit)? = null,
-    trailing: @Composable (Modifier) -> Unit,
+    trailing: (@Composable (Modifier) -> Unit)? = null,
     trailingInfo: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -80,7 +80,8 @@ fun GkRuleListItem(
                         role = Role.Checkbox
                         this.selected = selected
                     }
-                }.heightIn(min = 64.dp),
+                }.heightIn(min = 64.dp)
+                .padding(end = if (!selectedMode && trailing == null) 8.dp else 0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
@@ -94,15 +95,17 @@ fun GkRuleListItem(
             if (!selectedMode) trailingInfo?.invoke()
             // Include the switch's surrounding space in its hit target, up to the card edges.
             // 52 dp switch + 8 dp on either side matches the content inset.
-            Box(Modifier.width(68.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                if (selectedMode) {
-                    if (selectable) GkCheckbox(
-                        selected,
-                        onCheckedChange = null,
-                        enabled = selectionEnabled
-                    )
-                } else {
-                    trailing(Modifier.fillMaxSize())
+            if (selectedMode || trailing != null) {
+                Box(Modifier.width(68.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    if (selectedMode) {
+                        if (selectable) GkCheckbox(
+                            selected,
+                            onCheckedChange = null,
+                            enabled = selectionEnabled
+                        )
+                    } else {
+                        trailing?.invoke(Modifier.fillMaxSize())
+                    }
                 }
             }
         }

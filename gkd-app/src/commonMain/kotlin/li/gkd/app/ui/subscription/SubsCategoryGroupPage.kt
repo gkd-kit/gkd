@@ -108,7 +108,6 @@ fun SubsCategoryGroupPage(
         val apps = sortedApps
         val visibleTargets = remember(apps, subs.id) {
             apps.flatMap { app -> app.groups.map { RuleGroupTarget.App(subs.id, app.id, it.key) } }
-                .toSet()
         }
         val selectableTargets = remember(visibleTargets, controls) {
             visibleTargets.filterTo(mutableSetOf()) { controls.getValue(it.appId to it.groupKey).canEnable }
@@ -119,6 +118,7 @@ fun SubsCategoryGroupPage(
         LaunchedEffect(selectableTargets) { selection.retain(selectableTargets) }
         GkBackHandler(selectionSnapshot.active) { selection.clear() }
         val scroll = rememberListScrollState()
+        scroll.ResetOnListChange(visibleTargets, key = { it })
         fun updateGroups(
             targets: Set<RuleGroupTarget.App>,
             enabled: Boolean?,
@@ -185,7 +185,7 @@ fun SubsCategoryGroupPage(
                     onNavigateBack = mainVm.navigator::pop,
                     scrollBehavior = scroll.scrollBehavior,
                     onTitleClick = scroll::resetScroll,
-                    title = { GkTwoLineText(title = subs.name, subtitle = category.name) },
+                    title = { GkTwoLineText(title = subs.name, subtitle = category?.name ?: stringResource(Res.string.rule_category_uncategorized)) },
                     actions = { selectedMode ->
                         if (selectedMode) {
                             GkMultiSelectionActions(
@@ -235,10 +235,12 @@ fun SubsCategoryGroupPage(
                                     )
                                 }
                             }
-                            GkIconButton(
-                                imageVector = GkIcons.MoreVert,
-                                contentDescription = stringResource(Res.string.more_actions),
-                                onClick = { vm.setShowActions(true) })
+                            if (category != null) {
+                                GkIconButton(
+                                    imageVector = GkIcons.MoreVert,
+                                    contentDescription = stringResource(Res.string.more_actions),
+                                    onClick = { vm.setShowActions(true) })
+                            }
                         }
                     },
                 )
@@ -279,7 +281,7 @@ fun SubsCategoryGroupPage(
                             group = group,
                             triggerSummary = state.triggerStats.group(target),
                             control = controls.getValue(app.id to group.key),
-                            hideCategoryPrefix = true,
+                            hideCategoryPrefix = category != null,
                             onOpen = { mainVm.showRuleGroup(subs.id, app.id, group, app.id) },
                             onSettingChange = { setting ->
                                 val request = vm.prepareSwitches(state, setOf(target))
@@ -308,7 +310,7 @@ fun SubsCategoryGroupPage(
                 }
             }
         }
-        if (showActions) {
+        if (showActions && category != null) {
             GkCategoryActionsSheet(
                 category = category,
                 setting = state.setting,

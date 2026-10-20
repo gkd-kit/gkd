@@ -403,7 +403,10 @@ class SubsSheetState(
                             }
 
                         }
-                        if (subscription.categories.isNotEmpty() || subsItem.isLocal) {
+                        val categoryCount = subscription.categories.size + if (subscription.appGroups.any {
+                                subscription.getCategory(it.name) == null
+                            }) 1 else 0
+                        if (categoryCount > 0 || subsItem.isLocal) {
                             SubsSheetItem(
                                 onClickLabel = stringResource(Res.string.rule_categories_view_list),
                                 onClick = click@{
@@ -420,13 +423,13 @@ class SubsSheetState(
                                         style = MaterialTheme.typography.labelLarge,
                                     )
                                     Text(
-                                        text = if (subscription.categories.isNotEmpty()) stringResource(
+                                        text = if (categoryCount > 0) stringResource(
                                             Res.string.subscription_categories_count,
-                                            subscription.categories.size
+                                            categoryCount
                                         ) else stringResource(Res.string.none_available),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.let {
-                                            if (subscription.categories.isEmpty()) {
+                                            if (categoryCount == 0) {
                                                 it.copy(alpha = 0.5f)
                                             } else {
                                                 it

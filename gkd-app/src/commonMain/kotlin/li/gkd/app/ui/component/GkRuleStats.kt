@@ -10,6 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,7 +39,9 @@ data class GkRuleStatsData(
             val prefix =
                 if (enabledOnly) stringResource(Res.string.enabled) else stringResource(Res.string.total_prefix)
             globalGroups?.takeIf { it > 0 || showZeroCounts }
-                ?.let { add(stringResource(Res.string.global_rule_group_stats, prefix, it)) }
+                ?.let {
+                    add(stringResource(Res.string.global_rule_group_stats, prefix, it))
+                }
             apps?.takeIf { it > 0 || showZeroCounts }
                 ?.let { add(stringResource(Res.string.app_count, it)) }
             appGroups?.takeIf { it > 0 || showZeroCounts }?.let {
@@ -60,12 +67,13 @@ fun GkRuleStats(
 ) {
     val entries = buildList {
         stats.globalGroups?.takeIf { it > 0 || stats.showZeroCounts }
-            ?.let { add(SportsBasketball to it.toString()) }
+            ?.let {
+                add(RuleStatEntry(SportsBasketball, it))
+            }
         stats.apps?.takeIf { it > 0 || stats.showZeroCounts }
-            ?.let { add(GkIcons.Android to it.toString()) }
+            ?.let { add(RuleStatEntry(GkIcons.Android, it)) }
         stats.appGroups?.takeIf { it > 0 || stats.showZeroCounts }?.let {
-            add(GkIcons.Rule to (stats.enabledAppGroups?.let { enabled -> "$enabled/$it" }
-                ?: it.toString()))
+            add(RuleStatEntry(GkIcons.Rule, it, stats.enabledAppGroups))
         }
     }
     val description = listOfNotNull(
@@ -89,7 +97,8 @@ fun GkRuleStats(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
-            entries.forEachIndexed { index, (icon, count) ->
+            entries.forEachIndexed { index, entry ->
+                val (icon, count, enabled) = entry
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -103,7 +112,20 @@ fun GkRuleStats(
                         contentDescription = null,
                         tint = color
                     )
-                    Text(count, style = textStyle, color = color)
+                    Text(
+                        text = buildAnnotatedString {
+                            if (enabled != null) {
+                                withStyle(SpanStyle(
+                                    fontWeight = FontWeight.Medium,
+                                )) { append(enabled.toString()) }
+                                withStyle(SpanStyle(color = color.copy(alpha = 0.7f))) {
+                                    append("/$count")
+                                }
+                            } else append(count.toString())
+                        },
+                        style = textStyle,
+                        color = color,
+                    )
                 }
             }
             if (triggerCount > 0) {
@@ -120,3 +142,9 @@ fun GkRuleStats(
         }
     }
 }
+
+private data class RuleStatEntry(
+    val icon: ImageVector,
+    val count: Int,
+    val enabled: Int? = null,
+)

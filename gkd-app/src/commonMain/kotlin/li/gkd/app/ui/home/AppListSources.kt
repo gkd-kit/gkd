@@ -71,7 +71,8 @@ object AppListSources {
         ruleStats = if (globalGroupCounts == null) emptyMap() else apps.associate { info ->
             info.id to GkRuleStatsData(
                 globalGroups = globalGroupCounts[info.id] ?: 0,
-                appGroups = appGroups[info.id]?.count { it.enable } ?: 0,
+                appGroups = appGroups[info.id]?.size ?: 0,
+                enabledAppGroups = appGroups[info.id]?.count { it.enable } ?: 0,
                 enabledOnly = true,
             )
         },

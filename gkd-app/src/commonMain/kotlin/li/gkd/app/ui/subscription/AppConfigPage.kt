@@ -236,6 +236,7 @@ fun AppConfigPage(
         groupSize > 0,
         firstLoading,
         selectedCategory,
+        showDisabledRules,
         enabled = !focus.pending,
     )
 
@@ -316,7 +317,7 @@ fun AppConfigPage(
                                         )
                                     }
                                 }
-                                GkMenuGroupCard(title = stringResource(Res.string.filter_title)) {
+                                GkMenuGroupCard(title = stringResource(Res.string.display_title)) {
                                     GkMenuItemCheckbox(
                                         text = stringResource(Res.string.not_enabled),
                                         checked = showDisabledRules,

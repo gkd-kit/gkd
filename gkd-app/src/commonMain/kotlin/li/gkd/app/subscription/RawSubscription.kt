@@ -54,19 +54,17 @@ data class RawSubscription(
 
     val hasRule get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
 
-    private val categoryAppsMap: Map<Int, List<RawApp>> by lazy {
-        val map = mutableMapOf<Int, MutableList<RawApp>>()
+    private val categoryAppsMap: Map<Int?, List<RawApp>> by lazy {
+        val map = mutableMapOf<Int?, MutableList<RawApp>>()
         apps.forEach { app ->
             app.groups.groupBy { getCategory(it.name)?.key }.forEach { (key, groups) ->
-                if (key != null) {
-                    map.getOrPut(key) { mutableListOf() }.add(app.copy(groups = groups))
-                }
+                map.getOrPut(key) { mutableListOf() }.add(app.copy(groups = groups))
             }
         }
         map
     }
 
-    fun getCategoryApps(categoryKey: Int): List<RawApp> {
+    fun getCategoryApps(categoryKey: Int?): List<RawApp> {
         return categoryAppsMap[categoryKey] ?: emptyList()
     }
 

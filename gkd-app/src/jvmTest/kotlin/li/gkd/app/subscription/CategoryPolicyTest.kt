@@ -29,6 +29,15 @@ class CategoryPolicyTest {
     )
 
     @Test
+    fun uncategorizedQueryExcludesMatchedGroupsAndAppsWithoutRemainingGroups() {
+        val apps = subscription.getCategoryApps(null)
+        assertEquals(listOf("app.one"), apps.map { it.id })
+        assertEquals(listOf(3), apps.single().groups.map { it.key })
+        val preview = CategoryPolicy.previewEdit(subscription, null, "推荐", "")
+        assertEquals(emptyList<RawSubscription.RawApp>(), preview.getCategoryApps(null))
+    }
+
+    @Test
     fun renamingPreviewsCategoryMembershipAndDescription() {
         val preview = CategoryPolicy.previewEdit(subscription, 0, " 推荐 ", "说明")
         assertEquals("推荐", preview.categories.first().name)

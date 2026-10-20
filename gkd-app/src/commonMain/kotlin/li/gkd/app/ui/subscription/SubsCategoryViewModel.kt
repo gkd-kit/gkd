@@ -25,6 +25,8 @@ data class CategorySummary(
 data class SubsCategoryUiState(
     val subscription: RawSubscription,
     val categories: List<CategorySummary>,
+    val uncategorizedApps: List<RawSubscription.RawApp>,
+    val uncategorizedEnabledGroupCount: Int,
 )
 
 class SubsCategoryViewModel(
@@ -51,6 +53,7 @@ class SubsCategoryViewModel(
     }
 
     val uiState = RequiredSubscription(route.subsItemId, scope).buildUiState { subscription ->
+        val uncategorizedApps = subscription.getCategoryApps(null)
         SubscriptionConfigStore.observe().map { snapshot ->
             val categoryConfigs = snapshot.categoryConfigs.filter { it.subsId == subscription.id }
                 .associateBy { it.categoryKey }
@@ -75,6 +78,10 @@ class SubsCategoryViewModel(
                     },
                     setting = CategorySetting.from(config),
                 )
+            }, uncategorizedApps, uncategorizedApps.sumOf { app ->
+                app.groups.count { group ->
+                    RuleGroupPolicy.getGroupEnabled(group, groupConfigs[app.id to group.key])
+                }
             })
         }
     }

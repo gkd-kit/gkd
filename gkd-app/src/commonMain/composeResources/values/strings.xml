@@ -344,7 +344,7 @@
     <string name="file_not_selected">未选择文件</string>
     <string name="file_saved_to_downloads">已保存 %1$s 到下载</string>
     <string name="file_too_large">文件超过大小限制</string>
-    <string name="filter_title">筛选</string>
+    <string name="display_title">显示</string>
     <string name="format_invalid_detail">非法格式\n%1$s</string>
     <string name="fullscreen_dialog">全局弹窗</string>
     <string name="github_cookie_dialog_title">Github Cookie</string>

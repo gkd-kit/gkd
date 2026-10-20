@@ -27,7 +27,7 @@ import li.gkd.db.SubscriptionConfigStore
 
 data class SubsCategoryGroupUiState(
     val subscription: RawSubscription,
-    val category: RawSubscription.RawCategory,
+    val category: RawSubscription.RawCategory?,
     val apps: List<RawSubscription.RawApp>,
     val groupConfigs: Map<RuleGroupTarget.App, SubsAppGroupConfig>,
     val categoryConfig: SubsCategoryConfig?,
@@ -89,8 +89,10 @@ class SubsCategoryGroupViewModel(
                     (record.appId to record.groupKey) in categoryGroupKeys
                 }),
                 subscription = subscription,
-                category = subscription.categories.find { it.key == route.categoryKey }
-                    ?: error(Res.string.category_removed_back_notice.getSync()),
+                category = route.categoryKey?.let { key ->
+                    subscription.categories.find { it.key == key }
+                        ?: error(Res.string.category_removed_back_notice.getSync())
+                },
                 apps = categoryApps.filter { it.id !in disabledAppIds },
                 groupConfigs = snapshot.appGroupConfigs.filter { it.subsId == subscription.id }
                     .associateBy { RuleGroupTarget.App(it.subsId, it.appId, it.groupKey) },
@@ -121,7 +123,7 @@ class SubsCategoryGroupViewModel(
     ) {
         RuleGroupConfigService.setCategorySetting(
             subscription,
-            route.categoryKey,
+            checkNotNull(route.categoryKey),
             setting,
             expected
         )
@@ -143,6 +145,6 @@ class SubsCategoryGroupViewModel(
         RuleGroupConfigService.apply(request, setting)
 
     suspend fun deleteCategory(subscription: RawSubscription) {
-        SubscriptionRepository.deleteCategory(subscription, route.categoryKey)
+        SubscriptionRepository.deleteCategory(subscription, checkNotNull(route.categoryKey))
     }
 }

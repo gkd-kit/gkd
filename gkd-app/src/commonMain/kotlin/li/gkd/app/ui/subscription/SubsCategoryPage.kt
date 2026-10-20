@@ -76,6 +76,11 @@ fun SubsCategoryPage(
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
         val scroll = rememberListScrollState()
+        scroll.ResetOnListChange(
+            state.categories,
+            key = { it.category.key },
+            leadingItemKey = if (state.uncategorizedApps.isNotEmpty()) "uncategorized" else null,
+        )
         val keys =
             remember(state.categories) { state.categories.mapTo(mutableSetOf()) { it.category.key } }
         val selected = selectionSnapshot.selectedKeys intersect keys
@@ -170,6 +175,28 @@ fun SubsCategoryPage(
                 modifier = Modifier.scaffoldPadding(padding),
                 state = scroll.listState,
             ) {
+                if (state.uncategorizedApps.isNotEmpty()) {
+                    item("uncategorized") {
+                        GkRuleListItem(
+                            onClick = { mainVm.navigator.navigate(SubsCategoryGroupRoute(subs.id, null)) },
+                            selectable = false,
+                            trailingInfo = {
+                                GkRuleStats(
+                                    GkRuleStatsData(
+                                        apps = state.uncategorizedApps.size,
+                                        appGroups = state.uncategorizedApps.sumOf { it.groups.size },
+                                        enabledAppGroups = state.uncategorizedEnabledGroupCount,
+                                    )
+                                )
+                            },
+                        ) {
+                            Text(
+                                stringResource(Res.string.rule_category_uncategorized),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                }
                 items(state.categories, key = { it.category.key }) { summary ->
                     CategoryItemCard(
                         summary = summary,
@@ -189,7 +216,7 @@ fun SubsCategoryPage(
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    if (state.categories.isEmpty()) GkEmptyState(stringResource(Res.string.categories_empty))
+                    if (state.categories.isEmpty() && state.uncategorizedApps.isEmpty()) GkEmptyState(stringResource(Res.string.categories_empty))
                     GkPageBottomSpace()
                 }
             }

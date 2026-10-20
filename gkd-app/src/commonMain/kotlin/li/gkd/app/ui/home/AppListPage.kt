@@ -271,7 +271,7 @@ fun appListPage(
                                     )
                                 }
                             }
-                            GkMenuGroupCard(title = stringResource(Res.string.filter_title)) {
+                            GkMenuGroupCard(title = stringResource(Res.string.display_title)) {
                                 GkMenuItemCheckbox(
                                     text = stringResource(Res.string.whitelist_title),
                                     checked = state.showBlocked,

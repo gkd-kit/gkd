@@ -56,7 +56,7 @@ class RuleGroupSummaryTest {
     }
 
     @Test
-    fun appListProjectionCountsOnlyEnabledGroupsAndKeepsAppsWithoutRules() {
+    fun appListProjectionCountsEnabledAndTotalGroupsAndKeepsAppsWithoutRules() {
         val apps =
             listOf("app.example", "app.empty").map { AppInfo(it, it, 1, "1", false, 0, false, 0) }
         val subscription =
@@ -71,9 +71,10 @@ class RuleGroupSummaryTest {
             )
         val source = AppListSources.build(
             apps, listOf("app.empty"), listOf("app.empty", "app.example"),
-            mapOf("app.example" to 3), summary.appIdToAllGroups
+            mapOf("app.example" to 3), summary.appIdToAllGroups,
         )
-        assertEquals(1, source.ruleStats.getValue("app.example").appGroups)
+        assertEquals(2, source.ruleStats.getValue("app.example").appGroups)
+        assertEquals(1, source.ruleStats.getValue("app.example").enabledAppGroups)
         assertEquals(3, source.ruleStats.getValue("app.example").globalGroups)
         assertEquals(0, source.ruleStats.getValue("app.empty").appGroups)
         assertEquals(0, source.ruleStats.getValue("app.empty").globalGroups)

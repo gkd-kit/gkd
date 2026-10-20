@@ -191,7 +191,7 @@ fun A11yScopeAppListPage(host: UiHost) {
                                         }
                                         GkMenuGroupCard(
                                             inTop = true,
-                                            title = stringResource(Res.string.filter_title)
+                                            title = stringResource(Res.string.display_title)
                                         ) {
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue =
