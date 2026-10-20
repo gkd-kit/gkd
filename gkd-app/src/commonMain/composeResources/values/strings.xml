@@ -1098,4 +1098,8 @@
     <string name="quick_settings_tile_match_description">开启或关闭规则匹配</string>
     <string name="quick_settings_tile_activity_description">开启或关闭界面记录服务</string>
     <string name="quick_settings_tile_event_description">开启或关闭无障碍事件记录服务</string>
+    <string name="subscription_adding_download">正在下载订阅…</string>
+    <string name="subscription_adding_parse">正在解析订阅…</string>
+    <string name="subscription_adding_check">正在检查订阅…</string>
+    <string name="subscription_adding_save">正在保存订阅…</string>
 </resources>

@@ -31,6 +31,9 @@ object SubscriptionRepository {
 
     val snapshotFlow: StateFlow<Loadable<SubscriptionSnapshot>>
         field = MutableStateFlow<Loadable<SubscriptionSnapshot>>(Loadable.Loading)
+    val refreshing: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
     val updating get() = updateMutex.state
     val isBusy: Boolean
         get() = updating.value
@@ -306,6 +309,7 @@ object SubscriptionRepository {
     suspend fun addOrModifyRemote(
         url: String,
         id: Long? = null,
+        onStage: suspend (SubscriptionAddStage) -> Unit = {},
     ): SubscriptionResult = withContext(Dispatchers.IO) {
         var result: SubscriptionResult = SubscriptionResult.Busy
         val acquired = updateMutex.tryWithStateLock {
@@ -320,6 +324,7 @@ object SubscriptionRepository {
                 result = SubscriptionResult.Success(SubscriptionResult.SuccessKind.Modified)
                 return@tryWithStateLock
             }
+            onStage(SubscriptionAddStage.Downloading)
             val text = try {
                 NetworkClients.client.get(url).bodyAsText()
             } catch (e: CancellationException) {
@@ -333,6 +338,7 @@ object SubscriptionRepository {
                 )
                 return@tryWithStateLock
             }
+            onStage(SubscriptionAddStage.Parsing)
             val subscription = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
@@ -344,6 +350,7 @@ object SubscriptionRepository {
                 )
                 return@tryWithStateLock
             }
+            onStage(SubscriptionAddStage.Checking)
             if (items.any { it.id == subscription.id }) {
                 result = SubscriptionResult.Failure(SubscriptionResult.FailureReason.AlreadyExists)
                 return@tryWithStateLock
@@ -360,12 +367,11 @@ object SubscriptionRepository {
                 updateUrl = url,
                 order = if (items.isEmpty()) 1 else items.maxOf { it.order } + 1,
             )
+            onStage(SubscriptionAddStage.Saving)
             try {
-                saveLocked(
-                    subscription = subscription,
-                    newItem = newItem,
-                    insertItem = true,
-                )
+                withContext(NonCancellable) {
+                    saveLocked(subscription, newItem, insertItem = true)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -387,58 +393,63 @@ object SubscriptionRepository {
         }
         var result: SubscriptionResult = SubscriptionResult.Busy
         val acquired = updateMutex.tryWithStateLock {
-            val items = try {
-                Db.subsItemDao.queryAll().filter { id == null || it.id == id }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (snapshotFlow.value !is Loadable.Ready) {
-                    snapshotFlow.value = Loadable.Failure(e)
-                }
-                throw e
-            }
-            val currentSnapshot = snapshotFlow.value.value
-            val missingItems = if (currentSnapshot == null) {
-                items
-            } else {
-                items.filter { item -> item.id !in currentSnapshot.subscriptions }
-            }
-            val snapshot = refreshRawSubscriptions(
-                items = missingItems,
-                previous = currentSnapshot ?: SubscriptionSnapshot(),
-            )
-            val entries = items.map { item ->
-                UpdateEntry(item, snapshot.subscriptions[item.id])
-            }
-            if (entries.any { !it.subsItem.isLocal } && !isNetworkRequestAllowed()) {
-                result = SubscriptionResult.Failure(
-                    SubscriptionResult.FailureReason.NetworkUnavailable
-                )
-                return@tryWithStateLock
-            }
-            LogUtils.d("开始检测更新")
-            var successCount = 0
-            entries.filter { !it.subsItem.isLocal }.forEach { entry ->
-                try {
-                    val subscription = fetchUpdate(entry)
-                    if (subscription != null) {
-                        saveLocked(subscription)
-                        successCount++
-                    } else {
-                        clearUpdateError(entry.subsItem.id)
-                    }
+            refreshing.value = true
+            try {
+                val items = try {
+                    Db.subsItemDao.queryAll().filter { id == null || it.id == id }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    setUpdateError(entry.subsItem.id, e)
-                    LogUtils.d("检测更新失败", e.message)
+                    if (snapshotFlow.value !is Loadable.Ready) {
+                        snapshotFlow.value = Loadable.Failure(e)
+                    }
+                    throw e
                 }
+                val currentSnapshot = snapshotFlow.value.value
+                val missingItems = if (currentSnapshot == null) {
+                    items
+                } else {
+                    items.filter { item -> item.id !in currentSnapshot.subscriptions }
+                }
+                val snapshot = refreshRawSubscriptions(
+                    items = missingItems,
+                    previous = currentSnapshot ?: SubscriptionSnapshot(),
+                )
+                val entries = items.map { item ->
+                    UpdateEntry(item, snapshot.subscriptions[item.id])
+                }
+                if (entries.any { !it.subsItem.isLocal } && !isNetworkRequestAllowed()) {
+                    result = SubscriptionResult.Failure(
+                        SubscriptionResult.FailureReason.NetworkUnavailable
+                    )
+                    return@tryWithStateLock
+                }
+                LogUtils.d("开始检测更新")
+                var successCount = 0
+                entries.filter { !it.subsItem.isLocal }.forEach { entry ->
+                    try {
+                        val subscription = fetchUpdate(entry)
+                        if (subscription != null) {
+                            saveLocked(subscription)
+                            successCount++
+                        } else {
+                            clearUpdateError(entry.subsItem.id)
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        setUpdateError(entry.subsItem.id, e)
+                        LogUtils.d("检测更新失败", e.message)
+                    }
+                }
+                result = SubscriptionResult.Success(
+                    kind = SubscriptionResult.SuccessKind.Refreshed,
+                    count = successCount,
+                )
+                LogUtils.d("结束检测更新")
+            } finally {
+                refreshing.value = false
             }
-            result = SubscriptionResult.Success(
-                kind = SubscriptionResult.SuccessKind.Refreshed,
-                count = successCount,
-            )
-            LogUtils.d("结束检测更新")
         }
         if (!acquired) return@withContext SubscriptionResult.Busy
         result
@@ -619,3 +630,5 @@ private fun <T> List<T>.filterIfNotAll(predicate: (T) -> Boolean): List<T> =
 
 private fun <T, K> List<T>.distinctByIfAny(selector: (T) -> K): List<T> =
     distinctBy(selector).let { if (it.size == size) this else it }
+
+enum class SubscriptionAddStage { Downloading, Parsing, Checking, Saving }

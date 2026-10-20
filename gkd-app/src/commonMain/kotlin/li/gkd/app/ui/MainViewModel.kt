@@ -73,12 +73,13 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
         githubUpload = githubUpload,
     )
 
+    val textDialog = TextDialogState()
+
     val subsLinkDialog = SubsLinkDialogState(
         navigator = navigator,
         permissions = permissions,
+        showText = textDialog::showText,
     )
-
-    val textDialog = TextDialogState()
 
     val subsSheet = SubsSheetState(
         navigator = navigator,
