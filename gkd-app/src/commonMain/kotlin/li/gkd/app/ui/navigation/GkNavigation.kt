@@ -49,6 +49,7 @@ fun <T : Any> GkNavigation(
         entryProvider = entryProvider,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
+            rememberRouteRemovedNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
         transitionSpec = { slideInHorizontally { it } togetherWith slideOutHorizontally { -it } },

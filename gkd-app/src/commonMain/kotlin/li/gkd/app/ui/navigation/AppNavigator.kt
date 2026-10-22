@@ -13,9 +13,12 @@ class AppNavigator(private val scope: CoroutineScope) {
     val topEntry get() = backStack.last()
     val topRoute get() = topEntry.route
 
-    fun pop(@CallSite loc: String = "") {
+    fun pop(
+        @CallSite loc: String = "",
+        entry: AppNavEntry = topEntry,
+    ) {
         scope.launch {
-            if (backStack.size > 1) {
+            if (backStack.size > 1 && topEntry === entry) {
                 val old = backStack.removeAt(backStack.lastIndex)
                 LogUtils.d("pop", "$old -> $topRoute", loc = loc)
             }
