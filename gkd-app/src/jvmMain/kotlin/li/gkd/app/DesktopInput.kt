@@ -1,5 +1,6 @@
 package li.gkd.app
 
+import kotlinx.coroutines.delay
 import li.gkd.app.window.DesktopWindowGeometry
 import org.jetbrains.skiko.SkiaLayer
 import java.awt.Component
@@ -61,7 +62,7 @@ object DesktopInput {
         canvas.keyListeners.forEach { it.keyReleased(released) }
     }
 
-    fun pointer(window: Window, request: UiAction) {
+    suspend fun pointer(window: Window, request: UiAction) {
         require(SwingUtilities.isEventDispatchThread())
         require(request.area == "content") { "Native window frame input requires an isolated desktop; background input supports content only" }
         val bounds = DesktopWindowGeometry.contentBounds(window)
@@ -87,14 +88,21 @@ object DesktopInput {
         }
         mouse(MouseEvent.MOUSE_MOVED, request.x, request.y)
         when (request.type) {
-            "click", "rightClick", "doubleClick" -> {
+            "click", "rightClick", "doubleClick", "longClick" -> {
                 val button =
                     if (request.type == "rightClick") MouseEvent.BUTTON3 else MouseEvent.BUTTON1
                 val mask = InputEvent.getMaskForButton(button)
                 repeat(if (request.type == "doubleClick") 2 else 1) { index ->
                     mouse(MouseEvent.MOUSE_PRESSED, request.x, request.y, button, index + 1, mask)
-                    mouse(MouseEvent.MOUSE_RELEASED, request.x, request.y, button, index + 1)
-                    mouse(MouseEvent.MOUSE_CLICKED, request.x, request.y, button, index + 1)
+                    try {
+                        // Let Compose's long-press timer run while the EDT remains responsive.
+                        if (request.type == "longClick") delay(800)
+                    } finally {
+                        mouse(MouseEvent.MOUSE_RELEASED, request.x, request.y, button, index + 1)
+                    }
+                    if (request.type != "longClick") {
+                        mouse(MouseEvent.MOUSE_CLICKED, request.x, request.y, button, index + 1)
+                    }
                 }
             }
 

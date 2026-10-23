@@ -287,7 +287,7 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
                                 }
 
                                 "nativeKey" -> throw IllegalArgumentException("Native input requires an isolated desktop; system input is disabled")
-                                "click", "rightClick", "doubleClick", "drag", "hover", "scroll", "key" -> withContext(
+                                "click", "rightClick", "doubleClick", "longClick", "drag", "hover", "scroll", "key" -> withContext(
                                     Edt
                                 ) {
                                     val host = target(request.window)
