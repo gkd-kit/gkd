@@ -9,11 +9,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import li.gkd.app.notif.formatNotificationTemplate
 import li.gkd.app.resources.*
 import li.gkd.app.rule.ruleGroupState
@@ -52,6 +58,10 @@ fun settingsPage(
     val scope = rememberCoroutineScope()
     val appName = META.appName
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
+    var selectedTheme by remember(store.enableDarkTheme) {
+        mutableStateOf(store.enableDarkTheme)
+    }
+    var themeUpdateJob by remember { mutableStateOf<Job?>(null) }
     val privilegeAvailable = privilegeAvailable()
     val backupDialog by vm.backupDialog.collectAsStateWithLifecycle()
     GkBackupDialogs(
@@ -192,9 +202,15 @@ fun settingsPage(
 
                 GkTextMenu(
                     title = stringResource(Res.string.theme_mode),
-                    option = DarkThemeOption.objects.findOption(store.enableDarkTheme),
-                    onOptionChange = {
-                        SettingsRepository.updateSettings { store -> store.copy(enableDarkTheme = it.value) }
+                    option = DarkThemeOption.objects.findOption(selectedTheme),
+                    onOptionChange = { option ->
+                        selectedTheme = option.value
+                        themeUpdateJob?.cancel()
+                        themeUpdateJob = mainVm.scope.launch {
+                            // Let the menu close before changing the application's colors.
+                            delay(300)
+                            SettingsRepository.updateSettings { it.copy(enableDarkTheme = option.value) }
+                        }
                     },
                 )
 
