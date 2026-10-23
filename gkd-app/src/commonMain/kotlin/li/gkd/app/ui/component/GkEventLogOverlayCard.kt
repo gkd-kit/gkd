@@ -29,6 +29,7 @@ import li.gkd.db.A11yEventLog
 @Composable
 fun GkEventLogOverlayCard(
     eventLog: A11yEventLog,
+    text: List<String>,
     modifier: Modifier = Modifier,
     appName: @Composable (String) -> Unit = { GkAppNameText(appId = it) }
 ) {
@@ -89,7 +90,7 @@ fun GkEventLogOverlayCard(
                     )
                 }
             }
-            if (eventLog.text.isNotEmpty()) {
+            if (text.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -106,7 +107,7 @@ fun GkEventLogOverlayCard(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        eventLog.text.forEach { subText ->
+                        text.forEach { subText ->
                             Text(
                                 text = subText,
                                 modifier = Modifier

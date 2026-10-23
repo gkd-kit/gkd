@@ -32,6 +32,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import li.gkd.app.model.A11yEventLogItem
 import li.gkd.app.model.fixedName
 import li.gkd.app.model.isStateChanged
 import li.gkd.app.resources.*
@@ -59,14 +60,13 @@ import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.copyText
-import li.gkd.db.A11yEventLog
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun A11yEventLogPage() {
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { A11yEventLogViewModel() }
-    val list: LazyPagingItems<A11yEventLog> = vm.pagingDataFlow.collectAsLazyPagingItems()
+    val list: LazyPagingItems<A11yEventLogItem> = vm.pagingDataFlow.collectAsLazyPagingItems()
 
     val shownEventLog by vm.shownEventLog.collectAsStateWithLifecycle()
     val pageScrollState = rememberListScrollState()
@@ -109,17 +109,26 @@ fun A11yEventLogPage() {
                 )
             },
             listState = listState,
-            key = { it.id },
-            appId = { it.appId },
-            time = { it.ctime },
+            key = { it.eventLog.id },
+            appId = { it.eventLog.appId },
+            time = { it.eventLog.ctime },
             onOpenApp = { mainVm.navigator.navigate(AppConfigRoute(it)) },
             modifier = Modifier.scaffoldPadding(contentPadding),
-        ) { eventLog ->
-            EventLogEntry(eventLog, onClick = { vm.setShownEventLog(eventLog) })
+        ) { item ->
+            EventLogEntry(item, onClick = {
+                val error = item.parsedText.exceptionOrNull()
+                if (error != null) {
+                    mainVm.textDialog.showText(error.stackTraceToString())
+                } else {
+                    vm.setShownEventLog(item)
+                }
+            })
         }
     }
 
-    shownEventLog?.let { eventLog ->
+    shownEventLog?.let { item ->
+        val eventLog = item.eventLog
+        val parsedText = item.parsedText.getOrThrow()
         val onDismissRequest = { vm.setShownEventLog(null) }
         val dark = LocalDarkTheme.current
         val eventText =
@@ -130,7 +139,7 @@ fun A11yEventLogPage() {
                             mapOf(
                                 "name" to JsonPrimitive(eventLog.name),
                                 "desc" to JsonPrimitive(eventLog.desc),
-                                "text" to JsonArray(eventLog.text.map(::JsonPrimitive)),
+                                "text" to JsonArray(parsedText.map(::JsonPrimitive)),
                             )
                         )
                     ),
@@ -188,8 +197,8 @@ fun A11yEventLogPage() {
                                 (listOf(
                                         "name" to eventLog.name,
                                         "desc" to eventLog.desc,
-                                        "text.size" to eventLog.text.size,
-                                    ) + eventLog.text.mapIndexed { i, s -> "text.get($i)" to s })
+                                        "text.size" to parsedText.size,
+                                    ) + parsedText.mapIndexed { i, s -> "text.get($i)" to s })
                                     .joinToString("") { (key, value) ->
                                         val v =
                                             if (value is String) toJson5String(value)
@@ -223,7 +232,8 @@ fun A11yEventLogPage() {
 }
 
 @Composable
-private fun EventLogEntry(eventLog: A11yEventLog, onClick: () -> Unit) {
+private fun EventLogEntry(item: A11yEventLogItem, onClick: () -> Unit) {
+    val eventLog = item.eventLog
     val color =
         if (eventLog.isStateChanged) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.onSurfaceVariant
@@ -264,12 +274,20 @@ private fun EventLogEntry(eventLog: A11yEventLog, onClick: () -> Unit) {
             ?.let { desc ->
                 EventLogSummary(GkIcons.Title, desc, maxLines = 1)
             }
-        val summary =
-            remember(eventLog.text) {
-                eventLog.text.filter { it.isNotBlank() }.joinToString(" · ")
+        val parsedText = item.parsedText.getOrNull()
+        if (parsedText == null) {
+            Text(
+                text = eventLog.text,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        } else {
+            val summary = remember(parsedText) {
+                parsedText.filter { it.isNotBlank() }.joinToString(" · ")
             }
-        if (summary.isNotBlank()) {
-            EventLogSummary(GkIcons.TextFields, summary, maxLines = 2)
+            if (summary.isNotBlank()) {
+                EventLogSummary(GkIcons.TextFields, summary, maxLines = 2)
+            }
         }
     }
 }

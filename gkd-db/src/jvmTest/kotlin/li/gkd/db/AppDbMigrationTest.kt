@@ -15,6 +15,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class AppDbMigrationTest {
@@ -370,11 +371,44 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun flowPagingAndListConverterWorkOnJvm() = runBlocking {
-        val databaseName = "room3-query-adapters.db"
+    fun eventTextLoadsUnchangedIncludingMalformedJsonAndLegacyEmptyText() = runBlocking {
+        val databaseName = "malformed-event-text.db"
+        val expectedText = mapOf(
+            1 to "{broken",
+            2 to """["first","second"]""",
+            3 to "",
+            4 to "[]",
+        )
+        // A malformed record must not prevent the same page's valid and legacy records from loading.
+        migrationHelper(databaseName).createDatabase(18).use {
+            it.execSQL("INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (1, 1, 1, 'sample.app', 'event', '{broken')")
+            it.execSQL("""INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (2, 2, 1, 'sample.app', 'event', '["first","second"]')""")
+            it.execSQL("INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (3, 3, 1, 'sample.app', 'event', '')")
+            it.execSQL("INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (4, 4, 1, 'sample.app', 'event', '[]')")
+        }
         val database = openDatabase(databaseName)
         try {
-            val expectedText = listOf("first", "second")
+            val result = database.a11yEventLogDao().pagingSource().load(
+                PagingSource.LoadParams.Refresh<Int>(null, 10, false)
+            )
+            assertIs<PagingSource.LoadResult.Page<Int, A11yEventLog>>(result)
+            assertEquals(expectedText, result.data.associate { it.id to it.text })
+        } finally {
+            database.close()
+        }
+        BundledSQLiteDriver().open(databasePath(databaseName).toString()).use {
+            expectedText.forEach { (id, text) ->
+                assertEquals(text, it.queryText("SELECT text FROM a11y_event_log WHERE id = $id"))
+            }
+        }
+    }
+
+    @Test
+    fun flowPagingAndRawEventTextStorageWorkOnJvm() = runBlocking {
+        val databaseName = "room3-query-adapters.db"
+        val expectedText = """["first","second"]"""
+        val database = openDatabase(databaseName)
+        try {
             database.a11yEventLogDao().insert(
                 listOf(
                     A11yEventLog(
@@ -409,6 +443,9 @@ class AppDbMigrationTest {
             }
         } finally {
             database.close()
+        }
+        BundledSQLiteDriver().open(databasePath(databaseName).toString()).use {
+            assertEquals(expectedText, it.queryText("SELECT text FROM a11y_event_log WHERE id = 1"))
         }
     }
 }

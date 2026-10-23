@@ -21,7 +21,7 @@ class A11yEventLog(
     @ColumnInfo(name = "app_id") val appId: String,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "desc") val desc: String?,
-    @ColumnInfo(name = "text") val text: List<String>,
+    @ColumnInfo(name = "text") val text: String,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other !is A11yEventLog) return false

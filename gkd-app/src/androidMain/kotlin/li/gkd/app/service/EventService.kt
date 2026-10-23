@@ -45,7 +45,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.gkd.app.META
 import li.gkd.app.appScope
-import li.gkd.app.data.toA11yEventLog
+import li.gkd.app.data.toA11yEventLogItem
+import li.gkd.app.model.A11yEventLogItem
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.uiAutomationFlow
@@ -63,7 +64,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
-    private val eventLogs = mutableStateListOf<A11yEventLog>()
+    private val eventLogs = mutableStateListOf<A11yEventLogItem>()
     private var minimized by mutableStateOf(false)
 
     override fun isViewClickEnabled(): Boolean = minimized
@@ -97,7 +98,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
             CompositionLocalProvider(
                 LocalContentColor provides contentColorFor(bgColor),
             ) {
-                val latestEventId = eventLogs.lastOrNull()?.id ?: 0
+                val latestEventId = eventLogs.lastOrNull()?.eventLog?.id ?: 0
                 val followState = rememberLazyListAutoFollowState(
                     itemCount = eventLogs.size,
                     latestItemKey = latestEventId,
@@ -129,9 +130,10 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                 contentPadding = PaddingValues(bottom = 6.dp),
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                items(eventLogs, { it.id }) {
+                                items(eventLogs, { it.eventLog.id }) {
                                     GkEventLogOverlayCard(
-                                        eventLog = it,
+                                        eventLog = it.eventLog,
+                                        text = it.parsedText.getOrThrow(),
                                         modifier = Modifier.padding(horizontal = 2.dp)
                                     )
                                 }
@@ -209,13 +211,13 @@ class EventService : OverlayWindowService(positionKey = "event") {
             if (event.packageName == META.appId) return
             if (logAutoId == 0) return
             logAutoId++
-            val eventLog = event.toA11yEventLog(logAutoId)
-            service.eventLogs.add(eventLog)
-            service.tempEventListFlow.update { it + eventLog }
+            val item = event.toA11yEventLogItem(logAutoId)
+            service.eventLogs.add(item)
+            service.tempEventListFlow.update { it + item.eventLog }
             if (service.eventLogs.size >= 256) {
                 service.eventLogs.removeRange(0, 64)
             }
-            if (eventLog.id % 100 == 0) {
+            if (item.eventLog.id % 100 == 0) {
                 appScope.launchLogged { Db.a11yEventLogDao.deleteKeepLatest() }
             }
         }

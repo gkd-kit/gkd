@@ -1,8 +1,6 @@
 package li.gkd.db
 
 import androidx.room3.AutoMigration
-import androidx.room3.ColumnTypeConverter
-import androidx.room3.ColumnTypeConverters
 import androidx.room3.ConstructedBy
 import androidx.room3.Database
 import androidx.room3.DeleteColumn
@@ -10,7 +8,6 @@ import androidx.room3.RenameColumn
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.migration.AutoMigrationSpec
-import kotlinx.serialization.json.Json
 
 @Database(
     version = 18,
@@ -46,7 +43,6 @@ import kotlinx.serialization.json.Json
         AutoMigration(from = 17, to = 18),
     ]
 )
-@ColumnTypeConverters(DbConverters::class)
 @ConstructedBy(AppDbConstructor::class)
 abstract class AppDb : RoomDatabase() {
     abstract fun subsItemDao(): SubsItem.SubsItemDao
@@ -92,27 +88,3 @@ class Migration9To10Spec : AutoMigrationSpec
     columnName = "app_version_name"
 )
 class Migration10To11Spec : AutoMigrationSpec
-
-@Suppress("unused")
-class DbConverters {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
-        encodeDefaults = true
-    }
-
-    @ColumnTypeConverter
-    fun fromListStringToString(list: List<String>): String {
-        return json.encodeToString(list)
-    }
-
-    @ColumnTypeConverter
-    fun fromStringToList(value: String): List<String> {
-        if (value.isEmpty()) return emptyList()
-        return try {
-            json.decodeFromString(value)
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-}
