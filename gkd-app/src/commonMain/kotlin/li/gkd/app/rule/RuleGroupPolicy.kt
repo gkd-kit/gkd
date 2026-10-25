@@ -35,17 +35,17 @@ object RuleGroupPolicy {
             appInfo,
             matchAnyApp,
         )
-        val defaultEnabledForGroup = getGroupEnabled(group, null, category, categoryConfig)
+        val defaultEnabledForGroup = getGroupConfiguredEnabled(group, null, category, categoryConfig)
         val globalDecision = if (group is RawSubscription.RawGlobalGroup && appId != null) {
             globalAppDecision(subscription, group, appId, launcherAppId, systemAppIds, appInfo, matchAnyApp)
         } else null
         val defaultEnabled = globalDecision?.defaultEnabled ?: defaultEnabledForGroup
-        val canEnable = group.valid && (globalDecision?.versionAllowed ?: !limitations.fullyBlocked)
+        val canEnable = globalDecision?.versionAllowed ?: !limitations.fullyBlocked
         val restrictions = buildList {
             if (!group.valid) add(
                 RuleRestriction.Invalid(group.validationError)
             )
-            if (group.valid && !canEnable) {
+            if (!canEnable) {
                 // App defaults can be overridden; explain the remaining hard restriction.
                 if (inApp) add(RuleRestriction.VersionMismatch)
                 else addAll(limitations.blockedReasons.ifEmpty { listOf(RuleRestriction.AppNotApplicable) })
@@ -58,7 +58,7 @@ object RuleGroupPolicy {
             ) {
                 add(RuleRestriction.SubscriptionAppDisabled)
             }
-            if (inApp && !getGroupEnabled(
+            if (inApp && !getGroupConfiguredEnabled(
                     group,
                     config
                 )
@@ -91,7 +91,14 @@ object RuleGroupPolicy {
         subsConfig: SubsGroupConfig?,
         category: RawSubscription.RawCategory? = null,
         categoryConfig: SubsCategoryConfig? = null,
-    ): Boolean = group.valid && when (group) {
+    ): Boolean = group.valid && getGroupConfiguredEnabled(group, subsConfig, category, categoryConfig)
+
+    fun getGroupConfiguredEnabled(
+        group: RawSubscription.RawGroupProps,
+        subsConfig: SubsGroupConfig?,
+        category: RawSubscription.RawCategory? = null,
+        categoryConfig: SubsCategoryConfig? = null,
+    ): Boolean = when (group) {
         is RawSubscription.RawAppGroup -> subsConfig?.enable
             ?: getCategoryEnabled(category, categoryConfig)
             ?: group.enable

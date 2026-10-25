@@ -81,7 +81,6 @@ fun AppConfigPage(
     val focusLog = route.focusLog
     val vm = viewModel { AppConfigViewModel(route) }
     val scope = vm.scope
-    val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val byCategory = store.appRuleSummaryDisplayMode == RuleDisplayMode.ByCategory.value
@@ -162,10 +161,10 @@ fun AppConfigPage(
     }
     val groupSize = sections.sumOf { it.groupCount }
 
-    val selectableTargets = remember(sections, appId, controls) {
+    val selectableTargets = remember(sections, appId) {
         sections.flatMap { it.subscriptions }.flatMap { (subscription, groups) ->
             groups.map { group -> group.toRuleGroupTarget(subscription.id, appId) }
-        }.filterTo(mutableSetOf()) { controls.getValue(it).canEnable }
+        }.toSet()
     }
     val selectionState = vm.selection
     val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
@@ -183,21 +182,19 @@ fun AppConfigPage(
         if (selectedDataSet.isNotEmpty() && state != null) {
             val request = vm.prepareSwitches(state, selectedDataSet)
             scope.launchUi {
-                vm.runBatchAction {
-                    val action = when (enabled) {
-                        false -> getString(Res.string.action_close)
-                        true -> getString(Res.string.action_enable)
-                        null -> getString(Res.string.setting_follow_default)
-                    }
-                    vm.applySwitches(
-                        request, setting,
-                        confirmation = getString(
-                            Res.string.app_rules_batch_setting_confirmation,
-                            selectedDataSet.size.toString(),
-                            action
-                        ),
-                    )?.let { ToastUtils.show(it.description()) }
+                val action = when (enabled) {
+                    false -> getString(Res.string.action_close)
+                    true -> getString(Res.string.action_enable)
+                    null -> getString(Res.string.setting_follow_default)
                 }
+                vm.applySwitches(
+                    request, setting,
+                    confirmation = getString(
+                        Res.string.app_rules_batch_setting_confirmation,
+                        selectedDataSet.size.toString(),
+                        action
+                    ),
+                )?.let { ToastUtils.show(it.description()) }
             }
         }
     }
@@ -263,7 +260,7 @@ fun AppConfigPage(
                             keys = selectableTargets,
                             onSelectAll = selectionState::selectAll,
                             onInvert = selectionState::invert,
-                            enabled = !batchBusy && loadableState is Loadable.Ready,
+                            enabled = loadableState is Loadable.Ready,
                         ) { dismiss ->
                             GkBatchActionMenuItem(
                                 text = stringResource(Res.string.action_copy),
@@ -274,14 +271,11 @@ fun AppConfigPage(
                                         selectedDataSet.filterIsInstance<RuleGroupTarget.App>()
                                             .toSet()
                                     scope.launchUi {
-                                        vm.runBatchAction {
-                                            copyText(vm.buildSelectedGroupsText(targets))
-                                        }
+                                        copyText(vm.buildSelectedGroupsText(targets))
                                     }
                                 },
                             )
                             GkRuleBatchMenuItems(
-                                enabled = true,
                                 onDismiss = dismiss,
                                 onUpdate = updateSelected,
                             )
@@ -436,14 +430,12 @@ fun AppConfigPage(
                                 it.subsId == subsId && it.groupType == group.groupType && it.groupKey == group.key
                             }
                             val onLongClick = {
-                                if (!batchBusy) {
-                                    selectionState.select(
-                                        group.toRuleGroupTarget(
-                                            subsId = subsId,
-                                            appId = appId,
-                                        ),
-                                    )
-                                }
+                                selectionState.select(
+                                    group.toRuleGroupTarget(
+                                        subsId = subsId,
+                                        appId = appId,
+                                    ),
+                                )
                             }
                             val onSelectedChange = {
                                 selectionState.toggle(
@@ -476,7 +468,6 @@ fun AppConfigPage(
                                 },
                                 onLongClick = onLongClick,
                                 isSelectedMode = isSelectedMode,
-                                selectionEnabled = !batchBusy,
                                 isSelected = isSelected,
                                 onSelectedChange = onSelectedChange,
                                 highlighted = !isSelectedMode && focus.highlightedKey == Triple(

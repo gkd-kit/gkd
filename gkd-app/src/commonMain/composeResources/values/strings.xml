@@ -622,6 +622,7 @@
     <string name="rule_temporarily_unavailable">此规则暂不可用</string>
     <string name="rule_temporarily_unavailable_prefix">，暂不可用：</string>
     <string name="rule_unavailable">规则不可用</string>
+    <string name="rule_invalid_setting_explanation">规则无效，暂不参与匹配。仍可修改启用设置，错误修复后将按该设置生效。</string>
     <string name="rule_unavailable_reason_action_suffix">，不可用，点击查看原因</string>
     <string name="rule_unavailable_reason_view">查看不可用原因</string>
     <string name="rule_unspecified_apps_default_disabled">未指定应用默认关闭，可手动开启</string>

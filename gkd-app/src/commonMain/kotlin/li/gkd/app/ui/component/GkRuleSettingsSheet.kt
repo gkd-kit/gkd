@@ -25,6 +25,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.ExcludeData
@@ -105,20 +108,11 @@ fun GkRuleSettingsContent(
             Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 64.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                Modifier.weight(1f).padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                // Keep restrictions visible independently of the saved switch value.
-                val restriction = RulePropertyText.restrictionSummary(state)
-                if (restriction != null) {
-                    Text(
-                        restriction, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            Text(
+                title,
+                modifier = Modifier.weight(1f).padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
+                style = MaterialTheme.typography.titleMedium,
+            )
             if (onViewControl != null) {
                 GkIconButton(
                     imageVector = GkIcons.Flowchart,
@@ -165,23 +159,37 @@ fun GkRuleExclusionsCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    if (appId == null) RuleProperty.Personal.label else stringResource(Res.string.page_exclusion),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                val summary = RulePropertyText.personalSummary(exclude, appId)
-                if (summary != null) {
-                    Text(
-                        summary, style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            Text(
+                if (appId == null) RuleProperty.Personal.label else stringResource(Res.string.page_exclusion),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            val apps = if (appId == null) exclude.appIds.size else 0
+            val pages = exclude.activityIds.count { appId == null || it.first == appId }
+            if (apps > 0) {
+                ExclusionCount(GkIcons.Apps, apps, stringResource(Res.string.app_count, apps.toString()))
+            }
+            if (pages > 0) {
+                ExclusionCount(GkIcons.Layers, pages, stringResource(Res.string.page_count, pages.toString()))
             }
             GkRulePropertyIcon(
                 RuleProperty.Personal, modifier = Modifier.size(24.dp), contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun ExclusionCount(icon: ImageVector, count: Int, description: String) {
+    Row(
+        modifier = Modifier.clearAndSetSemantics { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        GkIcon(icon, contentDescription = null, modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(count.toString(), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -92,7 +92,6 @@ fun SubsAppGroupListPage(
     val partialDisabled =
         restrictionSettings.enableBlockA11yAppList && !restrictionSettings.blockA11yAppListFollowMatch && appId in a11yWhitelist
     val showAppSetting by vm.showAppSetting.collectAsStateWithLifecycle()
-    val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
@@ -154,9 +153,9 @@ fun SubsAppGroupListPage(
         val reorderSession = rememberReorderSession(app.groups) { it.key }
         val selectionState = vm.selection
         val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
-        val selectableKeys = remember(controls, sections) {
+        val selectableKeys = remember(sections) {
             sections.flatMap { it.subscriptions }.flatMap { it.second }
-                .filter { controls.getValue(it.key).canEnable }.mapTo(mutableSetOf()) { it.key }
+                .mapTo(mutableSetOf()) { it.key }
         }
         val selectedKeys = selectionSnapshot.selectedKeys intersect selectableKeys
         val isSelectedMode = selectionSnapshot.active
@@ -172,28 +171,26 @@ fun SubsAppGroupListPage(
             if (keysToUpdate.isNotEmpty()) {
                 val request = vm.prepareSwitches(state, keysToUpdate)
                 scope.launchUi {
-                    vm.runBatchAction {
-                        val action = when (enabled) {
-                            false -> getString(Res.string.action_close)
-                            true -> getString(Res.string.action_enable)
-                            null -> getString(Res.string.rule_clear_custom_settings)
-                        }
-                        if (!mainVm.dialogRequests.confirm(
-                                title = getString(Res.string.action_notice),
-                                text = getString(
-                                    Res.string.rule_batch_setting_confirmation_prefix,
-                                    keysToUpdate.size.toString(),
-                                    action
-                                ) +
-                                        if (enabled == null) getString(Res.string.rule_clear_custom_settings_description)
-                                        else getString(Res.string.rule_custom_settings_description),
-                            )
-                        ) return@runBatchAction
-                        ToastUtils.show(
-                            vm.applySwitches(request, RuleSetting.from(enabled))
-                                .description()
-                        )
+                    val action = when (enabled) {
+                        false -> getString(Res.string.action_close)
+                        true -> getString(Res.string.action_enable)
+                        null -> getString(Res.string.rule_clear_custom_settings)
                     }
+                    if (!mainVm.dialogRequests.confirm(
+                            title = getString(Res.string.action_notice),
+                            text = getString(
+                                Res.string.rule_batch_setting_confirmation_prefix,
+                                keysToUpdate.size.toString(),
+                                action
+                            ) +
+                                    if (enabled == null) getString(Res.string.rule_clear_custom_settings_description)
+                                    else getString(Res.string.rule_custom_settings_description),
+                        )
+                    ) return@launchUi
+                    ToastUtils.show(
+                        vm.applySwitches(request, RuleSetting.from(enabled))
+                            .description()
+                    )
                 }
             }
         }
@@ -254,7 +251,6 @@ fun SubsAppGroupListPage(
                                 keys = selectableKeys,
                                 onSelectAll = selectionState::selectAll,
                                 onInvert = selectionState::invert,
-                                enabled = !batchBusy,
                             ) { dismiss ->
                                 GkBatchActionMenuItem(
                                     text = stringResource(Res.string.action_copy),
@@ -262,14 +258,11 @@ fun SubsAppGroupListPage(
                                     onClick = {
                                         val keysToCopy = selectedKeys
                                         scope.launchUi {
-                                            vm.runBatchAction {
-                                                copyText(vm.buildSelectedGroupsText(keysToCopy))
-                                            }
+                                            copyText(vm.buildSelectedGroupsText(keysToCopy))
                                         }
                                     },
                                 )
                                 GkRuleBatchMenuItems(
-                                    enabled = !batchBusy,
                                     onDismiss = dismiss,
                                     onUpdate = updateSelected,
                                 )
@@ -280,26 +273,24 @@ fun SubsAppGroupListPage(
                                         onClick = {
                                             val keysToDelete = selectedKeys
                                             scope.launchUi {
-                                                vm.runBatchAction {
-                                                    if (!mainVm.dialogRequests.confirm(
-                                                            title = getString(Res.string.rule_delete),
-                                                            text = getString(
-                                                                Res.string.rule_groups_delete_confirmation,
-                                                                keysToDelete.size.toString()
-                                                            ),
-                                                            error = true,
-                                                        )
-                                                    ) return@runBatchAction
-                                                    val deletedSize =
-                                                        vm.deleteSelectedGroups(keysToDelete)
-                                                    selectionState.removeDeleted(keysToDelete)
-                                                    ToastUtils.show(
-                                                        if (deletedSize > 0) getString(
-                                                            Res.string.rule_groups_deleted_count,
-                                                            deletedSize.toString()
-                                                        ) else getString(Res.string.selected_rules_changed)
+                                                if (!mainVm.dialogRequests.confirm(
+                                                        title = getString(Res.string.rule_delete),
+                                                        text = getString(
+                                                            Res.string.rule_groups_delete_confirmation,
+                                                            keysToDelete.size.toString()
+                                                        ),
+                                                        error = true,
                                                     )
-                                                }
+                                                ) return@launchUi
+                                                val deletedSize =
+                                                    vm.deleteSelectedGroups(keysToDelete)
+                                                selectionState.removeDeleted(keysToDelete)
+                                                ToastUtils.show(
+                                                    if (deletedSize > 0) getString(
+                                                        Res.string.rule_groups_deleted_count,
+                                                        deletedSize.toString()
+                                                    ) else getString(Res.string.selected_rules_changed)
+                                                )
                                             }
                                         },
                                     )
@@ -418,7 +409,7 @@ fun SubsAppGroupListPage(
                         { it.key },
                     ) { group ->
                         val canDrag = reorderEnabled && app.groups.size > 1 &&
-                            (reorderSession.dragging || (!batchBusy && !isSelectedMode))
+                            (reorderSession.dragging || (!isSelectedMode))
                         ReorderableItem(state = reorderableState, key = group.key, enabled = canDrag) {
                             val interactionSource = remember { MutableInteractionSource() }
                             GkRuleGroupCard(
@@ -465,7 +456,7 @@ fun SubsAppGroupListPage(
                                 },
                                 highlighted = !isSelectedMode && focus.highlightedKey == group.key,
                                 isSelectedMode = isSelectedMode,
-                                selectionEnabled = !batchBusy && !reorderSession.dragging,
+                                selectionEnabled = !reorderSession.dragging,
                                 isSelected = group.key in selectedKeys,
                                 onLongClick = { selectionState.select(group.key) },
                                 onSelectedChange = {

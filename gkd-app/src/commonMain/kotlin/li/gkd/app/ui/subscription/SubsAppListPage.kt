@@ -182,7 +182,7 @@ fun SubsAppListPage(
                 }, actions = { selectedMode ->
                     if (selectedMode) {
                         GkMultiSelectionActions(selectionSnapshot.selectedKeys, visibleTargets, selection::selectAll, selection::invert, !busy) { dismiss ->
-                            GkRuleBatchMenuItems(!busy, dismiss, updateSelected)
+                            GkRuleBatchMenuItems(dismiss, updateSelected)
                         }
                     } else {
                         GkSearchCloseIconButton(

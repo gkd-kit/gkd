@@ -87,6 +87,7 @@ data class RuleControlState(
     val defaultEnabled: Boolean,
     val scope: RuleControlScope,
     val restrictions: List<RuleRestriction> = emptyList(),
+    // Whether the enable preference can be set for this scope. Invalid definitions still stay unavailable.
     val canEnable: Boolean = true,
     val limitations: RuleLimitations = RuleLimitations(),
     val blockedApp: Boolean = false,

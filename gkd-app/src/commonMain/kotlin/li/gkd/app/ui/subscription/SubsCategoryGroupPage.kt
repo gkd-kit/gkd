@@ -61,9 +61,8 @@ fun SubsCategoryGroupPage(
     val mainVm = MainViewModel.requireCurrent()
     val environment = rememberRuleControlEnvironment()
     val vm = viewModel { SubsCategoryGroupViewModel(route) }
-    val busy by vm.busyFlow.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val appMap = rememberRuleControlEnvironment().apps
+    val appMap = environment.apps
     val visitOrder = rememberVisitOrder()
     val blockApps by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
     val showActions by vm.showActions.collectAsStateWithLifecycle()
@@ -109,8 +108,8 @@ fun SubsCategoryGroupPage(
         val visibleTargets = remember(apps, subs.id) {
             apps.flatMap { app -> app.groups.map { RuleGroupTarget.App(subs.id, app.id, it.key) } }
         }
-        val selectableTargets = remember(visibleTargets, controls) {
-            visibleTargets.filterTo(mutableSetOf()) { controls.getValue(it.appId to it.groupKey).canEnable }
+        val selectableTargets = remember(visibleTargets) {
+            visibleTargets.toSet()
         }
         val selection = vm.selection
         val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
@@ -126,52 +125,50 @@ fun SubsCategoryGroupPage(
         ) {
             val request = vm.prepareSwitches(state, targets)
             vm.scope.launchUi {
-                vm.runAction {
-                    if (enabled == null) {
-                        val scopeLabel =
-                            if (entireCategory) getString(Res.string.category_all_scope) else getString(
-                                Res.string.selection_scope
-                            )
-                        val changedCount =
-                            request.expected.values.count { it != RuleSetting.FollowDefault }
-                        val unchangedCount = request.expected.size - changedCount
-                        if (!mainVm.dialogRequests.confirm(
-                                title = getString(Res.string.rule_clear_custom_settings),
-                                text = getString(
-                                    Res.string.category_clear_settings_confirmation,
-                                    scopeLabel,
-                                    targets.size.toString(),
-                                    if (entireCategory) getString(Res.string.category_scope_includes_hidden) else getString(
-                                        Res.string.category_scope_selected_only
-                                    )
-                                ) +
-                                        "\n\n" + if (unchangedCount > 0)
-                                    getString(
-                                        Res.string.rule_switch_expected_counts,
-                                        changedCount.toString(),
-                                        unchangedCount.toString()
-                                    )
-                                else getString(
-                                    Res.string.rule_switch_expected_changed_count,
-                                    changedCount.toString()
-                                ),
-                            )
-                        ) return@runAction
-                    }
-                    val result = vm.applySwitches(request, RuleSetting.from(enabled))
-                    if (enabled == null) {
-                        ToastUtils.show(
-                            result.failureMessage()
-                                ?: if (result.restricted > 0)
-                                    getString(
-                                        Res.string.rule_switch_restricted_count_suffix,
-                                        result.restricted.toString()
-                                    ).trimStart('；')
-                                else getString(Res.string.update_success)
+                if (enabled == null) {
+                    val scopeLabel =
+                        if (entireCategory) getString(Res.string.category_all_scope) else getString(
+                            Res.string.selection_scope
                         )
-                    } else {
-                        ToastUtils.show(result.description())
-                    }
+                    val changedCount =
+                        request.expected.values.count { it != RuleSetting.FollowDefault }
+                    val unchangedCount = request.expected.size - changedCount
+                    if (!mainVm.dialogRequests.confirm(
+                            title = getString(Res.string.rule_clear_custom_settings),
+                            text = getString(
+                                Res.string.category_clear_settings_confirmation,
+                                scopeLabel,
+                                targets.size.toString(),
+                                if (entireCategory) getString(Res.string.category_scope_includes_hidden) else getString(
+                                    Res.string.category_scope_selected_only
+                                )
+                            ) +
+                                    "\n\n" + if (unchangedCount > 0)
+                                getString(
+                                    Res.string.rule_switch_expected_counts,
+                                    changedCount.toString(),
+                                    unchangedCount.toString()
+                                )
+                            else getString(
+                                Res.string.rule_switch_expected_changed_count,
+                                changedCount.toString()
+                            ),
+                        )
+                    ) return@launchUi
+                }
+                val result = vm.applySwitches(request, RuleSetting.from(enabled))
+                if (enabled == null) {
+                    ToastUtils.show(
+                        result.failureMessage()
+                            ?: if (result.restricted > 0)
+                                getString(
+                                    Res.string.rule_switch_restricted_count_suffix,
+                                    result.restricted.toString()
+                                ).trimStart('；')
+                            else getString(Res.string.update_success)
+                    )
+                } else {
+                    ToastUtils.show(result.description())
                 }
             }
         }
@@ -191,19 +188,16 @@ fun SubsCategoryGroupPage(
                             GkMultiSelectionActions(
                                 selectionSnapshot.selectedKeys,
                                 selectableTargets, selection::selectAll, selection::invert,
-                                enabled = !busy
                             ) { dismiss ->
                                 GkBatchActionMenuItem(
                                     stringResource(Res.string.action_turn_on),
                                     dismiss,
                                     { updateGroups(selected, true) },
-                                    !busy
                                 )
                                 GkBatchActionMenuItem(
                                     stringResource(Res.string.action_close),
                                     dismiss,
                                     { updateGroups(selected, false) },
-                                    !busy
                                 )
                                 GkBatchActionMenuItem(
                                     stringResource(Res.string.settings_reset_default), dismiss,
@@ -213,7 +207,7 @@ fun SubsCategoryGroupPage(
                                             null
                                         )
                                     },
-                                    !busy && selected.any { it in state.overrideTargets },
+                                    selected.any { it in state.overrideTargets },
                                 )
                             }
                         } else {
@@ -292,9 +286,8 @@ fun SubsCategoryGroupPage(
                             },
                             isSelectedMode = selectionSnapshot.active,
                             isSelected = target in selected,
-                            selectionEnabled = !busy,
-                            onLongClick = { if (!busy) selection.select(target) },
-                            onSelectedChange = { if (!busy) selection.toggle(target) },
+                            onLongClick = { selection.select(target) },
+                            onSelectedChange = { selection.toggle(target) },
                         )
                     }
                 }
@@ -316,7 +309,6 @@ fun SubsCategoryGroupPage(
                 setting = state.setting,
                 overrideCount = state.overrideTargets.size,
                 editable = subs.isLocal,
-                busy = busy,
                 onDismissRequest = { vm.setShowActions(false) },
                 onSetting = { setting ->
                     vm.scope.launchUi {

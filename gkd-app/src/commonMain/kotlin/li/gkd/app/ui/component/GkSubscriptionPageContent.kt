@@ -39,18 +39,23 @@ fun <T : Any> GkSubscriptionPageContent(
     // An explicit removal may invalidate this page before its navigation exit ends.
     // Keep this purely visual snapshot; failures still render normally otherwise.
     when (val current = if (retainContent) lastReady ?: state else state) {
-        Loadable.Loading -> SubscriptionStatePage(onBack = onBack)
-        is Loadable.Failure -> SubscriptionStatePage(
-            onBack = onBack,
-            message = current.cause.messageResource(),
-        )
+        Loadable.Loading -> SubscriptionStatePage(onBack = onBack) {
+            CircularProgressIndicator()
+        }
+        is Loadable.Failure -> SubscriptionStatePage(onBack = onBack) {
+            Text(
+                text = current.cause.messageResource(),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
 
         is Loadable.Ready -> content(current.value)
     }
 }
 
 @Composable
-private fun SubscriptionStatePage(onBack: () -> Unit, message: String? = null) {
+private fun SubscriptionStatePage(onBack: () -> Unit, content: @Composable () -> Unit) {
     GkScaffold(
         topBar = {
             GkTopAppBar(
@@ -71,15 +76,7 @@ private fun SubscriptionStatePage(onBack: () -> Unit, message: String? = null) {
                 .padding(24.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (message == null) {
-                CircularProgressIndicator()
-            } else {
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+            content()
         }
     }
 }

@@ -21,7 +21,6 @@ import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
@@ -66,7 +65,6 @@ class AppConfigViewModel(
         revealDisabledRules.value = value
     }
 
-    private val batchMutex = MutexState()
     suspend fun removeFromWhitelist() {
         SettingsRepository.updateBlockMatchAppList { it - route.appId }
     }
@@ -75,11 +73,7 @@ class AppConfigViewModel(
         SettingsRepository.updateBlockA11yAppList { it - route.appId }
     }
 
-    val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
 
-    suspend fun runBatchAction(action: suspend () -> Unit) {
-        batchMutex.tryWithStateLock(action)
-    }
 
     fun setRuleSortType(option: RuleSort) {
         SettingsRepository.updateSettings { it.copy(appRuleSort = option.value) }

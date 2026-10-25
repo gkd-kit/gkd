@@ -41,7 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
-import li.gkd.app.rule.RuleGroupSnapshot
+import li.gkd.app.rule.RuleGroupSummary
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
@@ -77,39 +77,14 @@ import li.gkd.db.RuleGroupType
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun dashboardSummary(state: Loadable<RuleGroupSnapshot>, actionCount: Long): String =
-    when (state) {
-        Loadable.Loading -> ""
-        is Loadable.Failure -> stringResource(Res.string.data_load_failed)
-        is Loadable.Ready -> {
-            val groups = state.value.groups
-            val rules =
-                listOfNotNull(
-                        if (groups.globalGroups.isNotEmpty())
-                            stringResource(
-                                Res.string.subscription_global_count,
-                                groups.globalGroups.size.toString(),
-                            )
-                        else null,
-                        if (groups.appGroupSize > 0)
-                            stringResource(
-                                Res.string.subscription_app_rule_counts,
-                                groups.appSize.toString(),
-                                groups.appGroupSize.toString(),
-                            )
-                        else null,
-                    )
-                    .joinToString("/")
-                    .ifEmpty { stringResource(Res.string.rules_empty) }
-            if (actionCount > 0)
-                stringResource(
-                    Res.string.action_count_summary,
-                    rules,
-                    actionCount.toString(),
-                )
-            else rules
-        }
-    }
+fun dashboardSummary(groups: RuleGroupSummary): String? = listOfNotNull(
+    if (groups.globalGroups.isNotEmpty()) stringResource(
+        Res.string.subscription_global_count, groups.globalGroups.size.toString(),
+    ) else null,
+    if (groups.appGroupSize > 0) stringResource(
+        Res.string.subscription_app_rule_counts, groups.appSize.toString(), groups.appGroupSize.toString(),
+    ) else null,
+).joinToString("/").takeIf { it.isNotEmpty() }
 
 @Composable
 fun dashboardPage(

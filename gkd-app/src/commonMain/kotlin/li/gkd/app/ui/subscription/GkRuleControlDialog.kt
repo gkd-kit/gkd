@@ -126,14 +126,21 @@ fun GkRuleControlDialog(
                         last = index == explanation.steps.lastIndex,
                     )
                 }
+                if (control.limitations.blockedRules in 1 until control.limitations.ruleCount) {
+                    Text(
+                        stringResource(Res.string.rule_partially_inapplicable_prefix) +
+                            control.limitations.blockedReasons.map { it.message.messageResource() }.joinToString("\n")
+                                .ifEmpty { stringResource(Res.string.rule_app_or_version_mismatch) },
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (global) {
                     if (!inApp) Text(
                         stringResource(Res.string.global_control_group_hint),
                         modifier = Modifier.padding(12.dp),
                     )
-                    if (inApp && control.limitations.blockedRules in 1 until control.limitations.ruleCount) {
-                        Text(stringResource(Res.string.global_control_partial), Modifier.padding(12.dp))
-                    }
                     if ((control.limitations.builtIn + control.limitations.personal).any {
                             it.kind == RuleLimitationKind.ExcludedPagePrefix || it.kind == RuleLimitationKind.ExcludedPageExact
                         }) {

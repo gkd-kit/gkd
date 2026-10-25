@@ -58,7 +58,6 @@ fun SubsGlobalGroupListPage(
     val scope = vm.scope
     val sort by vm.sort.collectAsStateWithLifecycle()
     val environment = rememberRuleControlEnvironment()
-    val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
@@ -80,7 +79,9 @@ fun SubsGlobalGroupListPage(
 
         val selectionState = vm.selection
         val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
-        val selectableKeys = remember(controls) { controls.filterValues { it.canEnable }.keys }
+        val selectableKeys = remember(subs.globalGroups) {
+            subs.globalGroups.mapTo(mutableSetOf()) { it.key }
+        }
         val selectedKeys = selectionSnapshot.selectedKeys intersect selectableKeys
         val isSelectedMode = selectionSnapshot.active
         LaunchedEffect(selectableKeys) {
@@ -96,26 +97,24 @@ fun SubsGlobalGroupListPage(
             if (keysToUpdate.isNotEmpty()) {
                 val request = vm.prepareSwitches(state, keysToUpdate)
                 scope.launchUi {
-                    vm.runBatchAction {
-                        val action = when (enabled) {
-                            false -> getString(Res.string.action_close)
-                            true -> getString(Res.string.action_enable)
-                            null -> getString(Res.string.setting_follow_default)
-                        }
-                        if (!mainVm.dialogRequests.confirm(
-                                title = getString(Res.string.action_notice),
-                                text = getString(
-                                    Res.string.global_rule_batch_setting_confirmation,
-                                    keysToUpdate.size.toString(),
-                                    action
-                                ),
-                            )
-                        ) return@runBatchAction
-                        ToastUtils.show(
-                            vm.applySwitches(request, RuleSetting.from(enabled))
-                                .description()
-                        )
+                    val action = when (enabled) {
+                        false -> getString(Res.string.action_close)
+                        true -> getString(Res.string.action_enable)
+                        null -> getString(Res.string.setting_follow_default)
                     }
+                    if (!mainVm.dialogRequests.confirm(
+                            title = getString(Res.string.action_notice),
+                            text = getString(
+                                Res.string.global_rule_batch_setting_confirmation,
+                                keysToUpdate.size.toString(),
+                                action
+                            ),
+                        )
+                    ) return@launchUi
+                    ToastUtils.show(
+                        vm.applySwitches(request, RuleSetting.from(enabled))
+                            .description()
+                    )
                 }
             }
         }
@@ -155,10 +154,8 @@ fun SubsGlobalGroupListPage(
                                 keys = selectableKeys,
                                 onSelectAll = selectionState::selectAll,
                                 onInvert = selectionState::invert,
-                                enabled = !batchBusy,
                             ) { dismiss ->
                                 GkRuleBatchMenuItems(
-                                    enabled = !batchBusy,
                                     onDismiss = dismiss,
                                     onUpdate = updateSelected,
                                 )
@@ -169,26 +166,24 @@ fun SubsGlobalGroupListPage(
                                         onClick = {
                                             val keysToDelete = selectedKeys
                                             scope.launchUi {
-                                                vm.runBatchAction {
-                                                    if (!mainVm.dialogRequests.confirm(
-                                                            title = getString(Res.string.rule_delete),
-                                                            text = getString(
-                                                                Res.string.rule_groups_delete_confirmation,
-                                                                keysToDelete.size.toString()
-                                                            ),
-                                                            error = true,
-                                                        )
-                                                    ) return@runBatchAction
-                                                    val deletedSize =
-                                                        vm.deleteSelectedGroups(keysToDelete)
-                                                    selectionState.removeDeleted(keysToDelete)
-                                                    ToastUtils.show(
-                                                        if (deletedSize > 0) getString(
-                                                            Res.string.rule_groups_deleted_count,
-                                                            deletedSize.toString()
-                                                        ) else getString(Res.string.selected_rules_changed)
+                                                if (!mainVm.dialogRequests.confirm(
+                                                        title = getString(Res.string.rule_delete),
+                                                        text = getString(
+                                                            Res.string.rule_groups_delete_confirmation,
+                                                            keysToDelete.size.toString()
+                                                        ),
+                                                        error = true,
                                                     )
-                                                }
+                                                ) return@launchUi
+                                                val deletedSize =
+                                                    vm.deleteSelectedGroups(keysToDelete)
+                                                selectionState.removeDeleted(keysToDelete)
+                                                ToastUtils.show(
+                                                    if (deletedSize > 0) getString(
+                                                        Res.string.rule_groups_deleted_count,
+                                                        deletedSize.toString()
+                                                    ) else getString(Res.string.selected_rules_changed)
+                                                )
                                             }
                                         },
                                     )
@@ -241,12 +236,9 @@ fun SubsGlobalGroupListPage(
                             }
                         },
                         isSelectedMode = isSelectedMode,
-                        selectionEnabled = !batchBusy,
                         isSelected = group.key in selectedKeys,
                         onLongClick = {
-                            if (!batchBusy) {
-                                selectionState.select(group.key)
-                            }
+                            selectionState.select(group.key)
                         },
                         onSelectedChange = {
                             selectionState.toggle(group.key)

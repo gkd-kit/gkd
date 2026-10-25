@@ -13,7 +13,6 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.toRuleGroupTarget
 import li.gkd.app.rule.toSwitchTarget
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.edit
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
@@ -38,12 +37,7 @@ class SubsGlobalGroupListViewModel(
 
     val selection = MultiSelectionState<Int>()
 
-    private val batchMutex = MutexState()
-    val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
 
-    suspend fun runBatchAction(action: suspend () -> Unit) {
-        batchMutex.tryWithStateLock(action)
-    }
 
     private val subscription = RequiredSubscription(route.subsItemId, scope)
 

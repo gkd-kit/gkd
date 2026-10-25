@@ -13,7 +13,6 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
@@ -63,12 +62,7 @@ class SubsCategoryGroupViewModel(
         showFilter.value = value
     }
 
-    private val mutation = MutexState()
-    val busyFlow: StateFlow<Boolean> get() = mutation.state
 
-    suspend fun runAction(action: suspend () -> Unit) {
-        mutation.tryWithStateLock(action)
-    }
 
     val uiState = RequiredSubscription(route.subsId, scope).buildUiState { subscription ->
         val categoryApps = subscription.getCategoryApps(route.categoryKey)

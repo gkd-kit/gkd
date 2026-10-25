@@ -3,6 +3,7 @@ package li.gkd.app.rule
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.app.testing.TestFiles
 import li.gkd.db.SubsAppConfig
 import li.gkd.db.SubsAppGroupConfig
@@ -20,6 +21,47 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 class RuleSwitchPolicyTest {
+
+    /** Imported syntax errors may be managed; repair must respect the saved on/off preference. */
+    @Test
+    fun invalidAppAndGlobalGroupsKeepPreferencesButNeverEnterExecution() {
+        for (definition in listOf("{matches:'['}", "{matches:'*',position:{x:'unknown',y:'0'}}")) {
+            val source = """{id:-2,name:'Test',version:1,apps:[{id:'app.id',groups:[{key:2,name:'App',rules:[$definition]}]}],
+                globalGroups:[{key:3,name:'Global',rules:[$definition]}]}"""
+            val invalid = RawSubscription.parse(source)
+            val repaired = RawSubscription.parse(source.replace(definition, "{matches:'*'}"))
+            val global = invalid.globalGroups.single()
+            val control = RuleGroupPolicy.controlState(invalid, global, "app.id", initial, info, "launcher", emptySet())
+            assertFalse(RuleRestriction.GlobalGroupDisabled in control.restrictions)
+            val explanation = RuleGroupPolicy.explainControl(invalid, global, "app.id", initial, control)
+            assertEquals(RuleControlStepKind.Restrictions, explanation.steps[explanation.decidingIndex].kind)
+            for (enabled in listOf(true, false)) {
+                val appConfig = SubsAppGroupConfig(-2, "app.id", 2, enabled)
+                val globalConfig = SubsGlobalGroupConfig(-2, 3, enabled)
+                val configs = initial.copy(appGroupConfigs = listOf(appConfig), globalGroupConfigs = listOf(globalConfig))
+                for (subscription in listOf(invalid, repaired)) {
+                    val valid = subscription === repaired
+                    val app = subscription.apps.single().groups.single()
+                    val global = subscription.globalGroups.single()
+                    for ((group, appId) in listOf(app to "app.id", global to null)) {
+                        val state = RuleGroupPolicy.controlState(subscription, group, appId, configs, info, "launcher", emptySet())
+                        assertTrue(state.canEnable)
+                        assertEquals(enabled, state.configuredEnabled)
+                        assertEquals(enabled && valid, state.available)
+                    }
+                    assertEquals(enabled && valid, RuleGroupPolicy.getGroupEnabled(app, appConfig))
+                    assertEquals(enabled && valid, RuleGroupPolicy.getGroupEnabled(global, globalConfig))
+                    val summary = RuleSummaryBuilder.build(
+                        RuleRuntime(), listOf(UsedSubsEntry(configs.subsItems.single(), subscription)),
+                        mapOf("app.id" to info), configs.appConfigs,
+                        configs.appGroupConfigs + configs.globalGroupConfigs, configs.categoryConfigs,
+                    )
+                    assertEquals(if (enabled && valid) 1 else 0, summary.globalRules.size)
+                    assertEquals(if (enabled && valid) 1 else 0, summary.appIdToRules["app.id"].orEmpty().size)
+                }
+            }
+        }
+    }
 
     @get:Rule
     val temporaryFolder = TemporaryFolder(TestFiles.root)

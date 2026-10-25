@@ -84,7 +84,7 @@ fun RuleGroupPolicy.explainControl(
         val config = index.groupConfig(group.toRuleGroupTarget(subscription.id, appId))
         if (inApp) {
             val groupSetting = RuleSetting.from(config?.enable)
-            val enabled = groupSetting.value ?: getGroupEnabled(group, null)
+            val enabled = groupSetting.value ?: getGroupConfiguredEnabled(group, null)
             add(RuleControlStep(
                 RuleControlStepKind.GlobalGroup, enabled, !enabled,
                 if (groupSetting == RuleSetting.FollowDefault) RuleControlNote.FollowSubscription

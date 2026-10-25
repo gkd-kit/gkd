@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.gkd.app.error.messageResource
-import li.gkd.app.model.ExcludeData
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.ui.icon.ResetSettings
@@ -102,14 +101,4 @@ object RulePropertyText {
         if (!state.canEnable && isEmpty()) add(stringResource(Res.string.rule_temporarily_unavailable))
     }.distinct().joinToString("\n").takeIf { it.isNotEmpty() }
 
-    @Composable
-    fun personalSummary(exclude: ExcludeData, appId: String?): String? {
-        val pages = exclude.activityIds.count { appId == null || it.first == appId }
-        val apps = if (appId == null) exclude.appIds.size else 0
-        return buildList {
-            if (apps > 0) add(stringResource(Res.string.app_count, apps))
-            if (pages > 0) add(stringResource(Res.string.page_count, pages))
-        }.joinToString(" · ").takeIf { it.isNotEmpty() }
-            ?: if (appId == null) stringResource(Res.string.not_configured) else null
-    }
 }

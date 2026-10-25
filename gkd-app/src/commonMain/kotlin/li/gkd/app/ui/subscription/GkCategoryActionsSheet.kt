@@ -43,7 +43,6 @@ fun GkCategoryActionsSheet(
     setting: CategorySetting,
     overrideCount: Int,
     editable: Boolean,
-    busy: Boolean,
     onDismissRequest: () -> Unit,
     onSetting: (CategorySetting) -> Unit,
     onClearOverrides: () -> Unit,
@@ -100,7 +99,6 @@ fun GkCategoryActionsSheet(
                                 )
                             }
                             TextButton(
-                                enabled = !busy,
                                 onClick = onClearOverrides,
                                 modifier = Modifier.size(width = 56.dp, height = 48.dp),
                                 contentPadding = PaddingValues(horizontal = 8.dp),

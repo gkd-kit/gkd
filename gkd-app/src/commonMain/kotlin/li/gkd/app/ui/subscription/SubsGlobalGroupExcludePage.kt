@@ -257,7 +257,6 @@ fun SubsGlobalGroupExcludePage(
                                             !busy
                                         ) { dismiss ->
                                             GkRuleBatchMenuItems(
-                                                !busy,
                                                 dismiss,
                                                 { applyToApps(selected, it, true) })
                                         }

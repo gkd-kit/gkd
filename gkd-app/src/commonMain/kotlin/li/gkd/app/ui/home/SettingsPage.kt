@@ -24,6 +24,7 @@ import li.gkd.app.notif.formatNotificationTemplate
 import li.gkd.app.resources.*
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.state.Loadable
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkSettingItem
@@ -124,7 +125,17 @@ fun settingsPage(
                 val rules by ruleGroupState.collectAsStateWithLifecycle()
                 val count by SettingsRepository.actionCount.collectAsStateWithLifecycle()
                 val groups = rules.value?.groups
-                val summary = dashboardSummary(rules, count)
+                val summary = when (val state = rules) {
+                    Loadable.Loading -> null
+                    is Loadable.Failure -> stringResource(Res.string.data_load_failed)
+                    is Loadable.Ready -> {
+                        val ruleSummary = dashboardSummary(state.value.groups)
+                            ?: stringResource(Res.string.rules_empty)
+                        if (count > 0) stringResource(
+                            Res.string.action_count_summary, ruleSummary, count.toString(),
+                        ) else ruleSummary
+                    }
+                }
                 fun format(text: String) =
                     formatNotificationTemplate(
                         text,
@@ -140,7 +151,7 @@ fun settingsPage(
                 GkSettingItem(
                     stringResource(Res.string.notification_text),
                     subtitle =
-                        listOf(title, text)
+                        listOfNotNull(title, text)
                             .map {
                                 it.lineSequence().joinToString(" ").trim()
                             }

@@ -18,7 +18,6 @@ import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.rule.toRuleGroupTarget
 import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.app.subscription.edit
@@ -61,7 +60,6 @@ class SubsAppGroupListViewModel(
         showAppSetting.value = value
     }
 
-    private val batchMutex = MutexState()
     suspend fun removeFromWhitelist() {
         SettingsRepository.updateBlockMatchAppList { it - route.appId }
     }
@@ -70,11 +68,7 @@ class SubsAppGroupListViewModel(
         SettingsRepository.updateBlockA11yAppList { it - route.appId }
     }
 
-    val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
 
-    suspend fun runBatchAction(action: suspend () -> Unit) {
-        batchMutex.tryWithStateLock(action)
-    }
 
     private val subscription = RequiredSubscription(route.subsItemId, scope)
 
