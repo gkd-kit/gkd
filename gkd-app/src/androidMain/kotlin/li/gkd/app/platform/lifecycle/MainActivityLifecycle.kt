@@ -8,7 +8,7 @@ import kotlinx.atomicfu.atomic
 import li.gkd.app.META
 import li.gkd.app.a11y.currentTopActivity
 import li.gkd.app.a11y.updateTopActivity
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 private val visibleActivityCount = atomic(0)
@@ -28,7 +28,7 @@ private class MainActivityLifecycleObserver(
     private val logLoc: String,
 ) : DefaultLifecycleObserver {
     override fun onStart(owner: LifecycleOwner) {
-        LogUtils.d("MainActivity::onStart", loc = logLoc)
+        LogUtils.i("MainActivity::onStart", loc = logLoc)
         visibleActivityCount.incrementAndGet()
         if (currentTopActivity.appId != META.appId) {
             updateTopActivity(
@@ -39,12 +39,12 @@ private class MainActivityLifecycleObserver(
     }
 
     override fun onResume(owner: LifecycleOwner) {
-        LogUtils.d("MainActivity::onResume", loc = logLoc)
+        LogUtils.i("MainActivity::onResume", loc = logLoc)
         RuntimeStateSynchronizer.requestSync(loc = logLoc)
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        LogUtils.d("MainActivity::onStop", loc = logLoc)
+        LogUtils.i("MainActivity::onStop", loc = logLoc)
         visibleActivityCount.decrementAndGet()
     }
 

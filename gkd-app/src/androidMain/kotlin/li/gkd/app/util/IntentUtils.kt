@@ -1,5 +1,7 @@
 package li.gkd.app.util
 
+import li.gkd.app.logging.LogUtils
+
 import android.app.Service
 import android.content.Intent
 import android.provider.Settings
@@ -53,7 +55,7 @@ object IntentUtils {
         try {
             app.startForegroundService(intent)
         } catch (e: Throwable) {
-            LogUtils.d(e, loc = loc)
+            LogUtils.e(e, loc = loc)
             val prefix = if (MainActivityVisibility.isVisible) "" else "${META.appName}: "
             ToastUtils.show(
                 Res.string.service_launch_failed.getSync(prefix, e.message),

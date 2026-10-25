@@ -16,7 +16,7 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.app
 import li.gkd.app.resources.*
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.isFullTransparent
 import org.jetbrains.compose.resources.StringResource
@@ -96,13 +96,13 @@ class MediaProjectionScreenshotSession(
             try {
                 projection.unregisterCallback(mediaProjectionCallback)
             } catch (e: Exception) {
-                LogUtils.d("注销截屏授权回调失败", e)
+                LogUtils.e("注销截屏授权回调失败", e)
             }
             if (reason.stopProjection) {
                 try {
                     projection.stop()
                 } catch (e: Exception) {
-                    LogUtils.d("停止截屏授权失败", e)
+                    LogUtils.e("停止截屏授权失败", e)
                 }
             }
         }
@@ -113,7 +113,7 @@ class MediaProjectionScreenshotSession(
             try {
                 onInvalidated(this)
             } catch (e: Exception) {
-                LogUtils.d("通知截屏会话失效失败", e)
+                LogUtils.e("通知截屏会话失效失败", e)
             }
         }
         handlerThread.quitSafely()
@@ -270,7 +270,7 @@ class MediaProjectionScreenshotSession(
         try {
             virtualDisplay?.surface = null
         } catch (e: Exception) {
-            LogUtils.d("释放截屏 Surface 失败", e)
+            LogUtils.e("释放截屏 Surface 失败", e)
         }
         activeImageReader?.close()
         activeImageReader = null

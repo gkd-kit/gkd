@@ -45,7 +45,7 @@ import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource

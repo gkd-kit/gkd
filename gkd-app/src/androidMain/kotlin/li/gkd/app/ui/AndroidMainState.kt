@@ -30,7 +30,7 @@ import li.gkd.app.ui.share.importBackup as importBackupArchive
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
@@ -82,7 +82,7 @@ class AndroidMainState(
     }
 
     fun handleIntent(intent: Intent) = mainVm.scope.launchUi {
-        LogUtils.d(intent)
+        LogUtils.i(intent)
         val uri = intent.data?.normalizeScheme()
         val source = intent.getStringExtra(EntryActivity.activityNavSourceName)
         if (uri?.scheme == "gkd") {
@@ -128,7 +128,7 @@ class AndroidMainState(
                 throw e
             } catch (e: Exception) {
                 ToastUtils.show(Res.string.automation_state_check_failed.getSync(e.message))
-                LogUtils.d("detect automation state failed", e)
+                LogUtils.e("detect automation state failed", e)
                 return@launch
             }
             if (occupied) {

@@ -3,15 +3,15 @@ package li.gkd.app.platform.lifecycle
 import androidx.annotation.MainThread
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 class LifecycleHooks(
     private val onLifecycleEvent: (String, String) -> Unit = { event, loc ->
-        LogUtils.d(event, loc = loc)
+        LogUtils.i(event, loc = loc)
     },
     private val onCleanupError: (Throwable, String) -> Unit = { error, loc ->
-        LogUtils.d(error, loc = loc)
+        LogUtils.e(error, loc = loc)
     },
 ) {
     private data class DestroyedCallback(
@@ -77,8 +77,8 @@ class LifecycleHooks(
 @MainThread
 fun LifecycleOwner.useLogLifecycle(@CallSite loc: String = "") {
     val ownerName = this::class.simpleName
-    onCreated { LogUtils.d("onCreated -> $ownerName", loc = loc) }
-    onDestroyed { LogUtils.d("onDestroyed -> $ownerName", loc = loc) }
+    onCreated { LogUtils.i("onCreated -> $ownerName", loc = loc) }
+    onDestroyed { LogUtils.i("onDestroyed -> $ownerName", loc = loc) }
 }
 
 @MainThread

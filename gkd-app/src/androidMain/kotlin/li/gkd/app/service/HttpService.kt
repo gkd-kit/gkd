@@ -25,7 +25,7 @@ import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.JsonUtils
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.app.util.mapState
@@ -64,7 +64,7 @@ class HttpService : LifecycleHookService() {
                         createServer(port).apply { start() }
                     } catch (e: Exception) {
                         ToastUtils.show(Res.string.http_service_start_failed.getSync(e.stackTraceToString()))
-                        LogUtils.d("HTTP服务启动失败", e)
+                        LogUtils.e("HTTP服务启动失败", e)
                         stopSelf()
                         return@collectLatest
                     }

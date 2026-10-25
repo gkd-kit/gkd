@@ -1,6 +1,6 @@
 package li.gkd.app.settings
 
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import java.util.UUID
 
 interface SettingsStorage {

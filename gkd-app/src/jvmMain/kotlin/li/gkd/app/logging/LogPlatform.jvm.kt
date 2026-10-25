@@ -12,6 +12,6 @@ actual fun logMetadata() = LogMetadata(
 actual fun formatLogValue(value: Any?): String =
     if (value is Throwable) value.stackTraceToString() else value.toString()
 
-actual fun writePlatformLog(tag: String, message: String) {
-    System.err.println("$tag: $message")
+actual fun writePlatformLog(level: LogLevel, tag: String, message: String) {
+    System.err.println("${level.name} $tag: $message")
 }

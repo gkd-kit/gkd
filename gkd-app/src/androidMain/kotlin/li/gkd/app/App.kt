@@ -51,7 +51,7 @@ import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.AndroidToastUtils
 import li.gkd.app.util.launchLogged
@@ -216,7 +216,7 @@ class App : Application() {
         installCrashHandler()
         Db.initialize(this, AndroidStorage.storage.database.absolutePath)
         AppInfoRepository.initialize()
-        LogUtils.d()
+        LogUtils.i()
         initializeRuntimeComponents()
     }
 
@@ -232,7 +232,7 @@ class App : Application() {
         )
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             ToastUtils.show(e.message ?: e.toString())
-            LogUtils.d("UncaughtExceptionHandler", t, e)
+            LogUtils.e("UncaughtExceptionHandler", t, e)
             appScope.launchLogged(Dispatchers.IO) {
                 try {
                     recorder.record(t, e)

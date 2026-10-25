@@ -51,7 +51,7 @@ import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.subscription.AppConfigViewModel
 import li.gkd.app.ui.subscription.ActionLogViewModel
 import li.gkd.app.ui.update.UpdateStatus
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.ActionLog
 import li.gkd.db.RuleGroupType

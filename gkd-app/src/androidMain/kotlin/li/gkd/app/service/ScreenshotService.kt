@@ -12,7 +12,7 @@ import li.gkd.app.platform.lifecycle.ResourceSlot
 import li.gkd.app.platform.screenshot.MediaProjectionScreenshotSession
 import li.gkd.app.resources.*
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.componentName
 import kotlin.time.Duration.Companion.milliseconds
@@ -26,7 +26,7 @@ class ScreenshotService : LifecycleHookService() {
         } finally {
             intent?.let {
                 captureSessionSlot.replace { createCaptureSession(intent) }
-                LogUtils.d("screenshot restart")
+                LogUtils.i("screenshot restart")
             }
         }
     }
@@ -72,7 +72,7 @@ class ScreenshotService : LifecycleHookService() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("截取屏幕失败", e)
+                LogUtils.e("截取屏幕失败", e)
                 null
             }
         }

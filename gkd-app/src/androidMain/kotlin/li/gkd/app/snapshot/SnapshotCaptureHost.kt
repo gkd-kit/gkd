@@ -35,7 +35,7 @@ import li.gkd.app.snapshot.platform.encodeSnapshotScreenshot
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
@@ -183,7 +183,7 @@ object SnapshotCaptureHost {
             try {
                 SystemServiceDump.isFocusedWindowSecure(appId)
             } catch (e: Exception) {
-                LogUtils.d("读取前台窗口 FLAG_SECURE 失败", e)
+                LogUtils.e("读取前台窗口 FLAG_SECURE 失败", e)
                 null
             }
         }
@@ -212,7 +212,7 @@ object SnapshotCaptureHost {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("无障碍截图失败", e)
+                LogUtils.e("无障碍截图失败", e)
                 null
             }
         }
@@ -315,7 +315,7 @@ object SnapshotCaptureHost {
             }
 
             is SnapshotAutoExportResult.Failed -> {
-                LogUtils.d("自动保存快照至下载失败", exported.cause)
+                LogUtils.e("自动保存快照至下载失败", exported.cause)
                 getString(
                     Res.string.snapshot_auto_export_failed,
                     exported.cause.displayMessage()
@@ -341,7 +341,7 @@ object SnapshotCaptureHost {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            LogUtils.d("快照已保存，发送提示失败", e)
+            LogUtils.e("快照已保存，发送提示失败", e)
         }
         return snapshot
     }

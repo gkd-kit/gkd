@@ -1,5 +1,7 @@
 package li.gkd.app.util
 
+import li.gkd.app.logging.LogUtils
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -16,7 +18,7 @@ object ToastUtils {
         applicationScope().launch(Dispatchers.Main.immediate) {
             if (delayMillis > 0) delay(delayMillis)
             showPlatformToast(text, forced)
-            if (loc.isNotEmpty()) LogUtils.d(text, loc = loc)
+            if (loc.isNotEmpty()) LogUtils.i(text, loc = loc)
         }
     }
 }

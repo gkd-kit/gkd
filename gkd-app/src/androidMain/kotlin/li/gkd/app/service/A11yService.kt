@@ -33,7 +33,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.componentName
 import kotlin.coroutines.resume
@@ -157,7 +157,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    LogUtils.d("Runtime record flush failed", e)
+                    LogUtils.e("Runtime record flush failed", e)
                 }
             }
         }
@@ -193,7 +193,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        LogUtils.d("onA11yConnected -> ${this::class.simpleName}")
+        LogUtils.i("onA11yConnected -> ${this::class.simpleName}")
         instance = this
         attachKeepAliveOverlay()
         connected = true

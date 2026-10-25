@@ -5,7 +5,7 @@ import li.gkd.app.a11y.MAX_CHILD_SIZE
 import li.gkd.app.a11y.currentTopActivity
 import li.gkd.app.model.NodeInfo
 import li.gkd.app.resources.*
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import kotlin.system.measureTimeMillis
 
@@ -69,7 +69,7 @@ fun captureNodeInfoList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             if (times > MAX_KEEP_SIZE) {
                 // https://github.com/gkd-kit/gkd/issues/28
                 ToastUtils.show(Res.string.snapshot_nodes_truncated.getSync(MAX_KEEP_SIZE))
-                LogUtils.d(
+                LogUtils.w(
                     Res.string.snapshot_too_many_nodes.getSync(),
                     root.packageName,
                     currentTopActivity.activityId,
@@ -197,7 +197,7 @@ fun captureNodeInfoList(root: AccessibilityNodeInfo?): List<NodeInfo> {
         }
     }
 
-    LogUtils.d(
+    LogUtils.i(
         currentTopActivity,
         "快照节点数量:${nodes.size}, 总耗时:${collectTime + qfTime}ms",
         "收集节点耗时:${collectTime}ms, 收集 fastQuery 耗时:${qfTime}ms",

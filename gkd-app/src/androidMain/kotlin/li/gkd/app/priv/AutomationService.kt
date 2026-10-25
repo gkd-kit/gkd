@@ -24,7 +24,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
@@ -94,7 +94,7 @@ class AutomationService private constructor(
             }
             uiAutomation.toHidden.disconnect()
         } catch (e: Exception) {
-            LogUtils.d("disconnect automation failed", e)
+            LogUtils.e("disconnect automation failed", e)
         } finally {
             uiAutomation.quitRemoteCallbackThread()
             connected = false
@@ -165,7 +165,7 @@ class AutomationService private constructor(
                     }
                 } catch (e: Exception) {
                     ToastUtils.show(Res.string.automation_state_check_failed.getSync(e.message))
-                    LogUtils.d("detect automation state failed", e)
+                    LogUtils.e("detect automation state failed", e)
                     return@synchronized
                 }
                 val instance = AutomationService(privilegeContext)
@@ -184,7 +184,7 @@ class AutomationService private constructor(
                 } catch (e: Exception) {
                     instance.shutdown(true)
                     ToastUtils.show(Res.string.automation_start_failed.getSync(e.message))
-                    LogUtils.d(e)
+                    LogUtils.e(e)
                 }
             }
         }
@@ -216,6 +216,6 @@ private fun UiAutomation.quitRemoteCallbackThread() {
             field.set(this, null)
         }
     } catch (e: Exception) {
-        LogUtils.d("quit UiAutomation callback thread failed", e)
+        LogUtils.e("quit UiAutomation callback thread failed", e)
     }
 }

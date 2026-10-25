@@ -17,7 +17,7 @@ import li.gkd.app.service.currentAppUseA11y
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.util.AndroidStorage
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import priv.kit.core.Privilege
@@ -44,7 +44,7 @@ private suspend fun clearPrivilegeContext(context: PrivilegeContext) {
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        LogUtils.d("destroy PrivilegeContext failed", e)
+        LogUtils.e("destroy PrivilegeContext failed", e)
     }
 }
 
@@ -107,13 +107,13 @@ fun initPrivilege() {
 
     appScope.launchLogged {
         Privilege.serverState.collect { serverInfo ->
-            LogUtils.d("Privilege.serverState", serverInfo)
+            LogUtils.i("Privilege.serverState", serverInfo)
             try {
                 updatePrivilegeContext(serverInfo)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                LogUtils.d("update PrivilegeContext failed", e)
+                LogUtils.e("update PrivilegeContext failed", e)
                 ToastUtils.show(Res.string.privilege_service_state_update_failed.getSync(e.message))
             }
         }

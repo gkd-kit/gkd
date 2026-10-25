@@ -15,7 +15,7 @@ import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.upload.createSnapshotUploadItem
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
@@ -78,7 +78,7 @@ class SnapshotActionCoordinator(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d(e)
+                LogUtils.e(e)
             }
         }
         return saved

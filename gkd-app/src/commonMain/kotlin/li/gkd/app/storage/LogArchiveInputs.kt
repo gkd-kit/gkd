@@ -2,7 +2,7 @@ package li.gkd.app.storage
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import java.io.File
 
 data class LogArchiveInputs(
@@ -13,7 +13,6 @@ data class LogArchiveInputs(
 expect fun logArchiveInputs(): LogArchiveInputs
 
 suspend fun createLogArchive(): File = withContext(Dispatchers.IO) {
-    LogUtils.flush()
     val inputs = logArchiveInputs()
-    LogArchive.build(inputs.metadata, inputs.additionalDirectories)
+    LogArchive.build(inputs.metadata + ("log-writer.txt" to { LogUtils.status().toString() }), inputs.additionalDirectories)
 }

@@ -17,7 +17,7 @@ import li.gkd.app.app
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.componentName
 
 object NotificationDispatcher {
@@ -93,7 +93,7 @@ object NotificationDispatcher {
             true
         } catch (e: SecurityException) {
             service.canStartForeground()
-            LogUtils.d("前台服务启动失败", service.javaClass.name, e)
+            LogUtils.e("前台服务启动失败", service.javaClass.name, e)
             service.stopSelf()
             false
         }

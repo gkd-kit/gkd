@@ -3,7 +3,7 @@ package li.gkd.app.data
 import android.graphics.Rect
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.RuleBounds
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.ToastUtils
 

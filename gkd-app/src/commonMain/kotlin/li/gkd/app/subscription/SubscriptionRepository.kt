@@ -17,7 +17,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.state.MutexState
 import li.gkd.app.storage.appStorage
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
@@ -297,7 +297,7 @@ object SubscriptionRepository {
                         )
                     )
                 }
-                LogUtils.d("deleteSubscription", deletion.ids)
+                LogUtils.i("deleteSubscription", deletion.ids)
                 result = SubscriptionResult.Success(
                     kind = SubscriptionResult.SuccessKind.Deleted,
                     count = deletion.count,
@@ -424,7 +424,7 @@ object SubscriptionRepository {
                     )
                     return@tryWithStateLock
                 }
-                LogUtils.d("开始检测更新")
+                LogUtils.i("开始检测更新")
                 var successCount = 0
                 entries.filter { !it.subsItem.isLocal }.forEach { entry ->
                     try {
@@ -446,7 +446,7 @@ object SubscriptionRepository {
                     kind = SubscriptionResult.SuccessKind.Refreshed,
                     count = successCount,
                 )
-                LogUtils.d("结束检测更新")
+                LogUtils.i("结束检测更新")
             } finally {
                 refreshing.value = false
             }
@@ -477,7 +477,7 @@ object SubscriptionRepository {
                 updateErrors = snapshot.updateErrors.toMutableMap().apply { remove(id) },
             )
         )
-        LogUtils.d("更新订阅文件:id=$id,name=${nextSubscription.name}")
+        LogUtils.i("更新订阅文件:id=$id,name=${nextSubscription.name}")
     }
 
     private fun prepareSubscription(
@@ -610,7 +610,7 @@ object SubscriptionRepository {
             throw SubscriptionException(SubscriptionFailureReason.SubscriptionUpdatedIdMismatch, listOf(subscription.id.toString(), item.id.toString()))
         }
         if (current != null && subscription.version <= current.version) {
-            LogUtils.d(
+            LogUtils.i(
                 "Subscription version did not advance: ${item.id}",
                 "${current.version} -> ${subscription.version}",
             )

@@ -18,7 +18,7 @@ import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.priv.currentUserId
 import li.gkd.app.priv.privilegeContextFlow
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.pkgIcon
 import java.util.concurrent.ConcurrentHashMap
 
@@ -57,7 +57,7 @@ object PackageAppCatalog {
                         val icon = info.pkgIcon
                         if (icon == null) icons.remove(result) else icons[result] = icon
                     } catch (e: Exception) {
-                        LogUtils.d("app icon query failed", e)
+                        LogUtils.e("app icon query failed", e)
                     }
                 }
                 return result

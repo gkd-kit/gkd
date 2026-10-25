@@ -20,7 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import li.gkd.app.error.BusinessError
 import li.gkd.app.resources.*
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import org.jetbrains.compose.resources.getString
 
 fun getRpcPlugin(jsonFormat: Json) =

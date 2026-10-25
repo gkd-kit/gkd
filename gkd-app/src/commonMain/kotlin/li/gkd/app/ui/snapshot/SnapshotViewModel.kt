@@ -15,7 +15,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
@@ -98,7 +98,7 @@ class SnapshotViewModel : BaseViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d(e)
+                LogUtils.e(e)
                 failedCount++
             }
         }

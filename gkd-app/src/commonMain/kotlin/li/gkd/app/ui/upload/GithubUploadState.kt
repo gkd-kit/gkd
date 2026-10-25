@@ -24,7 +24,7 @@ import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.ui.component.GithubUploadStatus
 import li.gkd.app.ui.component.GkGithubUploadDialogs
 import li.gkd.app.ui.navigation.AppNavigator
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 
@@ -131,12 +131,12 @@ class GithubUploadState(
                     skippedCount = items.size - index
                     break
                 } catch (e: GithubCookieException) {
-                    LogUtils.d(e)
+                    LogUtils.e(e)
                     cookieFailure = item.label to getString(Res.string.github_cookie_expired)
                     pendingFromCookie = items.drop(index)
                     break
                 } catch (e: Exception) {
-                    LogUtils.d(e)
+                    LogUtils.e(e)
                     request.failures.add(item.label to (e.displayMessage()))
                 }
             }
@@ -176,7 +176,7 @@ class GithubUploadState(
             item.showHref(asset)
         } finally {
             withContext(NonCancellable) {
-                runCatching { item.releaseFile(file) }.onFailure { LogUtils.d(it) }
+                runCatching { item.releaseFile(file) }.onFailure { LogUtils.e(it) }
             }
         }
     }

@@ -24,7 +24,7 @@ import li.gkd.app.storage.SnapshotIssue
 import li.gkd.app.storage.StorageException
 import li.gkd.app.storage.ZipArchive
 import li.gkd.app.storage.appStorage
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
 
@@ -145,7 +145,7 @@ object SnapshotStore {
                             throw e
                         }
                         finishReplacement(previous)
-                        if (files.legacyPngFile.exists() && !files.legacyPngFile.delete()) LogUtils.d(
+                        if (files.legacyPngFile.exists() && !files.legacyPngFile.delete()) LogUtils.w(
                             "Cannot delete legacy screenshot",
                             files.legacyPngFile.absolutePath
                         )
@@ -232,7 +232,7 @@ object SnapshotStore {
             return@withContext
         }
         if (directory.exists() && !directory.deleteRecursively()) {
-            LogUtils.d("无法清理快照压缩目录", directory.absolutePath)
+            LogUtils.w("无法清理快照压缩目录", directory.absolutePath)
         }
     }
 
@@ -274,7 +274,7 @@ object SnapshotStore {
 
     private fun finishDeletion(staged: File?) {
         if (staged != null && staged.exists() && !staged.deleteRecursively()) {
-            LogUtils.d("无法清理已删除快照目录", staged.absolutePath)
+            LogUtils.w("无法清理已删除快照目录", staged.absolutePath)
         }
     }
 
@@ -297,7 +297,7 @@ object SnapshotStore {
 
     private fun finishReplacement(staged: File?) {
         if (staged != null && staged.exists() && !staged.delete()) {
-            LogUtils.d("无法清理旧快照截图", staged.absolutePath)
+            LogUtils.w("无法清理旧快照截图", staged.absolutePath)
         }
     }
 

@@ -31,7 +31,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
@@ -83,10 +83,10 @@ fun Application.configureInspectionServer(
                     try {
                         SnapshotStore.getMinSnapshot(it.id)
                     } catch (e: IOException) {
-                        LogUtils.d("Cannot read snapshot ${it.id}", e)
+                        LogUtils.e("Cannot read snapshot ${it.id}", e)
                         null
                     } catch (e: SerializationException) {
-                        LogUtils.d("Invalid snapshot ${it.id}", e)
+                        LogUtils.e("Invalid snapshot ${it.id}", e)
                         null
                     }
                 }

@@ -35,7 +35,7 @@ import li.gkd.app.ui.component.GkUpgradeDialogs
 import li.gkd.app.ui.component.UpdateDownloadState
 import li.gkd.app.settings.UpdateChannel
 import li.gkd.app.model.findOption
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 

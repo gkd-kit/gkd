@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
 import li.gkd.app.platform.PlatformResult
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 import kotlin.time.TimeSource
 
@@ -143,24 +143,24 @@ object AppInfoRepository {
                 if (query.isCurrent()) {
                     query.committed(next)
                     state.value = AppCatalogState(snapshot = next)
-                    LogUtils.d(
+                    LogUtils.i(
                         "应用列表更新完成 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds} " +
                                 "primary=${next.inventory.apps.size} otherUsers=${next.inventory.otherUsers.size} " +
                                 "others=${next.inventory.othersApps.size} visible=${next.visibleApps.size} " +
                                 "queryPackagesAbnormal=$abnormal canQueryPackages=${query.canQueryPackages}",
                     )
                 } else {
-                    LogUtils.d(
+                    LogUtils.i(
                         "应用列表更新未提交：查询期间平台状态变化 $logContext " +
                                 "durationMs=${startedAt.elapsedNow().inWholeMilliseconds}",
                     )
                 }
             } catch (e: CancellationException) {
-                LogUtils.d("应用列表更新已取消 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds}")
+                LogUtils.i("应用列表更新已取消 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds}")
                 throw e
             } catch (e: Exception) {
                 state.update { it.copy(failure = e) }
-                LogUtils.d("应用列表更新失败 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds}", e)
+                LogUtils.e("应用列表更新失败 $logContext durationMs=${startedAt.elapsedNow().inWholeMilliseconds}", e)
                 throw e
             } finally {
                 state.update { it.copy(refreshing = false) }

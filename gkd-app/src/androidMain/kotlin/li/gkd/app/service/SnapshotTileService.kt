@@ -9,7 +9,7 @@ import li.gkd.app.appScope
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 
 class SnapshotTileService : BaseTileService() {
@@ -19,7 +19,7 @@ class SnapshotTileService : BaseTileService() {
 }
 
 private fun execSnapshot() {
-    LogUtils.d("SnapshotTileService::onClick")
+    LogUtils.i("SnapshotTileService::onClick")
     val service = A11yRuntime.service
     if (service == null) {
         A11yRuntime.performActionBack()
@@ -52,7 +52,7 @@ private fun execSnapshot() {
                 }
             } else if (latestAppId != oldAppId) {
                 ok = true
-                LogUtils.d("SnapshotTileService::eventExecutor.execute")
+                LogUtils.i("SnapshotTileService::eventExecutor.execute")
                 SnapshotCaptureHost.capture(forcedCropStatusBar = true)
                 break
             } else {

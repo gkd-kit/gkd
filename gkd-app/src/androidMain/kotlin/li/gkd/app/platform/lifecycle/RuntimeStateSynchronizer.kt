@@ -9,7 +9,7 @@ import li.gkd.app.appScope
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.service.fixRestartAutomatorService
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 object RuntimeStateSynchronizer {
@@ -29,7 +29,7 @@ object RuntimeStateSynchronizer {
                     PermissionStates.refreshAll()
                     fixRestartAutomatorService()
                 } catch (e: Exception) {
-                    LogUtils.d(e, loc = loc)
+                    LogUtils.e(e, loc = loc)
                 }
             }
         }

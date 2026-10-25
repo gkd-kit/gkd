@@ -1,6 +1,6 @@
 package li.gkd.app.platform.lifecycle
 
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 class ResourceSlot<T : AutoCloseable> : AutoCloseable {
@@ -65,6 +65,6 @@ class ResourceSlot<T : AutoCloseable> : AutoCloseable {
     }
 
     private fun T.closeSafely(loc: String) {
-        runCatching(::close).onFailure { LogUtils.d(it, loc = loc) }
+        runCatching(::close).onFailure { LogUtils.e(it, loc = loc) }
     }
 }

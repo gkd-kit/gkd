@@ -1,7 +1,7 @@
 package li.gkd.app.platform.lifecycle
 
 import android.app.Application
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
@@ -18,7 +18,7 @@ import org.robolectric.shadow.api.Shadow
     application = Application::class,
     sdk = [28],
     shadows = [LifecycleHooksTest.CapturedLog::class],
-    instrumentedPackages = ["li.gkd.app.util.LogUtils"],
+    instrumentedPackages = ["li.gkd.app.logging.LogUtils"],
 )
 class LifecycleHooksTest {
     @Test
@@ -135,7 +135,13 @@ class LifecycleHooksTest {
         var location: String = ""
 
         @Implementation
-        fun d(args: Array<out Any?>, loc: String, fileName: String, tag: String) {
+        fun e(args: Array<out Any?>, loc: String, fileName: String, tag: String) {
+            arguments = args.toList()
+            location = loc
+        }
+
+        @Implementation
+        fun i(args: Array<out Any?>, loc: String, fileName: String, tag: String) {
             arguments = args.toList()
             location = loc
         }

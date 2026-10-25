@@ -17,7 +17,7 @@ import li.gkd.app.model.AppUser
 import li.gkd.app.permission.AndroidPermissions
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.PrivilegeUserServiceConnection
@@ -62,7 +62,7 @@ class PrivilegeContext private constructor(
             if (hasAppOpsPermission()) allowAllSelfMode()
             if (hasPermission(AndroidPermissions.GRANT_RUNTIME_PERMISSIONS)) allowAllSelfPermission()
         } catch (e: Exception) {
-            LogUtils.d("Automatic permission grant failed", e)
+            LogUtils.e("Automatic permission grant failed", e)
         }
     }
 

@@ -2,7 +2,7 @@ package li.gkd.app.crash
 
 import kotlinx.serialization.json.Json
 import li.gkd.app.storage.appStorage
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import java.io.File
 import java.nio.file.Files
 import kotlin.time.Duration.Companion.days
@@ -26,7 +26,7 @@ object FileCrashStorage {
             try {
                 json.decodeFromString<CrashData>(file.readText()).copy(filename = file.name)
             } catch (e: Exception) {
-                LogUtils.d("解析崩溃日志失败: ${file.name}", e); null
+                LogUtils.e("解析崩溃日志失败: ${file.name}", e); null
             }
         }.sortedByDescending { it.mtime }
 
@@ -36,14 +36,14 @@ object FileCrashStorage {
         val pending = appStorage().crashTemp
         val records = load(pending)
         pending.listFiles().orEmpty().filter { it.isFile }.forEach {
-            if (!it.delete()) LogUtils.d("删除临时崩溃日志失败: ${it.name}", null)
+            if (!it.delete()) LogUtils.w("删除临时崩溃日志失败: ${it.name}", null)
         }
         val now = System.currentTimeMillis()
         directory.listFiles().orEmpty().filter { it.isFile }.forEach { file ->
             if (records.none { it.filename == file.name } &&
                 now - Files.getLastModifiedTime(file.toPath()).toMillis() > 30.days.inWholeMilliseconds
             ) {
-                if (!file.delete()) LogUtils.d("删除过期崩溃日志失败: ${file.name}", null)
+                if (!file.delete()) LogUtils.w("删除过期崩溃日志失败: ${file.name}", null)
             }
         }
         return records
@@ -62,7 +62,7 @@ object FileCrashStorage {
         directories.forEach { folder ->
             folder.listFiles().orEmpty().filter { it.isFile }.sortedByDescending { it.name }
                 .drop(20).forEach {
-                    if (!it.delete()) LogUtils.d("删除过期崩溃日志失败: ${it.name}", null)
+                    if (!it.delete()) LogUtils.w("删除过期崩溃日志失败: ${it.name}", null)
                 }
         }
     }

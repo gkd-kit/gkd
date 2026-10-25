@@ -22,7 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import li.gkd.app.model.isValidAppId
 import li.gkd.app.app.applicationScope
 import li.gkd.app.storage.appStorage
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
 

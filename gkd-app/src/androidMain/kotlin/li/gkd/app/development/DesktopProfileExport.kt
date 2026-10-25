@@ -32,7 +32,7 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import org.json.JSONArray
 import org.json.JSONObject
@@ -81,7 +81,7 @@ object DesktopProfileExport {
                         File(request, "profile.zip.part").delete()
                         runCatching { status(request, "failed", e.stackTraceToString()) }
                             .onFailure {
-                                LogUtils.d(
+                                LogUtils.i(
                                     "Cannot report desktop profile export failure",
                                     e,
                                     it

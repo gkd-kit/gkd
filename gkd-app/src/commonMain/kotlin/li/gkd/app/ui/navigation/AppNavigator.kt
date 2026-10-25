@@ -3,7 +3,7 @@ package li.gkd.app.ui.navigation
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 class AppNavigator(private val scope: CoroutineScope) {

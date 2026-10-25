@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 
 object KeepAliveOverlayCoordinator {
     enum class Source {

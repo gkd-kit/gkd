@@ -1,5 +1,7 @@
 package li.gkd.app.util
 
+import li.gkd.app.logging.LogUtils
+
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -19,6 +21,6 @@ fun CoroutineScope.launchLogged(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        LogUtils.d(e, loc = loc)
+        LogUtils.e(e, loc = loc)
     }
 }

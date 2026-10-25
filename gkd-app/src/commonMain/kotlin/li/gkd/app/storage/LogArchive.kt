@@ -9,14 +9,16 @@ object LogArchive {
     fun build(metadata: Map<String, () -> String>, additionalDirectories: List<File> = emptyList()): File {
         val directory = StorageMaintenance.temporaryDirectory(layout)
         val metadataDirectory = Files.createDirectory(directory.resolve("metadata").toPath()).toFile()
+        val logs = directory.resolve("log")
+        li.gkd.app.logging.LogUtils.copyLogs(logs)
         metadata.forEach { (name, content) ->
             metadataDirectory.resolve(name).writeText(content())
         }
-        return buildArchive(metadataDirectory, additionalDirectories)
+        return buildArchive(metadataDirectory, logs, additionalDirectories)
     }
 
-    private fun buildArchive(metadata: File, additionalDirectories: List<File>): File {
-        val files = (listOf(layout.db, layout.store, layout.subscription, layout.log, layout.crash, layout.startupLog) + additionalDirectories)
+    private fun buildArchive(metadata: File, logs: File, additionalDirectories: List<File>): File {
+        val files = (listOf(layout.db, layout.store, layout.subscription, logs, layout.crash, layout.startupLog) + additionalDirectories)
             .filter { directory -> !Files.notExists(directory.toPath()) } + metadata
         val archive = ExportFileNames.reserve(
             layout.sharedCache,

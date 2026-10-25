@@ -29,7 +29,7 @@ import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.image.ImageLoaders
 import li.gkd.app.ui.component.ToastState
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
@@ -68,7 +68,7 @@ class DesktopRuntime(
     }
 
     init {
-        LogUtils.d("Desktop runtime started")
+        LogUtils.i("Desktop runtime started")
     }
 
     private val pendingProfile = DesktopStorage.sessionDirectory.resolve("profile-import-pending")
@@ -98,7 +98,7 @@ class DesktopRuntime(
     )
     private val previousCrashHandler = Thread.getDefaultUncaughtExceptionHandler()
     private val crashHandler = Thread.UncaughtExceptionHandler { thread, error ->
-        LogUtils.d("UncaughtExceptionHandler", thread, error)
+        LogUtils.e("UncaughtExceptionHandler", thread, error)
         runCatching { crashRecorder.record(thread, error) }.onFailure { it.printStackTrace() }
         runCatching { LogUtils.flush() }.onFailure { it.printStackTrace() }
         previousCrashHandler?.uncaughtException(thread, error) ?: error.printStackTrace()
@@ -173,7 +173,7 @@ class DesktopRuntime(
                 }
             }
         } catch (e: Exception) {
-            LogUtils.d("Desktop closed with unsaved data", e)
+            LogUtils.e("Desktop closed with unsaved data", e)
         } finally {
             try {
                 runBlocking { scope.coroutineContext[Job]!!.cancelAndJoin() }
@@ -184,7 +184,7 @@ class DesktopRuntime(
                 synchronized(Companion) {
                     if (current === this) current = null
                 }
-                LogUtils.d("Desktop runtime closed")
+                LogUtils.i("Desktop runtime closed")
                 LogUtils.close()
             }
         }

@@ -10,7 +10,7 @@ import li.gkd.app.model.AppInfo
 import li.gkd.app.model.AppInventory
 import li.gkd.app.model.AppUser
 import li.gkd.app.storage.appStorage
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test

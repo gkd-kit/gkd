@@ -23,7 +23,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.Constants
 import li.gkd.app.util.JsonUtils
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import java.net.BindException
 import javax.swing.SwingUtilities
 import li.gkd.db.SubscriptionIds
@@ -99,7 +99,7 @@ class DesktopHttpService(
 
     private fun failed(port: Int, cause: Throwable) {
         update(ServicePhase.Failed, cause.message ?: cause.toString())
-        LogUtils.d("HTTP service failed", cause)
+        LogUtils.e("HTTP service failed", cause)
         showToast(if (generateSequence(cause) { it.cause }.any { it is BindException })
             Res.string.http_port_occupied.getSync(port.toString())
         else Res.string.http_service_start_failed.getSync(cause.stackTraceToString()))
