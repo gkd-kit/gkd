@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
 class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppStorageLayout) {
     fun missingScreenshotStillCommitsCompatibleFilesAndMetadata() = runBlocking {
         fixture { f ->
-            val result = f.capture(false) { input(SnapshotScreenshotStatus.Unavailable) }
+            val result = assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(f.capture(false) { input(SnapshotScreenshotStatus.Unavailable) }).value
             assertEquals(SnapshotScreenshotStatus.Unavailable, result.screenshotStatus)
             assertIs<SnapshotAutoExportResult.Disabled>(result.autoExport)
             val saved = Json.decodeFromString<ComplexSnapshot>(
@@ -47,9 +47,8 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
             }
             withTimeout(10_000) { entered.await() }
             assertTrue(f.isCapturing)
-            assertFailsWith<SnapshotCaptureBusyException> {
-                f.capture(false) { error("Duplicate collector must not run") }
-            }
+            assertEquals(SnapshotCaptureOutcome.Busy,
+                f.capture(false) { error("Duplicate collector must not run") })
             job.cancelAndJoin()
             assertFalse(f.isCapturing)
             assertTrue(Db.snapshotDao.query().first().isEmpty())
@@ -82,7 +81,7 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
 
     fun disabledExportCommitsSnapshotWithoutCreatingAnArchive() = runBlocking {
         fixture { repository ->
-            val result = repository.capture(false) { input() }
+            val result = assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(repository.capture(false) { input() }).value
             assertIs<SnapshotAutoExportResult.Disabled>(result.autoExport)
             assertTrue(layout.sharedCache.listFiles().orEmpty().isEmpty())
             assertEquals(1, Db.snapshotDao.query().first().size)
@@ -92,7 +91,7 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
     fun unsupportedExportPreservesSnapshotAndCleansArchive() = runBlocking {
         fixture { repository ->
             val result =
-                repository.capture(true) { input(SnapshotScreenshotStatus.LikelyProtected) }
+                assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(repository.capture(true) { input(SnapshotScreenshotStatus.LikelyProtected) }).value
             assertEquals(
                 PlatformResult.Unsupported,
                 assertIs<SnapshotAutoExportResult.Completed>(result.autoExport).result

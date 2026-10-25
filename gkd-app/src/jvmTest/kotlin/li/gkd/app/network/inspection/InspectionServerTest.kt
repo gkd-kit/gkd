@@ -29,7 +29,7 @@ import li.gkd.app.model.GkdAction
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
 import li.gkd.app.resources.*
-import li.gkd.app.snapshot.SnapshotCaptureBusyException
+import li.gkd.app.snapshot.SnapshotCaptureOutcome
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 import li.gkd.app.snapshot.SnapshotStore
@@ -79,15 +79,15 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
     assertEquals(26, archived.device.sdkInt)
     assertNull(archived.appInfo)
     var received: GkdAction? = null
+    var snapshotBusy = false
     val server = embeddedServer(CIO, host = "127.0.0.1", port = 0) {
         configureInspectionServer(
             { ServerInfo(device, app) },
-            { snapshot },
+            { if (snapshotBusy) SnapshotCaptureOutcome.Busy else SnapshotCaptureOutcome.Captured(snapshot) },
             {
                 received = it
                 when (it.selector) {
                     "fail" -> throw InspectionException(InspectionFailure.InvalidSelector)
-                    "busy" -> throw SnapshotCaptureBusyException()
                     "unsupported" -> throw InspectionException(InspectionFailure.PlatformUnsupported)
                     "generic-business" -> throw ProtocolBusinessException()
                     "storage-failure" -> throw StorageException(BackupIssue.VersionUnsupported, "50% <&>")
@@ -227,7 +227,9 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
         assertEquals(true, action.getValue("result").jsonPrimitive.boolean)
         assertEquals("[text=\"50% <&>\"]", received?.selector)
         error("execSelector", """{"selector":"fail"}""", "INVALID_SELECTOR")
-        error("execSelector", """{"selector":"busy"}""", "SNAPSHOT_CAPTURE_BUSY")
+        snapshotBusy = true
+        error("captureSnapshot", "{}", "SNAPSHOT_CAPTURE_BUSY")
+        snapshotBusy = false
         error("execSelector", """{"selector":"unsupported"}""", "PLATFORM_UNSUPPORTED")
         // A newly introduced business exception needs no concrete-type branch in the RPC plugin.
         // Nested resources, literal parameters and the optional path survive the real HTTP response.

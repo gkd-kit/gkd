@@ -60,10 +60,23 @@ suspend fun assertUpdateClient(directory: File) {
                 UpdateClient.download(URI(url).resolve("/error-$status").toString(), failedFile, 0) {}
             }
             assertEquals(status, error.response.status.value)
+            assertEquals("HTTP $status", networkFailureSummary(error))
             assertFalse(failedFile.exists())
+            val fetchError = assertFailsWith<ResponseException> {
+                UpdateClient.fetch(URI(url).resolve("/error-$status").toString())
+            }
+            assertEquals("HTTP $status", networkFailureSummary(fetchError))
+            logNetworkFailure("http-status-log-check-$status", fetchError)
         }
         val version = UpdateClient.fetch(url)
         assertEquals(NewVersion(2, "2", "gkd.apk", bytes.size.toLong()), version)
+        logNetworkFailure("transport-log-check", java.net.UnknownHostException("secret-host-log-check"))
+        logNetworkFailure("storage-log-check", java.io.IOException("disk-log-check"))
+        li.gkd.app.logging.LogUtils.flush()
+        val logText = li.gkd.app.storage.appStorage().log.listFiles().orEmpty().joinToString("\n") { it.readText() }
+        assertTrue(logText.contains("http-status-log-check-403: HTTP 403"))
+        assertFalse(logText.contains("secret-host-log-check"))
+        assertTrue(logText.contains("java.io.IOException: disk-log-check"))
         val file = directory.resolve("download.apk")
         var progress = 0f
         UpdateClient.download(

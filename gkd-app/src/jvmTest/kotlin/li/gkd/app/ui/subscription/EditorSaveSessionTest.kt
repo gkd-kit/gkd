@@ -10,8 +10,20 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import li.gkd.app.ui.page.EditorSaveResult
 
 class EditorSaveSessionTest {
+    @Test
+    fun rejectedBusinessResultCanBeRetriedAndOnlySuccessIsRemembered() = runBlocking {
+        val session = EditorSaveSession<EditorSaveResult> { it == EditorSaveResult.Saved }
+        val rejected = EditorSaveResult.Rejected("Duplicate name")
+        var attempts = 0
+        assertEquals(rejected, session.save { attempts++; rejected })
+        assertEquals(EditorSaveResult.Saved, session.save { attempts++; EditorSaveResult.Saved })
+        assertEquals(EditorSaveResult.Saved, session.save { attempts++; rejected })
+        assertEquals(2, attempts)
+    }
+
     @Test
     fun repeatedSaveWhileWritingCommitsOnceAndReturnsTheCommittedResult() = runBlocking {
         val session = EditorSaveSession<Int>()

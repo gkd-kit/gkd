@@ -8,10 +8,11 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.resources.*
 import li.gkd.app.subscription.RawSubscription
-import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.subscription.SubscriptionInputParser
-import li.gkd.app.subscription.edit
+import li.gkd.app.subscription.SubscriptionEditResult
+import li.gkd.app.subscription.SubscriptionRepository
+import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
@@ -68,9 +69,6 @@ class UpsertRuleGroupViewModel(
                 subscription.globalGroups
             }
             groups.find { it.key == groupKey }
-                ?: throw SubscriptionException(
-                    SubscriptionFailureReason.RuleMissingKey, listOf(groupKey.toString())
-                )
         } else {
             null
         }
@@ -87,28 +85,27 @@ class UpsertRuleGroupViewModel(
         }
     }
 
-    private fun requireUiState(): UpsertRuleGroupUiState =
-        uiState.value.value ?: throw SubscriptionException(
-            SubscriptionFailureReason.SubscriptionNotLoadedId, listOf(route.subsId.toString())
-        )
-
     suspend fun hasTextChanged(text: String): Boolean {
         val state = uiState.value.value ?: return false
-        if (!isEdit) return !text.isBlank()
+        if (!isEdit) return text.isNotBlank()
         if (state.initialText == text) return false
         return withContext(Dispatchers.Default) {
-            state.initialGroup?.cacheJsonObject != runCatching {
-                SubscriptionInputParser.parse(text, groupKey ?: 0).jsonObject
-            }.getOrNull()
+            when (val result = SubscriptionInputParser.parse(text, groupKey ?: 0)) {
+                is SubscriptionEditResult.Rejected -> true
+                is SubscriptionEditResult.Success -> state.initialGroup?.cacheJsonObject != result.value.jsonObject
+            }
         }
     }
 
-    private val saveSession = EditorSaveSession<String?>()
-
+    private val saveSession = EditorSaveSession<SubscriptionEditResult<String?>> { it is SubscriptionEditResult.Success }
     private var addedAppId: String? = null
 
-    suspend fun saveRule(text: String) {
-        addedAppId = saveSession.save { performSave(text) }
+    suspend fun saveRule(text: String): EditorSaveResult = when (val result = saveSession.save { performSave(text) }) {
+        is SubscriptionEditResult.Rejected -> EditorSaveResult.Rejected(result.errorMessage.resolve())
+        is SubscriptionEditResult.Success -> {
+            addedAppId = result.value
+            EditorSaveResult.Saved
+        }
     }
 
     fun onSaved() {
@@ -122,99 +119,87 @@ class UpsertRuleGroupViewModel(
         } else mainVm.navigator.pop()
     }
 
-    private suspend fun performSave(text: String): String? {
+    private suspend fun performSave(text: String): SubscriptionEditResult<String?> = withContext(Dispatchers.Default) {
+        val state = when (val current = uiState.value) {
+            li.gkd.app.state.Loadable.Loading -> return@withContext SubscriptionEditResult.Rejected(
+                SubscriptionFailureReason.SubscriptionNotLoadedId, listOf(route.subsId.toString()))
+            is li.gkd.app.state.Loadable.Failure -> throw current.cause
+            is li.gkd.app.state.Loadable.Ready -> current.value
+        }
         val groupKey = groupKey
         val appId = appId
-        val state = requireUiState()
         val initialGroup = state.initialGroup
         val baseGroup = editBaseGroup ?: initialGroup
-        return withContext(Dispatchers.Default) {
-            if (text.isBlank()) {
-                error(getString(Res.string.rule_content_required))
-            }
-            if (text == state.initialText) {
-                ToastUtils.show(getString(Res.string.rule_content_unchanged))
-                return@withContext null
-            }
-            val input = SubscriptionInputParser.parse(text, groupKey ?: 0)
-            if (input.jsonObject == initialGroup?.cacheJsonObject) {
-                ToastUtils.show(getString(Res.string.rule_content_unchanged))
-                return@withContext null
-            }
-            var addedAppId: String? = null
-            if (groupKey != null) {
-                if (appId != null) {
-                    val newGroup = input.parseAppGroup(appId).copy(key = groupKey)
-                    if (newGroup == initialGroup) {
-                        ToastUtils.show(getString(Res.string.rule_content_unchanged))
-                        return@withContext null
-                    }
-                    val originalGroup = requireNotNull(
-                        baseGroup,
-                    ) as RawSubscription.RawAppGroup
-                    requiredSubscription.update { subscription ->
-                        subscription.edit {
-                            replaceAppGroup(
-                                targetApp = subscription.getApp(
-                                    appId,
-                                    AppInfoRepository.snapshot?.apps?.get(appId)?.name
-                                ),
-                                groupKey = groupKey,
-                                expectedGroup = originalGroup,
-                                newGroup = newGroup,
-                            )
-                        }
-                    }
-                } else {
-                    val newGroup = input.parseGlobalGroup().copy(key = groupKey)
-                    if (newGroup == initialGroup) {
-                        ToastUtils.show(getString(Res.string.rule_content_unchanged))
-                        return@withContext null
-                    }
-                    val originalGroup = requireNotNull(
-                        baseGroup,
-                    ) as RawSubscription.RawGlobalGroup
-                    requiredSubscription.update { subscription ->
-                        subscription.edit {
-                            replaceGlobalGroup(groupKey, originalGroup, newGroup)
-                        }
+        if (groupKey != null && initialGroup == null) return@withContext SubscriptionEditResult.Rejected(
+            SubscriptionFailureReason.RuleMissingKey, listOf(groupKey.toString()))
+        if (text.isBlank()) return@withContext SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleInputRequired)
+        if (text == state.initialText) {
+            ToastUtils.show(getString(Res.string.rule_content_unchanged))
+            return@withContext SubscriptionEditResult.Success(null)
+        }
+        val input = when (val parsed = SubscriptionInputParser.parse(text, groupKey ?: 0)) {
+            is SubscriptionEditResult.Rejected -> return@withContext parsed
+            is SubscriptionEditResult.Success -> parsed.value
+        }
+        if (input.jsonObject == initialGroup?.cacheJsonObject) {
+            ToastUtils.show(getString(Res.string.rule_content_unchanged))
+            return@withContext SubscriptionEditResult.Success(null)
+        }
+        var addedAppId: String? = null
+        val saved = if (groupKey != null) {
+            if (appId != null) {
+                val newGroup = when (val parsed = input.parseAppGroup(appId)) {
+                    is SubscriptionEditResult.Rejected -> return@withContext parsed
+                    is SubscriptionEditResult.Success -> parsed.value.copy(key = groupKey)
+                }
+                val original = baseGroup as RawSubscription.RawAppGroup
+                SubscriptionRepository.editSubscription(route.subsId) { subscription ->
+                    subscription.editResult {
+                        replaceAppGroup(subscription.getApp(appId, AppInfoRepository.snapshot?.apps?.get(appId)?.name),
+                            groupKey, original, newGroup)
                     }
                 }
             } else {
-                if (isAddAnyApp) {
-                    val newApp = input.parseApp()
-                    requiredSubscription.update { subscription ->
-                        subscription.edit { mergeApp(newApp) }
-                    }
-                    addedAppId = newApp.id
-                } else if (appId != null) {
-                    // add specified app group
-                    val newGroups = input.parseAppGroups(appId)
-                    requiredSubscription.update { subscription ->
-                        subscription.edit {
-                            appendAppGroups(
-                                targetApp = subscription.getApp(
-                                    appId,
-                                    AppInfoRepository.snapshot?.apps?.get(appId)?.name
-                                ),
-                                groups = newGroups,
-                            )
-                        }
-                    }
-                } else {
-                    // add global group
-                    val newGroup = input.parseGlobalGroup()
-                    requiredSubscription.update { subscription ->
-                        subscription.edit { appendGlobalGroup(newGroup) }
-                    }
+                val newGroup = when (val parsed = input.parseGlobalGroup()) {
+                    is SubscriptionEditResult.Rejected -> return@withContext parsed
+                    is SubscriptionEditResult.Success -> parsed.value.copy(key = groupKey)
+                }
+                val original = baseGroup as RawSubscription.RawGlobalGroup
+                SubscriptionRepository.editSubscription(route.subsId) { subscription ->
+                    subscription.editResult { replaceGlobalGroup(groupKey, original, newGroup) }
                 }
             }
-            if (isEdit) {
-                ToastUtils.show(getString(Res.string.update_success))
-            } else {
-                ToastUtils.show(getString(Res.string.add_success))
+        } else if (isAddAnyApp) {
+            val app = when (val parsed = input.parseApp()) {
+                is SubscriptionEditResult.Rejected -> return@withContext parsed
+                is SubscriptionEditResult.Success -> parsed.value
             }
-            addedAppId
+            addedAppId = app.id
+            SubscriptionRepository.editSubscription(route.subsId) { subscription -> subscription.editResult { mergeApp(app) } }
+        } else if (appId != null) {
+            val groups = when (val parsed = input.parseAppGroups(appId)) {
+                is SubscriptionEditResult.Rejected -> return@withContext parsed
+                is SubscriptionEditResult.Success -> parsed.value
+            }
+            SubscriptionRepository.editSubscription(route.subsId) { subscription ->
+                subscription.editResult {
+                    appendAppGroups(subscription.getApp(appId, AppInfoRepository.snapshot?.apps?.get(appId)?.name), groups)
+                }
+            }
+        } else {
+            val group = when (val parsed = input.parseGlobalGroup()) {
+                is SubscriptionEditResult.Rejected -> return@withContext parsed
+                is SubscriptionEditResult.Success -> parsed.value
+            }
+            SubscriptionRepository.editSubscription(route.subsId) { subscription -> subscription.editResult { appendGlobalGroup(group) } }
+        }
+        when (saved) {
+            is SubscriptionEditResult.Rejected -> saved
+            is SubscriptionEditResult.Success -> {
+                ToastUtils.show(getString(if (!saved.value) Res.string.rule_content_unchanged
+                    else if (isEdit) Res.string.update_success else Res.string.add_success))
+                SubscriptionEditResult.Success(addedAppId)
+            }
         }
     }
 

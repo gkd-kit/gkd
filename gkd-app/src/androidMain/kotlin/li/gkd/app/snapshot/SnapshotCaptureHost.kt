@@ -8,31 +8,33 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.graphics.set
+import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import li.gkd.app.a11y.A11yRuntime
-import li.gkd.app.a11y.currentTopActivity
 import li.gkd.app.app.ActivityNames.getShowActivityId
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.captureNodeInfoList
 import li.gkd.app.data.currentDeviceInfo
 import li.gkd.app.error.displayMessage
-import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
+import li.gkd.app.a11y.A11yRuntime
+import li.gkd.app.a11y.currentTopActivity
+import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.resources.*
 import li.gkd.app.service.ScreenshotService
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.snapshot.platform.encodeSnapshotScreenshot
-import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
 import li.gkd.app.logging.LogUtils
@@ -41,8 +43,6 @@ import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.px
 import org.jetbrains.compose.resources.getString
-import kotlin.math.min
-import kotlin.time.Duration.Companion.milliseconds
 
 object SnapshotCaptureHost {
     val isCapturing: Boolean get() = SnapshotCaptureRepository.isCapturing
@@ -265,11 +265,11 @@ object SnapshotCaptureHost {
         }
     }
 
-    suspend fun capture(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
+    suspend fun capture(forcedCropStatusBar: Boolean = false): SnapshotCaptureOutcome<ComplexSnapshot> {
         val service = A11yRuntime.service
             ?: throw InspectionException(InspectionFailure.AccessibilityAuthorizationRequired)
         val settings = settings.value
-        val captured = SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
+        val outcome = SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
             val rootNode = A11yRuntime.getRoot(service)
                 ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
             val appId = rootNode.packageName.toString()
@@ -302,6 +302,13 @@ object SnapshotCaptureHost {
                     screenshotStatus = screen.status,
                 )
             }
+        }
+        val captured = when (outcome) {
+            SnapshotCaptureOutcome.Busy -> {
+                ToastUtils.show(getString(Res.string.snapshot_save_in_progress), forced = true)
+                return SnapshotCaptureOutcome.Busy
+            }
+            is SnapshotCaptureOutcome.Captured -> outcome.value
         }
         val snapshot = captured.snapshot
         val exportDetail = when (val exported = captured.autoExport) {
@@ -343,6 +350,6 @@ object SnapshotCaptureHost {
         } catch (e: Exception) {
             LogUtils.e("快照已保存，发送提示失败", e)
         }
-        return snapshot
+        return SnapshotCaptureOutcome.Captured(snapshot)
     }
 }

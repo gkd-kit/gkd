@@ -11,7 +11,7 @@ import io.ktor.utils.io.copyAndClose
 import java.io.File
 
 object UpdateClient {
-    suspend fun fetch(url: String): NewVersion = NetworkClients.client.get(url).body()
+    suspend fun fetch(url: String): NewVersion = NetworkClients.client.get(url) { expectSuccess = true }.body()
     suspend fun download(url: String, file: File, size: Long, progress: (Float) -> Unit) {
         NetworkClients.client.prepareGet(url) {
             expectSuccess = true

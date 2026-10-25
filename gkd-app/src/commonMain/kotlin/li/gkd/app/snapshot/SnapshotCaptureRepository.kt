@@ -52,10 +52,12 @@ data class SnapshotCaptureResult(
     val autoExport: SnapshotAutoExportResult,
 )
 
-class SnapshotCaptureBusyException :
-    IllegalStateException("Snapshot capture is already in progress"), BusinessError {
-    override val errorCode: String get() = "SNAPSHOT_CAPTURE_BUSY"
-    override val errorMessage: ErrorMessage get() = ErrorMessage.Resource(Res.string.snapshot_save_in_progress)
+sealed interface SnapshotCaptureOutcome<out T> {
+    data class Captured<T>(val value: T) : SnapshotCaptureOutcome<T>
+    data object Busy : SnapshotCaptureOutcome<Nothing>, BusinessError {
+        override val errorCode: String get() = "SNAPSHOT_CAPTURE_BUSY"
+        override val errorMessage: ErrorMessage get() = ErrorMessage.Resource(Res.string.snapshot_save_in_progress)
+    }
 }
 
 /** Application-owned orchestration. Callers own coroutines and user feedback. */
@@ -67,8 +69,8 @@ object SnapshotCaptureRepository {
     suspend fun capture(
         autoExport: Boolean,
         collect: suspend () -> SnapshotCaptureInput,
-    ): SnapshotCaptureResult {
-        if (!mutex.tryLock()) throw SnapshotCaptureBusyException()
+    ): SnapshotCaptureOutcome<SnapshotCaptureResult> {
+        if (!mutex.tryLock()) return SnapshotCaptureOutcome.Busy
         try {
             currentCoroutineContext().ensureActive()
             val id = System.currentTimeMillis()
@@ -79,7 +81,7 @@ object SnapshotCaptureRepository {
             )
             SnapshotStore.save(snapshot, input.screenshot)
             val exported = if (autoExport) export(snapshot) else SnapshotAutoExportResult.Disabled
-            return SnapshotCaptureResult(snapshot, input.screenshotStatus, exported)
+            return SnapshotCaptureOutcome.Captured(SnapshotCaptureResult(snapshot, input.screenshotStatus, exported))
         } finally {
             mutex.unlock()
         }

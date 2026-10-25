@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.snapshot.SnapshotAutoExportResult
 import li.gkd.app.snapshot.SnapshotCaptureInput
+import li.gkd.app.snapshot.SnapshotCaptureOutcome
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -25,9 +26,9 @@ data class DesktopSnapshotCaptureResult(
     val exportResult: String,
 )
 
-suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest): DesktopSnapshotCaptureResult {
+suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest): SnapshotCaptureOutcome<DesktopSnapshotCaptureResult> {
     require(DesktopStorage.isolated) { "Snapshot capture replay requires --test" }
-    val result = li.gkd.app.snapshot.SnapshotCaptureRepository.capture(request.autoExport) {
+    val outcome = li.gkd.app.snapshot.SnapshotCaptureRepository.capture(request.autoExport) {
         withContext(Dispatchers.Default) {
             val source = request.source
             val screenshot =
@@ -44,7 +45,11 @@ suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest
             )
         }
     }
-    return DesktopSnapshotCaptureResult(
+    val result = when (outcome) {
+        SnapshotCaptureOutcome.Busy -> return SnapshotCaptureOutcome.Busy
+        is SnapshotCaptureOutcome.Captured -> outcome.value
+    }
+    return SnapshotCaptureOutcome.Captured(DesktopSnapshotCaptureResult(
         result.snapshot, when (val exported = result.autoExport) {
             SnapshotAutoExportResult.Disabled -> "disabled"
             SnapshotAutoExportResult.PermissionDenied -> "permissionDenied"
@@ -55,5 +60,5 @@ suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest
 
             is SnapshotAutoExportResult.Failed -> "failed: ${exported.cause.message}"
         }
-    )
+    ))
 }

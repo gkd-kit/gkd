@@ -4,94 +4,88 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import li.gkd.app.error.ErrorMessage
 import li.songe.json5.Json5
+import li.songe.json5.Json5ParseException
 
 class SubscriptionInputParser private constructor(
     val jsonObject: JsonObject,
 ) {
-    fun parseApp(): RawSubscription.RawApp {
-        val app = parseAppObject()
-        app.groups.forEach(::requireValid)
-        return app
+    fun parseApp(): SubscriptionEditResult<RawSubscription.RawApp> = parseAppObject().flatMap { app ->
+        validateGroups(app.groups)?.let { return@flatMap it }
+        SubscriptionEditResult.Success(app)
     }
 
-    fun parseAppGroups(expectedAppId: String): List<RawSubscription.RawAppGroup> {
-        val groups = if (isAppObject()) {
-            parseAppObject(expectedAppId).groups
-        } else {
-            listOf(parseRule { RawSubscription.parseAppGroup(jsonObject) })
+    fun parseAppGroups(expectedAppId: String): SubscriptionEditResult<List<RawSubscription.RawAppGroup>> {
+        val result = if (isAppObject()) parseAppObject(expectedAppId).map { it.groups }
+        else parseRule { RawSubscription.parseAppGroup(jsonObject) }.map { listOf(it) }
+        return result.flatMap { groups -> validateGroups(groups) ?: SubscriptionEditResult.Success(groups) }
+    }
+
+    fun parseAppGroup(expectedAppId: String): SubscriptionEditResult<RawSubscription.RawAppGroup> {
+        val result = if (isAppObject()) parseAppObject(expectedAppId).map { it.groups.first() }
+        else parseRule { RawSubscription.parseAppGroup(jsonObject) }
+        return result.flatMap { group -> validateGroups(listOf(group)) ?: SubscriptionEditResult.Success(group) }
+    }
+
+    fun parseGlobalGroup(): SubscriptionEditResult<RawSubscription.RawGlobalGroup> =
+        parseRule { RawSubscription.parseGlobalGroup(jsonObject) }.flatMap { group ->
+            validateGroups(listOf(group)) ?: SubscriptionEditResult.Success(group)
         }
-        groups.forEach(::requireValid)
-        return groups
-    }
-
-    fun parseAppGroup(expectedAppId: String): RawSubscription.RawAppGroup {
-        val group = if (isAppObject()) {
-            parseAppObject(expectedAppId).groups.first()
-        } else {
-            parseRule { RawSubscription.parseAppGroup(jsonObject) }
-        }
-        requireValid(group)
-        return group
-    }
-
-    fun parseGlobalGroup(): RawSubscription.RawGlobalGroup {
-        val group = parseRule { RawSubscription.parseGlobalGroup(jsonObject) }
-        requireValid(group)
-        return group
-    }
 
     private fun isAppObject(): Boolean = jsonObject["groups"] is JsonArray
 
-    private fun parseAppObject(
-        expectedAppId: String? = null,
-    ): RawSubscription.RawApp = parseRule {
-        if (expectedAppId != null) requireExpectedAppId(expectedAppId)
-        RawSubscription.parseApp(jsonObject).requireGroups()
-    }
-
-    private fun requireExpectedAppId(expectedAppId: String) {
-        val id = jsonObject["id"] ?: throw SubscriptionException(SubscriptionFailureReason.RuleIdRequired)
-        if (id !is JsonPrimitive || !id.isString || id.content != expectedAppId) {
-            throw SubscriptionException(SubscriptionFailureReason.RuleAppIdMismatch)
+    private fun parseAppObject(expectedAppId: String? = null): SubscriptionEditResult<RawSubscription.RawApp> {
+        if (expectedAppId != null) {
+            val id = jsonObject["id"] ?: return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleIdRequired)
+            if (id !is JsonPrimitive || !id.isString || id.content != expectedAppId) {
+                return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleAppIdMismatch)
+            }
+        }
+        return parseRule { RawSubscription.parseApp(jsonObject) }.flatMap { app ->
+            if (app.groups.isEmpty()) SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleInputRequired)
+            else SubscriptionEditResult.Success(app)
         }
     }
 
-    private fun RawSubscription.RawApp.requireGroups(): RawSubscription.RawApp {
-        if (groups.isEmpty()) throw SubscriptionException(SubscriptionFailureReason.RuleInputRequired)
-        return this
-    }
-
-    private fun <T : RawSubscription.RawGroupProps> requireValid(group: T): T {
-        when (val failure = group.validationError) {
-            null -> Unit
-            is RuleValidationError.SelectorError -> throw SubscriptionException(SubscriptionFailureReason.SelectorInvalidDetail, listOf(failure.source, failure.detail))
-
-            is RuleValidationError.InvalidPosition -> throw SubscriptionException(SubscriptionFailureReason.RuleInvalidPosition, listOf(failure.value))
+    private fun validateGroups(groups: List<RawSubscription.RawGroupProps>): SubscriptionEditResult.Rejected? {
+        for (group in groups) {
+            when (val failure = group.validationError) {
+                null -> Unit
+                is RuleValidationError.SelectorError -> return SubscriptionEditResult.Rejected(
+                    SubscriptionFailureReason.SelectorInvalidDetail, listOf(failure.source, failure.detail),
+                    errorCode = "INVALID_SELECTOR",
+                )
+                is RuleValidationError.InvalidPosition -> return SubscriptionEditResult.Rejected(
+                    SubscriptionFailureReason.RuleInvalidPosition, detail = failure.error.message,
+                    errorPath = failure.error.field,
+                )
+                is RuleValidationError.InvalidVersionPattern -> return SubscriptionEditResult.Rejected(
+                    SubscriptionFailureReason.RuleInvalidVersionPattern,
+                    listOf(failure.field, failure.source, failure.detail), errorPath = failure.field,
+                )
+            }
         }
-        return group
+        return null
     }
 
-    private fun <T> parseRule(block: () -> T): T = try {
-        block()
-    } catch (e: SubscriptionException) {
-        throw e
-    } catch (e: Exception) {
-        throw SubscriptionException(SubscriptionFailureReason.RuleInvalidDetail, cause = e)
+    private fun <T> parseRule(block: () -> T): SubscriptionEditResult<T> = try {
+        SubscriptionEditResult.Success(block())
+    } catch (e: SubscriptionParseException) {
+        SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleInvalidDetail,
+            detail = ErrorMessage.Text(e.message.orEmpty()), errorPath = e.path, errorCode = "INVALID_SUBSCRIPTION")
     }
 
     companion object {
-        fun parse(
-            source: String,
-            defaultGroupKey: Int = 0,
-        ): SubscriptionInputParser {
+        fun parse(source: String, defaultGroupKey: Int = 0): SubscriptionEditResult<SubscriptionInputParser> {
             val element = try {
                 Json5.parseToJsonElement(source)
-            } catch (e: Exception) {
-                throw SubscriptionException(SubscriptionFailureReason.FormatInvalidDetail, cause = e)
+            } catch (e: Json5ParseException) {
+                return SubscriptionEditResult.Rejected(SubscriptionFailureReason.FormatInvalidDetail,
+                    detail = ErrorMessage.Text(e.message.orEmpty()), errorPath = "$", errorCode = "INVALID_SUBSCRIPTION")
             }
-            if (element !is JsonObject) throw SubscriptionException(SubscriptionFailureReason.RuleObjectRequired)
-            return SubscriptionInputParser(element.fillGroupKeys(defaultGroupKey))
+            if (element !is JsonObject) return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleObjectRequired)
+            return SubscriptionEditResult.Success(SubscriptionInputParser(element.fillGroupKeys(defaultGroupKey)))
         }
 
         private fun JsonObject.fillGroupKeys(defaultGroupKey: Int): JsonObject {

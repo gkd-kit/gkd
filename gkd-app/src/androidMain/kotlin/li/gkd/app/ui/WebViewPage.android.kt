@@ -304,7 +304,7 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
     ): WebResourceResponse? {
         try {
             if (request != null && request.run { isForMainFrame && url.host == "gkd.li" && method == "GET" }) {
-                LogUtils.d(request.method, request.url)
+                LogUtils.d { "${request.method} ${li.gkd.app.logging.logUrl(request.url.toString())}" }
                 runBlocking(Dispatchers.IO) {
                     val docConfig = NetworkClients.client.get(DOC_CONFIG_URL).body<DocConfig>()
                     val path = request.url.path.let { if (it.isNullOrEmpty()) "/" else it }
@@ -327,7 +327,7 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
                 }?.let { return it }
             }
         } catch (e: Throwable) {
-            e.printStackTrace()
+            LogUtils.w("WebView mirror unavailable, using original request", e)
         }
         return super.shouldInterceptRequest(view, request)
     }

@@ -124,6 +124,7 @@ class ApplicationIntegrationTest {
                 assertTrue(appStorage().subscription.resolve("92.json").isFile)
                 assertPlatformInputs(runtime.simulator)
                 assertSubscriptionCreationNames()
+                li.gkd.app.subscription.assertCategorySaveResults()
                 li.gkd.app.subscription.assertUpdateErrorDismissal(runtime.simulator)
                 assertHomeLifecycle()
                 assertActionLogSubscriptionLoadFailure()
@@ -132,7 +133,7 @@ class ApplicationIntegrationTest {
                 assertAppRuleReorderPersistence()
                 SettingsRepositoryChecks.run(appStorage().store, META.appName)
                 li.gkd.app.network.assertUpdateClient(session.resolve("update-client"))
-                assertIgnoredVersionsRetry(runtime.toast)
+                assertManualUpdateIgnoresStoredVersions(runtime.toast)
                 assertCrashReports()
                 assertCookiePersistence(appStorage().privateStore)
                 li.gkd.app.external.assertExternalCalls()
@@ -244,7 +245,7 @@ class ApplicationIntegrationTest {
         assertEquals("Fresh local", SubscriptionRepository.awaitSnapshot().subscriptions.getValue(localId).name)
     }
 
-    private suspend fun assertIgnoredVersionsRetry(toast: ToastState) = kotlinx.coroutines.coroutineScope {
+    private suspend fun assertManualUpdateIgnoresStoredVersions(toast: ToastState) = kotlinx.coroutines.coroutineScope {
         val file = appStorage().store.resolve("ignore_version_list.json")
         val previous = file.takeIf { it.exists() }?.readBytes()
         val initialRevision = toast.revision
@@ -269,18 +270,18 @@ class ApplicationIntegrationTest {
             }
             checkManually()
             assertEquals(initialRevision + 1, toast.revision)
-            assertTrue(toast.message != networkUnavailable)
+            assertEquals(networkUnavailable, toast.message)
             assertEquals("invalid-json", file.readText())
             file.delete()
-            check(file.mkdir()) // A read failure must not be treated as an empty ignore list either.
+            check(file.mkdir()) // Manual checks do not read the automatic-check ignore list.
             checkManually()
             assertEquals(initialRevision + 2, toast.revision)
-            assertTrue(toast.message != networkUnavailable)
+            assertEquals(networkUnavailable, toast.message)
             assertTrue(file.isDirectory)
             check(file.delete())
             file.writeText("[10,20]")
             checkManually()
-            // The repaired file lets the same workflow reach the real platform network check.
+            // All three inputs reach the explicit network-unavailable outcome without changing the file.
             assertEquals(networkUnavailable, toast.message)
             assertEquals("[10,20]", file.readText())
             assertEquals(initialRevision + 3, toast.revision)

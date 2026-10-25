@@ -1,7 +1,7 @@
 package li.gkd.app.subscription
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
+import kotlin.test.assertIs
 import org.junit.Test
 
 class CategoryPolicyTest {
@@ -33,13 +33,13 @@ class CategoryPolicyTest {
         val apps = subscription.getCategoryApps(null)
         assertEquals(listOf("app.one"), apps.map { it.id })
         assertEquals(listOf(3), apps.single().groups.map { it.key })
-        val preview = CategoryPolicy.previewEdit(subscription, null, "推荐", "")
+        val preview = assertIs<SubscriptionEditResult.Success<RawSubscription>>(CategoryPolicy.previewEdit(subscription, null, "推荐", "")).value
         assertEquals(emptyList<RawSubscription.RawApp>(), preview.getCategoryApps(null))
     }
 
     @Test
     fun renamingPreviewsCategoryMembershipAndDescription() {
-        val preview = CategoryPolicy.previewEdit(subscription, 0, " 推荐 ", "说明")
+        val preview = assertIs<SubscriptionEditResult.Success<RawSubscription>>(CategoryPolicy.previewEdit(subscription, 0, " 推荐 ", "说明")).value
         assertEquals("推荐", preview.categories.first().name)
         assertEquals("说明", preview.categories.first().desc)
         assertEquals(listOf(3), preview.getCategoryApps(0).single().groups.map { it.key })
@@ -48,21 +48,18 @@ class CategoryPolicyTest {
 
     @Test
     fun addingAnOverlappingPrefixDoesNotStealGroupsFromAnEarlierCategory() {
-        val preview = CategoryPolicy.previewEdit(subscription, null, "广告-横幅", "")
+        val preview = assertIs<SubscriptionEditResult.Success<RawSubscription>>(CategoryPolicy.previewEdit(subscription, null, "广告-横幅", "")).value
         val newCategory = preview.categories.single { it.name == "广告-横幅" }
         assertEquals(emptyList<RawSubscription.RawApp>(), preview.getCategoryApps(newCategory.key))
     }
 
     @Test
     fun staleMissingCategoryAndDuplicateOrBlankNamesCannotProduceAnEdit() {
-        assertThrows(SubscriptionException::class.java) {
-            CategoryPolicy.previewEdit(subscription, 99, "新类别", "")
-        }
-        assertThrows(SubscriptionException::class.java) {
-            CategoryPolicy.previewEdit(subscription, 0, " 广告-开屏 ", "")
-        }
-        assertThrows(SubscriptionException::class.java) {
-            CategoryPolicy.previewEdit(subscription, null, " ", "")
-        }
+        assertEquals(SubscriptionEditResult.Rejected(SubscriptionFailureReason.CategoryMissing),
+            CategoryPolicy.previewEdit(subscription, 99, "新类别", ""))
+        assertEquals(SubscriptionEditResult.Rejected(SubscriptionFailureReason.CategoryNameDuplicate),
+            CategoryPolicy.previewEdit(subscription, 0, " 广告-开屏 ", ""))
+        assertEquals(SubscriptionEditResult.Rejected(SubscriptionFailureReason.CategoryNameRequired),
+            CategoryPolicy.previewEdit(subscription, null, " ", ""))
     }
 }

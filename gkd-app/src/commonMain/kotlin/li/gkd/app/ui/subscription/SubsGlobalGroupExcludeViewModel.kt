@@ -1,5 +1,7 @@
 package li.gkd.app.ui.subscription
 
+import org.jetbrains.compose.resources.getString
+import li.gkd.app.util.ToastUtils
 import li.gkd.app.record.TriggerStats
 import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,7 +73,9 @@ class SubsGlobalGroupExcludeViewModel(
         saveRuleExclusions(
             RuleGroupTarget.Global(route.subsItemId, route.groupKey),
             value.subscription, value.expected, ExcludeData.parse(value.text),
-        )
+        ).also { changed ->
+            ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
+        }
     }
 
     val query: StateFlow<String>

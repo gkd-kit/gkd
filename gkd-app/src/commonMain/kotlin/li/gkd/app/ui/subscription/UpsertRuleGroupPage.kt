@@ -47,6 +47,7 @@ fun UpsertRuleGroupPage(
     val draft by vm.draft.collectAsStateWithLifecycle()
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { data ->
         val text = draft ?: data.initialText
+        val missingGroup = vm.isEdit && data.initialGroup == null
         val inputInsets: Modifier = inputInsets()
 
         GkEditor(
@@ -54,7 +55,7 @@ fun UpsertRuleGroupPage(
                 title =
                     stringResource(if (vm.isEdit) Res.string.rule_edit else Res.string.rule_add),
                 hasChanges = { vm.hasTextChanged(text) },
-                saveEnabled = text.isNotBlank(),
+                saveEnabled = text.isNotBlank() && !missingGroup,
                 onSave = { vm.saveRule(text) },
             ),
             onSaved = vm::onSaved,
@@ -78,6 +79,10 @@ fun UpsertRuleGroupPage(
                     TextField(
                         value = text,
                         onValueChange = vm::setDraft,
+                        isError = missingGroup,
+                        supportingText = if (missingGroup) {
+                            { Text(stringResource(Res.string.subscription_rule_missing_detail, route.groupKey.toString())) }
+                        } else null,
                         modifier = modifier,
                         shape = RectangleShape,
                         colors = textColors,

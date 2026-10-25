@@ -29,6 +29,7 @@ import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.GkdAction
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
+import li.gkd.app.snapshot.SnapshotCaptureOutcome
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.logging.LogUtils
@@ -46,7 +47,7 @@ private val httpSubsItem = SubsItem(
 
 fun Application.configureInspectionServer(
     serverInfo: () -> ServerInfo,
-    captureSnapshot: suspend () -> ComplexSnapshot,
+    captureSnapshot: suspend () -> SnapshotCaptureOutcome<ComplexSnapshot>,
     execSelector: suspend (GkdAction) -> ActionResult,
     scriptUrl: String,
     jsonFormat: Json,
@@ -57,7 +58,7 @@ fun Application.configureInspectionServer(
     routing {
         get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$scriptUrl'></script>" } }
         route("/api") {
-            registerSubscriptionRoutes()
+            registerSubscriptionRoutes(jsonFormat)
             post("/getServerInfo") { call.respond(serverInfo()) }
             post("/getSnapshot") {
                 val data = call.receive<ReqId>()
@@ -76,7 +77,10 @@ fun Application.configureInspectionServer(
                 call.respondFile(fp)
             }
             post("/captureSnapshot") {
-                call.respond(captureSnapshot())
+                when (val result = captureSnapshot()) {
+                    is SnapshotCaptureOutcome.Captured -> call.respond(result.value)
+                    SnapshotCaptureOutcome.Busy -> call.respondBusinessFailure(SnapshotCaptureOutcome.Busy, jsonFormat)
+                }
             }
             post("/getSnapshots") {
                 val list = Db.snapshotDao.query().first().mapNotNull {

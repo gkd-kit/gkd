@@ -9,7 +9,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import li.gkd.app.error.resolveMessage
 import li.gkd.app.inspection.InspectionException
-import li.gkd.app.snapshot.SnapshotCaptureBusyException
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.songe.codeorigin.CallSite
@@ -28,7 +27,7 @@ fun CoroutineScope.launchUi(
         LogUtils.e(e, loc = loc)
         ToastUtils.show(
             e.resolveMessage(),
-            forced = e is InspectionException || e is SnapshotCaptureBusyException,
+            forced = e is InspectionException,
             loc = "",
         )
     }

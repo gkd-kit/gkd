@@ -1,14 +1,19 @@
 package li.gkd.app.ui.subscription
 
+import org.jetbrains.compose.resources.getString
+import li.gkd.app.util.ToastUtils
+import li.gkd.app.resources.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.SubscriptionEditResult
 import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.page.EditorActionsState
+import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.state.BaseViewModel
 
 data class CategoryEditorDraft(
@@ -53,10 +58,21 @@ class CategoryEditorViewModel(
         route.subsId,
         scope
     ).buildUiState(initialValue = ::prepareSubscription) { flowOf(prepareSubscription(it)) }
-    private val saveSession = EditorSaveSession<Boolean>()
+    private val saveSession = EditorSaveSession<EditorSaveResult> { it == EditorSaveResult.Saved }
 
-    suspend fun save(subscription: RawSubscription, name: String, description: String): Boolean =
-        saveSession.save {
-            SubscriptionRepository.saveCategory(subscription, route.categoryKey, name, description)
+    suspend fun save(subscription: RawSubscription, name: String, description: String): EditorSaveResult = saveSession.save {
+        when (val result = SubscriptionRepository.saveCategory(subscription, route.categoryKey, name, description)) {
+            is SubscriptionEditResult.Rejected -> EditorSaveResult.Rejected(result.errorMessage.resolve())
+            is SubscriptionEditResult.Success -> {
+                ToastUtils.show(
+                    getString(
+                        if (!result.value) Res.string.unchanged
+                        else if (route.categoryKey == null) Res.string.add_success
+                        else Res.string.update_success
+                    )
+                )
+                EditorSaveResult.Saved
+            }
         }
+    }
 }

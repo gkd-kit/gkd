@@ -9,6 +9,12 @@ import kotlinx.coroutines.launch
 sealed interface EditorDialog {
     data object Discard : EditorDialog
     data class Error(val cause: Exception) : EditorDialog
+    data class Rejected(val message: String) : EditorDialog
+}
+
+sealed interface EditorSaveResult {
+    data object Saved : EditorSaveResult
+    data class Rejected(val message: String) : EditorSaveResult
 }
 
 class EditorActionsState(private val scope: CoroutineScope) {
@@ -37,13 +43,19 @@ class EditorActionsState(private val scope: CoroutineScope) {
     }
 
     fun save(
-        onSave: suspend () -> Unit,
+        onSave: suspend () -> EditorSaveResult,
         beforeClose: () -> Unit,
         onSaved: () -> Unit,
     ) {
         scope.launch {
             try {
-                onSave()
+                when (val result = onSave()) {
+                    EditorSaveResult.Saved -> Unit
+                    is EditorSaveResult.Rejected -> {
+                        dialog.value = EditorDialog.Rejected(result.message)
+                        return@launch
+                    }
+                }
                 beforeClose()
                 onSaved()
             } catch (e: CancellationException) {

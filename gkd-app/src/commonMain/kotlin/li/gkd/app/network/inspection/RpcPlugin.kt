@@ -6,6 +6,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
 import io.ktor.server.application.createApplicationPlugin
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.hooks.CallFailed
 import io.ktor.server.application.hooks.ResponseBodyReadyForSend
 import io.ktor.server.plugins.BadRequestException
@@ -13,6 +14,7 @@ import io.ktor.server.plugins.CannotTransformContentToTypeException
 import io.ktor.server.plugins.UnsupportedMediaTypeException
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.uri
+import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import io.ktor.util.AttributeKey
 import io.ktor.utils.io.ByteWriteChannel
@@ -27,7 +29,7 @@ fun getRpcPlugin(jsonFormat: Json) =
     createApplicationPlugin(name = "RpcPlugin") {
         onCall { call ->
             if (call.request.uri == "/" || call.request.uri.startsWith("/api/")) {
-                LogUtils.d("onCall: ${call.request.origin.remoteAddress} -> ${call.request.uri}")
+                LogUtils.d { "onCall: ${call.request.origin.remoteAddress} -> ${call.request.path()}" }
             }
         }
         on(ResponseBodyReadyForSend) { call, body ->
@@ -62,9 +64,9 @@ fun getRpcPlugin(jsonFormat: Json) =
                 )
             }
             if (error.code == "INTERNAL_ERROR") {
-                LogUtils.d("${call.request.uri}: ${error.code}", cause)
+                LogUtils.e("${call.request.path()}: ${error.code}", cause)
             } else {
-                LogUtils.d("${call.request.uri}: ${error.code}: ${error.message}")
+                LogUtils.w("${call.request.path()}: ${error.code}")
             }
             call.respond(
                 TextContent(jsonFormat.encodeToString(error), ContentType.Application.Json, HttpStatusCode.OK)
@@ -72,6 +74,14 @@ fun getRpcPlugin(jsonFormat: Json) =
             )
         }
     }
+
+suspend fun ApplicationCall.respondBusinessFailure(failure: BusinessError, jsonFormat: Json) {
+    respond(TextContent(
+        jsonFormat.encodeToString(RpcError(failure.errorCode, failure.errorMessage.resolve(), path = failure.errorPath)),
+        ContentType.Application.Json,
+        HttpStatusCode.OK,
+    ).withRpcStatus("error"))
+}
 
 private fun OutgoingContent.withRpcStatus(rpcStatus: String): OutgoingContent {
     val original = this

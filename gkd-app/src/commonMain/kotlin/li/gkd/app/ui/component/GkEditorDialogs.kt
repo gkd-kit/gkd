@@ -28,13 +28,19 @@ fun GkEditorDialogs(
                 TextButton(onClick = onDismissDialog) { Text(stringResource(Res.string.action_cancel)) }
             },
         )
-        is EditorDialog.Error -> GkAlertDialog(
-            onDismissRequest = onDismissDialog,
-            text = { Text(dialog.cause.messageResource()) },
-            confirmButton = {
-                TextButton(onClick = onDismissDialog) { Text(stringResource(Res.string.action_confirm)) }
-            },
-        )
+        is EditorDialog.Error -> EditorErrorDialog(dialog.cause.messageResource(), onDismissDialog)
+        is EditorDialog.Rejected -> EditorErrorDialog(dialog.message, onDismissDialog)
         null -> Unit
     }
+}
+
+@Composable
+private fun EditorErrorDialog(message: String, onDismiss: () -> Unit) {
+    GkAlertDialog(
+        onDismissRequest = onDismiss,
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_confirm)) }
+        },
+    )
 }

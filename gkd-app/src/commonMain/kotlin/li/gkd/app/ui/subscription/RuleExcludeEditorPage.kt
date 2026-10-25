@@ -15,11 +15,10 @@ import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.page.EditorSession
+import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.style.scaffoldPadding
-import li.gkd.app.util.ToastUtils
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -57,10 +56,8 @@ fun RuleExcludeEditorPage(
                 },
                 hasChanges = { value != expected },
                 onSave = {
-                    val changed = vm.save(subscription, expected, value)
-                    ToastUtils.show(
-                        if (changed) getString(Res.string.update_success) else getString(Res.string.unchanged)
-                    )
+                    vm.save(subscription, expected, value)
+                    EditorSaveResult.Saved
                 },
             ), null,
             navigator = mainVm.navigator,

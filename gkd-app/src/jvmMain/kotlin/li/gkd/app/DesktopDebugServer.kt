@@ -156,7 +156,12 @@ class DesktopDebugServer private constructor(private val stop: () -> Unit) : Aut
                             val request = call.receive<DesktopSnapshotCaptureRequest>()
                             val result = withContext(Edt) { runtime.replaySnapshot(request) }
                             awaitFrame()
-                            call.respond(result)
+                            when (result) {
+                                is li.gkd.app.snapshot.SnapshotCaptureOutcome.Captured -> call.respond(result.value)
+                                li.gkd.app.snapshot.SnapshotCaptureOutcome.Busy -> call.respond(
+                                    io.ktor.http.HttpStatusCode.Conflict, mapOf("error" to "SNAPSHOT_CAPTURE_BUSY"),
+                                )
+                            }
                         }
                     }
                     post("/runtime-records/replay") {

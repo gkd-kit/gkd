@@ -40,10 +40,25 @@ class EditorActionsStateTest {
         assertSame(failure, (state.dialog.value as EditorDialog.Error).cause)
         assertEquals(emptyList(), events)
         state.dismissDialog()
-        state.save({ events.add("write") }, { events.add("close") }, { events.add("saved") })
+        state.save({ events.add("write"); EditorSaveResult.Saved }, { events.add("close") }, { events.add("saved") })
         yield()
         assertNull(state.dialog.value)
         assertEquals(listOf("write", "close", "saved"), events)
+    }
+
+    @Test
+    fun rejectedSaveKeepsEditorOpenAndAllowsCorrectedInput() = runBlocking {
+        val state = EditorActionsState(this)
+        val events = mutableListOf<String>()
+        state.save({ EditorSaveResult.Rejected("Duplicate name") }, { events.add("close") }, { events.add("saved") })
+        yield()
+        assertEquals(EditorDialog.Rejected("Duplicate name"), state.dialog.value)
+        assertEquals(emptyList(), events)
+        state.dismissDialog()
+        state.save({ EditorSaveResult.Saved }, { events.add("close") }, { events.add("saved") })
+        yield()
+        assertNull(state.dialog.value)
+        assertEquals(listOf("close", "saved"), events)
     }
 
     @Test

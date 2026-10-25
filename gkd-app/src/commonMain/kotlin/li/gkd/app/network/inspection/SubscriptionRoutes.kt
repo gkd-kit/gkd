@@ -12,17 +12,17 @@ import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.subscription.RawSubscription
-import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.subscription.SubscriptionInputParser
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.subscription.edit
+import li.gkd.app.subscription.SubscriptionEditResult
+import kotlinx.serialization.json.Json
 import li.gkd.db.RuleGroupType
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
 import li.gkd.db.SubscriptionIds
 
-fun Route.registerSubscriptionRoutes() {
+fun Route.registerSubscriptionRoutes(json: Json) {
     post("/getRules") {
         val data = call.receive<SubscriptionRequest>()
         requireSupportedSubscription(data.subsId)
@@ -45,26 +45,42 @@ fun Route.registerSubscriptionRoutes() {
         val data = call.receive<AppendRulesRequest>()
         requireSupportedSubscription(data.subsId)
         val target = RuleTarget(data.groupType, data.appId, 0).contentTarget(data.subsId)
-        val input = SubscriptionInputParser.parse(data.source)
+        val input = when (val parsed = SubscriptionInputParser.parse(data.source)) {
+            is SubscriptionEditResult.Rejected -> return@post call.respondBusinessFailure(parsed, json)
+            is SubscriptionEditResult.Success -> parsed.value
+        }
         when (target) {
             is RuleGroupTarget.App -> {
-                val groups = input.parseAppGroups(target.appId)
+                val groups = when (val parsed = input.parseAppGroups(target.appId)) {
+                    is SubscriptionEditResult.Rejected -> return@post call.respondBusinessFailure(parsed, json)
+                    is SubscriptionEditResult.Success -> parsed.value
+                }
                 var added = emptyList<RawSubscription.RawAppGroup>()
-                SubscriptionRepository.update(data.subsId) { subscription ->
-                    subscription.edit {
-                        added = appendAppGroups(subscription.getApp(target.appId), groups)
-                            .groups.takeLast(groups.size)
+                val result = SubscriptionRepository.editSubscription(data.subsId) { subscription ->
+                    subscription.editResult {
+                        appendAppGroups(subscription.getApp(target.appId), groups).map {
+                            added = it.groups.takeLast(groups.size)
+                        }
                     }
                 }
-                call.respond(added)
+                when (result) {
+                    is SubscriptionEditResult.Rejected -> call.respondBusinessFailure(result, json)
+                    is SubscriptionEditResult.Success -> call.respond(added)
+                }
             }
             is RuleGroupTarget.Global -> {
-                val group = input.parseGlobalGroup()
-                lateinit var added: RawSubscription.RawGlobalGroup
-                SubscriptionRepository.update(data.subsId) { subscription ->
-                    subscription.edit { added = appendGlobalGroup(group) }
+                val group = when (val parsed = input.parseGlobalGroup()) {
+                    is SubscriptionEditResult.Rejected -> return@post call.respondBusinessFailure(parsed, json)
+                    is SubscriptionEditResult.Success -> parsed.value
                 }
-                call.respond(listOf(added))
+                lateinit var added: RawSubscription.RawGlobalGroup
+                val result = SubscriptionRepository.editSubscription(data.subsId) { subscription ->
+                    subscription.editResult { appendGlobalGroup(group).map { added = it } }
+                }
+                when (result) {
+                    is SubscriptionEditResult.Rejected -> call.respondBusinessFailure(result, json)
+                    is SubscriptionEditResult.Success -> call.respond(listOf(added))
+                }
             }
         }
     }
@@ -72,33 +88,41 @@ fun Route.registerSubscriptionRoutes() {
         val data = call.receive<ReplaceRuleGroupRequest>()
         requireSupportedSubscription(data.subsId)
         val target = data.target.contentTarget(data.subsId)
-        val input = SubscriptionInputParser.parse(data.source, target.groupKey)
-        val changed = when (target) {
+        val input = when (val parsed = SubscriptionInputParser.parse(data.source, target.groupKey)) {
+            is SubscriptionEditResult.Rejected -> return@post call.respondBusinessFailure(parsed, json)
+            is SubscriptionEditResult.Success -> parsed.value
+        }
+        val result = when (target) {
             is RuleGroupTarget.App -> {
-                val groups = input.parseAppGroups(target.appId)
+                val groups = when (val parsed = input.parseAppGroups(target.appId)) {
+                    is SubscriptionEditResult.Rejected -> return@post call.respondBusinessFailure(parsed, json)
+                    is SubscriptionEditResult.Success -> parsed.value
+                }
                 if (groups.size != 1) throw BadRequestException("Expected one rule group")
                 val group = groups.single().copy(key = target.groupKey)
-                SubscriptionRepository.update(data.subsId) { subscription ->
+                SubscriptionRepository.editSubscription(data.subsId) { subscription ->
                     val app = subscription.apps.find { it.id == target.appId }
                     val current = app?.groups?.find { it.key == target.groupKey }
-                        ?: throw SubscriptionException(SubscriptionFailureReason.RuleMissing)
-                    if (group == current) subscription else subscription.edit {
-                        replaceAppGroup(app, target.groupKey, current, group)
-                    }
+                        ?: return@editSubscription SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleMissing)
+                    subscription.editResult { replaceAppGroup(app, target.groupKey, current, group) }
                 }
             }
             is RuleGroupTarget.Global -> {
-                val group = input.parseGlobalGroup().copy(key = target.groupKey)
-                SubscriptionRepository.update(data.subsId) { subscription ->
+                val group = when (val parsed = input.parseGlobalGroup()) {
+                    is SubscriptionEditResult.Rejected -> return@post call.respondBusinessFailure(parsed, json)
+                    is SubscriptionEditResult.Success -> parsed.value.copy(key = target.groupKey)
+                }
+                SubscriptionRepository.editSubscription(data.subsId) { subscription ->
                     val current = subscription.globalGroups.find { it.key == target.groupKey }
-                        ?: throw SubscriptionException(SubscriptionFailureReason.RuleMissing)
-                    if (group == current) subscription else subscription.edit {
-                        replaceGlobalGroup(target.groupKey, current, group)
-                    }
+                        ?: return@editSubscription SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleMissing)
+                    subscription.editResult { replaceGlobalGroup(target.groupKey, current, group) }
                 }
             }
         }
-        call.respond(changed)
+        when (result) {
+            is SubscriptionEditResult.Rejected -> call.respondBusinessFailure(result, json)
+            is SubscriptionEditResult.Success -> call.respond(result.value)
+        }
     }
     post("/deleteRuleGroup") {
         val data = call.receive<RuleGroupRequest>()

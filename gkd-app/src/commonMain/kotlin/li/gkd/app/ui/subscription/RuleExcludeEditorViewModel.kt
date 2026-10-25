@@ -1,5 +1,7 @@
 package li.gkd.app.ui.subscription
 
+import org.jetbrains.compose.resources.getString
+import li.gkd.app.util.ToastUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -58,6 +60,8 @@ class RuleExcludeEditorViewModel(
         value: ExcludeData
     ): Boolean =
         saveSession.save {
-            saveRuleExclusions(target, subscription, expected, value)
+            saveRuleExclusions(target, subscription, expected, value).also { changed ->
+                ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
+            }
         }
 }

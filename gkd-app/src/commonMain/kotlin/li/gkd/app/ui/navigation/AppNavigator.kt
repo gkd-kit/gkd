@@ -20,7 +20,7 @@ class AppNavigator(private val scope: CoroutineScope) {
         scope.launch {
             if (backStack.size > 1 && topEntry === entry) {
                 val old = backStack.removeAt(backStack.lastIndex)
-                LogUtils.d("pop", "$old -> $topRoute", loc = loc)
+                LogUtils.i("pop", "${old.route.javaClass.simpleName} -> ${topRoute.javaClass.simpleName}", loc = loc)
             }
         }
     }
@@ -31,7 +31,7 @@ class AppNavigator(private val scope: CoroutineScope) {
                 val old = topRoute
                 val entry = AppNavEntry(route)
                 if (replaced) backStack[backStack.lastIndex] = entry else backStack.add(entry)
-                LogUtils.d("navigate", "$old -> $topRoute", loc = loc)
+                LogUtils.i("navigate", "${old.javaClass.simpleName} -> ${topRoute.javaClass.simpleName}", loc = loc)
             }
         }
     }

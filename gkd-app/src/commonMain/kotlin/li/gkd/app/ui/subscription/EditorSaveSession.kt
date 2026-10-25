@@ -4,7 +4,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /** A completed editor commits once; failed or cancelled saves may be retried. */
-class EditorSaveSession<T> {
+class EditorSaveSession<T>(private val isSuccess: (T) -> Boolean = { true }) {
     private data class Saved<T>(val value: T)
 
     private val mutex = Mutex()
@@ -12,6 +12,6 @@ class EditorSaveSession<T> {
 
     suspend fun save(action: suspend () -> T): T = mutex.withLock {
         saved?.let { return@withLock it.value }
-        action().also { saved = Saved(it) }
+        action().also { if (isSuccess(it)) saved = Saved(it) }
     }
 }

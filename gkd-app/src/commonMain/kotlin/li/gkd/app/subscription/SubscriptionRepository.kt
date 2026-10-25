@@ -1,6 +1,7 @@
 package li.gkd.app.subscription
 
 import io.ktor.client.request.get
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.statement.bodyAsText
 import java.net.URI
 import kotlinx.coroutines.CancellationException
@@ -13,6 +14,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.gkd.app.network.NetworkClients
 import li.gkd.app.network.isNetworkRequestAllowed
+import li.gkd.app.network.logNetworkFailure
+import li.gkd.app.logging.logText
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.state.MutexState
@@ -218,11 +221,12 @@ object SubscriptionRepository {
         categoryKey: Int?,
         name: String,
         description: String,
-    ): Boolean = update(expected.id) { current ->
-        check(current == expected) {
-            throw SubscriptionException(SubscriptionFailureReason.SubscriptionPreviewConflict)
+    ): SubscriptionEditResult<Boolean> = editSubscription(expected.id) { current ->
+        if (current != expected) {
+            SubscriptionEditResult.Rejected(SubscriptionFailureReason.SubscriptionPreviewConflict)
+        } else {
+            CategoryPolicy.previewEdit(current, categoryKey, name, description)
         }
-        CategoryPolicy.previewEdit(current, categoryKey, name, description)
     }
 
     suspend fun deleteCategory(expected: RawSubscription, categoryKey: Int): Boolean =
@@ -263,6 +267,33 @@ object SubscriptionRepository {
         changed
     }
 
+    suspend fun editSubscription(
+        id: Long,
+        transform: (RawSubscription) -> SubscriptionEditResult<RawSubscription>,
+    ): SubscriptionEditResult<Boolean> = withContext(Dispatchers.IO) {
+        updateMutex.withStateLock {
+            val snapshot = when (val state = snapshotFlow.value) {
+                Loadable.Loading -> return@withStateLock SubscriptionEditResult.Rejected(SubscriptionFailureReason.SubscriptionNotLoadedId, listOf(id.toString()))
+                is Loadable.Failure -> throw state.cause
+                is Loadable.Ready -> state.value
+            }
+            val current = snapshot.subscriptions[id] ?: run {
+                snapshot.loadErrors[id]?.let { throw it }
+                return@withStateLock SubscriptionEditResult.Rejected(SubscriptionFailureReason.SubscriptionMissingId, listOf(id.toString()))
+            }
+            when (val result = transform(current)) {
+                is SubscriptionEditResult.Rejected -> result
+                is SubscriptionEditResult.Success -> {
+                    val next = result.value
+                    require(next.id == id)
+                    val changed = next != current
+                    if (changed) saveLocked(next)
+                    SubscriptionEditResult.Success(changed)
+                }
+            }
+        }
+    }
+
     suspend fun delete(vararg subscriptionIds: Long): SubscriptionResult =
         withContext(Dispatchers.IO) {
             if (subscriptionIds.isEmpty()) return@withContext SubscriptionResult.Success()
@@ -271,6 +302,7 @@ object SubscriptionRepository {
                 val deletion = try {
                     SubscriptionPersistence.delete(subscriptionIds)
                 } catch (e: SubscriptionPersistence.DeleteException) {
+                    LogUtils.e("Subscription deletion failed", e)
                     result = SubscriptionResult.Failure(
                         reason = when (e.stage) {
                             SubscriptionPersistence.DeleteStage.File ->
@@ -326,12 +358,11 @@ object SubscriptionRepository {
             }
             onStage(SubscriptionAddStage.Downloading)
             val text = try {
-                NetworkClients.client.get(url).bodyAsText()
+                NetworkClients.client.get(url) { expectSuccess = true }.bodyAsText()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                e.printStackTrace()
-                LogUtils.d(e)
+                logNetworkFailure("Subscription download failed", e)
                 result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Download,
                     cause = e,
@@ -342,8 +373,7 @@ object SubscriptionRepository {
             val subscription = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
-                e.printStackTrace()
-                LogUtils.d(e)
+                logSubscriptionParseFailure("Subscription parsing failed", e)
                 result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Parse,
                     cause = e,
@@ -375,6 +405,7 @@ object SubscriptionRepository {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                LogUtils.e("Subscription save failed", e)
                 result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Save,
                     cause = e,
@@ -439,7 +470,16 @@ object SubscriptionRepository {
                         throw e
                     } catch (e: Exception) {
                         setUpdateError(entry.subsItem.id, e)
-                        LogUtils.d("检测更新失败", e.message)
+                        val operation = "Subscription update failed subsId=${entry.subsItem.id}"
+                        when {
+                            e is SubscriptionException && e.reason == SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed ->
+                                logNetworkFailure(operation, e.cause as Exception)
+                            e is SubscriptionException && e.reason == SubscriptionFailureReason.TextParseFailed ->
+                                logSubscriptionParseFailure(operation, e.cause as Exception)
+                            e is SubscriptionException && e.reason == SubscriptionFailureReason.SubscriptionUpdatedIdMismatch ->
+                                LogUtils.w("$operation: ${e.reason} ${e.arguments}")
+                            else -> LogUtils.e(operation, e)
+                        }
                     }
                 }
                 result = SubscriptionResult.Success(
@@ -585,17 +625,19 @@ object SubscriptionRepository {
         if (checkUrl != null) {
             try {
                 val version = SubscriptionJson.json.decodeFromJson5String<SubsVersion>(
-                    NetworkClients.client.get(checkUrl).bodyAsText(),
+                    NetworkClients.client.get(checkUrl) { expectSuccess = true }.bodyAsText(),
                 )
                 if (version.id == current.id && version.version <= current.version) return null
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("快速检测更新失败", item, e.message)
+                if (e is kotlinx.serialization.SerializationException || e is li.songe.json5.Json5ParseException) {
+                    LogUtils.w("Subscription version check failed subsId=${item.id}: invalid response")
+                } else logNetworkFailure("Subscription version check failed subsId=${item.id}", e)
             }
         }
         val text = try {
-            NetworkClients.client.get(itemUpdateUrl).bodyAsText()
+            NetworkClients.client.get(itemUpdateUrl) { expectSuccess = true }.bodyAsText()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -621,6 +663,12 @@ object SubscriptionRepository {
 }
 
 private data class UpdateEntry(val subsItem: SubsItem, val subscription: RawSubscription?)
+
+private fun logSubscriptionParseFailure(operation: String, error: Exception) {
+    if (error is SubscriptionParseException) {
+        LogUtils.w("$operation: path=${error.path} ${logText(error.detail)}")
+    } else LogUtils.e(operation, error)
+}
 
 @Serializable
 private data class SubsVersion(val id: Long, val version: Int)

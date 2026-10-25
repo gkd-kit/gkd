@@ -37,13 +37,26 @@ class SubscriptionException(
                     else -> ErrorMessage.Text(it.message ?: it.toString())
                 }
             }
-            val embedsCause = reason == SubscriptionFailureReason.RuleInvalidDetail ||
-                reason == SubscriptionFailureReason.FormatInvalidDetail
-            val parameters = arguments.map { ErrorMessage.Text(it) } +
-                if (embedsCause) listOf(detail ?: ErrorMessage.Text("")) else emptyList()
-            val text = ErrorMessage.Resource(reason.messageResource, parameters)
-            return if (embedsCause || detail == null) text else ErrorMessage.WithDetail(text, detail)
+            return if (detail == null) {
+                ErrorMessage.Resource(reason.messageResource, arguments.map { ErrorMessage.Text(it) })
+            } else {
+                subscriptionFailureMessage(reason, arguments, detail)
+            }
         }
+}
+
+fun subscriptionFailureMessage(
+    reason: SubscriptionFailureReason,
+    arguments: List<String>,
+    detail: ErrorMessage,
+): ErrorMessage {
+    if (reason == SubscriptionFailureReason.RuleInvalidPosition) return detail
+    val embedsDetail = reason == SubscriptionFailureReason.RuleInvalidDetail ||
+        reason == SubscriptionFailureReason.FormatInvalidDetail
+    val parameters = arguments.map { ErrorMessage.Text(it) } +
+        if (embedsDetail) listOf(detail) else emptyList()
+    val text = ErrorMessage.Resource(reason.messageResource, parameters)
+    return if (embedsDetail) text else ErrorMessage.WithDetail(text, detail)
 }
 
 enum class SubscriptionFailureReason(val messageResource: StringResource) {

@@ -164,8 +164,8 @@ class SubscriptionEditorTest {
             ),
         )
 
-        val error = assertThrows(SubscriptionException::class.java) {
-            source.edit {
+        val error = assertRejected {
+            source.editResult {
                 appendAppGroups(
                     source.apps.single(),
                     listOf(createAppGroup(1, "Duplicate")),
@@ -198,8 +198,8 @@ class SubscriptionEditorTest {
         val changedSource = createSubscription(
             apps = listOf(RawSubscription.RawApp("app.id", null, listOf(changedGroup))),
         )
-        val error = assertThrows(SubscriptionException::class.java) {
-            changedSource.edit {
+        val error = assertRejected {
+            changedSource.editResult {
                 replaceAppGroup(
                     targetApp = changedSource.apps.single(),
                     groupKey = 0,

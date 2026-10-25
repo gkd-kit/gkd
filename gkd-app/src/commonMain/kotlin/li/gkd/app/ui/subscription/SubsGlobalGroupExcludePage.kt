@@ -1,5 +1,7 @@
 package li.gkd.app.ui.subscription
 
+import li.gkd.app.ui.page.EditorSaveResult
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -194,9 +196,9 @@ fun SubsGlobalGroupExcludePage(
             vm.editorActions.save(
                 onSave = {
                     if (editing != null) {
-                        val changed = vm.saveEditor(editing)
-                        ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
+                        vm.saveEditor(editing)
                     }
+                    EditorSaveResult.Saved
                 },
                 beforeClose = { host.hideIme() },
                 onSaved = vm::closeEditor,

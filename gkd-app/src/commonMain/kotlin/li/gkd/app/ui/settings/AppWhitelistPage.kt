@@ -10,6 +10,7 @@ import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkMultiTextField
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
+import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.platform.inputInsets
@@ -37,6 +38,7 @@ fun AppWhitelistPage(
                     (if (vm.saveChanges(draft)) Res.string.update_success else Res.string.unchanged)
                         .getSync()
                 )
+                EditorSaveResult.Saved
             },
         ),
         onSaved = {

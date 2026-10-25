@@ -37,6 +37,16 @@ data class RawSubscription(
     val categories: List<RawCategory> = emptyList(),
     val apps: List<RawApp> = emptyList(),
 ) {
+    fun edit(block: SubscriptionEditor.() -> Unit): RawSubscription =
+        SubscriptionEditor(this).apply(block).build()
+
+    fun editResult(
+        block: SubscriptionEditor.() -> SubscriptionEditResult<*>,
+    ): SubscriptionEditResult<RawSubscription> {
+        val editor = SubscriptionEditor(this)
+        return editor.block().map { editor.build() }
+    }
+
     // 重写 equals 和 hashCode 便于 compose 重组比较
     override fun equals(other: Any?): Boolean {
         return other === this

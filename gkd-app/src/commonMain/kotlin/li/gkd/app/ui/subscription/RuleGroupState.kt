@@ -24,7 +24,6 @@ import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.subscription.edit
 import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.SheetRequest

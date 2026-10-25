@@ -9,7 +9,7 @@ class SubscriptionInputParserTest {
 
     @Test
     fun singleGroupGetsDefaultKey() {
-        val input = SubscriptionInputParser.parse(
+        val input = parseInput(
             source = """
             {
               name: 'Rule',
@@ -19,8 +19,8 @@ class SubscriptionInputParserTest {
             defaultGroupKey = 7,
         )
 
-        val appGroup = input.parseAppGroup("app.id")
-        val globalGroup = input.parseGlobalGroup()
+        val appGroup = input.parseAppGroup("app.id").expectValue()
+        val globalGroup = input.parseGlobalGroup().expectValue()
 
         assertEquals(7, appGroup.key)
         assertEquals(7, globalGroup.key)
@@ -28,7 +28,7 @@ class SubscriptionInputParserTest {
 
     @Test
     fun fullAppGetsUniqueKeysWithoutDroppingGroups() {
-        val input = SubscriptionInputParser.parse(
+        val input = parseInput(
             source = """
             {
               id: 'app.id',
@@ -41,7 +41,7 @@ class SubscriptionInputParserTest {
             """.trimIndent(),
         )
 
-        val groups = input.parseAppGroups("app.id")
+        val groups = input.parseAppGroups("app.id").expectValue()
 
         assertEquals(listOf("First", "Explicit", "Second"), groups.map { it.name })
         assertEquals(listOf(0, 2, 1), groups.map { it.key })
@@ -49,7 +49,7 @@ class SubscriptionInputParserTest {
 
     @Test
     fun quotedNumericKeyIsReservedWhenFillingMissingKeys() {
-        val input = SubscriptionInputParser.parse(
+        val input = parseInput(
             source = """
             {
               id: 'app.id',
@@ -61,7 +61,7 @@ class SubscriptionInputParserTest {
             """.trimIndent(),
         )
 
-        val groups = input.parseAppGroups("app.id")
+        val groups = input.parseAppGroups("app.id").expectValue()
 
         assertEquals(listOf("Quoted", "Filled"), groups.map { it.name })
         assertEquals(listOf(0, 1), groups.map { it.key })
@@ -69,7 +69,7 @@ class SubscriptionInputParserTest {
 
     @Test
     fun appGroupInputAcceptsFullAppAndSingleGroup() {
-        val fullApp = SubscriptionInputParser.parse(
+        val fullApp = parseInput(
             source = """
             {
               id: 'app.id',
@@ -77,18 +77,18 @@ class SubscriptionInputParserTest {
             }
             """.trimIndent(),
         )
-        val singleGroup = SubscriptionInputParser.parse(
+        val singleGroup = parseInput(
             source =
                 "{ key: 4, name: 'Single', rules: [] }",
         )
 
-        assertEquals("Wrapped", fullApp.parseAppGroup("app.id").name)
-        assertEquals("Single", singleGroup.parseAppGroup("app.id").name)
+        assertEquals("Wrapped", fullApp.parseAppGroup("app.id").expectValue().name)
+        assertEquals("Single", singleGroup.parseAppGroup("app.id").expectValue().name)
     }
 
     @Test
     fun fullAppMustMatchExpectedAppId() {
-        val input = SubscriptionInputParser.parse(
+        val input = parseInput(
             source = """
             {
               id: 'other.app',
@@ -97,7 +97,7 @@ class SubscriptionInputParserTest {
             """.trimIndent(),
         )
 
-        val error = assertThrows(SubscriptionException::class.java) {
+        val error = assertRejected {
             input.parseAppGroups("app.id")
         }
 
@@ -106,11 +106,11 @@ class SubscriptionInputParserTest {
 
     @Test
     fun appInputRequiresAtLeastOneGroup() {
-        val input = SubscriptionInputParser.parse(
+        val input = parseInput(
             source = "{ id: 'app.id', groups: [] }"
         )
 
-        val error = assertThrows(SubscriptionException::class.java) {
+        val error = assertRejected {
             input.parseApp()
         }
 
@@ -119,15 +119,15 @@ class SubscriptionInputParserTest {
 
     @Test
     fun reportsSyntaxAndTopLevelTypeErrors() {
-        val syntaxError = assertThrows(SubscriptionException::class.java) {
+        val syntaxError = assertRejected {
             SubscriptionInputParser.parse(source = "{")
         }
-        val typeError = assertThrows(SubscriptionException::class.java) {
+        val typeError = assertRejected {
             SubscriptionInputParser.parse(source = "[]")
         }
 
         assertEquals(SubscriptionFailureReason.FormatInvalidDetail, syntaxError.reason)
-        assertTrue(syntaxError.cause != null)
+        assertTrue((syntaxError.errorMessage as li.gkd.app.error.ErrorMessage.Resource).arguments.isNotEmpty())
         assertEquals(SubscriptionFailureReason.RuleObjectRequired, typeError.reason)
     }
 }

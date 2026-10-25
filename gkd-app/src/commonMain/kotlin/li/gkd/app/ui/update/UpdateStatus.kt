@@ -25,6 +25,7 @@ import li.gkd.app.error.displayMessage
 import li.gkd.app.network.NewVersion
 import li.gkd.app.network.UpdateClient
 import li.gkd.app.network.isNetworkRequestAllowed
+import li.gkd.app.network.logNetworkFailure
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.platform.requestPackageInstall
 import li.gkd.app.resources.*
@@ -35,7 +36,6 @@ import li.gkd.app.ui.component.GkUpgradeDialogs
 import li.gkd.app.ui.component.UpdateDownloadState
 import li.gkd.app.settings.UpdateChannel
 import li.gkd.app.model.findOption
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 
@@ -67,8 +67,12 @@ class UpdateStatus(
         scope.launch {
             try {
                 lastCheckTime = System.currentTimeMillis()
-                val ignored = ignoreMutex.withLock { withContext(Dispatchers.IO) { readIgnored() } }
-                check(isNetworkRequestAllowed()) { getString(Res.string.network_unavailable) }
+                val ignored = if (manual) emptySet() else
+                    ignoreMutex.withLock { withContext(Dispatchers.IO) { readIgnored() } }
+                if (!isNetworkRequestAllowed()) {
+                    if (manual) ToastUtils.show(getString(Res.string.network_unavailable))
+                    return@launch
+                }
                 val url =
                     UpdateChannel.entries.findOption(SettingsRepository.settings.value.updateChannel).url
                 val result = withContext(Dispatchers.IO) { UpdateClient.fetch(url) }
@@ -80,7 +84,7 @@ class UpdateStatus(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("Update check failed", e)
+                logNetworkFailure("Update check failed", e)
                 if (manual) ToastUtils.show(e.displayMessage())
             } finally {
                 checkUpdatingFlow.value = false

@@ -15,11 +15,10 @@ fun Context.tryStartActivity(
     try {
         startActivity(intent)
     } catch (e: Exception) {
-        e.printStackTrace()
         LogUtils.e("tryStartActivity", e, loc = loc)
         ToastUtils.show(
             Res.string.intent_launch_failed_prefix.getSync() + (e.message
-                ?: e.stackTraceToString()), loc = loc
+                ?: e.stackTraceToString()), loc = ""
         )
     }
 }
