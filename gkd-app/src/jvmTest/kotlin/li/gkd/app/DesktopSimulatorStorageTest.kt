@@ -30,7 +30,8 @@ class DesktopSimulatorStorageTest {
                     startupLogLines = listOf("[simulation] old session"),
                 ),
             )
-            storage.save(settings)
+            val store = SimulatorStore(save = storage::save)
+            store.replace(settings)
             val restored = storage.load(DesktopEnvironment())
             assertEquals(0, restored.privilege.serverUid)
             assertEquals(
@@ -45,7 +46,7 @@ class DesktopSimulatorStorageTest {
             assertFalse(restored.privilege.pairingDialogVisible)
             assertEquals("", restored.privilege.pairingCode)
             assertTrue(restored.privilege.startupLogLines.isEmpty())
-            storage.save(settings.copy(privilege = settings.privilege.copy(runtimeStatus = PrivilegeUiRuntimeStatus.STARTING)))
+            store.replace(settings.copy(privilege = settings.privilege.copy(runtimeStatus = PrivilegeUiRuntimeStatus.STARTING)))
             assertFalse(storage.load(DesktopEnvironment()).privilege.available)
         } finally {
             directory.deleteRecursively()
@@ -64,13 +65,14 @@ class DesktopSimulatorStorageTest {
                     android = AndroidWindow(imeVisible = true, batteryPercent = 42)
                 )
             )
-            storage.save(original)
+            val store = SimulatorStore(save = storage::save)
+            store.replace(original)
             val reopened = DesktopSimulatorStorage(file).load(DesktopEnvironment())
             assertEquals(1.5f, reopened.device.fontScale)
             assertEquals(100, reopened.device.batteryPercent)
             assertFalse(reopened.device.imeVisible)
             assertFailsWith<IllegalArgumentException> {
-                storage.save(
+                store.replace(
                     original.copy(
                         device = original.device.copy(
                             width = 0

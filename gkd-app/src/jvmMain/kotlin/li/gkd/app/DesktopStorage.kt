@@ -48,12 +48,10 @@ class DesktopSimulatorStorage(private val file: File) {
     }
 
     fun save(settings: SimulatorSettings) {
-        val value = settings.persistent()
-        value.validate()
         file.parentFile.mkdirs()
         val temporary = Files.createTempFile(file.parentFile.toPath(), "simulator-", ".tmp")
         try {
-            Files.writeString(temporary, json.encodeToString(value))
+            Files.writeString(temporary, json.encodeToString(settings))
             try {
                 Files.move(
                     temporary,

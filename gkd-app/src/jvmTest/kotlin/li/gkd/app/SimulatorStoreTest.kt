@@ -23,8 +23,8 @@ class SimulatorStoreTest {
         assertEquals(42, store.settings.value.device.batteryPercent)
         assertEquals(100, writes.last().device.batteryPercent)
         val writeCount = writes.size
-        store.updateHostBattery(255)
-        assertEquals(100, store.settings.value.device.batteryPercent)
+        store.updateHostBattery(43)
+        assertEquals(43, store.settings.value.device.batteryPercent)
         assertEquals(writeCount, writes.size)
     }
 

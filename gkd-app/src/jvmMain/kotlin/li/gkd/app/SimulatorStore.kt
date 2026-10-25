@@ -68,7 +68,7 @@ class SimulatorStore(
 
     @Synchronized
     fun updateHostBattery(percent: Int) {
-        hostBatteryPercent = percent.takeIf { it in 0..100 } ?: 100
+        hostBatteryPercent = percent
         update { it }
     }
 
