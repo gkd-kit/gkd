@@ -7,6 +7,7 @@ import li.gkd.gradle.BuildAssetVariant
 import li.gkd.gradle.GenerateSourcePathsTask
 import li.gkd.gradle.buildProperty
 import li.gkd.gradle.configureBuildAssets
+import li.gkd.gradle.getOrCreateSigningConfigs
 import li.gkd.gradle.gitInfo
 import li.gkd.gradle.releaseBuildKey
 
@@ -41,29 +42,7 @@ android {
         resValues = true
     }
 
-    val gkdStoreFile = buildProperty("GKD_STORE_FILE").orNull
-    val gkdSigningConfig = if (gkdStoreFile != null) {
-        signingConfigs.create("gkd") {
-            storeFile = file(gkdStoreFile)
-            storePassword = buildProperty("GKD_STORE_PASSWORD").orNull
-            keyAlias = buildProperty("GKD_KEY_ALIAS").orNull
-            keyPassword = buildProperty("GKD_KEY_PASSWORD").orNull
-        }
-    } else {
-        signingConfigs.getByName("debug")
-    }
-
-    val playStoreFile = buildProperty("PLAY_STORE_FILE").orNull
-    val playSigningConfig = if (playStoreFile != null) {
-        signingConfigs.create("play") {
-            storeFile = file(playStoreFile)
-            storePassword = buildProperty("PLAY_STORE_PASSWORD").orNull
-            keyAlias = buildProperty("PLAY_KEY_ALIAS").orNull
-            keyPassword = buildProperty("PLAY_KEY_PASSWORD").orNull
-        }
-    } else {
-        gkdSigningConfig
-    }
+    val signing = project.getOrCreateSigningConfigs(signingConfigs)
 
     buildTypes {
         all {
@@ -78,7 +57,7 @@ android {
             )
         }
         debug {
-            signingConfig = gkdSigningConfig
+            signingConfig = signing.gkd
             applicationIdSuffix = ".debug"
         }
     }
@@ -86,11 +65,11 @@ android {
         flavorDimensions += "channel"
         create("gkd") {
             isDefault = true
-            signingConfig = gkdSigningConfig
+            signingConfig = signing.gkd
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
-            signingConfig = playSigningConfig
+            signingConfig = signing.play
             resValue("bool", "is_accessibility_tool", "false")
         }
         all {
