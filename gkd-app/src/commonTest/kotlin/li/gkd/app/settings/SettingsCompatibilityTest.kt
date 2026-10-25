@@ -13,6 +13,14 @@ import kotlin.test.assertTrue
 
 class SettingsCompatibilityTest {
     @Test
+    fun appListsAcceptWindowsLineEndingsInFilesAndBackups() {
+        val text = "android\r\n# System\r\ncom.example.app\r\n"
+        val expected = setOf("android", "com.example.app")
+        assertEquals(expected, SettingsAppIds.decode(text))
+        assertEquals(expected, SettingsAppIds.decodeBackup(text))
+    }
+
+    @Test
     fun persistedNumericSettingsStillDriveModeFilteringAndSort() {
         // These literal values protect existing store.json files, not enum declarations.
         val store = Json.decodeFromString<SettingsStore>(

@@ -341,7 +341,7 @@ fun appListPage(
                         triggerSummary = if (editWhiteListMode) null else state.triggerStats?.app(appInfo.id),
                         editWhiteListMode = editWhiteListMode,
                         inWhiteList = appInfo.id in state.whiteListAppIds,
-                        onClick = {
+                        onClick = vm.scope.launchUiAction {
                             if (editWhiteListMode) {
                                 SettingsRepository.updateBlockMatchAppList {
                                     if (appInfo.id in it) it - appInfo.id else it + appInfo.id

@@ -12,9 +12,9 @@ private fun Char.isAsciiClassVar(): Boolean {
     return this.isAsciiVar() || this == '$'
 }
 
-// https://developer.android.com/build/configure-app-module?hl=zh-cn
+// Installed package IDs can have a single segment, such as the system package "android".
 fun String.isValidAppId(): Boolean {
-    if (!contains('.')) return false
+    if (isEmpty()) return false
     if (!first().isAsciiLetter()) return false
     var i = 0
     while (i < length) {

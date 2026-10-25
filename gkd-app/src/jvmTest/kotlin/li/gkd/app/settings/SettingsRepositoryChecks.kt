@@ -2,6 +2,7 @@ package li.gkd.app.settings
 
 import androidx.lifecycle.ViewModelStore
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -9,16 +10,21 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
 import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.ui.settings.AppIdListEditor
+import li.gkd.app.ui.settings.AppListEditorState
 import li.gkd.app.ui.settings.AppWhitelistViewModel
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Invoked by ApplicationIntegrationTest after its one real application startup. */
@@ -35,6 +41,7 @@ object SettingsRepositoryChecks {
 
         val owner = ViewModelStore()
         try {
+            checkCorruptSettingsPreservation(directory.resolve("decode-checks").apply { mkdirs() })
             repo.updateSettings {
                 it.copy(
                     enableMatch = false,
@@ -61,8 +68,69 @@ object SettingsRepositoryChecks {
                 directory.resolve("action_count.txt").readText()
             )
 
+            // Every imported file is decoded before writes or the database transaction begin.
+            val beforeInvalidBackup = repo.exportBackupEntries()
+            val beforeInvalidFiles = repo.backupFilenames.associateWith { filename ->
+                directory.resolve(filename).takeIf(File::exists)?.readText()
+            }
+            for ((filename, invalidText) in listOf(
+                "store.json" to "{",
+                "store.json" to "[]",
+                "store.json" to """{"httpServerPort":"invalid"}""",
+                "action_count.txt" to "not a count",
+                "action_count.txt" to "9223372036854775808",
+                "block_match_app_list.txt" to "valid.app\ninvalid-id",
+                "block_a11y_app_list.txt" to "valid.app\ninvalid-id",
+                "a11y_scope_app_list.txt" to "valid.app\ninvalid-id",
+            )) {
+                var databaseStarted = false
+                assertFailsWith<IllegalArgumentException> {
+                    repo.withBackupRestore(
+                        mapOf(
+                            "store.json" to """{"httpServerPort":9000}""",
+                            "action_count.txt" to "42",
+                        ) + (filename to invalidText)
+                    ) { databaseStarted = true }
+                }
+                assertFalse(databaseStarted)
+                assertEquals(beforeInvalidBackup, repo.exportBackupEntries())
+                assertEquals(beforeInvalidFiles, repo.backupFilenames.associateWith { name ->
+                    directory.resolve(name).takeIf(File::exists)?.readText()
+                })
+            }
+
+            // Single-segment package IDs must survive startup decoding and backup restore,
+            // including IDs other than the Android system package.
+            val platformPackageIds = setOf("android", "platform", "test.platform")
+            assertEquals(
+                platformPackageIds,
+                SettingsAppIds.decode("android\nplatform\n# Android 系统\ninvalid-id\ntest.platform"),
+            )
+            val platformPackageLists = listOf(
+                "block_match_app_list.txt" to repo::saveBlockMatchAppList,
+                "block_a11y_app_list.txt" to repo::saveBlockA11yAppList,
+                "a11y_scope_app_list.txt" to repo::saveA11yScopeAppList,
+            )
+            for ((filename, save) in platformPackageLists) {
+                save(platformPackageIds)
+                assertEquals(
+                    platformPackageIds,
+                    SettingsAppIds.decode(directory.resolve(filename).readText()),
+                )
+            }
+            val platformPackageBackup = repo.exportBackupEntries()
+            platformPackageLists.forEach { (_, save) -> save(emptySet()) }
+            repo.withBackupRestore(platformPackageBackup) {}
+            assertEquals(platformPackageBackup, repo.exportBackupEntries())
+            for ((filename, _) in platformPackageLists) {
+                assertEquals(
+                    platformPackageIds,
+                    SettingsAppIds.decode(directory.resolve(filename).readText()),
+                )
+            }
+
             repo.updateSettings { it.copy(enableMatch = true, httpServerPort = 8000) }
-            repo.replaceBlockMatchAppList(setOf("local.app"))
+            repo.saveBlockMatchAppList(setOf("local.app"))
             repo.awaitPersistence()
             val localCount = repo.actionCount.value
             assertFailsWith<IOException> {
@@ -164,6 +232,33 @@ object SettingsRepositoryChecks {
                     assertFailsWith<SettingsWriteException> { repo.awaitPersistence() }.filename
                 )
                 assertEquals(oldPositions, directory.resolve("overlay_position.json").readText())
+
+                // A failed overlay write must not make successful, unrelated editor saves fail.
+                repo.saveActionToast(true, false, "Independent toast")
+                repo.saveNotificationText(true, "Independent title", "Independent notification")
+                assertEquals("Independent toast", diskSettings().actionToast)
+                assertEquals("Independent title", diskSettings().customNotifTitle)
+                assertEquals("Independent notification", diskSettings().customNotifText)
+                val independentWhitelist = AppWhitelistViewModel().also {
+                    owner.put("independent-whitelist", it)
+                }
+                assertTrue(independentWhitelist.saveChanges("test.independent"))
+                assertEquals("test.independent", directory.resolve("block_match_app_list.txt").readText())
+                for ((filename, editor) in listOf(
+                    "block_a11y_app_list.txt" to AppIdListEditor(
+                        { repo.blockA11yAppList.value }, repo::saveBlockA11yAppList
+                    ),
+                    "a11y_scope_app_list.txt" to AppIdListEditor(
+                        { repo.a11yScopeAppList.value }, repo::saveA11yScopeAppList
+                    ),
+                )) {
+                    assertTrue(editor.save("test.independent"))
+                    assertEquals("test.independent", directory.resolve(filename).readText())
+                }
+                assertEquals(
+                    "overlay_position.json",
+                    assertFailsWith<SettingsWriteException> { repo.awaitPersistence() }.filename
+                )
             }
             repo.updateOverlayPosition("overlay", 3, 4)
             repo.awaitPersistence()
@@ -197,13 +292,19 @@ object SettingsRepositoryChecks {
             assertFalse(repo.saveHttpServerPort("text"))
             assertEquals(
                 ScreenshotConfigResult.InvalidApp,
-                repo.saveCaptureScreenshotConfig("missing.app", "[text='ok']")
+                repo.saveCaptureScreenshotConfig("invalid-id", "[text='ok']")
             )
             assertEquals(
                 ScreenshotConfigResult.InvalidSelector,
                 repo.saveCaptureScreenshotConfig("test.alpha", "[")
             )
             assertEquals(beforeInvalid, repo.settings.value)
+            // Installed-app visibility must not decide whether a package ID can be saved.
+            for (appId in listOf("missing.app", "android", "")) {
+                assertEquals(ScreenshotConfigResult.Saved, repo.saveCaptureScreenshotConfig(appId, "[text='ok']"))
+                repo.awaitPersistence()
+                assertEquals(appId, diskSettings().screenshotTargetAppId)
+            }
             assertTrue(repo.saveHttpServerPort("17333"))
             assertEquals(
                 ScreenshotConfigResult.Saved,
@@ -222,9 +323,11 @@ object SettingsRepositoryChecks {
             assertTrue(diskSettings().hideSnapshotStatusBar)
 
             val whitelist = AppWhitelistViewModel().also { owner.put("whitelist", it) }
+            val beforeWhitelistFailure = repo.blockMatchAppList.value
             withBlockedWrite(directory, "block_match_app_list.txt") {
-                assertFailsWith<SettingsWriteException> { whitelist.saveChanges("test.alpha\n# Alpha\ntest.alpha\ninvalid") }
+                assertFailsWith<SettingsWriteException> { whitelist.saveChanges("test.alpha\n# Alpha\ntest.alpha\ninvalid-id") }
                 assertTrue(whitelist.hasChanges("test.alpha"))
+                assertEquals(beforeWhitelistFailure, repo.blockMatchAppList.value)
             }
             assertTrue(whitelist.saveChanges("test.alpha"))
             assertFalse(whitelist.hasChanges("test.alpha"))
@@ -233,20 +336,25 @@ object SettingsRepositoryChecks {
             val editors = listOf(
                 "block_a11y_app_list.txt" to AppIdListEditor(
                     { repo.blockA11yAppList.value },
-                    repo::replaceBlockA11yAppList
+                    repo::saveBlockA11yAppList
                 ),
                 "a11y_scope_app_list.txt" to AppIdListEditor(
                     { repo.a11yScopeAppList.value },
-                    repo::replaceA11yScopeAppList
+                    repo::saveA11yScopeAppList
                 ),
             )
             for ((filename, editor) in editors) {
+                val beforeFailure = repo.exportBackupEntries().getValue(filename)
                 withBlockedWrite(directory, filename) {
-                    assertFailsWith<SettingsWriteException> { editor.save("test.alpha\n# comment\ntest.alpha\ninvalid\ntest.absent") }
+                    assertFailsWith<SettingsWriteException> { editor.save("test.alpha\n# comment\ntest.alpha\ninvalid-id\ntest.absent") }
+                    assertTrue(editor.hasChanges("test.alpha\ntest.absent"))
+                    assertEquals(beforeFailure, repo.exportBackupEntries().getValue(filename))
                 }
-                editor.save("test.alpha\ntest.absent")
+                assertTrue(editor.save("test.alpha\ntest.absent"))
                 assertFalse(editor.hasChanges("test.absent\ntest.alpha"))
-                assertEquals("test.alpha\n# Alpha\n\ntest.absent\n\n", editor.initialText())
+                val editorState = AppListEditorState()
+                editor.startEditing(editorState)
+                assertEquals("test.alpha\n# Alpha\n\ntest.absent\n\n", editorState.state.value.draft)
                 assertEquals(
                     setOf("test.alpha", "test.absent"),
                     SettingsAppIds.decode(directory.resolve(filename).readText())
@@ -254,6 +362,55 @@ object SettingsRepositoryChecks {
             }
             editors.first().second.save("test.changed")
             assertEquals(setOf("test.alpha", "test.absent"), repo.a11yScopeAppList.value)
+            // A queued replacement followed by concurrent additions must preserve every command.
+            coroutineScope {
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    repo.saveBlockMatchAppList(setOf("test.replaced"))
+                }
+                repeat(20) { index ->
+                    launch(Dispatchers.Default) {
+                        repo.updateBlockMatchAppList { it + "test.added$index" }
+                    }
+                }
+            }
+            val expectedIds = setOf("test.replaced") + (0 until 20).map { "test.added$it" }
+            assertEquals(expectedIds, repo.blockMatchAppList.value)
+            assertEquals(expectedIds, SettingsAppIds.decode(directory.resolve("block_match_app_list.txt").readText()))
+            // Leaving a page cancels its wait, including a save queued behind another update.
+            // The accepted update must still reach both the file and the published list.
+            for ((filename, state, update) in listOf(
+                Triple("block_match_app_list.txt", repo.blockMatchAppList, repo::updateBlockMatchAppList),
+                Triple("block_a11y_app_list.txt", repo.blockA11yAppList, repo::updateBlockA11yAppList),
+                Triple("a11y_scope_app_list.txt", repo.a11yScopeAppList, repo::updateA11yScopeAppList),
+            )) {
+                coroutineScope {
+                    val entered = CompletableDeferred<Unit>()
+                    val release = CountDownLatch(1)
+                    val preceding = launch(Dispatchers.Default) {
+                        update {
+                            entered.complete(Unit)
+                            check(release.await(10, TimeUnit.SECONDS))
+                            setOf("test.beforeexit")
+                        }
+                    }
+                    try {
+                        withTimeout(5_000) { entered.await() }
+                        var pageFeedback = false
+                        val page = launch(start = CoroutineStart.UNDISPATCHED) {
+                            update { it + "test.afterexit" }
+                            pageFeedback = true
+                        }
+                        withTimeout(5_000) { page.cancelAndJoin() }
+                        assertFalse(pageFeedback)
+                    } finally {
+                        release.countDown()
+                    }
+                    preceding.join()
+                    val expected = setOf("test.beforeexit", "test.afterexit")
+                    withTimeout(5_000) { state.first { it == expected } }
+                    assertEquals(expected, SettingsAppIds.decode(directory.resolve(filename).readText()))
+                }
+            }
             assertFalse(repo.termsAccepted.value)
             withBlockedWrite(directory, "terms_accepted.txt") {
                 assertFailsWith<IOException> { repo.acceptTerms() }
@@ -268,6 +425,44 @@ object SettingsRepositoryChecks {
             repo.withBackupRestore(original) {}
             repo.awaitPersistence()
         }
+    }
+
+    private fun checkCorruptSettingsPreservation(directory: File) {
+        val storage = FileSettingsStorage(directory)
+        val decode = { text: String? -> text?.let { json.decodeFromString<SettingsStore>(it) } }
+        assertNull(storage.readValue("missing.json", decode))
+        assertTrue(directory.listFiles()!!.isEmpty())
+        for ((index, raw) in listOf("{", "[]", """{"httpServerPort":"invalid"}""").withIndex()) {
+            val filename = "settings-$index.json"
+            storage.writeAtomically(filename, raw)
+            assertNull(storage.readValue(filename, decode))
+            assertEquals(raw, storage.read(filename))
+            val preserved = directory.listFiles()!!.single { it.name.startsWith("$filename.corrupt-") }
+            assertEquals(raw, preserved.readText())
+            storage.writeAtomically(filename, """{"httpServerPort":9123}""")
+            assertEquals(9123, storage.readValue(filename, decode)?.httpServerPort)
+            assertEquals(raw, preserved.readText())
+        }
+        storage.writeAtomically("blocked.json", "{")
+        val blocked = object : SettingsStorage by storage {
+            override fun writeAtomically(filename: String, text: String) {
+                throw IOException("cannot preserve settings")
+            }
+        }
+        var usedDefaults = false
+        assertFailsWith<IOException> {
+            blocked.readValue("blocked.json") { text ->
+                if (text == null) usedDefaults = true
+                decode(text)
+            }
+        }
+        assertFalse(usedDefaults)
+        assertEquals("{", storage.read("blocked.json"))
+        // Programming errors must not be converted into defaults or recovery files.
+        assertFailsWith<IllegalStateException> {
+            storage.readValue("blocked.json") { error("unexpected decoder failure") }
+        }
+        assertFalse(directory.listFiles()!!.any { it.name.startsWith("blocked.json.corrupt-") })
     }
 
     // A real nonempty directory prevents atomic writes; production needs no fault-injection API.

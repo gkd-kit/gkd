@@ -67,11 +67,11 @@ class AppConfigViewModel(
     }
 
     private val batchMutex = MutexState()
-    fun removeFromWhitelist() {
+    suspend fun removeFromWhitelist() {
         SettingsRepository.updateBlockMatchAppList { it - route.appId }
     }
 
-    fun removeFromPartialDisable() {
+    suspend fun removeFromPartialDisable() {
         SettingsRepository.updateBlockA11yAppList { it - route.appId }
     }
 

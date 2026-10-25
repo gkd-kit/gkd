@@ -276,7 +276,7 @@ fun BlockA11yAppListPage(host: UiHost) {
                         appName = { GkAppNameText(appInfo.id, appInfo.name) },
                         appInfo = appInfo,
                         checked = blockA11yAppList.contains(appInfo.id),
-                        onCheckedChange = { vm.toggleApp(appInfo.id) },
+                        onCheckedChange = vm.scope.launchUiAction { vm.toggleApp(appInfo.id) },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {

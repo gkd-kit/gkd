@@ -248,7 +248,7 @@ fun A11yScopeAppListPage(host: UiHost) {
                         appName = { GkAppNameText(appInfo.id, appInfo.name) },
                         appInfo = appInfo,
                         checked = checked,
-                        onCheckedChange = { vm.toggleApp(appInfo.id) },
+                        onCheckedChange = vm.scope.launchUiAction { vm.toggleApp(appInfo.id) },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {

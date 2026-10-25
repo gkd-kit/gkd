@@ -25,23 +25,21 @@ class BlockA11yAppListViewModel : BaseViewModel() {
     val uiState = scopeAppSource.stateLoadable()
     private val editor = AppIdListEditor(
         { SettingsRepository.blockA11yAppList.value },
-        SettingsRepository::replaceBlockA11yAppList
+        SettingsRepository::saveBlockA11yAppList
     )
 
     fun startEditing() {
         editorState.closeSearch(::setSearchStr)
-        editorState.startEditing(editor.initialText())
+        editor.startEditing(editorState)
     }
 
     suspend fun closeEditor() {
-        if (editor.hasChanges(editorState.state.value.draft)) {
-            val confirmed = MainViewModel.requireCurrent().dialogRequests.confirm(
+        editor.close(editorState) {
+            MainViewModel.requireCurrent().dialogRequests.confirm(
                 title = getString(Res.string.notice_title),
                 text = getString(Res.string.edit_discard_confirmation),
             )
-            if (!confirmed) return
         }
-        editorState.closeEditor()
     }
 
     suspend fun onBack() {
@@ -50,10 +48,9 @@ class BlockA11yAppListViewModel : BaseViewModel() {
     }
 
     suspend fun saveEditor() {
-        val draft = editorState.state.value.draft
-        val changed = editor.save(draft)
-        ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
-        if (editorState.state.value.draft == draft) editorState.closeEditor()
+        editor.save(editorState) { changed ->
+            ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
+        }
     }
 
     fun setSortType(value: AppSort) {
@@ -64,7 +61,7 @@ class BlockA11yAppListViewModel : BaseViewModel() {
         SettingsRepository.updateSettings { it.copy(a11yAppGroupType = value) }
     }
 
-    fun toggleApp(appId: String) {
+    suspend fun toggleApp(appId: String) {
         SettingsRepository.updateBlockA11yAppList { if (appId in it) it - appId else it + appId }
     }
 

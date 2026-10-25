@@ -21,30 +21,41 @@ object AppListSources {
         triggerStats: Flow<List<li.gkd.db.RuleTriggerStats>>,
         globalGroupCounts: (T) -> Map<String, Int>,
         appGroups: (T) -> Map<String, List<ResolvedAppGroup>>,
-    ): Flow<Loadable<AppListSource>> = combine(
-        catalog,
-        rules,
-        loadOrder(actionOrder),
-        loadOrder(visits),
-        triggerStats,
-    ) { state, loaded, order, visited, records ->
-        val snapshot = state.snapshot
-        when {
-            snapshot == null && state.failure != null -> Loadable.Failure(state.failure)
-            snapshot == null -> Loadable.Loading
-            else -> Loadable.Ready(
-                build(
-                    snapshot.visibleApps, order.value.orEmpty(), visited.value.orEmpty(),
-                    loaded.value?.let(globalGroupCounts), loaded.value?.let(appGroups).orEmpty(),
-                    snapshot.canQueryPackages, snapshot.queryPackagesAbnormal, state.refreshing,
-                ).copy(
-                    triggerStats = TriggerStats(records),
-                    actionOrderState = order.mapUnit(), visitOrderState = visited.mapUnit(),
-                    ruleStatsFailed = loaded is Loadable.Failure,
+    ): Flow<Loadable<AppListSource>> {
+        val appSource = combine(catalog, rules) { state, loaded ->
+            val snapshot = state.snapshot
+            when {
+                snapshot == null && state.failure != null -> Loadable.Failure(state.failure)
+                snapshot == null -> Loadable.Loading
+                else -> Loadable.Ready(
+                    build(
+                        snapshot.visibleApps, emptyList(), emptyList(),
+                        loaded.value?.let(globalGroupCounts), loaded.value?.let(appGroups).orEmpty(),
+                        snapshot.canQueryPackages, snapshot.queryPackagesAbnormal, state.refreshing,
+                    ).copy(ruleStatsFailed = loaded is Loadable.Failure)
                 )
-            )
+            }
         }
-    }.catch { emit(Loadable.Failure(it)) }
+        return combine(
+            appSource,
+            loadOrder(actionOrder),
+            loadOrder(visits),
+            triggerStats.map(::TriggerStats),
+        ) { source, order, visited, stats ->
+            when (source) {
+                is Loadable.Ready -> Loadable.Ready(
+                    source.value.copy(
+                        actionOrder = order.value.orEmpty(),
+                        visitOrder = visited.value.orEmpty().mapIndexed { index, id -> id to index }.toMap(),
+                        triggerStats = stats,
+                        actionOrderState = order.mapUnit(), visitOrderState = visited.mapUnit(),
+                    )
+                )
+                Loadable.Loading -> Loadable.Loading
+                is Loadable.Failure -> source
+            }
+        }.catch { emit(Loadable.Failure(it)) }
+    }
 
     private fun loadOrder(source: Flow<List<String>>): Flow<Loadable<List<String>>> = source
         .map<List<String>, Loadable<List<String>>> { Loadable.Ready(it) }

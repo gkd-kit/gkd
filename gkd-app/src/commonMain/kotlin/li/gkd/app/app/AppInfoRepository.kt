@@ -104,16 +104,20 @@ object AppInfoRepository {
                         }
                     }
                 }
-                val incomplete =
+                val needsCompletenessCheck =
                     query.detectIncompleteList && primary.values.count { !it.isSystem } <= 4
-                val abnormal =
-                    if (queryAll) query.queryPackagesAbnormal || (query.canQueryPackages && incomplete)
+                var abnormal =
+                    if (queryAll) query.queryPackagesAbnormal
                     else old.queryPackagesAbnormal
-                if (queryAll && (!query.canQueryPackages || incomplete)) {
+                if (queryAll && (!query.canQueryPackages || needsCompletenessCheck)) {
                     val extra = query.privilegedApps(query.userId)
                     val privileged = (extra as? PlatformResult.Success)?.value.orEmpty()
+                    val supplemental = privileged.ifEmpty { query.visibleApps() }
+                    if (query.canQueryPackages && supplemental.any { it.id !in primary }) {
+                        abnormal = true
+                    }
                     if (privileged.isNotEmpty()) privileged.forEach { primary[it.id] = it }
-                    else query.visibleApps()
+                    else supplemental
                         .forEach { primary.putIfAbsent(it.id, it.copy(hidden = false)) }
                 }
                 val users = query.otherUsers().filter { it.id != query.userId }
