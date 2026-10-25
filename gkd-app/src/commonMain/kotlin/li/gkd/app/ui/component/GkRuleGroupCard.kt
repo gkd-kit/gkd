@@ -26,7 +26,6 @@ import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.toRuleGroupTarget
-import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.error.messageResource
 import org.jetbrains.compose.resources.stringResource

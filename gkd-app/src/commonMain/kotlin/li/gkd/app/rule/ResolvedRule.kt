@@ -9,6 +9,9 @@ sealed class ResolvedRule(
     val g: ResolvedGroup,
     protected val runtime: RuleRuntime,
 ) {
+    fun matchIdentity(): String =
+        rule.matchIdentity(subsItem.id, g.group, (this as? AppRule)?.appId, index)
+
     fun statusText(): String {
         val description = status.descriptionResource?.getSync() ?: "ok"
         return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${g.group.key}, gName:${g.group.name}, index:${index}, key:${key}, status:$description"

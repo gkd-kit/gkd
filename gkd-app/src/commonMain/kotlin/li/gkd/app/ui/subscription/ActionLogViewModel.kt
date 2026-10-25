@@ -22,7 +22,6 @@ import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.toRuleGroupTarget
-import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.MainViewModel

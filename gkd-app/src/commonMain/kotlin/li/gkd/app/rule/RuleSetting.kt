@@ -38,12 +38,6 @@ sealed interface RuleSwitchTarget {
         RuleSwitchTarget
 }
 
-fun RuleGroupTarget.toSwitchTarget(): RuleSwitchTarget = when (this) {
-    is RuleGroupTarget.App -> RuleSwitchTarget.AppGroup(subsId, appId, groupKey)
-    is RuleGroupTarget.Global -> pageAppId?.let { RuleSwitchTarget.GlobalApp(subsId, groupKey, it) }
-        ?: RuleSwitchTarget.GlobalGroup(subsId, groupKey)
-}
-
 class RuleConfigIndex(configs: SubscriptionConfigSnapshot) {
     private val subscriptions = configs.subsItems.associateBy { it.id }
     private val apps = configs.appConfigs.associateBy { it.subsId to it.appId }

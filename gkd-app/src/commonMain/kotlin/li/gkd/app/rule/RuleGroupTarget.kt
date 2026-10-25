@@ -15,6 +15,12 @@ sealed interface RuleGroupTarget {
             is Global -> RuleGroupType.Global
         }
 
+    fun toSwitchTarget(): RuleSwitchTarget = when (this) {
+        is RuleGroupTarget.App -> RuleSwitchTarget.AppGroup(subsId, appId, groupKey)
+        is RuleGroupTarget.Global -> pageAppId?.let { RuleSwitchTarget.GlobalApp(subsId, groupKey, it) }
+            ?: RuleSwitchTarget.GlobalGroup(subsId, groupKey)
+    }
+
     data class App(
         override val subsId: Long,
         override val appId: String,

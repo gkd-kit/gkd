@@ -2,7 +2,6 @@ package li.gkd.app.settings
 
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -71,8 +70,6 @@ private class PersistedValue<T>(
                 val result = try {
                     storage.writeAtomically(filename, encode(request.value))
                     WriteResult(request.version, null)
-                } catch (e: CancellationException) {
-                    throw e
                 } catch (e: Exception) {
                     WriteResult(request.version, e)
                 }

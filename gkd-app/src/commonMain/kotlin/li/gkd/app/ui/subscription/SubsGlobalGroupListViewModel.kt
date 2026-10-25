@@ -12,7 +12,6 @@ import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.toRuleGroupTarget
-import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
 import li.gkd.app.ui.state.BaseViewModel

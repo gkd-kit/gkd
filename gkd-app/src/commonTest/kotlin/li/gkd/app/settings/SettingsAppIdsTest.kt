@@ -3,7 +3,6 @@ package li.gkd.app.settings
 import li.gkd.app.model.AppInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 class SettingsAppIdsTest {
     @Test
@@ -21,10 +20,10 @@ class SettingsAppIdsTest {
     }
 
     @Test
-    fun editorIgnoresInvalidLinesButBackupRejectsThem() {
+    fun editorAndBackupIgnoreInvalidLines() {
         val text = "# 应用\nandroid\n\ninvalid-id\nandroid"
         assertEquals(setOf("android"), SettingsAppIds.decode(text))
-        assertFailsWith<IllegalArgumentException> { SettingsAppIds.decodeBackup(text) }
+        assertEquals(setOf("android"), SettingsAppIds.decodeBackup(text))
         assertEquals("\n\n", SettingsAppIds.format(emptySet(), emptyMap()))
     }
 }

@@ -6,9 +6,10 @@ import li.gkd.app.model.isValidAppId
 object SettingsAppIds {
     fun decode(text: String): Set<String> = text.lineSequence().filter(String::isValidAppId).toSet()
 
+    // 豁免：备份中的非法应用 ID 直接忽略，不因单行错误拒绝恢复其余有效条目。
     fun decodeBackup(text: String): Set<String> = text.lineSequence().filterNot {
         it.isBlank() || it.startsWith('#')
-    }.onEach { require(it.isValidAppId()) { "Invalid app ID in settings backup: $it" } }.toSet()
+    }.filter(String::isValidAppId).toSet()
 
     fun encode(ids: Set<String>): String = ids.sorted().joinToString("\n")
 

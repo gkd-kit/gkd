@@ -79,9 +79,6 @@ object SettingsRepositoryChecks {
                 "store.json" to """{"httpServerPort":"invalid"}""",
                 "action_count.txt" to "not a count",
                 "action_count.txt" to "9223372036854775808",
-                "block_match_app_list.txt" to "valid.app\ninvalid-id",
-                "block_a11y_app_list.txt" to "valid.app\ninvalid-id",
-                "a11y_scope_app_list.txt" to "valid.app\ninvalid-id",
             )) {
                 var databaseStarted = false
                 assertFailsWith<IllegalArgumentException> {
@@ -120,7 +117,13 @@ object SettingsRepositoryChecks {
             }
             val platformPackageBackup = repo.exportBackupEntries()
             platformPackageLists.forEach { (_, save) -> save(emptySet()) }
-            repo.withBackupRestore(platformPackageBackup) {}
+            // Invalid app IDs in backups are ignored while valid entries still restore to disk.
+            val backupWithInvalidIds = platformPackageBackup.toMutableMap().apply {
+                platformPackageLists.forEach { (filename, _) ->
+                    this[filename] = getValue(filename) + "\ninvalid-id"
+                }
+            }
+            repo.withBackupRestore(backupWithInvalidIds) {}
             assertEquals(platformPackageBackup, repo.exportBackupEntries())
             for ((filename, _) in platformPackageLists) {
                 assertEquals(
@@ -444,7 +447,9 @@ object SettingsRepositoryChecks {
             assertEquals(raw, preserved.readText())
         }
         storage.writeAtomically("blocked.json", "{")
-        val blocked = object : SettingsStorage by storage {
+        val blocked = object : SettingsStorage {
+            override fun read(filename: String): String? = storage.read(filename)
+
             override fun writeAtomically(filename: String, text: String) {
                 throw IOException("cannot preserve settings")
             }

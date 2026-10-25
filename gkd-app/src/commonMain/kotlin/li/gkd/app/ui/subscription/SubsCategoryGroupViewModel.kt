@@ -11,7 +11,6 @@ import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
-import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
