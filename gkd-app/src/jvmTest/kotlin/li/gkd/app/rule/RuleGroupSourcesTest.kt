@@ -60,10 +60,10 @@ class RuleGroupSourcesTest {
             json5 = false
         )
         val group = sub.apps.single().groups.single()
-        val linked = RuleExecutionParameters(group.rules[1], group)
+        val linked = RuleExecutionParameters.resolve(group.rules[1], group)
         assertEquals(300L, linked.actionCd)
         assertEquals(20L, linked.matchDelay)
-        val missing = RuleExecutionParameters(group.rules[2], group)
+        val missing = RuleExecutionParameters.resolve(group.rules[2], group)
         assertEquals(900L, missing.actionCd)
         assertEquals(0L, missing.matchDelay)
     }

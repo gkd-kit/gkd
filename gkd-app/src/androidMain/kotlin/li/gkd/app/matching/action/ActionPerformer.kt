@@ -182,8 +182,9 @@ sealed class ActionPerformer(val action: String) {
                 action = action,
                 result = false,
             )
-            val startP = swipeArg.start.calc(rect, "swipeArg.start", captureInputs)
-            val endP = swipeArg.end?.calc(rect, "swipeArg.end", captureInputs) ?: startP
+            val screenSize = ScreenUtils.getSize()
+            val startP = swipeArg.start.calc(rect, "swipeArg.start", captureInputs, screenSize)
+            val endP = swipeArg.end?.calc(rect, "swipeArg.end", captureInputs, screenSize) ?: startP
             val startX = startP.first
             val startY = startP.second
             val endX = endP.first

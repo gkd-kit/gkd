@@ -1,5 +1,6 @@
 package li.gkd.app.subscription
 
+import li.gkd.app.model.ScreenSize
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
@@ -187,13 +188,12 @@ data class RawSubscription(
          */
         fun calc(
             rect: RuleBounds,
-            screenWidth: Int,
-            screenHeight: Int,
+            screenSize: ScreenSize,
             onError: (Exception) -> Unit = {}
         ): Pair<Float, Float>? {
             if (!isValid) return null
-            xArr.forEach { setVariables(it, rect, screenWidth, screenHeight) }
-            yArr.forEach { setVariables(it, rect, screenWidth, screenHeight) }
+            xArr.forEach { setVariables(it, rect, screenSize) }
+            yArr.forEach { setVariables(it, rect, screenSize) }
             try {
                 val x0 = xArr.find { it != null }!!.evaluate().toFloat()
                 val y0 = yArr.find { it != null }!!.evaluate().toFloat()

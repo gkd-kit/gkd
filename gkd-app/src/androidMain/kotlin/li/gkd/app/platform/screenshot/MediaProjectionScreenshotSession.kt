@@ -65,11 +65,6 @@ class MediaProjectionScreenshotSession(
         }
     }
 
-    private val width: Int
-        get() = ScreenUtils.getWidth()
-    private val height: Int
-        get() = ScreenUtils.getHeight()
-
     @Synchronized
     override fun close() {
         if (closed) return
@@ -152,13 +147,12 @@ class MediaProjectionScreenshotSession(
         activeContinuation = continuation
         var imageReader: ImageReader? = null
         try {
-            val captureWidth = width
-            val captureHeight = height
+            val screenSize = ScreenUtils.getSize()
             val captureDpi = ScreenUtils.getDensityDpi()
             val projection = getOrCreateProjection()
             imageReader = ImageReader.newInstance(
-                captureWidth,
-                captureHeight,
+                screenSize.width,
+                screenSize.height,
                 PixelFormat.RGBA_8888,
                 2,
             )
@@ -166,8 +160,8 @@ class MediaProjectionScreenshotSession(
             if (display == null) {
                 virtualDisplay = projection.createVirtualDisplay(
                     "screenshot",
-                    captureWidth,
-                    captureHeight,
+                    screenSize.width,
+                    screenSize.height,
                     captureDpi,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     imageReader.surface,
@@ -176,7 +170,7 @@ class MediaProjectionScreenshotSession(
                 )
                     ?: throw IllegalStateException(Res.string.screenshot_virtual_display_failed.getSync())
             } else {
-                display.resize(captureWidth, captureHeight, captureDpi)
+                display.resize(screenSize.width, screenSize.height, captureDpi)
                 display.surface = imageReader.surface
             }
             activeImageReader = imageReader

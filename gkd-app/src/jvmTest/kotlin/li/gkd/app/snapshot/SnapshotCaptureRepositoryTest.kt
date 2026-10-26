@@ -10,6 +10,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.DeviceInfo
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.platform.PlatformResult
 import li.gkd.db.Db
 import java.io.IOException
@@ -115,8 +116,7 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
         SnapshotCaptureInput(
             "dev.capture",
             "dev.capture.Main",
-            2,
-            2,
+            ScreenSize(2, 2),
             false,
             emptyList(),
             null,

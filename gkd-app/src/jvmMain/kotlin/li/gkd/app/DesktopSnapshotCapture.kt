@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.gkd.app.model.ComplexSnapshot
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.snapshot.SnapshotAutoExportResult
 import li.gkd.app.snapshot.SnapshotCaptureInput
 import li.gkd.app.snapshot.SnapshotCaptureOutcome
@@ -39,7 +40,7 @@ suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest
                             ?: error("Cannot encode replay screenshot")
                     }
             SnapshotCaptureInput(
-                source.appId, source.activityId, source.screenHeight, source.screenWidth,
+                source.appId, source.activityId, ScreenSize(source.screenWidth, source.screenHeight),
                 source.isLandscape, source.nodes, source.appInfo, source.gkdAppInfo, source.device,
                 screenshot, SnapshotScreenshotStatus.Captured,
             )

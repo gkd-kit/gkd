@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import li.gkd.app.app
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.priv.toHidden
 import li.gkd.app.resources.*
@@ -358,31 +359,31 @@ private data class TrackPoint(
     fun getCurCenter(): Offset {
         val curSize = ScreenUtils.getSize()
         val curRotation = app.compatDisplay.rotation
-        val (physX, physY) = screenToPhysical(x, y, screenSize.width, screenSize.height, rotation)
-        return physicalToScreen(physX, physY, curSize.width, curSize.height, curRotation)
+        val (physX, physY) = screenToPhysical(x, y, screenSize, rotation)
+        return physicalToScreen(physX, physY, curSize, curRotation)
     }
 
     private fun screenToPhysical(
         sx: Float, sy: Float,
-        sw: Int, sh: Int,
+        size: ScreenSize,
         rot: Int,
     ): Offset = when (rot) {
         Surface.ROTATION_0 -> Offset(sx, sy)
-        Surface.ROTATION_90 -> Offset(sh - sy, sx)
-        Surface.ROTATION_180 -> Offset(sw - sx, sh - sy)
-        Surface.ROTATION_270 -> Offset(sy, sw - sx)
+        Surface.ROTATION_90 -> Offset(size.height - sy, sx)
+        Surface.ROTATION_180 -> Offset(size.width - sx, size.height - sy)
+        Surface.ROTATION_270 -> Offset(sy, size.width - sx)
         else -> Offset(sx, sy)
     }
 
     private fun physicalToScreen(
         px: Float, py: Float,
-        sw: Int, sh: Int,
+        size: ScreenSize,
         rot: Int,
     ): Offset = when (rot) {
         Surface.ROTATION_0 -> Offset(px, py)
-        Surface.ROTATION_90 -> Offset(py, sh - px)
-        Surface.ROTATION_180 -> Offset(sw - px, sh - py)
-        Surface.ROTATION_270 -> Offset(sw - py, px)
+        Surface.ROTATION_90 -> Offset(py, size.height - px)
+        Surface.ROTATION_180 -> Offset(size.width - px, size.height - py)
+        Surface.ROTATION_270 -> Offset(size.width - py, px)
         else -> Offset(px, py)
     }
 }

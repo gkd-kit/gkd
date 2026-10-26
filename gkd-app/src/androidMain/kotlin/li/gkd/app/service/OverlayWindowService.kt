@@ -273,17 +273,15 @@ abstract class OverlayWindowService(
             x = positionFlow.value.first()
             y = positionFlow.value.last()
         }
-        var screenWidth = ScreenUtils.getWidth()
-        var screenHeight = ScreenUtils.getHeight()
+        var screenSize = ScreenUtils.getSize()
         var paramsXy = layoutParams.x to layoutParams.y
         var fixMoveFlag = 0
         val fixLimitXy = {
-            screenWidth = ScreenUtils.getWidth()
-            screenHeight = ScreenUtils.getHeight()
-            val x = layoutParams.x.coerceIn(marginX, screenWidth - view.width - marginX)
+            screenSize = ScreenUtils.getSize()
+            val x = layoutParams.x.coerceIn(marginX, screenSize.width - view.width - marginX)
             val y = layoutParams.y.coerceIn(
                 marginY,
-                screenHeight - view.height - marginY
+                screenSize.height - view.height - marginY
             )
             if (x != layoutParams.x || y != layoutParams.y) {
                 positionFlow.value = listOf(x, y)
@@ -327,8 +325,7 @@ abstract class OverlayWindowService(
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     downXy = event.rawX to event.rawY
-                    screenWidth = ScreenUtils.getWidth()
-                    screenHeight = ScreenUtils.getHeight()
+                    screenSize = ScreenUtils.getSize()
                     paramsXy = layoutParams.x to layoutParams.y
                     viewClickEnabled = isViewClickEnabled()
                     isDragging = false
@@ -352,10 +349,10 @@ abstract class OverlayWindowService(
                         }
                         val x = dx + paramsXy.first
                         val y = dy + paramsXy.second
-                        layoutParams.x = x.coerceIn(marginX, screenWidth - view.width - marginX)
+                        layoutParams.x = x.coerceIn(marginX, screenSize.width - view.width - marginX)
                         layoutParams.y = y.coerceIn(
                             marginY,
-                            screenHeight - view.height - marginY
+                            screenSize.height - view.height - marginY
                         )
                         positionFlow.value = listOf(layoutParams.x, layoutParams.y)
                         app.windowManager.updateViewLayout(view, layoutParams)

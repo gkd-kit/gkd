@@ -2,6 +2,7 @@ package li.gkd.app.subscription
 
 import java.lang.management.ManagementFactory
 import kotlinx.serialization.json.*
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.testing.TestFiles
 import li.songe.expression.ExpressionEvaluationException
 import net.objecthunter.exp4j.Expression
@@ -104,7 +105,7 @@ class RuleExpressionCompatibilityTest {
                 val candidate = outcome({ compileRuleExpression(source)?.let { expression ->
                     { v -> expression.evaluate(RuleBounds(v.getValue("left").toInt(), v.getValue("top").toInt(),
                         v.getValue("right").toInt(), v.getValue("bottom").toInt()),
-                        v.getValue("screenWidth").toInt(), v.getValue("screenHeight").toInt()) }
+                        ScreenSize(v.getValue("screenWidth").toInt(), v.getValue("screenHeight").toInt())) }
                 } }, values)
                 if (!same(baseline, candidate)) differences.add("$source, n=$n: $baseline -> $candidate")
             }
@@ -125,7 +126,7 @@ class RuleExpressionCompatibilityTest {
         val bounds = RuleBounds(0, 0, 100, 200)
         for (source in listOf("1e309-1e309", "1e309", "1e39", "1e308*1e308")) {
             val position = RawSubscription.Position(null, null, null, null, source, "0")
-            val failure = assertThrows(PositionCalculationException::class.java) { position.calc(bounds, 100, 200) }
+            val failure = assertThrows(PositionCalculationException::class.java) { position.calc(bounds, ScreenSize(100, 200)) }
             assertEquals(source, "NON_FINITE_COORDINATE", failure.error.code)
         }
         for (position in listOf("start:{x:'unknown',y:0}", "start:{x:0,y:0},end:{x:0,y:'unknown'}",
@@ -142,25 +143,25 @@ class RuleExpressionCompatibilityTest {
         for (source in listOf("1 / 0", "1 % 0", "1 / -0")) {
             val position = RawSubscription.Position(null, null, null, null, source, "0")
             assertTrue(position.isValid)
-            val error = assertThrows(PositionCalculationException::class.java) { position.calc(bounds, 100, 200) }.error
+            val error = assertThrows(PositionCalculationException::class.java) { position.calc(bounds, ScreenSize(100, 200)) }.error
             assertEquals("DIVISION_BY_ZERO", error.code)
             assertEquals(2, error.startIndex)
             assertEquals(3, error.endIndex)
         }
-        assertEquals(0.0, compileRuleExpression("random-random")!!.evaluate(bounds, 100, 200), 0.0)
+        assertEquals(0.0, compileRuleExpression("random-random")!!.evaluate(bounds, ScreenSize(100, 200)), 0.0)
     }
 
     @Test
     fun benchmarkCompilationAndIsolatedEvaluation() {
         // Match the replaced production path: copy the template and bind variables directly.
-        fun legacy(source: String): (RuleBounds, Int, Int) -> Double {
+        fun legacy(source: String): (RuleBounds, ScreenSize) -> Double {
             val template = requireNotNull(old(source))
-            return { bounds, screenWidth, screenHeight ->
+            return { bounds, screenSize ->
                 Expression(template)
                     .setVariable("left", bounds.left.toDouble()).setVariable("top", bounds.top.toDouble())
                     .setVariable("right", bounds.right.toDouble()).setVariable("bottom", bounds.bottom.toDouble())
                     .setVariable("width", bounds.width().toDouble()).setVariable("height", bounds.height().toDouble())
-                    .setVariable("screenWidth", screenWidth.toDouble()).setVariable("screenHeight", screenHeight.toDouble())
+                    .setVariable("screenWidth", screenSize.width.toDouble()).setVariable("screenHeight", screenSize.height.toDouble())
                     .setVariable("random", Random.nextDouble()).evaluate()
             }
         }
@@ -184,10 +185,10 @@ class RuleExpressionCompatibilityTest {
                     val bounds = RuleBounds(round, round+1, round+321, round+647)
                     total += if (engine == "exp4j") {
                         val expression = if (compile) legacy(corpus[index]) else oldCompiled[index]
-                        expression(bounds, 1080+round, 2400+round)
+                        expression(bounds, ScreenSize(1080+round, 2400+round))
                     } else {
                         val expression = if (compile) compileRuleExpression(corpus[index])!! else adapted[index]
-                        expression.evaluate(bounds, 1080+round, 2400+round)
+                        expression.evaluate(bounds, ScreenSize(1080+round, 2400+round))
                     }
                 }
             }

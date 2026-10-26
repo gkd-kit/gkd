@@ -23,6 +23,7 @@ import li.gkd.app.rule.RuleSummaryBuilder
 import li.gkd.app.rule.RuleSummary
 import li.gkd.app.rule.TopActivity
 import li.gkd.app.subscription.PositionCalculationException
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.subscription.RuleBounds
 import li.gkd.app.matching.diagnostics.MatchDiagnosticCapture
 import kotlinx.serialization.json.Json
@@ -114,8 +115,8 @@ class RuleQueryTest {
             override suspend fun refresh(node: Int) = node
             override suspend fun match(rule: ResolvedRule, node: Int) = node
             override suspend fun perform(rule: ResolvedRule, node: Int): ActionResult = try {
-                val point = rule.rule.position!!.calc(
-                    RuleBounds(0, 0, width, 10), 100, 200, captureInputs = diagnostics.enabled,
+                val point = rule.parameters.position!!.calc(
+                    RuleBounds(0, 0, width, 10), ScreenSize(100, 200), captureInputs = diagnostics.enabled,
                 )
                 injected++
                 ActionResult("click", true, position = point)

@@ -140,9 +140,9 @@ class RuleReconciliationTest {
         } finally { coordinator.close() }
     }
 
-    private fun summary(runtime: RuleRuntime, rules: String, version: Int = 1) = RuleSummaryBuilder.build(
+    private fun summary(runtime: RuleRuntime, rules: String, version: Int = 1, groupProps: String = "") = RuleSummaryBuilder.build(
         runtime, listOf(UsedSubsEntry(SubsItem(1, enable = true, order = 0), RawSubscriptionParser.parse(
-            """{id:1,name:'Test',version:$version,apps:[{id:'app.test',groups:[{key:1,name:'Test',rules:[$rules]}]}]}"""
+            """{id:1,name:'Test',version:$version,apps:[{id:'app.test',groups:[{key:1,name:'Test',$groupProps rules:[$rules]}]}]}"""
         ))), mapOf("app.test" to AppInfo("app.test", "Test", 1, "1", false, 0, false, 0)),
         emptyList(), emptyList(), emptyList(),
     )
@@ -182,6 +182,103 @@ class RuleReconciliationTest {
         assertFalse(fresh.rules()[0].sameExecution(old.rules()[0]))
         assertFalse(fresh.rules()[1].sameExecution(old.rules()[1]))
         assertTrue(fresh.rules()[2].sameExecution(old.rules()[2]))
+    }
+
+    @Test
+    fun equivalentResetDefaultsRetainExecutionAndActivityResetBehavior() {
+        val runtime = RuleRuntime(now = { 10000 })
+        val base = "key:1,matches:'*',actionMaximum:1"
+        for ((ruleProps, groupProps) in listOf(
+            "resetMatch:'activity'" to "",
+            "" to "resetMatch:'activity',",
+            "resetMatch:'unknown'" to "resetMatch:'app',",
+        )) {
+            val old = summary(runtime, "{$base}")
+            old.rules().single().trigger()
+            val fresh = summary(runtime, "{$base,$ruleProps}", groupProps = groupProps)
+            fresh.retainUnaffectedExecution(old)
+            val rule = fresh.rules().single()
+            assertTrue(rule.sameExecution(old.rules().single()))
+            assertEquals(RuleStatus.ActionLimitReached, rule.status)
+            rule.onActivityTransition(10000, previouslyMatched = true)
+            assertEquals(RuleStatus.Ready, rule.status)
+        }
+    }
+
+    @Test
+    fun resetModeInheritanceAndOverrideControlExecutionAndReconciliation() {
+        val runtime = RuleRuntime(now = { 10000 })
+        val base = "key:1,matches:'*',actionMaximum:1"
+        val inherited = summary(runtime, "{$base}", groupProps = "resetMatch:'app',")
+        val inheritedRule = inherited.rules().single()
+        inheritedRule.trigger()
+        inheritedRule.onActivityTransition(10000, previouslyMatched = true)
+        assertEquals(RuleStatus.ActionLimitReached, inheritedRule.status)
+
+        val explicit = summary(runtime, "{$base,resetMatch:'app'}", groupProps = "resetMatch:'match',")
+        explicit.retainUnaffectedExecution(inherited)
+        assertTrue(explicit.rules().single().sameExecution(inheritedRule))
+
+        val changed = summary(runtime, "{$base,resetMatch:'match'}", groupProps = "resetMatch:'app',")
+        changed.retainUnaffectedExecution(explicit)
+        val changedRule = changed.rules().single()
+        assertFalse(changedRule.sameExecution(explicit.rules().single()))
+        changedRule.trigger()
+        changedRule.onActivityTransition(10000, previouslyMatched = true)
+        assertEquals(RuleStatus.ActionLimitReached, changedRule.status)
+        changedRule.onActivityTransition(10000, previouslyMatched = false)
+        assertEquals(RuleStatus.Ready, changedRule.status)
+    }
+
+    @Test
+    fun metadataAndOverriddenDefaultsRetainExecutionButEffectiveDefaultsResetIt() {
+        val runtime = RuleRuntime(now = { 10000 })
+        val rules = "{key:1,name:'Old',matches:'*',actionMaximum:1,actionCd:200},{key:2,matches:'*',actionMaximum:1}"
+        val old = summary(runtime, rules, groupProps = "actionCd:100,")
+        old.rules().forEach { it.trigger() }
+        val fresh = summary(runtime, rules.replace("name:'Old'", "name:'New',exampleUrls:['https://example.com']"),
+            version = 2, groupProps = "actionCd:300,")
+        fresh.retainUnaffectedExecution(old)
+        assertTrue(fresh.rules()[0].sameExecution(old.rules()[0]))
+        assertEquals(RuleStatus.ActionLimitReached, fresh.rules()[0].status)
+        assertFalse(fresh.rules()[1].sameExecution(old.rules()[1]))
+        assertEquals(RuleStatus.Ready, fresh.rules()[1].status)
+    }
+
+    @Test
+    fun effectiveActionSelectorAndTimingEditsResetExecution() {
+        val runtime = RuleRuntime(now = { 10000 })
+        val before = "key:1,matches:'*',actionMaximum:1,action:'click',position:{x:10,y:20},actionCd:100"
+        val changes = listOf(
+            "action:'click'" to "action:'longClick'",
+            "x:10" to "x:30",
+            "position:{x:10,y:20}" to "swipeArg:{start:{x:10,y:20},end:{x:30,y:40},duration:500}",
+            "matches:'*'" to "matches:'[text=\"changed\"]'",
+            "actionCd:100" to "actionCd:200",
+            "actionCd:100" to "actionCd:100,actionDelay:50",
+        )
+        for ((from, to) in changes) {
+            val old = summary(runtime, "{$before}")
+            old.rules().single().trigger()
+            val fresh = summary(runtime, "{${before.replace(from, to)}}")
+            fresh.retainUnaffectedExecution(old)
+            assertFalse(fresh.rules().single().sameExecution(old.rules().single()), to)
+            assertEquals(RuleStatus.Ready, fresh.rules().single().status, to)
+        }
+    }
+
+    @Test
+    fun switchingSharedStateSourceResetsExecutionEvenWithIdenticalDependencySets() {
+        val runtime = RuleRuntime()
+        for (field in listOf("actionCdKey", "actionMaximumKey")) {
+            val prefix = "{key:1,matches:'*'},{key:2,matches:'*'},"
+            val old = summary(runtime, prefix + "{key:3,matches:'*',preKeys:[1,2],$field:1}")
+            val fresh = summary(runtime, prefix + "{key:3,matches:'*',preKeys:[1,2],$field:2}")
+            assertEquals(old.rules()[2].executionDependencies().map { it.key }.toSet(),
+                fresh.rules()[2].executionDependencies().map { it.key }.toSet())
+            fresh.retainUnaffectedExecution(old)
+            repeat(3) { assertFalse(fresh.rules()[it].sameExecution(old.rules()[it]), "$field rule ${it + 1}") }
+        }
     }
 
     @Test

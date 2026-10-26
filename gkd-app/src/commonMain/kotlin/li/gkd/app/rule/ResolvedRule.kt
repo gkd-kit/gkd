@@ -17,17 +17,20 @@ sealed class ResolvedRule(
         return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${g.group.key}, gName:${g.group.name}, index:${index}, key:${key}, status:$description"
     }
 
+    fun sameDefinition(other: ResolvedRule): Boolean =
+        parameters == other.parameters && excludeData == other.excludeData && sameScope(other)
+
     private val group get() = g.group
     val subsItem get() = g.subsItem
     val rawSubs get() = g.subscription
     val key get() = rule.key
     val index = group.rules.indexOfFirst { r -> r === rule }
     val excludeData get() = g.excludeData
-    private val parameters = RuleExecutionParameters(rule, g.group)
-    val matches get() = parameters.matches
-    val anyMatches get() = parameters.anyMatches
-    val excludeMatches get() = parameters.excludeMatches
-    val excludeAllMatches get() = parameters.excludeAllMatches
+    val parameters = RuleExecutionParameters.resolve(rule, g.group)
+    val matches = parameters.matches.map(group.compilation::selector)
+    val anyMatches = parameters.anyMatches.map(group.compilation::selector)
+    val excludeMatches = parameters.excludeMatches.map(group.compilation::selector)
+    val excludeAllMatches = parameters.excludeAllMatches.map(group.compilation::selector)
     val matchDelay get() = parameters.matchDelay
     val actionDelay get() = parameters.actionDelay
     private val matchTime get() = parameters.matchTime
@@ -115,10 +118,6 @@ sealed class ResolvedRule(
 
     private val matchLimitTime = (matchTime ?: 0) + matchDelay
 
-    val resetMatchType = ResetMatchType.allSubObject.find {
-        it.value == parameters.resetMatch
-    } ?: ResetMatchType.Activity
-
     fun resetState(t: Long) {
         actionCount.value = 0
         actionDelayTriggerTime.value = 0L
@@ -128,7 +127,7 @@ sealed class ResolvedRule(
     }
 
     fun onActivityTransition(time: Long, previouslyMatched: Boolean) {
-        when (resetMatchType) {
+        when (parameters.resetMatchType) {
             ResetMatchType.App -> if (isFirstMatchApp) resetState(time)
             ResetMatchType.Activity -> resetState(time)
             ResetMatchType.Match -> if (!previouslyMatched) resetState(time)

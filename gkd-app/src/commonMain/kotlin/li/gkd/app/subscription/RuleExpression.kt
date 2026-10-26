@@ -1,5 +1,6 @@
 package li.gkd.app.subscription
 
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.error.ErrorMessage
 import li.gkd.app.resources.*
 import net.objecthunter.exp4j.ExpressionBuilder
@@ -25,7 +26,8 @@ sealed interface RuleValidationError {
 
 interface RuleExpression {
     fun setVariable(name: String, value: Double)
-    fun evaluate(): Double
+    fun evaluate(bounds: RuleBounds, screenSize: ScreenSize,
+        captureInputs: ((Map<String, Double>) -> Unit)? = null): Double
 }
 
 fun compileRuleExpression(source: String, variables: Set<String>): RuleExpression? = try {

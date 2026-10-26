@@ -10,6 +10,7 @@ import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.DeviceInfo
 import li.gkd.app.model.NodeInfo
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.storage.FileExports
@@ -28,8 +29,7 @@ enum class SnapshotScreenshotStatus(val detailResource: StringResource?) {
 class SnapshotCaptureInput(
     val appId: String,
     val activityId: String?,
-    val screenHeight: Int,
-    val screenWidth: Int,
+    val screenSize: ScreenSize,
     val isLandscape: Boolean,
     val nodes: List<NodeInfo>,
     val appInfo: AppInfo?,
@@ -76,7 +76,7 @@ object SnapshotCaptureRepository {
             val id = System.currentTimeMillis()
             val input = collect()
             val snapshot = ComplexSnapshot(
-                id, input.appId, input.activityId, input.screenHeight, input.screenWidth,
+                id, input.appId, input.activityId, input.screenSize.height, input.screenSize.width,
                 input.isLandscape, input.appInfo, input.gkdAppInfo, input.device, input.nodes,
             )
             SnapshotStore.save(snapshot, input.screenshot)

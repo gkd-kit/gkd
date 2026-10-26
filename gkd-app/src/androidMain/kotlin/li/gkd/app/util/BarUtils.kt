@@ -43,7 +43,7 @@ object BarUtils {
                 w.getBoundsInScreen(rect)
                 w.type == AccessibilityWindowInfo.TYPE_SYSTEM
                         && !w.isFocused && !w.isActive
-                        && rect.top == 0 && rect.left == 0 && rect.right == ScreenUtils.getWidth()
+                        && rect.top == 0 && rect.left == 0 && rect.right == ScreenUtils.getSize().width
                         && rect.bottom <= getStatusHeight() * 2
             }
         }

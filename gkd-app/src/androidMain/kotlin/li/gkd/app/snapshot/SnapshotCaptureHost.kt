@@ -53,7 +53,8 @@ object SnapshotCaptureHost {
     )
 
     private fun createMissingScreenshotBitmap(): Bitmap {
-        val bitmap = createBitmap(ScreenUtils.getWidth(), ScreenUtils.getHeight())
+        val screenSize = ScreenUtils.getSize()
+        val bitmap = createBitmap(screenSize.width, screenSize.height)
         try {
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 textSize = 32.sp.px
@@ -82,7 +83,8 @@ object SnapshotCaptureHost {
     }
 
     private fun createBlankScreenshotBitmap(): Bitmap {
-        val bitmap = createBitmap(ScreenUtils.getWidth(), ScreenUtils.getHeight())
+        val screenSize = ScreenUtils.getSize()
+        val bitmap = createBitmap(screenSize.width, screenSize.height)
         try {
             bitmap.eraseColor(Color.BLACK)
             return bitmap
@@ -273,8 +275,7 @@ object SnapshotCaptureHost {
             val rootNode = A11yRuntime.getRoot(service)
                 ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
             val appId = rootNode.packageName.toString()
-            val screenHeight = ScreenUtils.getHeight()
-            val screenWidth = ScreenUtils.getWidth()
+            val screenSize = ScreenUtils.getSize()
             val isLandscape = ScreenUtils.isLandscape()
             coroutineScope {
                 val nodes = async(Dispatchers.IO) { captureNodeInfoList(rootNode) }
@@ -291,8 +292,7 @@ object SnapshotCaptureHost {
                 SnapshotCaptureInput(
                     appId = appId,
                     activityId = activityId.await(),
-                    screenHeight = screenHeight,
-                    screenWidth = screenWidth,
+                    screenSize = screenSize,
                     isLandscape = isLandscape,
                     nodes = nodes.await(),
                     appInfo = AppInfoRepository.snapshot?.apps?.get(appId),

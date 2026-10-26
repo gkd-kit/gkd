@@ -6,6 +6,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.runBlocking
 import li.gkd.app.matching.action.ActionPerformer
 import li.gkd.app.model.GkdAction
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.util.ScreenUtils
 import org.junit.Assert.*
 import org.junit.Test
@@ -22,8 +23,7 @@ import org.robolectric.annotation.Implements
 class CoordinateActionFailureTest {
     @Implements(value = ScreenUtils::class, isInAndroidSdk = false)
     class ScreenShadow {
-        @Implementation fun getWidth() = 1080
-        @Implementation fun getHeight() = 2400
+        @Implementation fun getSize(): ScreenSize = ScreenSize(1080, 2400)
         @Implementation fun contains(x: Float, y: Float) = x in 0f..1080f && y in 0f..2400f
     }
 

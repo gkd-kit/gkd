@@ -1,5 +1,6 @@
 package li.gkd.app.subscription
 
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleRestriction
 import li.gkd.db.SubscriptionConfigSnapshot
@@ -51,12 +52,12 @@ class PositionValidationTest {
         assertTrue(group.valid)
         val position = group.rules.single().position!!
         val failure = assertThrows(PositionCalculationException::class.java) {
-            position.calc(RuleBounds(0,0,0,10), 100,200, captureInputs = true)
+            position.calc(RuleBounds(0,0,0,10), ScreenSize(100, 200), captureInputs = true)
         }.error
         assertEquals("DIVISION_BY_ZERO", failure.code)
         assertEquals(mapOf("width" to 0.0), failure.inputs)
-        assertEquals(5f to 0f, position.calc(RuleBounds(0,0,20,10), 100,200))
-        val quiet = assertThrows(PositionCalculationException::class.java) { position.calc(RuleBounds(0,0,0,10),100,200) }.error
+        assertEquals(5f to 0f, position.calc(RuleBounds(0,0,20,10), ScreenSize(100, 200)))
+        val quiet = assertThrows(PositionCalculationException::class.java) { position.calc(RuleBounds(0,0,0,10), ScreenSize(100, 200)) }.error
         assertNull(quiet.inputs)
     }
 
@@ -65,14 +66,14 @@ class PositionValidationTest {
         val source = "random / (width-width)"
         val position = RawSubscription.Position(null,null,null,null,source,"0")
         val error = assertThrows(PositionCalculationException::class.java) {
-            position.calc(RuleBounds(0,0,30,40),100,200, captureInputs = true)
+            position.calc(RuleBounds(0,0,30,40), ScreenSize(100, 200), captureInputs = true)
         }.error
         assertEquals(setOf("random","width"), error.inputs!!.keys)
         assertTrue(error.inputs.getValue("random") in 0.0..<1.0)
         assertEquals(30.0, error.inputs.getValue("width"), 0.0)
         val overflow = RawSubscription.Position(null,null,null,null,"width*1e309","0")
         val nonFinite = assertThrows(PositionCalculationException::class.java) {
-            overflow.calc(RuleBounds(0,0,30,40),100,200, captureInputs = true)
+            overflow.calc(RuleBounds(0,0,30,40), ScreenSize(100, 200), captureInputs = true)
         }.error
         assertEquals("NON_FINITE_COORDINATE", nonFinite.code)
         assertEquals(mapOf("width" to 30.0), nonFinite.inputs)

@@ -35,7 +35,7 @@ object AndroidToastUtils {
         }
 
     private val toastYOffset: Int
-        get() = (ScreenUtils.getHeight() * 0.12f).toInt()
+        get() = (ScreenUtils.getSize().height * 0.12f).toInt()
 
     private val circleOutlineProvider by lazy {
         object : ViewOutlineProvider() {
