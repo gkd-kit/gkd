@@ -1,7 +1,7 @@
 package li.gkd.app.rule
 
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
 import org.junit.Assert.assertEquals
@@ -37,7 +37,7 @@ class RuleGroupPolicyTest {
         )
     }
 
-    private val subscription = RawSubscription.parse(
+    private val subscription = RawSubscriptionParser.parse(
         """
         {
           id: -2,

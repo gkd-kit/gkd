@@ -2,7 +2,7 @@ package li.gkd.app.rule
 
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.app.testing.TestFiles
 import li.gkd.db.SubsAppConfig
@@ -28,8 +28,8 @@ class RuleSwitchPolicyTest {
         for (definition in listOf("{matches:'['}", "{matches:'*',position:{x:'unknown',y:'0'}}")) {
             val source = """{id:-2,name:'Test',version:1,apps:[{id:'app.id',groups:[{key:2,name:'App',rules:[$definition]}]}],
                 globalGroups:[{key:3,name:'Global',rules:[$definition]}]}"""
-            val invalid = RawSubscription.parse(source)
-            val repaired = RawSubscription.parse(source.replace(definition, "{matches:'*'}"))
+            val invalid = RawSubscriptionParser.parse(source)
+            val repaired = RawSubscriptionParser.parse(source.replace(definition, "{matches:'*'}"))
             val global = invalid.globalGroups.single()
             val control = RuleGroupPolicy.controlState(invalid, global, "app.id", initial, info, "launcher", emptySet())
             assertFalse(RuleRestriction.GlobalGroupDisabled in control.restrictions)
@@ -66,7 +66,7 @@ class RuleSwitchPolicyTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder(TestFiles.root)
 
-    private val sub = RawSubscription.parse(
+    private val sub = RawSubscriptionParser.parse(
         """{
         id: -2, name: 'Test', version: 0,
         categories: [{key: 1, name: 'App', enable: true}],

@@ -18,18 +18,18 @@ class SubscriptionInputParser private constructor(
 
     fun parseAppGroups(expectedAppId: String): SubscriptionEditResult<List<RawSubscription.RawAppGroup>> {
         val result = if (isAppObject()) parseAppObject(expectedAppId).map { it.groups }
-        else parseRule { RawSubscription.parseAppGroup(jsonObject) }.map { listOf(it) }
+        else parseRule { RawSubscriptionParser.parseAppGroup(jsonObject) }.map { listOf(it) }
         return result.flatMap { groups -> validateGroups(groups) ?: SubscriptionEditResult.Success(groups) }
     }
 
     fun parseAppGroup(expectedAppId: String): SubscriptionEditResult<RawSubscription.RawAppGroup> {
         val result = if (isAppObject()) parseAppObject(expectedAppId).map { it.groups.first() }
-        else parseRule { RawSubscription.parseAppGroup(jsonObject) }
+        else parseRule { RawSubscriptionParser.parseAppGroup(jsonObject) }
         return result.flatMap { group -> validateGroups(listOf(group)) ?: SubscriptionEditResult.Success(group) }
     }
 
     fun parseGlobalGroup(): SubscriptionEditResult<RawSubscription.RawGlobalGroup> =
-        parseRule { RawSubscription.parseGlobalGroup(jsonObject) }.flatMap { group ->
+        parseRule { RawSubscriptionParser.parseGlobalGroup(jsonObject) }.flatMap { group ->
             validateGroups(listOf(group)) ?: SubscriptionEditResult.Success(group)
         }
 
@@ -42,7 +42,7 @@ class SubscriptionInputParser private constructor(
                 return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleAppIdMismatch)
             }
         }
-        return parseRule { RawSubscription.parseApp(jsonObject) }.flatMap { app ->
+        return parseRule { RawSubscriptionParser.parseApp(jsonObject) }.flatMap { app ->
             if (app.groups.isEmpty()) SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleInputRequired)
             else SubscriptionEditResult.Success(app)
         }

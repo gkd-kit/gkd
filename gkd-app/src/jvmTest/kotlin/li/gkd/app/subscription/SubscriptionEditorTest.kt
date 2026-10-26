@@ -43,7 +43,7 @@ class SubscriptionEditorTest {
 
     @Test
     fun removingLastAppGroupCanRemoveItsApp() {
-        val source = RawSubscription.parse(
+        val source = RawSubscriptionParser.parse(
             """
             {
               id: -2,
@@ -67,7 +67,7 @@ class SubscriptionEditorTest {
 
     @Test
     fun replacesAndRemovesAppAndGlobalGroupsByKey() {
-        val source = RawSubscription.parse(
+        val source = RawSubscriptionParser.parse(
             """
             {
               id: -2,
@@ -245,7 +245,7 @@ class SubscriptionEditorTest {
     private fun createAppGroup(
         key: Int,
         name: String,
-    ): RawSubscription.RawAppGroup = RawSubscription.parse(
+    ): RawSubscription.RawAppGroup = RawSubscriptionParser.parse(
         """
         {
           id: -2,

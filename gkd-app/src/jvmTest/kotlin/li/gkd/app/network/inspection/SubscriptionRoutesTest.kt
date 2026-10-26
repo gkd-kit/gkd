@@ -21,6 +21,7 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.storage.AppStorageLayout
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
 import li.gkd.app.subscription.SubscriptionJson
@@ -53,7 +54,7 @@ suspend fun assertSubscriptionRoutes(
     )
 
     repository.update(-2) { current ->
-        RawSubscription.parse("""{id:-2,name:'HTTP rules',version:${current.version},categories:[{key:5,name:'HTTP',enable:false}]}""")
+        RawSubscriptionParser.parse("""{id:-2,name:'HTTP rules',version:${current.version},categories:[{key:5,name:'HTTP',enable:false}]}""")
     }
     error("getRules", "INVALID_REQUEST", "subsId" to JsonPrimitive(13))
     // Unknown negative IDs must not acquire the built-in subscriptions' HTTP access.

@@ -1,6 +1,6 @@
 package li.gkd.app.rule
 
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsAppConfig
 import li.gkd.db.SubsItem
@@ -13,7 +13,7 @@ class RuleSummaryBuilderTest {
 
     @Test
     fun enabledGroupWithoutEnabledRulesDoesNotCountAsRuleApp() {
-        val subscription = RawSubscription.parse(
+        val subscription = RawSubscriptionParser.parse(
             """
             {
               id: 1,

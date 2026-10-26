@@ -7,7 +7,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class RawSubscriptionParseTest {
-    private fun parse(body: String) = RawSubscription.parse("""{id:1,name:'Test',version:1,$body}""")
+    private fun parse(body: String) = RawSubscriptionParser.parse("""{id:1,name:'Test',version:1,$body}""")
 
     private fun assertPath(body: String, path: String, detail: String? = null) {
         val error = assertThrows(SubscriptionParseException::class.java) { parse(body) }
@@ -18,7 +18,7 @@ class RawSubscriptionParseTest {
 
     @Test
     fun reportsMissingFieldsAndContainerTypes() {
-        val missing = assertThrows(SubscriptionParseException::class.java) { RawSubscription.parse("{}") }
+        val missing = assertThrows(SubscriptionParseException::class.java) { RawSubscriptionParser.parse("{}") }
         assertEquals("$.id", missing.path)
         assertEquals("Required field is missing", missing.detail)
         assertPath("apps: {}", "$.apps", "Expected an array")
@@ -26,7 +26,7 @@ class RawSubscriptionParseTest {
         assertPath("apps: [{}]", "$.apps[0].id", "Required field is missing")
         assertPath("apps: [{id:123}]", "$.apps[0].id", "Expected a string")
         assertPath("categories: [{key:0}]", "$.categories[0].name", "Required field is missing")
-        val root = assertThrows(SubscriptionParseException::class.java) { RawSubscription.parse("[]") }
+        val root = assertThrows(SubscriptionParseException::class.java) { RawSubscriptionParser.parse("[]") }
         assertEquals("$", root.path)
     }
 
@@ -56,7 +56,7 @@ class RawSubscriptionParseTest {
         assertPath("apps:[{id:'app',groups:[{key:0,name:'G',rules:[['good',{}]]}]}]", "$.apps[0].groups[0].rules[0][1]")
         val group = SubscriptionJson.json.parseToJsonElement("""{"key":0,"name":"G","rules":[{"actionMaximum":"bad"}]}""")
         val standalone = assertThrows(SubscriptionParseException::class.java) {
-            RawSubscription.parseAppGroup(group.jsonObject)
+            RawSubscriptionParser.parseAppGroup(group.jsonObject)
         }
         assertEquals("$.rules[0].actionMaximum", standalone.path)
     }
@@ -98,14 +98,14 @@ class RawSubscriptionParseTest {
         assertEquals(500L, group.rules[1].swipeArg?.duration)
         assertEquals(emptyList<RawSubscription.RawGlobalGroup>(), subscription.globalGroups)
         // Saved JSON must still load through the same parser as JSON5 input.
-        val restored = RawSubscription.parse(SubscriptionJson.json.encodeToString(subscription), json5 = false)
+        val restored = RawSubscriptionParser.parse(SubscriptionJson.json.encodeToString(subscription), json5 = false)
         assertEquals(group.rules[1], restored.apps.single().groups.single().rules[1])
     }
 
     @Test
     fun syntaxFailuresKeepTheirCauseAndDoNotContaminateLaterParses() {
         for (json5 in listOf(false, true)) {
-            val error = assertThrows(SubscriptionParseException::class.java) { RawSubscription.parse("{", json5) }
+            val error = assertThrows(SubscriptionParseException::class.java) { RawSubscriptionParser.parse("{", json5) }
             assertEquals("$", error.path)
             assertNotNull(error.cause)
         }

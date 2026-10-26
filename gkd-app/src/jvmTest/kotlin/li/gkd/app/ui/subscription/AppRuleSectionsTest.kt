@@ -1,6 +1,7 @@
 package li.gkd.app.ui.subscription
 
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -8,7 +9,7 @@ import kotlin.test.assertNull
 import li.gkd.db.RuleGroupType
 
 class AppRuleSectionsTest {
-    private val first = RawSubscription.parse(
+    private val first = RawSubscriptionParser.parse(
         """{id:1,name:'First',version:1,
           categories:[{key:1,name:'功能'},{key:2,name:'广告'},{key:3,name:'空类别'}],
           globalGroups:[{key:1,name:'全局',rules:[{matches:'*'}]}],
@@ -19,7 +20,7 @@ class AppRuleSectionsTest {
             {key:4,name:'功能-A',rules:[{matches:'*'}]}
           ]}]}""",
     )
-    private val second = RawSubscription.parse(
+    private val second = RawSubscriptionParser.parse(
         """{id:2,name:'Second',version:1,
           categories:[{key:1,name:'独有'},{key:8,name:'功能'}],
           globalGroups:[{key:1,name:'全局',rules:[{matches:'*'}]}],

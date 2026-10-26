@@ -1,7 +1,7 @@
 package li.gkd.app.rule
 
 import li.gkd.app.model.AppInfo
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
@@ -12,7 +12,7 @@ class RuleGroupCountsTest {
 
     @Test
     fun globalCountsRespectAppOverridesAndCountGroupsRatherThanChildren() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:1,name:'Counts',version:1,globalGroups:[
             {key:1,name:'Common',rules:[{matches:'*'},{matches:'*'}]},
@@ -45,7 +45,7 @@ class RuleGroupCountsTest {
 
     @Test
     fun globalCountsRefreshForVersionAndLauncherChanges() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:1,name:'Counts',version:1,globalGroups:[
             {key:1,name:'Version',matchAnyApp:false,apps:[{id:'app.one',versionCode:{minimum:20}}],rules:[{matches:'*'}]},

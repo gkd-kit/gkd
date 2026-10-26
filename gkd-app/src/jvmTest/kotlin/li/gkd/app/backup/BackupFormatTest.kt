@@ -3,7 +3,7 @@ package li.gkd.app.backup
 import kotlinx.serialization.json.Json
 import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleGroupSummaryBuilder
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsAppConfig
 import li.gkd.db.SubsAppGroupConfig
@@ -56,7 +56,7 @@ class BackupFormatTest {
     @Test
     fun importedConfigurationGivesUiAndRuntimeTheSameEffectiveSwitchState() {
         val data = BackupFormat.decode(legacy).toSnapshot()
-        val subscription = RawSubscription.parse(
+        val subscription = RawSubscriptionParser.parse(
             """
             {
               id: 7, name: 'Sample', version: 1,

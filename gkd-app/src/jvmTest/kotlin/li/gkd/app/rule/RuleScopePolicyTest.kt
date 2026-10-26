@@ -3,6 +3,7 @@ package li.gkd.app.rule
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigSnapshot
@@ -68,7 +69,7 @@ class RuleScopePolicyTest {
 
     @Test
     fun childEmptyExclusionsReplaceGroupExclusionsAndOriginsStaySeparate() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id: -2, name: 'Test', version: 0,
           apps: [{id:'app.id', groups:[{key:1,name:'Group',excludeActivityIds:['.Parent'],rules:[
@@ -104,7 +105,7 @@ class RuleScopePolicyTest {
 
     @Test
     fun manualAppEnableOverridesGroupDisableEvenWithChildAppLists() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:-2,name:'Test',version:0,
           globalGroups:[{key:1,name:'Global',apps:[{id:'app.id',enable:false}],rules:[
@@ -144,7 +145,7 @@ class RuleScopePolicyTest {
 
     @Test
     fun defaultsUseGroupMatchFlagsAndVersionCompatibleChildren() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:-2,name:'Test',version:0,
           globalGroups:[{key:1,name:'Global',matchAnyApp:false,rules:[
@@ -171,7 +172,7 @@ class RuleScopePolicyTest {
 
     @Test
     fun appRuleVersionFieldsInheritIndependentlyAndCanBeOverriddenByTheChild() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:-2,name:'Test',version:0,
           apps:[{id:'app.id',groups:[{key:1,name:'App',versionCode:{minimum:20},rules:[
@@ -192,7 +193,7 @@ class RuleScopePolicyTest {
 
     @Test
     fun unavailableReasonsDistinguishAppGroupMatchingFromExplicitExclusionsAndVersionChecks() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:-2,name:'Test',version:0,
           apps:[{id:'app.id',groups:[{key:1,name:'广告-开屏',rules:[{matches:'[text="Ad"]'}]}]}],
@@ -251,7 +252,7 @@ class RuleScopePolicyTest {
     @Test
     fun manualAppEnablePreservesVersionAndPageExclusionsAndResetRestoresDefaultDisable() {
         // Existing !app.id values now override defaults, but never an incompatible version or excluded page.
-        val sub = RawSubscription.parse("""{
+        val sub = RawSubscriptionParser.parse("""{
           id:-2,name:'Test',version:0,
           apps:[{id:'app.id',groups:[{key:1,name:'Ad',rules:[{matches:'*'}]}]}],
           globalGroups:[{key:1,name:'Ad',disableIfAppGroupMatch:'',

@@ -1,6 +1,6 @@
 package li.gkd.app.rule
 
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigSnapshot
@@ -12,7 +12,7 @@ import org.junit.Test
 class GlobalAppEnableWarningTest {
     @Test
     fun warningsCombineBuiltinDisablesAndBothNameContainmentDirectionsWithinTheSameApp() {
-        val subscription = RawSubscription.parse("""{
+        val subscription = RawSubscriptionParser.parse("""{
           id:-2,name:'Test',version:0,
           apps:[
             {id:'app.id',groups:[
@@ -53,7 +53,7 @@ class GlobalAppEnableWarningTest {
     }
     @Test
     fun builtinDisableUsesOnlyGroupSettingsAndIgnoresVersionAndPageRestrictions() {
-        val subscription = RawSubscription.parse("""{
+        val subscription = RawSubscriptionParser.parse("""{
           id:-2,name:'Test',version:0,globalGroups:[
             {key:1,name:'All',apps:[{id:'app.id',enable:false}],rules:[{matches:'*'},{matches:'*'}]},
             {key:2,name:'Partial',apps:[{id:'app.id',enable:false}],rules:[{matches:'*'},{matches:'*',apps:[]}]},
@@ -73,7 +73,7 @@ class GlobalAppEnableWarningTest {
 
     @Test
     fun warningListIncludesRulesThatDisableByCustomNameEvenWithoutSimilarNames() {
-        val subscription = RawSubscription.parse("""{
+        val subscription = RawSubscriptionParser.parse("""{
           id:-2,name:'Test',version:0,
           apps:[{id:'app.id',groups:[
             {key:1,name:'专用跳过',rules:[{matches:'*'}]},

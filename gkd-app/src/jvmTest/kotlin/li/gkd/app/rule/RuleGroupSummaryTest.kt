@@ -3,7 +3,7 @@ package li.gkd.app.rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import li.gkd.app.model.AppInfo
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.app.ui.home.AppListSources
 import li.gkd.db.SubsAppGroupConfig
@@ -16,7 +16,7 @@ class RuleGroupSummaryTest {
     fun summariesAggregateSubscriptionsAndReactToCategoryAndGroupChanges() {
 
         fun sub(id: Long) =
-            RawSubscription.parse("""{id:$id,name:'Test',version:1,categories:[{key:1,name:'Example'}],apps:[{id:'app.example',groups:[{key:1,name:'Example rule',rules:[{matches:'*'}]}]}]}""")
+            RawSubscriptionParser.parse("""{id:$id,name:'Test',version:1,categories:[{key:1,name:'Example'}],apps:[{id:'app.example',groups:[{key:1,name:'Example rule',rules:[{matches:'*'}]}]}]}""")
 
         val entries = listOf(1L, 2L).map {
             UsedSubsEntry(
@@ -60,7 +60,7 @@ class RuleGroupSummaryTest {
         val apps =
             listOf("app.example", "app.empty").map { AppInfo(it, it, 1, "1", false, 0, false, 0) }
         val subscription =
-            RawSubscription.parse("""{id:1,name:'Test',version:1,apps:[{id:'app.example',groups:[{key:1,name:'On',rules:[{matches:'*'}]},{key:2,name:'Off',rules:[{matches:'*'}]}]}]}""")
+            RawSubscriptionParser.parse("""{id:1,name:'Test',version:1,apps:[{id:'app.example',groups:[{key:1,name:'On',rules:[{matches:'*'}]},{key:2,name:'Off',rules:[{matches:'*'}]}]}]}""")
         val summary =
             RuleGroupSummaryBuilder.build(
                 listOf(UsedSubsEntry(SubsItem(id = 1, enable = true, order = 0), subscription)),

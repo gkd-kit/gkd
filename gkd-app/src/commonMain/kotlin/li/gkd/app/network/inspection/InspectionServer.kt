@@ -30,7 +30,7 @@ import li.gkd.app.model.GkdAction
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.snapshot.SnapshotCaptureOutcome
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
@@ -110,7 +110,7 @@ fun Application.configureInspectionServer(
             post("/updateSubscription") {
                 val source = call.receiveText()
                 val subscription =
-                    RawSubscription.parse(source, json5 = false)
+                    RawSubscriptionParser.parse(source, json5 = false)
                         .copy(
                             id = SubscriptionIds.LOCAL_HTTP,
                             name = getString(Res.string.subscription_memory),

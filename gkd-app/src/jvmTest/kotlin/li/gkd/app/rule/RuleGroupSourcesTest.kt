@@ -15,7 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import li.gkd.app.state.Loadable
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionSnapshot
 import li.gkd.db.SubscriptionConfigSnapshot
 
@@ -55,7 +55,7 @@ class RuleGroupSourcesTest {
 
     @Test
     fun ruleOverridesReferencedCooldownAndGroupFallbackRemainDistinct() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{"id":1,"name":"test","version":1,"apps":[{"id":"test.app","groups":[{"key":1,"name":"group","actionCd":900,"matchDelay":20,"rules":[{"key":1,"matches":"*","actionCd":300},{"key":2,"matches":"*","actionCdKey":1},{"key":3,"matches":"*","actionCdKey":99,"matchDelay":0}]}]}]}""",
             json5 = false
         )

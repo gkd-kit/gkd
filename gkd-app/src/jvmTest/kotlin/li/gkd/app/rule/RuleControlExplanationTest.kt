@@ -1,7 +1,7 @@
 package li.gkd.app.rule
 
 import li.gkd.app.model.AppInfo
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
 import li.gkd.db.SubsGlobalGroupConfig
@@ -14,7 +14,7 @@ import org.junit.Test
 
 class RuleControlExplanationTest {
     private val info = AppInfo("app.id", "App", 10, "1.0", false, 1, false, 0)
-    private val subscription = RawSubscription.parse("""{
+    private val subscription = RawSubscriptionParser.parse("""{
       id:1,name:'Test',version:1,categories:[{key:1,name:'Ad',enable:false}],
       apps:[{id:'app.id',groups:[{key:1,name:'Ad',rules:[{matches:'*'}]}]}],
       globalGroups:[{key:1,name:'Ad',matchAnyApp:false,disableIfAppGroupMatch:'',
@@ -48,7 +48,7 @@ class RuleControlExplanationTest {
     @Test
     fun globalExplanationPreservesGatesAndHardRestrictions() {
         val original = subscription.globalGroups.single()
-        val versionLimited = RawSubscription.parse("""{
+        val versionLimited = RawSubscriptionParser.parse("""{
           id:1,name:'Test',version:1,globalGroups:[{key:1,name:'Ad',
             apps:[{id:'app.id',versionCode:{minimum:20}}],rules:[{matches:'*'}]}]
         }""").globalGroups.single()

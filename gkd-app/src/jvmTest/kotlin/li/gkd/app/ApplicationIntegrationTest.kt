@@ -35,7 +35,7 @@ import li.gkd.app.state.Loadable
 import li.gkd.app.storage.AppStorageLayout
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.appStorage
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionJson
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.MainViewModel
@@ -219,7 +219,7 @@ class ApplicationIntegrationTest {
         SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Local rules", "Memory rules"))
         assertTrue(originalBytes.contentEquals(localFile.readBytes()))
         val memoryFile = appStorage().subscription.resolve("$memoryId.json")
-        assertEquals("Memory rules", RawSubscription.parse(memoryFile.readText()).name)
+        assertEquals("Memory rules", RawSubscriptionParser.parse(memoryFile.readText()).name)
         val memoryBytes = memoryFile.readBytes()
         SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("本地订阅", "内存订阅"))
         assertTrue(originalBytes.contentEquals(localFile.readBytes()))
@@ -235,12 +235,12 @@ class ApplicationIntegrationTest {
         assertTrue(memoryFile.delete())
         SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Other", "Retry memory"))
         assertFalse(memoryId in SubscriptionRepository.awaitSnapshot().loadErrors)
-        assertEquals("Retry memory", RawSubscription.parse(memoryFile.readText()).name)
+        assertEquals("Retry memory", RawSubscriptionParser.parse(memoryFile.readText()).name)
         // First local creation uses the operation's name; subsequent retries leave it untouched.
         Db.subsItemDao.deleteById(localId)
         assertTrue(localFile.delete())
         SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Fresh local", "Other memory"))
-        assertEquals("Fresh local", RawSubscription.parse(localFile.readText()).name)
+        assertEquals("Fresh local", RawSubscriptionParser.parse(localFile.readText()).name)
         SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Another locale", "Other memory"))
         assertEquals("Fresh local", SubscriptionRepository.awaitSnapshot().subscriptions.getValue(localId).name)
     }
@@ -333,7 +333,7 @@ class ApplicationIntegrationTest {
     private suspend fun assertAppRuleReorderPersistence() {
         val id = SubscriptionIds.LOCAL
         val previous = SubscriptionRepository.awaitSnapshot().subscriptions.getValue(id)
-        val original = RawSubscription.parse(
+        val original = RawSubscriptionParser.parse(
             """{id:$id,name:'Reorder',version:1,apps:[{id:'test.alpha',groups:[
                 {key:1,name:'First',order:9,rules:[{order:7,matches:'[text="Ad"]'}]},
                 {key:2,name:'Second',order:-3,rules:[{matches:'[text="Ad"]'}]},
@@ -380,7 +380,7 @@ class ApplicationIntegrationTest {
 
     private suspend fun assertAppRuleParentVisibility() {
         val id = -991L
-        val subscription = RawSubscription.parse(
+        val subscription = RawSubscriptionParser.parse(
             """{
             id: -991, name: 'Parent visibility', version: 1,
             globalGroups: [

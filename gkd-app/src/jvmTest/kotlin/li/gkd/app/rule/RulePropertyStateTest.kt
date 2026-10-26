@@ -2,7 +2,7 @@ package li.gkd.app.rule
 
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigSnapshot
@@ -15,7 +15,7 @@ class RulePropertyStateTest {
 
     private val emptyExclusions = ExcludeData(emptyMap(), emptySet())
     private val info = AppInfo("app.id", "App", 10, "1.0", false, 1, false, 0)
-    private val subscription = RawSubscription.parse(
+    private val subscription = RawSubscriptionParser.parse(
         """{
       id:-2,name:'Test',version:0,
       globalGroups:[{key:1,name:'Global',rules:[{matches:'[text="Ad"]'}]}]
@@ -96,7 +96,7 @@ class RulePropertyStateTest {
 
     @Test
     fun inheritedExclusionDisappearsWhenEveryChildExplicitlyClearsIt() {
-        val sub = RawSubscription.parse(
+        val sub = RawSubscriptionParser.parse(
             """{
           id:-2,name:'Test',version:0,
           apps:[{id:'app.id',groups:[{key:1,name:'Group',excludeActivityIds:['.Blocked'],

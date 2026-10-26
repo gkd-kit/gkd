@@ -6,7 +6,7 @@ import org.junit.Test
 
 class CategoryPolicyTest {
 
-    private val subscription = RawSubscription.parse(
+    private val subscription = RawSubscriptionParser.parse(
         """
         {
           id: -2, name: 'Local', version: 0,

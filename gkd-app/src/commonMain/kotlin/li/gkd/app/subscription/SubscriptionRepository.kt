@@ -1,5 +1,6 @@
 package li.gkd.app.subscription
 
+import li.songe.codeorigin.CallSite
 import io.ktor.client.request.get
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.statement.bodyAsText
@@ -371,8 +372,8 @@ object SubscriptionRepository {
             }
             onStage(SubscriptionAddStage.Parsing)
             val subscription = try {
-                RawSubscription.parse(text)
-            } catch (e: Exception) {
+                RawSubscriptionParser.parse(text)
+            } catch (e: SubscriptionParseException) {
                 logSubscriptionParseFailure("Subscription parsing failed", e)
                 result = SubscriptionResult.Failure(
                     reason = SubscriptionResult.FailureReason.Parse,
@@ -475,7 +476,7 @@ object SubscriptionRepository {
                             e is SubscriptionException && e.reason == SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed ->
                                 logNetworkFailure(operation, e.cause as Exception)
                             e is SubscriptionException && e.reason == SubscriptionFailureReason.TextParseFailed ->
-                                logSubscriptionParseFailure(operation, e.cause as Exception)
+                                logSubscriptionParseFailure(operation, e.cause as SubscriptionParseException)
                             e is SubscriptionException && e.reason == SubscriptionFailureReason.SubscriptionUpdatedIdMismatch ->
                                 LogUtils.w("$operation: ${e.reason} ${e.arguments}")
                             else -> LogUtils.e(operation, e)
@@ -644,8 +645,8 @@ object SubscriptionRepository {
             throw SubscriptionException(SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed, cause = e)
         }
         val subscription = try {
-            RawSubscription.parse(text)
-        } catch (e: Exception) {
+            RawSubscriptionParser.parse(text)
+        } catch (e: SubscriptionParseException) {
             throw SubscriptionException(SubscriptionFailureReason.TextParseFailed, cause = e)
         }
         if (subscription.id != item.id) {
@@ -664,10 +665,12 @@ object SubscriptionRepository {
 
 private data class UpdateEntry(val subsItem: SubsItem, val subscription: RawSubscription?)
 
-private fun logSubscriptionParseFailure(operation: String, error: Exception) {
-    if (error is SubscriptionParseException) {
-        LogUtils.w("$operation: path=${error.path} ${logText(error.detail)}")
-    } else LogUtils.e(operation, error)
+private fun logSubscriptionParseFailure(
+    operation: String,
+    error: SubscriptionParseException,
+    @CallSite loc: String = "",
+) {
+    LogUtils.w("$operation: path=${error.path} ${logText(error.detail)}", loc = loc)
 }
 
 @Serializable

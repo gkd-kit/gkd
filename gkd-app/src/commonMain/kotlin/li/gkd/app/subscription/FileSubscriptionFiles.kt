@@ -19,8 +19,8 @@ class FileSubscriptionFiles(
             SubscriptionFailureReason.SubscriptionFileMissing,
         )
         val subscription = try {
-            RawSubscription.parse(bytes.decodeToString(), json5 = false)
-        } catch (e: Exception) {
+            RawSubscriptionParser.parse(bytes.decodeToString(), json5 = false)
+        } catch (e: SubscriptionParseException) {
             throw SubscriptionException(SubscriptionFailureReason.SubscriptionFileParseFailed, cause = e)
         }
         check(subscription.id == id) {

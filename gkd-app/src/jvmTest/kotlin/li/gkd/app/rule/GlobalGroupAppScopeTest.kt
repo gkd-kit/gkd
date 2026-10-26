@@ -5,6 +5,7 @@ import kotlinx.serialization.json.jsonObject
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
@@ -15,7 +16,7 @@ import org.junit.Test
 class GlobalGroupAppScopeTest {
     private val info = AppInfo("app.id", "App", 10, "1.0", false, 1, false, 0)
     private val item = SubsItem(1, order = 0, enable = true)
-    private fun subscription(body: String) = RawSubscription.parse(
+    private fun subscription(body: String) = RawSubscriptionParser.parse(
         "{id:1,name:'Scope',version:1,globalGroups:[{key:1,name:'Group',$body}]}"
     )
 

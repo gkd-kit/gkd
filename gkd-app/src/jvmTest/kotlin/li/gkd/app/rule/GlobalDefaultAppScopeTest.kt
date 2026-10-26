@@ -1,7 +1,7 @@
 package li.gkd.app.rule
 
 import li.gkd.app.model.AppInfo
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsGlobalGroupConfig
 import li.gkd.db.SubsItem
@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GlobalDefaultAppScopeTest {
-    private val subscription = RawSubscription.parse("""{
+    private val subscription = RawSubscriptionParser.parse("""{
       id:1,name:'Scope',version:1,globalGroups:[{
         key:1,name:'Ad',matchAnyApp:false,
         apps:[{id:'app.listed'},{id:'app.disabled',enable:false},
@@ -111,7 +111,7 @@ class GlobalDefaultAppScopeTest {
 
     @Test
     fun subscriptionDisableAndSameNameGroupRemainSeparateReasons() {
-        val sub = RawSubscription.parse("""{
+        val sub = RawSubscriptionParser.parse("""{
           id:1,name:'Scope',version:1,
           apps:[{id:'app.disabled',groups:[{key:1,name:'Ad',rules:[{matches:'*'}]}]}],
           globalGroups:[{key:1,name:'Ad',matchAnyApp:false,disableIfAppGroupMatch:'',

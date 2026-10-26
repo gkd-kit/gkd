@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 import li.gkd.app.logging.LogUtils
+import li.songe.codeorigin.CallSite
 
 /** Only transport failures are summarized; disk I/O and unrecognized failures keep their stack. */
 fun networkFailureSummary(error: Throwable): String? = when (error) {
@@ -21,8 +22,12 @@ fun networkFailureSummary(error: Throwable): String? = when (error) {
     else -> null
 }
 
-fun logNetworkFailure(operation: String, error: Exception) {
+fun logNetworkFailure(
+    operation: String,
+    error: Exception,
+    @CallSite loc: String = "",
+) {
     val summary = networkFailureSummary(error)
-    if (summary != null) LogUtils.w("$operation: $summary")
-    else LogUtils.e(operation, error)
+    if (summary != null) LogUtils.w("$operation: $summary", loc = loc)
+    else LogUtils.e(operation, error, loc = loc)
 }

@@ -24,7 +24,7 @@ import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.image.ImageLoaders
@@ -131,7 +131,7 @@ class DesktopRuntime(
             DesktopProfile.directory.resolve("subscriptions").takeIf { importProfile }?.listFiles()
                 .orEmpty().filter { it.extension == "json" }.forEachIndexed { index, file ->
                     val value =
-                        RawSubscription.parse(file.readText(), json5 = false)
+                        RawSubscriptionParser.parse(file.readText(), json5 = false)
                     if (value.id in existing && value.id != SubscriptionIds.LOCAL) return@forEachIndexed
                     val enabled = DesktopProfile.subscriptionEnabled[value.id] ?: true
                     SubscriptionRepository.saveWithItem(
