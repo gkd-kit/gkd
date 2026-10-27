@@ -206,25 +206,36 @@ public abstract class NodeAdapter<T : Any> {
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
+        observer: SelectorObserver<T>? = null,
     ): Sequence<T> = sequence {
+        if (options.fastQuery && selector.fastQueries.isNotEmpty() && observer?.enabled == true) {
+            observer.record(SelectorEvaluation(node = node, kind = SelectorEvaluationKind.FastQueryScope,
+                expression = selector.toString(), matched = null))
+        }
+        var visited = false
         queryDescendants(node, selector, options).forEach { childNode ->
-            selector.match(childNode, this@NodeAdapter, options)?.let { target ->
+            visited = true
+            selector.match(childNode, this@NodeAdapter, options, observer)?.let { target ->
                 yield(target)
             }
         }
+        if (!visited && observer?.enabled == true) observer.record(SelectorEvaluation(node = node,
+            kind = SelectorEvaluationKind.NoCandidates, expression = selector.toString(), matched = null))
     }
 
     public fun querySelector(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
-    ): T? = querySelectorSequence(node, selector, options).firstOrNull()
+        observer: SelectorObserver<T>? = null,
+    ): T? = querySelectorSequence(node, selector, options, observer).firstOrNull()
 
     public fun querySelectorAll(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
-    ): List<T> = querySelectorSequence(node, selector, options)
+        observer: SelectorObserver<T>? = null,
+    ): List<T> = querySelectorSequence(node, selector, options, observer)
         .distinctBy(::getNodeKey)
         .toList()
 
@@ -240,12 +251,20 @@ public abstract class NodeAdapter<T : Any> {
         }
     }
 
+    /**
+     * Returns the first descendant match with its successful path for convenient JS calls via JsNodeAdapter.
+     * The path is returned directly; no diagnostic observer is required.
+     */
     public fun querySelectorWithTrace(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
     ): SelectorMatch<T>? = querySelectorWithTraceSequence(node, selector, options).firstOrNull()
 
+    /**
+     * Returns distinct descendant targets with their successful paths for convenient JS calls via JsNodeAdapter.
+     * Each result keeps its target and path together without a diagnostic observer.
+     */
     public fun querySelectorAllWithTrace(
         node: T,
         selector: Selector,

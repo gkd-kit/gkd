@@ -62,7 +62,7 @@ public class SelectorTypeException internal constructor(
 
 internal data class TypeCheckFailure(
     val kind: SelectorTypeErrorKind,
-    val positionValue: Any,
+    val positionValue: SourceMapped,
     val expression: String,
     val expected: String? = null,
     val actual: String? = null,

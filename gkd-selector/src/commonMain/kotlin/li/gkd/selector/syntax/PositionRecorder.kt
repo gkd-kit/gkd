@@ -1,5 +1,6 @@
 package li.gkd.selector.syntax
 
+import li.gkd.selector.SourceMapped
 import li.gkd.selector.SelectorPosition
 import li.gkd.selector.SelectorPositionKind
 import li.gkd.selector.SelectorSourceMap
@@ -12,7 +13,7 @@ internal class RecordedPositions(
 
 internal class PositionRecorder {
     private val positions = mutableListOf<SelectorPosition>()
-    private val ranges = mutableMapOf<Any, SourceRange>()
+    private val ranges = mutableMapOf<SourceMapped, SourceRange>()
 
     fun recordPosition(
         kind: SelectorPositionKind,
@@ -23,7 +24,7 @@ internal class PositionRecorder {
     }
 
     fun record(
-        value: Any,
+        value: SourceMapped,
         kind: SelectorPositionKind,
         start: Int,
         end: Int,

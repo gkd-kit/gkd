@@ -1,16 +1,18 @@
 package li.gkd.selector.property
 
+import li.gkd.selector.SourceMapped
 import li.gkd.selector.LogicalOperator
 import li.gkd.selector.MatchContext
 import li.gkd.selector.NodeAdapter
 
-internal sealed class PropertyExpression
+internal sealed class PropertyExpression : SourceMapped
 
 internal sealed class ComparisonExpression(
     val left: ValueExpression,
     val operator: CompareOperator,
     val right: ValueExpression,
 ) : PropertyExpression() {
+    abstract fun compareEvaluated(left: Any?, right: Any?): Boolean
     abstract fun <T : Any> match(
         context: MatchContext<T>,
         adapter: NodeAdapter<T>,
@@ -21,6 +23,7 @@ internal sealed class ComparisonExpression(
         private val valueOperator: CompareOperator.ValueOperator,
         right: ValueExpression,
     ) : ComparisonExpression(left, valueOperator, right) {
+        override fun compareEvaluated(left: Any?, right: Any?): Boolean = valueOperator.compareValue(left, right)
         override fun <T : Any> match(
             context: MatchContext<T>,
             adapter: NodeAdapter<T>,
@@ -40,6 +43,8 @@ internal sealed class ComparisonExpression(
         operator = regexOperator,
         right = right,
     ) {
+        override fun compareEvaluated(left: Any?, right: Any?): Boolean =
+            left is CharSequence && matches(left) == regexOperator.expectedMatch
         override fun <T : Any> match(
             context: MatchContext<T>,
             adapter: NodeAdapter<T>,

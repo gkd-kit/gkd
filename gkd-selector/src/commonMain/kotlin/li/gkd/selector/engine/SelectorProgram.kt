@@ -1,5 +1,6 @@
 package li.gkd.selector.engine
 
+import li.gkd.selector.SelectorEvaluationKind
 import li.gkd.selector.FastQuery
 import li.gkd.selector.LogicalOperator
 import li.gkd.selector.MatchContext
@@ -9,6 +10,8 @@ import li.gkd.selector.SelectorMatch
 import li.gkd.selector.SelectorSourceMap
 import li.gkd.selector.SelectorType
 import li.gkd.selector.TypeCheckFailure
+import li.gkd.selector.SelectorObserver
+import li.gkd.selector.SelectorEvaluation
 import li.gkd.selector.property.TypeCheckCollector
 
 private const val MATCH_UNIT = 0
@@ -29,21 +32,39 @@ internal class SelectorProgram private constructor(
         context: MatchContext<T>,
         adapter: NodeAdapter<T>,
         options: MatchOptions,
-    ): T? {
+    ): T? = matchUsing(context, { units[it].match(context, adapter, options) }, { _, _, _ -> })
+
+    fun <T : Any> matchExplained(context: MatchContext<T>, adapter: NodeAdapter<T>, options: MatchOptions,
+        observer: SelectorObserver<T>): T? = matchUsing(context,
+        { units[it].matchExplained(context, adapter, options, observer, it) },
+        { opcode, skipped, result ->
+            if (observer.enabled) observer.record(SelectorEvaluation(node = context.current,
+                kind = if (skipped) SelectorEvaluationKind.SelectorShortCircuit else SelectorEvaluationKind.SelectorNot,
+                expression = when (opcode) { AND_ENTER -> "&&: right operand skipped"; OR_ENTER -> "||: right operand skipped"; else -> "!" },
+                matched = result))
+        })
+
+    private inline fun <T : Any> matchUsing(context: MatchContext<T>,
+        matchUnit: (Int) -> T?, logical: (Int, Boolean, Boolean) -> Unit): T? {
         var programCounter = 0
         var result: T? = null
         while (programCounter < code.size / INSTRUCTION_SIZE) {
             val base = programCounter * INSTRUCTION_SIZE
             val operand = code[base + 1]
             when (code[base]) {
-                MATCH_UNIT -> result = units[operand].match(context, adapter, options)
-                NOT -> result = if (result == null) context.current else null
+                MATCH_UNIT -> result = matchUnit(operand)
+                NOT -> {
+                    result = if (result == null) context.current else null
+                    logical(NOT, false, result != null)
+                }
                 AND_ENTER -> if (result == null) {
+                    logical(AND_ENTER, true, false)
                     programCounter = code[base + 2]
                     continue
                 }
 
                 OR_ENTER -> if (result != null) {
+                    logical(OR_ENTER, true, true)
                     programCounter = code[base + 2]
                     continue
                 }

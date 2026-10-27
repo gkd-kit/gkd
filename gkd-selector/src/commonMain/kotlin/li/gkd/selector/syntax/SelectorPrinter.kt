@@ -47,6 +47,8 @@ internal object SelectorPrinter {
 
     fun render(expression: ValueExpression): String = render(ValueAction(expression))
 
+    fun render(relation: RelationSelector): String = render(RelationSelectorAction(relation))
+
     private fun render(initial: Action): String = buildString {
         val stack = mutableListOf<Action>(initial)
         while (stack.isNotEmpty()) {

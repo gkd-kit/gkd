@@ -4,7 +4,7 @@ import li.gkd.selector.LogicalOperator
 import li.gkd.selector.MatchContext
 import li.gkd.selector.NodeAdapter
 
-private class EvaluationFrame(
+internal class EvaluationFrame(
     val expression: PropertyExpression,
     var state: Int = 0,
 )
@@ -12,9 +12,14 @@ private class EvaluationFrame(
 internal fun <T : Any> PropertyExpression.evaluate(
     context: MatchContext<T>,
     adapter: NodeAdapter<T>,
+): Boolean = evaluateUsing({ it.match(context, adapter) }, { _, _, _ -> })
+
+internal inline fun PropertyExpression.evaluateUsing(
+    compare: (ComparisonExpression) -> Boolean,
+    logical: (PropertyExpression, Boolean, PropertyExpression?) -> Unit,
 ): Boolean {
     if (this is ComparisonExpression) {
-        return match(context, adapter)
+        return compare(this)
     }
     val stack = mutableListOf<EvaluationFrame>()
     var current: PropertyExpression = this
@@ -22,7 +27,7 @@ internal fun <T : Any> PropertyExpression.evaluate(
 
     while (true) {
         when (current) {
-            is ComparisonExpression -> result = current.match(context, adapter)
+            is ComparisonExpression -> result = compare(current)
             is NotExpression -> {
                 stack.add(EvaluationFrame(current))
                 current = current.expression
@@ -44,6 +49,7 @@ internal fun <T : Any> PropertyExpression.evaluate(
                 is NotExpression -> {
                     stack.removeAt(stack.lastIndex)
                     result = !result
+                    logical(expression, result, null)
                 }
 
                 is LogicalExpression -> {
@@ -53,6 +59,7 @@ internal fun <T : Any> PropertyExpression.evaluate(
                             LogicalOperator.Or -> result
                         }
                         if (shortCircuited) {
+                            logical(expression, result, expression.right)
                             stack.removeAt(stack.lastIndex)
                         } else {
                             frame.state = 1
@@ -60,6 +67,7 @@ internal fun <T : Any> PropertyExpression.evaluate(
                             break
                         }
                     } else {
+                        logical(expression, result, null)
                         stack.removeAt(stack.lastIndex)
                     }
                 }

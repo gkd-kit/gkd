@@ -1,5 +1,7 @@
 package li.gkd.selector.relation
 
+import li.gkd.selector.SourceMapped
+
 public sealed interface RelationExpression {
     public val minOffset: Int
     public val maxOffset: Int?
@@ -11,7 +13,7 @@ public sealed interface RelationExpression {
 
 internal class TupleExpression(
     val numbers: List<Int>,
-) : RelationExpression {
+) : RelationExpression, SourceMapped {
     override val minOffset = (numbers.firstOrNull() ?: 1) - 1
     override val maxOffset = numbers.lastOrNull()?.minus(1)
 
@@ -24,7 +26,7 @@ internal class TupleExpression(
 internal class PolynomialExpression(
     val a: Int = 0,
     val b: Int = 1,
-) : RelationExpression {
+) : RelationExpression, SourceMapped {
     override val matchesAllOffsets: Boolean
         get() = a == 1 && b == 0
 

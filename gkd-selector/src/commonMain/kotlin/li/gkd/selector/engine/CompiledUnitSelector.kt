@@ -1,9 +1,12 @@
 package li.gkd.selector.engine
 
+import li.gkd.selector.SelectorEvaluationKind
 import li.gkd.selector.FastQuery
 import li.gkd.selector.MatchContext
 import li.gkd.selector.MatchOptions
 import li.gkd.selector.NodeAdapter
+import li.gkd.selector.SelectorObserver
+import li.gkd.selector.SelectorEvaluation
 import li.gkd.selector.SelectorMatchStep
 import li.gkd.selector.SelectorMatchUnit
 import li.gkd.selector.SelectorSourceMap
@@ -61,8 +64,27 @@ internal class CompiledUnitSelector(
         adapter: NodeAdapter<T>,
         options: MatchOptions,
     ): T? {
-        val matchedContext = matchPath(context, adapter, options) ?: return null
+        val matchedContext = matchPath(context, adapter, options, { index, candidate ->
+            propertySelectors[index].match(candidate, adapter)
+        }, { _, _, _ -> }) ?: return null
         return matchedContext.get(targetIndex).current
+    }
+
+    fun <T : Any> matchExplained(context: MatchContext<T>, adapter: NodeAdapter<T>, options: MatchOptions,
+        observer: SelectorObserver<T>, unit: Int): T? {
+        val matched = matchPath(context, adapter, options, { index, candidate ->
+            propertySelectors[index].matchExplained(candidate, adapter, observer, unit, index)
+        }, { index, candidate, reason ->
+            if (observer.enabled && (reason != SelectorEvaluationKind.RelationSearch ||
+                options.fastQuery && relations[index - 1].isMatchAnyDescendant &&
+                propertySelectors[index - 1].fastQueryList?.isNotEmpty() == true)) {
+                observer.record(SelectorEvaluation(node = candidate.current, unit = unit, property = index,
+                    kind = if (reason == SelectorEvaluationKind.RelationSearch) SelectorEvaluationKind.FastQueryScope else reason,
+                    expression = if (index > 0) SelectorPrinter.render(relations[index - 1]) else "property",
+                    matched = if (reason == SelectorEvaluationKind.CachedFailure || reason == SelectorEvaluationKind.RelationExhausted) false else null))
+            }
+        }) ?: return null
+        return matched.get(targetIndex).current
     }
 
     fun <T : Any> matchWithTrace(
@@ -70,7 +92,9 @@ internal class CompiledUnitSelector(
         adapter: NodeAdapter<T>,
         options: MatchOptions,
     ): SelectorMatchUnit<T>? {
-        val matchedContext = matchPath(context, adapter, options) ?: return null
+        val matchedContext = matchPath(context, adapter, options, { index, candidate ->
+            propertySelectors[index].match(candidate, adapter)
+        }, { _, _, _ -> }) ?: return null
         val matchingContexts = matchedContext.toContextList().reversed()
         val steps = Array(relations.size) { pathIndex ->
             val relationIndex = relations.lastIndex - pathIndex
@@ -147,14 +171,16 @@ internal class CompiledUnitSelector(
         }
     }
 
-    private fun <T : Any> matchPath(
+    private inline fun <T : Any> matchPath(
         initialContext: MatchContext<T>,
         adapter: NodeAdapter<T>,
         options: MatchOptions,
+        matchProperty: (Int, MatchContext<T>) -> Boolean,
+        explain: (Int, MatchContext<T>, SelectorEvaluationKind) -> Unit,
     ): MatchContext<T>? {
         if (propertySelectors.size == 1) {
             return initialContext.takeIf { context ->
-                propertySelectors[0].match(context, adapter)
+                matchProperty(0, context)
             }
         }
         var propertySelectorIndex = propertySelectors.lastIndex
@@ -166,25 +192,17 @@ internal class CompiledUnitSelector(
             null
         }
 
-        fun isKnownFailure(index: Int, node: T): Boolean =
-            index < cacheablePropertySelectorCount &&
-                    failedStateKeysByPropertySelector?.get(index)
-                        ?.contains(adapter.getNodeKey(node)) == true
-
-        fun rememberFailure(index: Int, node: T) {
-            if (index >= cacheablePropertySelectorCount) return
-            val failedStateKeys = failedStateKeysByPropertySelector ?: return
-            val propertySelectorFailures = failedStateKeys[index]
-                ?: mutableSetOf<Any>().also { failedStateKeys[index] = it }
-            propertySelectorFailures.add(adapter.getNodeKey(node))
-        }
-
         while (true) {
-            if (!isKnownFailure(propertySelectorIndex, context.current) &&
-                propertySelectors[propertySelectorIndex].match(context, adapter)
-            ) {
+            val knownFailure = propertySelectorIndex < cacheablePropertySelectorCount &&
+                failedStateKeysByPropertySelector?.get(propertySelectorIndex)?.contains(adapter.getNodeKey(context.current)) == true
+            val matched = if (knownFailure) {
+                explain(propertySelectorIndex, context, SelectorEvaluationKind.CachedFailure)
+                false
+            } else matchProperty(propertySelectorIndex, context)
+            if (matched) {
                 if (propertySelectorIndex == 0) return context
                 val relationIndex = propertySelectorIndex - 1
+                explain(propertySelectorIndex, context, SelectorEvaluationKind.RelationSearch)
                 stack.add(
                     SearchFrame(
                         propertySelectorIndex = propertySelectorIndex,
@@ -199,7 +217,7 @@ internal class CompiledUnitSelector(
                     ),
                 )
             } else {
-                rememberFailure(propertySelectorIndex, context.current)
+                rememberFailure(failedStateKeysByPropertySelector, propertySelectorIndex, context.current, adapter)
             }
 
             var advanced = false
@@ -212,11 +230,18 @@ internal class CompiledUnitSelector(
                     advanced = true
                     break
                 }
-                rememberFailure(frame.propertySelectorIndex, frame.context.current)
+                explain(frame.propertySelectorIndex, frame.context, SelectorEvaluationKind.RelationExhausted)
+                rememberFailure(failedStateKeysByPropertySelector, frame.propertySelectorIndex, frame.context.current, adapter)
                 stack.removeAt(stack.lastIndex)
             }
             if (!advanced) return null
         }
+    }
+
+    private fun <T : Any> rememberFailure(failedStateKeys: Array<MutableSet<Any>?>?, index: Int, node: T, adapter: NodeAdapter<T>) {
+        if (index >= cacheablePropertySelectorCount || failedStateKeys == null) return
+        val failures = failedStateKeys[index] ?: mutableSetOf<Any>().also { failedStateKeys[index] = it }
+        failures.add(adapter.getNodeKey(node))
     }
 
     private fun <T : Any> candidates(

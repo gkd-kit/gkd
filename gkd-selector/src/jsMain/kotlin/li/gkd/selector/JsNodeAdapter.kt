@@ -144,6 +144,10 @@ public abstract class JsNodeAdapter<T : Any> {
         options: MatchOptions = MatchOptions.default,
     ): T? = selector.match(node, core, options)
 
+    /**
+     * Convenience API for quick JS calls: returns the target and successful path in one result.
+     * No diagnostic observer or callback collection is required.
+     */
     public fun matchWithTrace(
         node: T,
         selector: Selector,
@@ -162,12 +166,20 @@ public abstract class JsNodeAdapter<T : Any> {
         options: MatchOptions = MatchOptions.default,
     ): JsArray<T> = core.querySelectorAll(node, selector, options).toJsArray()
 
+    /**
+     * Convenience API for quick JS calls: returns the first descendant match and its successful path.
+     * No diagnostic observer or callback collection is required.
+     */
     public fun querySelectorWithTrace(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
     ): SelectorMatch<T>? = core.querySelectorWithTrace(node, selector, options)
 
+    /**
+     * Convenience API for quick JS calls: returns distinct descendant targets with their successful paths.
+     * Each result keeps its target and path together without a diagnostic observer.
+     */
     public fun querySelectorAllWithTrace(
         node: T,
         selector: Selector,

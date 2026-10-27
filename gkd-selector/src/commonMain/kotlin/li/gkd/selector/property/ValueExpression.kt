@@ -1,8 +1,9 @@
 package li.gkd.selector.property
 
+import li.gkd.selector.SourceMapped
 import li.gkd.selector.SelectorTypeKind
 
-internal sealed class ValueExpression {
+internal sealed class ValueExpression : SourceMapped {
     abstract val syntaxTypeName: String
 
     open val isStringOperand: Boolean
