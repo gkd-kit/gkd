@@ -84,7 +84,6 @@ fun SubsGlobalGroupExcludePage(
 ) {
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { SubsGlobalGroupExcludeViewModel(route) }
-    val busy by vm.busyFlow.collectAsStateWithLifecycle()
     val environment = rememberRuleControlEnvironment()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     val visits = rememberVisitOrder()
@@ -106,7 +105,7 @@ fun SubsGlobalGroupExcludePage(
         if (!host.hideIme()) closeSearch()
     }
     GkBackHandler(selectionSnapshot.active) {
-        if (!busy) selection.clear()
+        selection.clear()
     }
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->
         val subs = state.subscription
@@ -172,16 +171,14 @@ fun SubsGlobalGroupExcludePage(
         fun applyToApps(ids: Set<String>, setting: RuleSetting, confirm: Boolean = false) {
             val request = vm.prepareSwitches(state, ids)
             vm.scope.launchUi {
-                vm.runAction {
-                    vm.applySwitches(
-                        request, setting,
-                        confirmation = if (confirm) getString(
-                            Res.string.global_rule_app_switch_batch_confirmation,
-                            ids.size.toString(),
-                            setting.labelText()
-                        ) else null,
-                    )?.let { ToastUtils.show(it.description()) }
-                }
+                vm.applySwitches(
+                    request, setting,
+                    confirmation = if (confirm) getString(
+                        Res.string.global_rule_app_switch_batch_confirmation,
+                        ids.size.toString(),
+                        setting.labelText()
+                    ) else null,
+                )?.let { ToastUtils.show(it.description()) }
             }
         }
         val editorDialog by vm.editorActions.dialog.collectAsStateWithLifecycle()
@@ -256,7 +253,6 @@ fun SubsGlobalGroupExcludePage(
                                         GkMultiSelectionActions(
                                             selectionSnapshot.selectedKeys,
                                             selectableTargets, selection::selectAll, selection::invert,
-                                            !busy
                                         ) { dismiss ->
                                             GkRuleBatchMenuItems(
                                                 dismiss,
@@ -278,7 +274,7 @@ fun SubsGlobalGroupExcludePage(
                                         Box {
                                             GkFilterIconButton(
                                                 filtered = filteredIds.size < controls.size,
-                                                enabled = !busy, onClick = { menu = true })
+                                                onClick = { menu = true })
                                             DropdownMenu(menu, onDismissRequest = { menu = false }) {
                                                 GkAppFilterContent(
                                                     sort = settings.subsExcludeSort,
@@ -324,10 +320,9 @@ fun SubsGlobalGroupExcludePage(
                             onClick = { mainVm.showRuleGroup(subs.id, appId, group, appId) },
                             selectedMode = selectionSnapshot.active, selected = appId in selected,
                             selectable = control.canEnable,
-                            selectionEnabled = !busy,
                             onSelect = { selection.toggle(appId) },
                             onLongClick = {
-                                if (!busy && control.canEnable) {
+                                if (control.canEnable) {
                                     focusManager.clearFocus()
                                     host.hideIme()
                                     selection.select(appId)

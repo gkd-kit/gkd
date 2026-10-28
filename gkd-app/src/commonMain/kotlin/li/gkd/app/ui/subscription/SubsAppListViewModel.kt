@@ -10,7 +10,6 @@ import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.app.AppSort
@@ -45,11 +44,6 @@ class SubsAppListViewModel(
         showSearchBar.value = value
     }
 
-    private val mutation = MutexState()
-    val busyFlow: StateFlow<Boolean> get() = mutation.state
-    suspend fun runAction(action: suspend () -> Unit) {
-        mutation.tryWithStateLock(action)
-    }
 
     val uiState = RequiredSubscription(route.subsItemId, scope).buildUiState { subscription ->
         combine(

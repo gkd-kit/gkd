@@ -1,13 +1,11 @@
 package li.gkd.app.ui.subscription
 
 import li.gkd.app.ui.component.MultiSelectionState
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import li.gkd.app.resources.*
 import li.gkd.app.rule.CategorySetting
 import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleGroupConfigService
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.navigation.SubsCategoryRoute
@@ -34,12 +32,7 @@ class SubsCategoryViewModel(
 ) : BaseViewModel() {
     val selection = MultiSelectionState<Int>()
 
-    private val mutation = MutexState()
-    val busyFlow: StateFlow<Boolean> get() = mutation.state
 
-    suspend fun runAction(action: suspend () -> Unit) {
-        mutation.tryWithStateLock(action)
-    }
 
     suspend fun setSettings(state: SubsCategoryUiState, keys: Set<Int>, setting: CategorySetting) {
         val expected = state.categories.filter { it.category.key in keys }

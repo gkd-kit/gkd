@@ -1,6 +1,5 @@
 package li.gkd.app.ui.home
 
-import li.gkd.app.META
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import li.gkd.app.ui.component.GkPullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,13 +21,16 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import li.gkd.app.META
 import li.gkd.app.error.messageResource
+import li.gkd.app.model.findOption
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
-import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
+import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.SubscriptionResult
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkBatchActionMenuItem
@@ -38,6 +39,7 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkMatchingBanner
 import li.gkd.app.ui.component.GkMultiSelectionActions
 import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
+import li.gkd.app.ui.component.GkPullToRefreshBox
 import li.gkd.app.ui.component.GkSettingsDialog
 import li.gkd.app.ui.component.GkSubsItemCard
 import li.gkd.app.ui.component.GkSubscriptionActions
@@ -47,19 +49,17 @@ import li.gkd.app.ui.component.SubscriptionCardData
 import li.gkd.app.ui.component.gkPageBottomSpace
 import li.gkd.app.ui.component.rememberPinnedListScrollState
 import li.gkd.app.ui.component.rememberReorderSession
-import li.gkd.app.ui.MainViewModel
-import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.option.UpdateTimeOption
-import li.gkd.app.model.findOption
+import li.gkd.app.ui.platform.GkBackHandler
+import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.subscription.SubsManageUiState
 import li.gkd.app.ui.text.formatTimeAgo
 import li.gkd.app.util.ToastUtils
+import li.gkd.db.SubscriptionIds
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import li.gkd.db.SubscriptionIds
 
 @Composable
 fun subsManagePage(
@@ -77,17 +77,19 @@ private fun subsManageContent(
 
     val mainVm = MainViewModel.requireCurrent()
     val state = loadableState.value
-    val refresh: () -> Unit = { vm.scope.launchUi { vm.refreshSubscriptions().message()?.let { ToastUtils.show(it) } } }
+    val refresh: () -> Unit = {
+        vm.scope.launchUi { vm.refreshSubscriptions().message()?.let { ToastUtils.show(it) } }
+    }
     GkDesktopKeyHandler(Key.F5, onKey = refresh)
     val settingsDialogVisible by vm.settingsDialogVisible.collectAsStateWithLifecycle()
     val powerWarningItem by vm.powerWarningItemFlow.collectAsStateWithLifecycle()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val subItems = state?.subItems.orEmpty()
     val subsIdToRaw = state?.subscriptions.orEmpty()
-    val batchBusy by vm.batchBusyFlow.collectAsStateWithLifecycle()
 
     val refreshProgress by SubscriptionRepository.refreshing.collectAsStateWithLifecycle()
-    val refreshing by li.gkd.app.subscription.SubscriptionRepository.updating.collectAsStateWithLifecycle()
+    val refreshing by
+        li.gkd.app.subscription.SubscriptionRepository.updating.collectAsStateWithLifecycle()
     val selectionState = vm.selection
     val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
     val allIds = remember(subItems) { subItems.mapTo(mutableSetOf()) { it.id } }
@@ -129,10 +131,13 @@ private fun subsManageContent(
                     Text(text = stringResource(Res.string.subscription_multiple_enabled_warning))
                     Text(
                         text = stringResource(Res.string.subscription_battery_help),
-                        modifier = Modifier.clickable(onClick = {
-                            vm.dismissPowerWarning()
-                            mainVm.navigator.openWebPage(AppLinks.BackgroundRunningHelp)
-                        }),
+                        modifier =
+                            Modifier.clickable(
+                                onClick = {
+                                    vm.dismissPowerWarning()
+                                    mainVm.navigator.openWebPage(AppLinks.BackgroundRunningHelp)
+                                },
+                            ),
                         textDecoration = TextDecoration.Underline,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -142,9 +147,10 @@ private fun subsManageContent(
             confirmButton = {
                 TextButton(
                     onClick = { vm.scope.launchUi { vm.confirmPowerWarning() } },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) {
                     Text(text = stringResource(Res.string.enable_anyway))
                 }
@@ -163,7 +169,7 @@ private fun subsManageContent(
     ResetPageScrollOnRequest(
         vm.homeState,
         BottomNavItem.SubsManage,
-        pageScrollState::resetScrollAndAwait
+        pageScrollState::resetScrollAndAwait,
     )
     return ScaffoldExt(
         navItem = BottomNavItem.SubsManage,
@@ -184,40 +190,52 @@ private fun subsManageContent(
                             keys = allIds,
                             onSelectAll = selectionState::selectAll,
                             onInvert = selectionState::invert,
-                            enabled = !batchBusy && !refreshing && !reorderSession.dragging,
+                            enabled = !refreshing && !reorderSession.dragging,
                         ) { dismiss ->
                             val canDeleteIds = selectedIds - SubscriptionIds.LOCAL
                             GkBatchActionMenuItem(
-                                text = if (canDeleteIds.isEmpty()) stringResource(Res.string.subscription_delete_except_local) else stringResource(
-                                    Res.string.action_delete
-                                ),
+                                text =
+                                    if (canDeleteIds.isEmpty())
+                                        stringResource(Res.string.subscription_delete_except_local)
+                                    else
+                                        stringResource(
+                                            Res.string.action_delete,
+                                        ),
                                 enabled = canDeleteIds.isNotEmpty(),
                                 onDismiss = dismiss,
                                 onClick = {
                                     val idsToDelete = canDeleteIds
-                                    val text = Res.string.subscriptions_delete_confirmation.getSync(
-                                        idsToDelete.size
-                                    ) +
-                                            if (SubscriptionIds.LOCAL in selectedIds) Res.string.subscriptions_local_excluded_suffix.getSync() else ""
+                                    val text =
+                                        Res.string.subscriptions_delete_confirmation.getSync(
+                                            idsToDelete.size,
+                                        ) +
+                                            if (SubscriptionIds.LOCAL in selectedIds)
+                                                Res.string.subscriptions_local_excluded_suffix
+                                                    .getSync()
+                                            else ""
                                     vm.scope.launchUi {
-                                        vm.runBatchAction {
-                                            if (!mainVm.dialogRequests.confirm(
-                                                    Res.string.subscription_delete.getSync(),
-                                                    text,
-                                                    error = true,
-                                                )
-                                            ) return@runBatchAction
-                                            val result = vm.deleteSubscriptions(idsToDelete)
-                                            if (result is SubscriptionResult.Success) {
-                                                selectionState.removeDeleted(idsToDelete)
-                                                ToastUtils.show(
-                                                    if (result.count > 0) Res.string.subscriptions_deleted_count.getSync(
-                                                        result.count
-                                                    ) else Res.string.selected_subscriptions_changed.getSync()
-                                                )
-                                            } else {
-                                                result.message()?.let { ToastUtils.show(it) }
-                                            }
+                                        if (
+                                            !mainVm.dialogRequests.confirm(
+                                                Res.string.subscription_delete.getSync(),
+                                                text,
+                                                error = true,
+                                            )
+                                        )
+                                            return@launchUi
+                                        val result = vm.deleteSubscriptions(idsToDelete)
+                                        if (result is SubscriptionResult.Success) {
+                                            selectionState.removeDeleted(idsToDelete)
+                                            ToastUtils.show(
+                                                if (result.count > 0)
+                                                    Res.string.subscriptions_deleted_count.getSync(
+                                                        result.count,
+                                                    )
+                                                else
+                                                    Res.string.selected_subscriptions_changed
+                                                        .getSync(),
+                                            )
+                                        } else {
+                                            result.message()?.let { ToastUtils.show(it) }
                                         }
                                     }
                                 },
@@ -229,7 +247,8 @@ private fun subsManageContent(
                             onToggleMatching = vm::toggleMatching,
                             onSettings = { vm.setSettingsDialogVisible(true) },
                             onMenuOpen = {
-                                if (refreshing) ToastUtils.show(Res.string.subscription_refresh_wait.getSync())
+                                if (refreshing)
+                                    ToastUtils.show(Res.string.subscription_refresh_wait.getSync())
                                 !refreshing
                             },
                             onAddAppRule = {
@@ -238,8 +257,8 @@ private fun subsManageContent(
                                         subsId = SubscriptionIds.LOCAL,
                                         groupKey = null,
                                         appId = "",
-                                        forward = true
-                                    )
+                                        forward = true,
+                                    ),
                                 )
                             },
                             onAddGlobalRule = {
@@ -248,8 +267,8 @@ private fun subsManageContent(
                                         subsId = SubscriptionIds.LOCAL,
                                         groupKey = null,
                                         appId = null,
-                                        forward = true
-                                    )
+                                        forward = true,
+                                    ),
                                 )
                             },
                         )
@@ -293,16 +312,22 @@ private fun subsManageContent(
                     if (loadableState !is Loadable.Ready) {
                         item("load-state") {
                             Text(
-                                text = (loadableState as? Loadable.Failure)?.cause?.messageResource()
-                                    ?: stringResource(if (loadableState is Loadable.Loading) Res.string.loading_progress else Res.string.data_load_failed),
+                                text =
+                                    (loadableState as? Loadable.Failure)?.cause?.messageResource()
+                                        ?: stringResource(
+                                            if (loadableState is Loadable.Loading)
+                                                Res.string.loading_progress
+                                            else Res.string.data_load_failed,
+                                        ),
                                 modifier = Modifier.padding(16.dp),
                             )
                         }
                     }
                     itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
                         // Keep the initial gesture alive after it enters selection mode.
-                        val canDrag = orderSubItems.size > 1 && (reorderSession.dragging ||
-                                (!refreshing && !batchBusy && !isSelectedMode))
+                        val canDrag =
+                            orderSubItems.size > 1 &&
+                                (reorderSession.dragging || (!refreshing && !isSelectedMode))
                         ReorderableItem(
                             state = reorderableLazyColumnState,
                             key = subItem.id,
@@ -310,55 +335,64 @@ private fun subsManageContent(
                         ) {
                             val interactionSource = remember { MutableInteractionSource() }
                             GkSubsItemCard(
-                                modifier = Modifier.longPressDraggableHandle(
-                                    enabled = canDrag,
-                                    interactionSource = interactionSource,
-                                    onDragStarted = {
-                                        reorderSession.startDragging()
-                                        if (!isSelectedMode) {
-                                            selectionState.select(subItem.id)
-                                        }
-                                    },
-                                    onDragStopped = {
-                                        val result = reorderSession.finishDragging()
-                                        if (result.moved) {
-                                            selectionState.clear()
-                                        }
-                                        result.reorderedItems?.let { reorderedItems ->
-                                            val changedItems =
-                                                reorderedItems.mapIndexedNotNull { index, item ->
-                                                    item.copy(order = index)
-                                                        .takeIf { it.order != item.order }
-                                                }
-                                            if (changedItems.isNotEmpty()) {
-                                                vm.scope.launchUi { vm.updateOrder(changedItems) }
+                                modifier =
+                                    Modifier.longPressDraggableHandle(
+                                        enabled = canDrag,
+                                        interactionSource = interactionSource,
+                                        onDragStarted = {
+                                            reorderSession.startDragging()
+                                            if (!isSelectedMode) {
+                                                selectionState.select(subItem.id)
                                             }
-                                        }
-                                    },
-                                ),
+                                        },
+                                        onDragStopped = {
+                                            val result = reorderSession.finishDragging()
+                                            if (result.moved) {
+                                                selectionState.clear()
+                                            }
+                                            result.reorderedItems?.let { reorderedItems ->
+                                                val changedItems =
+                                                    reorderedItems.mapIndexedNotNull { index, item
+                                                        ->
+                                                        item.copy(order = index).takeIf {
+                                                            it.order != item.order
+                                                        }
+                                                    }
+                                                if (changedItems.isNotEmpty()) {
+                                                    vm.scope.launchUi {
+                                                        vm.updateOrder(changedItems)
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    ),
                                 interactionSource = interactionSource,
-                                data = SubscriptionCardData(
-                                    id = subItem.id,
-                                    enabled = subItem.enable,
-                                    name = subsIdToRaw[subItem.id]?.name,
-                                    version = subsIdToRaw[subItem.id]?.version ?: 0,
-                                    author = subsIdToRaw[subItem.id]?.author,
-                                    globalGroups = subsIdToRaw[subItem.id]?.globalGroups?.size ?: 0,
-                                    apps = subsIdToRaw[subItem.id]?.apps?.size ?: 0,
-                                    appGroups = subsIdToRaw[subItem.id]?.appGroups?.size ?: 0,
-                                    triggerCount = state?.triggerCounts?.get(subItem.id) ?: 0L,
-                                    updatedAt = formatTimeAgo(subItem.mtime),
-                                    appName = META.appName,
-                                    loadError = state?.loadErrors?.get(subItem.id)?.messageResource(),
-                                    updateFailed = state?.refreshErrors?.containsKey(subItem.id) == true,
-                                ),
+                                data =
+                                    SubscriptionCardData(
+                                        id = subItem.id,
+                                        enabled = subItem.enable,
+                                        name = subsIdToRaw[subItem.id]?.name,
+                                        version = subsIdToRaw[subItem.id]?.version ?: 0,
+                                        author = subsIdToRaw[subItem.id]?.author,
+                                        globalGroups =
+                                            subsIdToRaw[subItem.id]?.globalGroups?.size ?: 0,
+                                        apps = subsIdToRaw[subItem.id]?.apps?.size ?: 0,
+                                        appGroups = subsIdToRaw[subItem.id]?.appGroups?.size ?: 0,
+                                        triggerCount = state?.triggerCounts?.get(subItem.id) ?: 0L,
+                                        updatedAt = formatTimeAgo(subItem.mtime),
+                                        appName = META.appName,
+                                        loadError =
+                                            state?.loadErrors?.get(subItem.id)?.messageResource(),
+                                        updateFailed =
+                                            state?.refreshErrors?.containsKey(subItem.id) == true,
+                                    ),
                                 matchingEnabled = store.enableMatch,
                                 index = index + 1,
                                 isSelectedMode = isSelectedMode,
-                                selectionEnabled = !batchBusy && !refreshing && !reorderSession.dragging,
+                                selectionEnabled = !refreshing && !reorderSession.dragging,
                                 handlesLongPress = !canDrag,
                                 onSelect = {
-                                    if (!batchBusy && !refreshing && !reorderSession.dragging) {
+                                    if (!refreshing && !reorderSession.dragging) {
                                         selectionState.select(subItem.id)
                                     }
                                 },
@@ -368,7 +402,9 @@ private fun subsManageContent(
                                     mainVm.subsSheet.show(subItem.id)
                                 },
                                 onCheckedChange = { checked ->
-                                    vm.scope.launchUi { vm.requestSubscriptionEnabled(subItem, checked) }
+                                    vm.scope.launchUi {
+                                        vm.requestSubscriptionEnabled(subItem, checked)
+                                    }
                                 },
                                 onSelectedChange = { selectionState.toggle(subItem.id) },
                             )

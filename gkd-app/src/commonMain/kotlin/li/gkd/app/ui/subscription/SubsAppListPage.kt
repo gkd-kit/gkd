@@ -74,7 +74,6 @@ fun SubsAppListPage(
 
     val vm = viewModel { SubsAppListViewModel(route) }
     val scope = vm.scope
-    val busy by vm.busyFlow.collectAsStateWithLifecycle()
     val subscriptionSnapshot by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
     val subscription = subscriptionSnapshot.value?.subscriptions?.get(subsItemId)
 
@@ -127,22 +126,20 @@ fun SubsAppListPage(
     GkBackHandler(showSearchBar && !selectionSnapshot.active) {
         if (!host.hideIme()) closeSearch()
     }
-    GkBackHandler(selectionSnapshot.active) { if (!busy) selection.clear() }
+    GkBackHandler(selectionSnapshot.active) { selection.clear() }
     val updateSelected: (RuleSetting) -> Unit = { setting ->
         val request = vm.prepareSwitches(checkNotNull(state), selected)
         scope.launchUi {
-            vm.runAction {
-                if (mainVm.dialogRequests.confirm(
-                        getString(Res.string.subscription_app_switch_set),
-                        getString(
-                            Res.string.subscription_app_switch_batch_confirmation,
-                            selected.size.toString(),
-                            setting.labelText()
-                        )
+            if (mainVm.dialogRequests.confirm(
+                    getString(Res.string.subscription_app_switch_set),
+                    getString(
+                        Res.string.subscription_app_switch_batch_confirmation,
+                        selected.size.toString(),
+                        setting.labelText()
                     )
-                ) {
-                    ToastUtils.show(vm.applySwitches(request, setting).description())
-                }
+                )
+            ) {
+                ToastUtils.show(vm.applySwitches(request, setting).description())
             }
         }
     }
@@ -181,7 +178,7 @@ fun SubsAppListPage(
                     }
                 }, actions = { selectedMode ->
                     if (selectedMode) {
-                        GkMultiSelectionActions(selectionSnapshot.selectedKeys, visibleTargets, selection::selectAll, selection::invert, !busy) { dismiss ->
+                        GkMultiSelectionActions(selectionSnapshot.selectedKeys, visibleTargets, selection::selectAll, selection::invert) { dismiss ->
                             GkRuleBatchMenuItems(dismiss, updateSelected)
                         }
                     } else {
@@ -267,15 +264,12 @@ fun SubsAppListPage(
                         subsItemId, app.id, checkNotNull(state).configs,
                         checkNotNull(configIndex)
                     ),
-                    selectionEnabled = !busy,
                     selectedMode = selectionSnapshot.active,
                     selected = app.id in selected,
                     onLongClick = {
-                        if (!busy) {
-                            focusManager.clearFocus()
-                            host.hideIme()
-                            selection.select(app.id)
-                        }
+                        focusManager.clearFocus()
+                        host.hideIme()
+                        selection.select(app.id)
                     },
                     onSelect = { selection.toggle(app.id) },
                     onClick = {

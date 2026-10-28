@@ -69,7 +69,6 @@ fun SubsCategoryPage(
     val vm = viewModel { SubsCategoryViewModel(route) }
     var showHelp by remember { mutableStateOf(false) }
     if (showHelp) CategoryHelpDialog { showHelp = false }
-    val busy by vm.busyFlow.collectAsStateWithLifecycle()
     val selection = vm.selection
     val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
     GkBackHandler(selectionSnapshot.active) { selection.clear() }
@@ -88,10 +87,8 @@ fun SubsCategoryPage(
         fun setSelected(setting: CategorySetting) {
             val selectedKeys = selected
             vm.scope.launchUi {
-                vm.runAction {
-                    vm.setSettings(state, selectedKeys, setting)
-                    ToastUtils.show(getString(Res.string.update_success))
-                }
+                vm.setSettings(state, selectedKeys, setting)
+                ToastUtils.show(getString(Res.string.update_success))
             }
         }
         GkScaffold(
@@ -112,7 +109,7 @@ fun SubsCategoryPage(
                     },
                     actions = { selectedMode ->
                         if (selectedMode) {
-                            GkMultiSelectionActions(selectionSnapshot.selectedKeys, keys, selection::selectAll, selection::invert, enabled = !busy) { dismiss ->
+                            GkMultiSelectionActions(selectionSnapshot.selectedKeys, keys, selection::selectAll, selection::invert) { dismiss ->
                                 GkBatchActionMenuItem(
                                     stringResource(Res.string.category_follow_subscription),
                                     dismiss,
@@ -133,20 +130,18 @@ fun SubsCategoryPage(
                                         {
                                             val selectedKeys = selected
                                             vm.scope.launchUi {
-                                                vm.runAction {
-                                                    if (!mainVm.dialogRequests.confirm(
-                                                            title = getString(Res.string.category_delete),
-                                                            text = getString(
-                                                                Res.string.categories_delete_confirmation,
-                                                                selectedKeys.size.toString()
-                                                            ),
-                                                            error = true,
-                                                        )
-                                                    ) return@runAction
-                                                    vm.deleteCategories(state, selectedKeys)
-                                                    selection.removeDeleted(selectedKeys)
-                                                    ToastUtils.show(getString(Res.string.delete_success))
-                                                }
+                                                if (!mainVm.dialogRequests.confirm(
+                                                        title = getString(Res.string.category_delete),
+                                                        text = getString(
+                                                            Res.string.categories_delete_confirmation,
+                                                            selectedKeys.size.toString()
+                                                        ),
+                                                        error = true,
+                                                    )
+                                                ) return@launchUi
+                                                vm.deleteCategories(state, selectedKeys)
+                                                selection.removeDeleted(selectedKeys)
+                                                ToastUtils.show(getString(Res.string.delete_success))
                                             }
                                         })
                                 }
@@ -202,7 +197,6 @@ fun SubsCategoryPage(
                         summary = summary,
                         selectedMode = selectionSnapshot.active,
                         selected = summary.category.key in selected,
-                        selectionEnabled = !busy,
                         onLongClick = { selection.select(summary.category.key) },
                         onSelect = { selection.toggle(summary.category.key) },
                         onOpen = {
@@ -230,7 +224,6 @@ private fun CategoryItemCard(
     summary: CategorySummary,
     selectedMode: Boolean,
     selected: Boolean,
-    selectionEnabled: Boolean,
     onLongClick: () -> Unit,
     onSelect: () -> Unit,
     onOpen: () -> Unit,
@@ -239,7 +232,6 @@ private fun CategoryItemCard(
         onClick = onOpen,
         selectedMode = selectedMode,
         selected = selected,
-        selectionEnabled = selectionEnabled,
         onLongClick = onLongClick,
         onSelect = onSelect,
         trailing = {

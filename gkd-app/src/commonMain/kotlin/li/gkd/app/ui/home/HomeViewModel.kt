@@ -18,7 +18,6 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
-import li.gkd.app.state.MutexState
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.SubscriptionResult
 import li.gkd.app.ui.page.BackupDialog
@@ -97,7 +96,8 @@ class HomeViewModel : BaseViewModel() {
     val homeState = HomeState(onTabChanged = { tab ->
         if (tab != BottomNavItem.SubsManage) selection.clear()
     })
-    val latestState = HomeDataSources.observeLatest().stateInit(Loadable.Loading)
+    val latestState = HomeDataSources.observeLatest()
+        .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
 
     val appsState = AppListSources.observe(
         AppInfoRepository.state,
@@ -107,14 +107,9 @@ class HomeViewModel : BaseViewModel() {
         Db.ruleTriggerStatsDao.observe(),
         globalGroupCounts = { it.groups.appIdToGlobalGroupCount },
         appGroups = { it.groups.appIdToAllGroups },
-    ).stateInit(Loadable.Loading)
+    ).stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
 
-    private val batchMutex = MutexState()
-    val batchBusyFlow: StateFlow<Boolean> get() = batchMutex.state
 
-    suspend fun runBatchAction(action: suspend () -> Unit) {
-        batchMutex.tryWithStateLock(action)
-    }
 
     val powerWarningItemFlow: StateFlow<SubsItem?>
         field = MutableStateFlow(null)
@@ -139,7 +134,7 @@ class HomeViewModel : BaseViewModel() {
                 }.map<SubsManageUiState, Loadable<SubsManageUiState>> { Loadable.Ready(it) }
                     .catch { emit(Loadable.Failure(it)) }
             }
-        }.stateIn(scope, SharingStarted.Eagerly, Loadable.Loading)
+        }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
 
     fun setUpdateInterval(value: Long) {
         SettingsRepository.updateSettings { it.copy(updateSubsInterval = value) }
