@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createDebugWait, waitForDebugRun, type MatchDebugRun as Run } from '../lib/match-debug-runs.ts';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
@@ -13,7 +14,6 @@ import { ensureDeviceTestApp } from '../lib/device-test-apps.ts';
 const fixture = 'li.gkd.a11y.fixture';
 const activity = `${fixture}/.FixtureActivity`;
 
-type Run = { phase: string; error?: string; result?: { matched: boolean; reason: string; action?: { result: boolean } } };
 type Capture = { session: { id: string; dropped: number }; events: any[]; entries: { source: string; reason: string; count: number }[] };
 
 export async function checkAndroidQuerySafety(adb: Adb, port: number, token: string, output: string, signal: AbortSignal, apk: string) {
@@ -22,12 +22,7 @@ export async function checkAndroidQuerySafety(adb: Adb, port: number, token: str
   await mkdir(directory, { recursive: true });
   const client = new DesktopClient(port);
   const json = <T = any>(path: string, body?: unknown) => client.json<T>(path, body, { headers: { Authorization: `Bearer ${token}` } });
-  async function until<T>(read: () => Promise<T>, ready: (value: T) => boolean, timeout = 20000): Promise<T> {
-    const deadline = Date.now() + timeout;
-    let value: T;
-    do { signal.throwIfAborted(); value = await read(); if (ready(value)) return value; await pause(50); } while (Date.now() < deadline);
-    throw new Error(`Device query check timed out: ${JSON.stringify(value)}`);
-  }
+  const until = createDebugWait(signal, 20000, 50, 'Device query check');
   const report: { device?: unknown; installation?: unknown; results: any[]; error?: string } = { results: [] };
   let owned = false;
   try {
@@ -62,7 +57,7 @@ export async function checkAndroidQuerySafety(adb: Adb, port: number, token: str
       await adb('shell', 'am', 'start', '-n', activity, '--es', 'operation', 'report');
       return JSON.parse((await adb('shell', 'run-as', fixture, 'cat', 'files/state.json')).toString());
     }
-    const terminal = (base: string, id: string) => until(() => json<Run>(`${base}/runs/${id}`), run => ['completed', 'failed', 'cancelled'].includes(run.phase), 120000);
+    const terminal = (base: string, id: string) => waitForDebugRun(() => json<Run>(`${base}/runs/${id}`), until, 120000);
     for (const scenario of [
       { id: 'complete-negative', children: 16, groups: 1, forbidden: false, reason: 'action_finished', touches: 1 },
       { id: 'complete-excluded', children: 16, groups: 1, forbidden: true, reason: 'not_matched', touches: 0 },
@@ -70,7 +65,7 @@ export async function checkAndroidQuerySafety(adb: Adb, port: number, token: str
       { id: 'descendant-limit', children: 128, groups: 33, forbidden: true, reason: 'query_descendant_limit', touches: 0 },
     ]) {
       await launch(scenario.id, scenario.children, scenario.groups, scenario.forbidden);
-      const session = await json('debug/sessions', { durationMillis: 180000 });
+      const session = await json('debug/sessions', { });
       const base = `debug/sessions/${session.id}`;
       try {
         await json(`${base}/runs`, request(scenario.id, true));
@@ -90,7 +85,7 @@ export async function checkAndroidQuerySafety(adb: Adb, port: number, token: str
       }
     }
     await launch('pressure', 16, 1, false);
-    const session = await json('debug/sessions', { durationMillis: 60000 });
+    const session = await json('debug/sessions', { });
     const base = `debug/sessions/${session.id}`;
     try {
       const policy = await json('debug/policy');

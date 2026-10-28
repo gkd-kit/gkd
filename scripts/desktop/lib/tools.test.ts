@@ -10,6 +10,8 @@ import { createServer } from 'node:http';
 import { matchingDebug } from '../commands/matching-debug.ts';
 import { summarizeMatching } from '../commands/summarize-matching.ts';
 import { withExistingDebugConnection } from './device-debug-connection.ts';
+import { checkBinderTrace, type BinderTrace, type NodeBenchmark } from '../commands/summarize-binder.ts';
+import { collectExpressionCorpus } from '../commands/expression-corpus.ts';
 
 test('summary distinguishes cumulative timings from evicted detail and exposes retained time ranges', async () => {
   await mkdir(desktopTests, { recursive: true });
@@ -125,6 +127,53 @@ test('summary reconciles final requests and scheduler cleanup without treating a
     assert.equal(unrelated.counts.unfinished, 1);
     assert.ok(unrelated.warnings.some(w => w.includes('手势回调')), 'Another run finishing must not confirm run 7 cleanup');
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('expression corpus extracts click and swipe coordinates without retaining subscription metadata', async () => {
+  await mkdir(desktopTests, { recursive: true });
+  const dir = await mkdtemp(join(desktopTests, 'expression-corpus-'));
+  try {
+    const input = join(dir, 'subscriptions');
+    await mkdir(input);
+    const source = JSON.stringify({ name: 'private subscription', apps: [{ id: 'private.app', groups: [{ rules: [
+      { position: { x: 0, y: 'width/2' }, matches: '[text="private"]' },
+      { swipeArg: { start: { left: 'width/2', top: null }, end: { x: 'screenWidth', y: 10 }, duration: 300 } },
+    ] }] }] });
+    const path = join(input, '1.json');
+    await writeFile(path, source);
+    const output = join(dir, 'corpus.json');
+    const result = await collectExpressionCorpus(input, output);
+    assert.equal(result.occurrences, 5);
+    assert.deepEqual(JSON.parse(await readFile(output, 'utf8')), {
+      files: 1, occurrences: 5, expressions: ['0', '10', 'screenWidth', 'width/2'],
+    });
+    assert.equal(await readFile(path, 'utf8'), source);
+  } finally {
+    assertDesktopTestPath(dir);
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('Binder verification cross-checks measured node calls and refuses missing, truncated or lossy evidence', () => {
+  const benchmark: NodeBenchmark = { samples: [{ cache: 'Cold', level: 'off', measurements: [
+    { nodes: { reads: [{ operation: 'Root', calls: 2 }] } },
+  ] }] };
+  const trace: BinderTrace = { processes: 1, unfinishedSections: 0, unfinishedTransactions: 0, traceIssues: [], sections: [
+    { name: 'GKD.benchmark.Cold.off.measured.root', sections: 2, binderTransactions: 2, onewayTransactions: 0, synchronousBinderMillis: .4 },
+    { name: 'GKD.benchmark.Cold.off.measured.selector', sections: 1, binderTransactions: 1, onewayTransactions: 1, synchronousBinderMillis: 0 },
+  ] };
+  const complete = checkBinderTrace(trace, benchmark);
+  assert.equal(complete.verified, true);
+  assert.equal(complete.cases[0]!.transactionsPerQuery, 3);
+  assert.equal(complete.cases[0]!.synchronousBinderMillis, .4);
+  for (const damaged of [
+    { ...trace, sections: trace.sections.slice(1) },
+    { ...trace, sections: trace.sections.map(s => ({ ...s, sections: s.sections + 1 })) },
+    { ...trace, processes: 2 }, { ...trace, unfinishedSections: 1 }, { ...trace, unfinishedTransactions: 1 },
+    { ...trace, traceIssues: [{ name: 'ftrace_cpu_overrun_end', index: 0, value: 1 }] },
+    { ...trace, sections: trace.sections.map(s => ({ ...s, binderTransactions: 0 })) },
+  ]) assert.equal(checkBinderTrace(damaged, benchmark).verified, false);
+  assert.equal(checkBinderTrace(trace, { samples: [] }).verified, false);
 });
 
 test('attach reuses a live transport, retries stale credentials and removes only its own forwards on failure', async () => {

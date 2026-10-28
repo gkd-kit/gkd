@@ -13,6 +13,8 @@ import { deviceInstall } from './commands/device-install.ts';
 import { checkDiagnosticPerformance } from './commands/check-diagnostic-performance.ts';
 import { checkDiagnosticPage } from './commands/check-diagnostic-page.ts';
 import { summarizeMatching } from './commands/summarize-matching.ts';
+import { summarizeBinder } from './commands/summarize-binder.ts';
+import { collectExpressionCorpus } from './commands/expression-corpus.ts';
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   help: { type: 'boolean', short: 'h' }, output: { type: 'string' },
@@ -48,6 +50,8 @@ pnpm app:tools service-event --service Activity --event Connected --attempt 1 [-
 pnpm app:tools matching-debug --operation readiness|start|capture|status|events|watch|stop|export|policy|engine|benchmark|run|run-status|cancel [--session ID] [--run ID] [--input JSON] [--duration 20000] [--detailed --rule ID] [--record-queries --rule ID] [--record-system] [--after SEQUENCE] [--output FILE]
 pnpm app:tools device-matching-debug --serial SERIAL [--attach | --install] [--operation capture|start|status|events|watch|stop|export|run|run-status|cancel] [--session ID] [--run ID] [--input JSON] [--duration 20000] [--output FILE] [--detailed --rule ID]
 pnpm app:tools matching-summary --input FILE [--output FILE]
+pnpm app:tools expression-corpus --input SUBSCRIPTIONS_DIR --output FILE
+pnpm app:tools matching-binder-summary --input BENCHMARK_JSON --trace TRACE --output JSON [--trace-processor PATH]
 pnpm app:tools device-app-debug --serial SERIAL --operation readiness|app|catalog|foreground|capabilities|engine [--attach | --install] [--output FILE]
 pnpm app:tools device-install [--serial SERIAL]
 pnpm app:tools device-recovery --serial SERIAL --operation status|restore
@@ -67,6 +71,15 @@ Query checks retain their test app across commands; finish a whole debugging rou
 --attach requires an already running Debug app; it preserves settings, page and shared transport. Session operations require --attach.
 If recovery fails, keep .local/device-recovery and use device-recovery after reconnecting.`);
   } else if (positionals.length !== 1) throw new Error('Expected one command');
+  else if (command === 'expression-corpus') {
+    if (!values.input || !values.output) throw new Error('--input and --output are required');
+    console.log(await collectExpressionCorpus(values.input, values.output));
+  }
+  else if (command === 'matching-binder-summary') {
+    if (!values.input || !values.trace || !values.output) throw new Error('--input, --trace and --output are required');
+    console.log(JSON.stringify(await summarizeBinder(values.input, values.trace,
+      values['trace-processor'] ?? resolve(repo, '.local/tools/trace_processor'), values.output), null, 2));
+  }
   else if (command === 'matching-summary') {
     if (!values.input) throw new Error('--input is required');
     console.log(JSON.stringify(await summarizeMatching(values.input, values.output), null, 2));

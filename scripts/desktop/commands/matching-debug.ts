@@ -83,6 +83,16 @@ export async function matchingDebug(options: Options, token?: string): Promise<u
       if (failures.length) throw new AggregateError(failures, 'Diagnostic capture failed; see export path above if export succeeded');
       return exported;
     }
+    case 'benchmark':
+    case 'android-benchmark': {
+      if (!options.input) throw new Error('--input must contain a MatchBenchmarkRequest JSON');
+      const result = await request(base, options.operation === 'benchmark' ? '/debug/benchmark' : '/debug/android/benchmark', token,
+        JSON.parse(await readFile(options.input, 'utf8')),
+        // Android allows 120s of Binder queries; leave time to return that result.
+        options.operation === 'android-benchmark' ? 125_000 : undefined);
+      if (options.output) await writeFile(options.output, JSON.stringify(result, null, 2));
+      return result;
+    }
     case 'run': {
       if (!options.input) throw new Error('--input must contain a MatchDebugRunRequest JSON');
       return request(base, `${sessionPath}/runs`, token, JSON.parse(await readFile(options.input, 'utf8')));
