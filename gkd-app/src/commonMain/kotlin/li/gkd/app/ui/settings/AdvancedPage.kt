@@ -16,6 +16,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -231,6 +234,7 @@ fun AdvancedPage(
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
+            DiagnosticSettings(vm)
             GkSettingItem(
                 title = stringResource(Res.string.activity_switch_logs),
                 onClick = { mainVm.navigator.navigate(ActivityLogRoute) },
@@ -420,5 +424,30 @@ private fun EditHttpPortDialog(
                 Text(text = stringResource(Res.string.action_cancel))
             }
         },
+    )
+}
+
+@Composable
+private fun DiagnosticSettings(vm: AdvancedViewModel) {
+    val main = MainViewModel.requireCurrent()
+    val diagnostics = li.gkd.app.matching.MatchingRuntime.coordinator.diagnostics
+    val control = remember(diagnostics) {
+        diagnostics.state.map { it?.id to (it?.active == true) }.distinctUntilChanged()
+    }
+    val current by control.collectAsStateWithLifecycle(initialValue = diagnostics.state.value.let {
+        it?.id to (it?.active == true)
+    })
+    GkTextSwitch(
+        title = stringResource(Res.string.match_debug_collect),
+        subtitle = stringResource(Res.string.match_debug_intro),
+        checked = current.second,
+        onCheckedChange = { enabled ->
+            if (enabled) vm.requestDiagnosticCapture()
+            else current.first?.let { li.gkd.app.matching.MatchingRuntime.coordinator.stopDiagnostics(it) }
+        },
+    )
+    GkSettingItem(
+        title = stringResource(Res.string.match_debug_records),
+        onClick = { main.navigator.navigate(li.gkd.app.ui.navigation.MatchDebugRoute) },
     )
 }

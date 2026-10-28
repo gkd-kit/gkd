@@ -1,14 +1,15 @@
 package li.gkd.app.development.matching
 
+import li.gkd.app.matching.diagnostics.MatchDebugRunState
+import li.gkd.app.matching.diagnostics.MatchDebugResult
+import li.gkd.app.matching.diagnostics.MatchDebugRunRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.JsonPrimitive
 import li.gkd.app.matching.ForegroundRuleSnapshot
 import li.gkd.app.matching.MatchWork
 import li.gkd.app.matching.MatchingRuntime
@@ -29,49 +30,6 @@ import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
 
-@Serializable
-data class MatchSimulatedNode(
-    val name: String,
-    val attributes: Map<String, JsonPrimitive> = emptyMap(),
-    val children: List<MatchSimulatedNode> = emptyList(),
-)
-
-@Serializable
-data class MatchSimulation(
-    val app: AppInfo,
-    val activityId: String? = null,
-    val root: MatchSimulatedNode,
-    val rootDelayMillis: Long = 0,
-    val actionMillis: Long = 0,
-    val cleanupMillis: Long = 0,
-)
-
-@Serializable
-data class MatchDebugRunRequest(
-    val requestId: String,
-    val subscription: String,
-    val rule: String,
-    val execute: Boolean = false,
-    val simulation: MatchSimulation? = null,
-)
-
-@Serializable
-data class MatchDebugResult(
-    val matched: Boolean,
-    val reason: String,
-    val action: ActionResult? = null,
-    val simulation: Boolean = false,
-)
-
-@Serializable
-data class MatchDebugRunState(
-    val request: MatchDebugRunRequest,
-    val phase: String,
-    val result: MatchDebugResult? = null,
-    val error: String? = null,
-    val engineRunId: Long? = null,
-)
-
 expect suspend fun runMatchDebug(request: MatchDebugRunRequest, onStarted: (Long) -> Unit): MatchDebugResult
 
 object MatchDebugRuns {
@@ -79,6 +37,11 @@ object MatchDebugRuns {
     private var sessionId: String? = null
     private val runs = linkedMapOf<String, MatchDebugRunState>()
     private val jobs = mutableMapOf<String, Job>()
+
+    private fun update(id: String, value: MatchDebugRunState) {
+        runs[value.request.requestId] = value
+        MatchingRuntime.coordinator.diagnostics.recordRequest(id, value)
+    }
 
     fun start(id: String, request: MatchDebugRunRequest): MatchDebugRunState {
         val scope = MatchingRuntime.coordinator.diagnosticScope(id)
@@ -96,18 +59,18 @@ object MatchDebugRuns {
             }
             check(runs.size < 100) { "Diagnostic run limit reached" }
             val initial = MatchDebugRunState(request, "running")
-            runs[request.requestId] = initial
+            update(id, initial)
             val job = scope.launch(start = CoroutineStart.LAZY) {
                 val result = try {
                     MatchDebugRunState(request, "completed", runMatchDebug(request) { engineRunId ->
-                        synchronized(lock) { runs[request.requestId] = runs.getValue(request.requestId).copy(engineRunId = engineRunId) }
+                        synchronized(lock) { update(id, runs.getValue(request.requestId).copy(engineRunId = engineRunId)) }
                     })
                 } catch (error: CancellationException) {
                     MatchDebugRunState(request, "cancelled")
                 } catch (error: Exception) {
                     MatchDebugRunState(request, "failed", error = error.toString())
                 }
-                synchronized(lock) { runs[request.requestId] = result.copy(engineRunId = runs.getValue(request.requestId).engineRunId) }
+                synchronized(lock) { update(id, result.copy(engineRunId = runs.getValue(request.requestId).engineRunId)) }
             }
             jobs[request.requestId] = job
             job.invokeOnCompletion { error -> synchronized(lock) {
@@ -115,7 +78,7 @@ object MatchDebugRuns {
                 // A session may stop before a lazy request enters its body.
                 val current = runs.getValue(request.requestId)
                 if (error is CancellationException && (current.phase == "running" || current.phase == "cancelling")) {
-                    runs[request.requestId] = current.copy(phase = "cancelled")
+                    update(id, current.copy(phase = "cancelled"))
                 }
             } }
             job.start()
@@ -124,25 +87,21 @@ object MatchDebugRuns {
     }
 
     fun get(id: String, runId: String): MatchDebugRunState {
-        val current = synchronized(lock) {
-            require(sessionId == id)
-            requireNotNull(runs[runId])
-        }
-        return current.observedPhase(MatchingRuntime.coordinator.snapshot())
+        return requireNotNull(snapshot(id).find { it.request.requestId == runId }) { "Unknown diagnostic request" }
     }
 
     fun cancel(id: String, runId: String): MatchDebugRunState = synchronized(lock) {
         require(sessionId == id)
         val current = requireNotNull(runs[runId])
         jobs[runId]?.let {
-            runs[runId] = current.copy(phase = "cancelling")
+            update(id, current.copy(phase = "cancelling"))
             it.cancel()
         }
         checkNotNull(runs[runId])
     }
 
     fun snapshot(id: String): List<MatchDebugRunState> {
-        val current = synchronized(lock) { if (sessionId == id) runs.values.toList() else emptyList() }
+        val current = MatchingRuntime.coordinator.diagnostics.requests(id)
         val engine = MatchingRuntime.coordinator.snapshot()
         return current.map { it.observedPhase(engine) }
     }

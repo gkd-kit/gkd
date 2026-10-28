@@ -37,6 +37,7 @@ import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.HomeRoute
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.ImagePreviewRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
@@ -183,7 +184,7 @@ class DesktopState(
                 mainVm.navigator.popToHome()
             }
 
-            is GkdLink.Page -> mainVm.navigator.navigate(link.route)
+            is GkdLink.Page -> if (link.route == li.gkd.app.ui.navigation.MatchDebugRoute) mainVm.navigator.openDiagnosticPage() else mainVm.navigator.navigate(link.route)
             GkdLink.WeChatScanner -> unsupported()
             null -> toast.show(Res.string.uri_unknown.getSync(uri))
         }
@@ -256,6 +257,7 @@ private val desktopRoutes by lazy {
         "work-mode" to WorkModeRoute,
         "snapshot-settings" to SnapshotSettingsRoute,
         "advanced" to AdvancedPageRoute,
+        "matching-debug" to MatchDebugRoute,
         "crash-reports" to CrashReportRoute,
         "activity-log" to ActivityLogRoute,
         "event-log" to A11yEventLogRoute,

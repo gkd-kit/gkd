@@ -12,7 +12,14 @@ data class LogArchiveInputs(
 
 expect fun logArchiveInputs(): LogArchiveInputs
 
-suspend fun createLogArchive(): File = withContext(Dispatchers.IO) {
+suspend fun createLogArchive(): File = createLogArchive(emptyList())
+
+suspend fun createLogArchive(diagnostics: List<li.gkd.app.matching.diagnostics.MatchDiagnosticRecord>): File = withContext(Dispatchers.IO) {
     val inputs = logArchiveInputs()
-    LogArchive.build(inputs.metadata + ("log-writer.txt" to { LogUtils.status().toString() }), inputs.additionalDirectories)
+    fun build() = LogArchive.build(
+        inputs.metadata + ("log-writer.txt" to { LogUtils.status().toString() }),
+        inputs.additionalDirectories, diagnostics.map { it.file },
+    )
+    if (diagnostics.isEmpty()) build()
+    else li.gkd.app.matching.diagnostics.MatchDiagnosticFiles.withSavedFiles { build() }
 }

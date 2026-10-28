@@ -328,6 +328,11 @@
             </intent-filter>
         </service>
 
+        <service android:name="li.gkd.app.service.MatchDiagnosticService"
+            android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User initiated matching diagnostics with notification stop control" />
+        </service>
     </application>
 
 </manifest>

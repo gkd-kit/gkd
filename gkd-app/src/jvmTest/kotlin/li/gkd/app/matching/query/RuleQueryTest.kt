@@ -1,17 +1,16 @@
 package li.gkd.app.matching.query
 
+import li.gkd.app.matching.diagnostics.MatchDebugRunRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import li.gkd.app.development.matching.MatchDebugRunRequest
 import li.gkd.app.development.matching.evaluateDebugRule
 import li.gkd.app.matching.MatchWork
 import li.gkd.app.matching.ForegroundRuleSnapshot
 import li.gkd.app.rule.RuleRuntime
-import li.gkd.app.matching.replay.replay
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.input.MatchTimingPolicy
 import li.gkd.app.model.ActionResult
@@ -79,10 +78,7 @@ class RuleQueryTest {
                 val capture = diagnostics.export(session.id)
                 kotlin.test.assertTrue(capture.events.any { it.reason == "query_descendant_limit" })
                 capture.queryRecordings.forEach {
-                    val replay = it.replay()
-                    assertEquals(true, replay.verified)
-                    assertEquals(null, replay.matched)
-                    assertEquals(MatchQueryIncomplete::class.java.name, replay.failure)
+                    assertEquals(MatchQueryIncomplete::class.java.name, it.failure)
                 }
             }
             children = listOf(1, 2) // Exactly at the limit is complete; a later query can act.

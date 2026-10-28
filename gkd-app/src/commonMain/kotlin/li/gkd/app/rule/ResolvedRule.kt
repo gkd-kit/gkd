@@ -87,6 +87,13 @@ sealed class ResolvedRule(
 
     private var preRules = emptySet<ResolvedRule>()
 
+    private fun transition(operation: String, time: Long) {
+        val recorder = runtime.observer()
+        val before = recorder?.let { state.values() }
+        state.transition(operation, time)
+        if (recorder != null && before != null) recorder.recordRule(operation, time, runtime, this, state, before, parameters, preRules, null)
+    }
+
     private val actionDelayTriggerTime = atomic(0L)
     fun checkDelay(): Boolean {
         if (actionDelay > 0 && actionDelayTriggerTime.value == 0L) {
@@ -135,34 +142,16 @@ sealed class ResolvedRule(
     }
 
     val status: RuleStatus
-        get() {
-            val actionMaximum = parameters.actionMaximum
-            if (actionMaximum != null) {
-                if (actionCount.value >= actionMaximum) {
-                    return RuleStatus.ActionLimitReached // 达到最大执行次数
-                }
-            }
-            if (preRules.isNotEmpty() && !preRules.any { it === runtime.lastTriggerRule }) {
-                return RuleStatus.PrerequisitePending // 需要提前触发某个规则
-            }
-            val t = runtime.now()
-            val c = matchChangedTime.value
-            if (matchDelay > 0 && t - c < matchDelay) {
-                return RuleStatus.MatchDelay // 处于匹配延迟中
-            }
-            if (matchTime != null && t - c > matchLimitTime) {
-                return RuleStatus.MatchTimeout // 超出匹配时间
-            }
-            if (actionTriggerTime.value + parameters.actionCd > t) {
-                return RuleStatus.Cooldown // 处于冷却时间
-            }
-            val d = actionDelayTriggerTime.value
-            if (d > 0) {
-                if (d + actionDelay > t) {
-                    return RuleStatus.ActionDelay // 处于触发延迟中
-                }
-            }
-            return RuleStatus.Ready
+        get() = synchronized(runtime) {
+            val count = state.actionCount.value
+            val maximum = parameters.actionMaximum
+            val limited = maximum != null && count >= maximum
+            val prerequisite = limited || preRules.isEmpty() || preRules.any { candidate -> runtime.lastTriggerRule?.let(candidate::sameExecution) == true }
+            val t = if (!prerequisite || limited) 0L else runtime.now()
+            val result = evaluateRuleStatus(count, maximum, prerequisite, t, state.matchChangedTime.value,
+                matchDelay, matchTime, state.actionTriggerTime.value, parameters.actionCd, state.actionDelayTriggerTime.value, actionDelay)
+            runtime.observer()?.let { it.recordRule("status", t, runtime, this, state, state.values(), parameters, preRules, result) }
+            result
         }
 
     abstract val type: String
@@ -180,3 +169,9 @@ sealed class ResetMatchType(val value: String) {
         val allSubObject by lazy { listOf(Activity, Match, App) }
     }
 }
+fun RawSubscription.RawRuleProps.matchIdentity(
+    subsId: Long,
+    group: RawSubscription.RawGroupProps,
+    appId: String?,
+    index: Int,
+): String = "$subsId/${group.groupType}/${appId ?: "*"}/${group.key}/${key?.toString() ?: "index:$index"}"

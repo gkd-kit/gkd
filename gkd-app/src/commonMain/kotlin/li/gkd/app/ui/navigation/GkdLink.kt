@@ -21,6 +21,7 @@ sealed interface GkdLink {
 
                     "/1" -> Page(AdvancedPageRoute)
                     "/2" -> Page(SnapshotPageRoute)
+                    "/matching-diagnostics" -> Page(MatchDebugRoute)
                     "/3", "/4" -> Page(PrivilegeServiceRoute)
                     else -> null
                 }

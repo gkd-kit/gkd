@@ -8,6 +8,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import li.gkd.app.data.calc
 import li.gkd.app.model.ActionResult
+import li.gkd.app.matching.diagnostics.observeActionOperation
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.toHidden
 import li.gkd.app.service.A11yService
@@ -40,7 +41,9 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addA11yNodePosition(node)
             return ActionResult(
                 action = action,
-                result = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                result = observeActionOperation("AccessibilityNodeInfo.performAction:CLICK") {
+                    node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
             )
         }
     }
@@ -57,7 +60,9 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = privilegeContextFlow.value?.tap(x, y) ?: run {
+                result = privilegeContextFlow.value?.let { privilege ->
+                    observeActionOperation("PrivilegedTap") { privilege.tap(x, y) }
+                } ?: run {
                     val gestureDescription = GestureDescription.Builder()
                     val path = Path()
                     path.moveTo(x, y)
@@ -98,7 +103,9 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addA11yNodePosition(node)
             return ActionResult(
                 action = action,
-                result = node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK).apply {
+                result = observeActionOperation("AccessibilityNodeInfo.performAction:LONG_CLICK") {
+                    node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
+                }.apply {
                     if (this) {
                         delay(LongClickCenter.LONG_DURATION.milliseconds)
                     }
@@ -121,7 +128,9 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = privilegeContextFlow.value?.tap(x, y, LONG_DURATION) ?: run {
+                result = privilegeContextFlow.value?.let { privilege ->
+                    observeActionOperation("PrivilegedLongPress") { privilege.tap(x, y, LONG_DURATION) }
+                } ?: run {
                     A11yService.instance?.awaitSwipe(x, y, x, y, LONG_DURATION) == true
                 },
                 position = x to y
@@ -192,13 +201,11 @@ sealed class ActionPerformer(val action: String) {
             coordinateBoundsFailure(action, startP, "swipeArg.start", endP)?.let { return it }
             coordinateBoundsFailure(action, endP, "swipeArg.end")?.let { return it }
             TrackService.addSwipePosition(startX, startY, endX, endY, swipeArg.duration)
-            val injected = privilegeContextFlow.value?.swipe(
-                startX,
-                startY,
-                endX,
-                endY,
-                swipeArg.duration,
-            )
+            val injected = privilegeContextFlow.value?.let { privilege ->
+                observeActionOperation("PrivilegedSwipe") {
+                    privilege.swipe(startX, startY, endX, endY, swipeArg.duration)
+                }
+            }
             return if (injected != null) {
                 ActionResult(
                     action = action,

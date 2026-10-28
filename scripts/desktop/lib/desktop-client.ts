@@ -36,6 +36,9 @@ export interface DesktopState {
 export interface DesktopResponse {
   status: number; headers: IncomingHttpHeaders; body: Buffer;
 }
+export interface DesktopRequestOptions {
+  rawBody?: string; contentType?: string; headers?: Record<string, string>; timeoutMillis?: number;
+}
 export function nodes(root: UiNode): UiNode[] {
   return [root, ...root.children.flatMap(nodes)];
 }
@@ -52,11 +55,11 @@ export class DesktopClient {
   readonly port: number;
   constructor(port: number) { this.port = port; }
   // Explicit direct localhost transport, independent of environment proxy settings.
-  response(path: string, body?: unknown, options: { rawBody?: string; contentType?: string } = {}): Promise<DesktopResponse> {
+  response(path: string, body?: unknown, options: DesktopRequestOptions = {}): Promise<DesktopResponse> {
     return new Promise((resolve, reject) => {
       const req = request({ hostname: '127.0.0.1', port: this.port, path: `/${path}`,
         method: body === undefined && options.rawBody === undefined ? 'GET' : 'POST',
-        headers: { 'Content-Type': options.contentType ?? 'application/json; charset=utf-8' },
+        headers: { 'Content-Type': options.contentType ?? 'application/json; charset=utf-8', ...options.headers },
       }, res => {
         const chunks: Buffer[] = [];
         res.on('data', chunk => chunks.push(Buffer.from(chunk)));
@@ -66,18 +69,18 @@ export class DesktopClient {
           resolve({ status: res.statusCode!, headers: res.headers, body: data });
         });
       });
-      req.setTimeout(20_000, () => req.destroy(new Error(`Request timeout: ${path}`)));
+      req.setTimeout(options.timeoutMillis ?? 20_000, () => req.destroy(new Error(`Request timeout: ${path}`)));
       req.on('error', reject);
       req.end(options.rawBody ?? (body === undefined ? undefined : JSON.stringify(body)));
     });
   }
-  async bytes(path: string, body?: unknown): Promise<Buffer> {
-    const response = await this.response(path, body);
+  async bytes(path: string, body?: unknown, options?: DesktopRequestOptions): Promise<Buffer> {
+    const response = await this.response(path, body, options);
     if (response.status !== 200) throw new Error(`HTTP ${response.status}: ${response.body.toString()}`);
     return response.body;
   }
-  async json<T>(path: string, body?: unknown): Promise<T> {
-    return JSON.parse((await this.bytes(path, body)).toString()) as T;
+  async json<T>(path: string, body?: unknown, options?: DesktopRequestOptions): Promise<T> {
+    return JSON.parse((await this.bytes(path, body, options)).toString()) as T;
   }
   state() { return this.json<DesktopState>('desktop/state'); }
   services() { return this.json<ServiceSnapshot>('desktop/services'); }

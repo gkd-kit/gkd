@@ -29,6 +29,7 @@ Android 与 Desktop 共用 `AppStorageLayout`，宿主注入 files/cache/private
 | `files/store/` | 生产设置 |
 | `files/subscription/` | 订阅文件 |
 | `files/snapshot/` | 应用自身快照 |
+| `files/matching-diagnostics/<开始时间Z>-<短ID>/` | 每次采集的 `diagnostic.json` 及附件；UTC 开始时间加会话 ID 前 8 位。停止时保存未完成现场，收尾后更新，选中的目录随公用日志包分享，普通日志不自动包含历史诊断 |
 | `files/crash/temp/` | 临时崩溃文件 |
 | `files/private-store/` | 私有配置 |
 | `cache/coil/` | 图片缓存 |

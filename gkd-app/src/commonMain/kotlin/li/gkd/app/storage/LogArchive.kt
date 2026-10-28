@@ -6,7 +6,7 @@ import java.nio.file.Files
 object LogArchive {
     private val layout get() = appStorage()
 
-    fun build(metadata: Map<String, () -> String>, additionalDirectories: List<File> = emptyList()): File {
+    fun build(metadata: Map<String, () -> String>, additionalDirectories: List<File> = emptyList(), diagnosticDirectories: List<File> = emptyList()): File {
         val directory = StorageMaintenance.temporaryDirectory(layout)
         val metadataDirectory = Files.createDirectory(directory.resolve("metadata").toPath()).toFile()
         val logs = directory.resolve("log")
@@ -14,7 +14,14 @@ object LogArchive {
         metadata.forEach { (name, content) ->
             metadataDirectory.resolve(name).writeText(content())
         }
-        return buildArchive(metadataDirectory, logs, additionalDirectories)
+        val diagnostics = if (diagnosticDirectories.isEmpty()) emptyList() else {
+            val target = directory.resolve("matching-diagnostics").apply { mkdirs() }
+            diagnosticDirectories.forEach { source ->
+                check(source.copyRecursively(target.resolve(source.name)))
+            }
+            listOf(target)
+        }
+        return buildArchive(metadataDirectory, logs, additionalDirectories + diagnostics)
     }
 
     private fun buildArchive(metadata: File, logs: File, additionalDirectories: List<File>): File {

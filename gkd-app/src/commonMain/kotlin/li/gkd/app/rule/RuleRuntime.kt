@@ -2,6 +2,12 @@ package li.gkd.app.rule
 
 import kotlinx.atomicfu.atomic
 
+/** Observes actual rule transitions under the runtime lock; absent observers allocate no snapshots. */
+fun interface RuleStateObserver {
+    fun recordRule(operation: String, time: Long, runtime: RuleRuntime, rule: ResolvedRule, state: RuleExecutionState,
+        before: RuleStateValues, parameters: RuleExecutionParameters, prerequisites: Set<ResolvedRule>, status: RuleStatus?)
+}
+
 data class RuleMatchEnvironment(
     val launcherAppId: String = "",
     val systemAppIds: Set<String> = emptySet(),
@@ -12,6 +18,7 @@ class RuleRuntime(
     val now: () -> Long = System::currentTimeMillis,
     val environment: () -> RuleMatchEnvironment = { RuleMatchEnvironment() },
     private val cancelPending: (ResolvedRule) -> Unit = {},
+    val observer: () -> RuleStateObserver? = { null },
 ) {
     private data class Trigger(val rule: ResolvedRule?, val time: Long)
 

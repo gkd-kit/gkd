@@ -14,6 +14,7 @@ class GkdLinkTest {
         assertEquals(GkdLink.Home(null), GkdLink.parse("gkd://page?tab=invalid"))
         assertEquals(GkdLink.Page(AdvancedPageRoute), GkdLink.parse("gkd://page/1"))
         assertEquals(GkdLink.Page(SnapshotPageRoute), GkdLink.parse("gkd://page/2"))
+        assertEquals(GkdLink.Page(li.gkd.app.ui.navigation.MatchDebugRoute), GkdLink.parse("gkd://page/matching-diagnostics"))
         assertEquals(GkdLink.parse("gkd://page/3"), GkdLink.parse("gkd://page/4"))
         assertEquals(GkdLink.WeChatScanner, GkdLink.parse("gkd://invoke/1"))
     }

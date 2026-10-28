@@ -21,6 +21,8 @@ import androidx.core.graphics.toColorInt
 import com.hjq.toast.Toaster
 import com.hjq.toast.style.WhiteToastStyle
 import li.gkd.app.app
+import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.service.A11yService
@@ -95,9 +97,12 @@ object AndroidToastUtils {
 
     private var triggerTime = 0L
     private const val triggerInterval = 2000L
-    fun showAction(rule: ResolvedRule) {
+    fun showAction(rule: ResolvedRule, runId: Long = 0) {
         if (!settings.value.toastWhenClick) return
+        val trace = MatchingRuntime.coordinator.diagnostics
+        val dispatch = if (trace.enabled) trace.beginOperation("ToastDispatch", runId, rule.matchIdentity()) else null
         ThreadUtils.runMainOrPost {
+            trace.endOperation(dispatch, "main_dispatched")
             val t = System.currentTimeMillis()
             if (t - triggerTime > triggerInterval + 100) { // 100ms 保证二次显示的时候上一次已经完全消失
                 triggerTime = t
@@ -107,12 +112,15 @@ object AndroidToastUtils {
                     rule.g.group.name,
                     actionCount.value,
                 )
+                if (dispatch != null && trace.enabled) trace.record(runId, MatchStage.Idle, "toast_show_requested",
+                    dispatch.rule, entrySource = "toast", sessionId = dispatch.sessionId)
                 if (settings.value.useSystemToast) {
                     showSystem(text)
                 } else {
                     showA11y(text)
                 }
-            }
+            } else if (dispatch != null && trace.enabled) trace.record(runId, MatchStage.Idle, "toast_throttled",
+                dispatch.rule, entrySource = "toast", sessionId = dispatch.sessionId)
         }
     }
 

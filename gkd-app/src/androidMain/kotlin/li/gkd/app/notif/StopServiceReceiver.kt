@@ -9,12 +9,12 @@ import androidx.core.content.ContextCompat
 import li.gkd.app.META
 import kotlin.reflect.KClass
 
-class StopServiceReceiver(private val service: Service) : BroadcastReceiver(), AutoCloseable {
+class StopServiceReceiver(private val service: Service, private val onStop: () -> Unit = { service.stopSelf() }) : BroadcastReceiver(), AutoCloseable {
     private var registered = false
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == STOP_ACTION && intent.getStringExtra(STOP_ACTION) == service.javaClass.name) {
-            service.stopSelf()
+            onStop()
         }
     }
 

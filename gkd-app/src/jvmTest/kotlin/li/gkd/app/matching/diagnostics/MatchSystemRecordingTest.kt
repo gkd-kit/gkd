@@ -21,7 +21,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
-import li.gkd.app.development.matching.MatchSimulatedNode
 import li.gkd.app.development.matching.SimulatedNodeAdapter
 import li.gkd.app.matching.ForegroundRuleSnapshot
 import li.gkd.app.matching.MatchActionOutcome
@@ -33,8 +32,6 @@ import li.gkd.app.matching.MatchScheduleMachine
 import li.gkd.app.matching.MatchScheduleRule
 import li.gkd.app.rule.RuleRuntime
 import li.gkd.app.rule.RuleDelayKind
-import li.gkd.app.matching.replay.MatchCaptureReplay
-import li.gkd.app.matching.replay.replay
 import li.gkd.app.matching.retainUnaffectedExecution
 import li.gkd.app.model.ActionResult
 import li.gkd.app.model.AppInfo
@@ -51,9 +48,9 @@ import li.gkd.selector.MatchOptions
 import li.gkd.selector.Selector
 
 class MatchSystemRecordingTest {
-    /** A returned coordinate failure remains a failure, with its inputs intact, through JSON and replay. */
+    /** A returned coordinate failure remains a failure, with its inputs intact, through JSON export. */
     @Test
-    fun coordinateFailureSurvivesRecordingExportAndReplay() = runTest {
+    fun coordinateFailureSurvivesRecordingExport() = runTest {
         val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler),
             nowMillis = { testScheduler.currentTime }, onFailure = { throw it })
         val key = Any()
@@ -62,18 +59,17 @@ class MatchSystemRecordingTest {
         ))
         try {
             coordinator.attach(key)
-            val session = coordinator.startDiagnostics(1000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             coordinator.execute(key) {
                 performAction(GkdAction("*", action = "clickCenter")) { failure }
             }
             runCurrent()
             coordinator.stopDiagnostics(session.id)
             val recording = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip()
-            val replayed = recording.replay()
-            assertTrue(replayed.verified)
-            assertEquals(0, replayed.commitsAccepted)
-            assertEquals("returned", replayed.actions.single().outcome!!.kind)
-            assertEquals(failure, replayed.actions.single().outcome!!.result)
+            val outcome = recording.steps.mapNotNull { it.command }.single { it.type == "action_end" }.outcome!!
+            assertEquals("returned", outcome.kind)
+            assertEquals(failure, outcome.result)
+            assertEquals(0, recording.steps.flatMap { it.effects }.count { it.type == "commit" && it.reason == "true" })
         } finally { coordinator.close() }
     }
 
@@ -83,7 +79,7 @@ class MatchSystemRecordingTest {
         val key = Any()
         try {
             coordinator.attach(key)
-            val session = coordinator.startDiagnostics(1000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             val root = MatchSimulatedNode("Root", children = listOf(MatchSimulatedNode("Button", mapOf("text" to JsonPrimitive("target")))))
             for (selectorText in listOf("[text=\"target\"][depth=1]", "[depth=0]")) {
                 coordinator.execute(key) {
@@ -97,12 +93,10 @@ class MatchSystemRecordingTest {
             }
             coordinator.stopDiagnostics(session.id)
             val capture = coordinator.diagnostics.export(session.id)
-            val result = MatchCaptureReplay(capture.systemRecording!!.roundTrip(), capture.queryRecordings).replay()
-            assertTrue(result.verified)
-            assertEquals(2, result.queries.size)
-            assertEquals(2, result.system.actions.size)
-            assertEquals("[depth=0]", result.system.actions.last().action.selector)
-            assertFalse(MatchCaptureReplay(capture.systemRecording, emptyList()).replay().verified)
+            assertEquals(2, capture.queryRecordings.size)
+            val actions = capture.systemRecording!!.steps.mapNotNull { it.command }.filter { it.type == "action_start" }
+            assertEquals(2, actions.size)
+            assertEquals("[depth=0]", actions.last().action!!.selector)
         } finally { coordinator.close() }
     }
 
@@ -112,7 +106,7 @@ class MatchSystemRecordingTest {
         val key = Any()
         try {
             coordinator.attach(key)
-            val session = coordinator.startDiagnostics(1000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             var ran = false
             val caller = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.execute(key) { ran = true } }
             caller.cancel(); runCurrent()
@@ -123,7 +117,7 @@ class MatchSystemRecordingTest {
             runCurrent()
             assertEquals(42, value.await())
             coordinator.stopDiagnostics(session.id)
-            assertTrue(coordinator.diagnostics.export(session.id).systemRecording!!.replay().verified)
+            assertTrue(coordinator.diagnostics.export(session.id).systemRecording!!.sealed)
         } finally { coordinator.close() }
     }
 
@@ -137,7 +131,7 @@ class MatchSystemRecordingTest {
         var run = 0L
         try {
             coordinator.attach(key); coordinator.updateRules(activity)
-            val session = coordinator.startDiagnostics(1000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             coordinator.request(key) { run = id; trackRules(activity); selectRule(old.rules()[0]); awaitCancellation() }
             runCurrent()
             val fresh = summary(runtime, "{key:1,matches:'*'},{key:2,matches:'[text=\"unrelated\"]'}")
@@ -148,8 +142,7 @@ class MatchSystemRecordingTest {
             assertFalse(coordinator.canCommit(run, old.rules()[0]))
             runCurrent(); coordinator.stopDiagnostics(session.id)
             val tape = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip()
-            assertEquals(1, tape.replay().commitsAccepted)
-            assertTrue(tape.replay().verified)
+            assertEquals(1, tape.steps.flatMap { it.effects }.count { it.type == "commit" && it.reason == "true" })
             assertEquals(1, tape.steps.flatMap { it.effects }.count { it.type == "cancel" })
         } finally { coordinator.close() }
     }
@@ -170,7 +163,7 @@ class MatchSystemRecordingTest {
         val rule = summary(RuleRuntime(), "{key:1,matches:'*'}").rules().first()
         try {
             coordinator.attach(key)
-            val session = coordinator.startDiagnostics(60_000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             coordinator.request(key) { performAction(rule) { try { awaitCancellation() } finally { withContext(NonCancellable) { release.await() } } } }
             runCurrent()
             coordinator.invalidate("screen_off")
@@ -179,18 +172,18 @@ class MatchSystemRecordingTest {
             runCurrent()
             val pending = coordinator.diagnostics.export(session.id)
             assertTrue(pending.session.systemFinalizing)
-            assertFalse(pending.systemRecording!!.replay().verified)
-            assertFailsWith<IllegalStateException> { coordinator.startDiagnostics(100, false, null) }
+            assertFalse(pending.systemRecording!!.sealed)
+            assertFailsWith<IllegalStateException> { coordinator.startDiagnostics(false, null) }
             advanceTimeBy(250)
             release.complete(Unit)
             runCurrent()
             val tape = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip()
-            val result = tape.replay()
-            assertTrue(result.verified)
-            assertEquals(2, result.runsStarted.size)
-            val action = result.actions.single()
-            assertEquals("cancelled", action.outcome?.kind)
-            assertEquals(250L, action.endedAtMillis!! - action.cancelledAtMillis!!)
+            assertTrue(tape.sealed)
+            assertEquals(2, tape.steps.flatMap { it.effects }.count { it.type == "start" })
+            val actionEnd = tape.steps.single { it.command?.type == "action_end" }
+            val cancel = tape.steps.first { step -> step.effects.any { it.type == "cancel" } }
+            assertEquals("cancelled", actionEnd.command!!.outcome?.kind)
+            assertEquals(250L, actionEnd.timeMillis - cancel.timeMillis)
             val finish = tape.steps.indexOfFirst { it.command?.type == "finish" }
             val end = tape.steps.indexOfFirst { it.command?.type == "action_end" }
             assertTrue(end < finish)
@@ -207,7 +200,7 @@ class MatchSystemRecordingTest {
         var callerFailure: Throwable? = null
         try {
             coordinator.attach(key)
-            val session = coordinator.startDiagnostics(60_000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             val caller = launch {
                 try { coordinator.execute(key) { performAction(rule) {
                     try { awaitCancellation() } finally { withContext(NonCancellable) { delay(50); error("release unconfirmed") } }
@@ -215,10 +208,10 @@ class MatchSystemRecordingTest {
             }
             runCurrent(); caller.cancel(); runCurrent(); advanceTimeBy(50); runCurrent()
             coordinator.stopDiagnostics(session.id)
-            val result = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip().replay()
-            assertTrue(result.verified)
-            assertEquals("failed", result.actions.single().outcome?.kind)
-            assertEquals("release unconfirmed", result.actions.single().outcome?.message)
+            val tape = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip()
+            val outcome = tape.steps.mapNotNull { it.command }.single { it.type == "action_end" }.outcome
+            assertEquals("failed", outcome?.kind)
+            assertEquals("release unconfirmed", outcome?.message)
             assertTrue(callerFailure is IllegalStateException)
             assertEquals(1, failures.size)
         } finally { coordinator.close() }
@@ -234,19 +227,18 @@ class MatchSystemRecordingTest {
             coordinator.attach(key)
             coordinator.request(key) { performAction(rule) { release.await(); ActionResult("swipe", true) } }
             runCurrent(); advanceTimeBy(100)
-            val session = coordinator.startDiagnostics(60_000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             release.complete(Unit); runCurrent()
             coordinator.stopDiagnostics(session.id)
-            val result = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip().replay()
-            assertTrue(result.verified)
-            assertTrue(result.actions.single().beganBeforeRecording)
-            assertEquals(0, result.runsStarted.size)
-            assertEquals(true, result.actions.single().outcome?.result?.result)
+            val tape = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip()
+            assertTrue(tape.initial.active?.action != null)
+            assertEquals(0, tape.steps.flatMap { it.effects }.count { it.type == "start" })
+            assertEquals(true, tape.steps.mapNotNull { it.command }.single { it.type == "action_end" }.outcome?.result?.result)
         } finally { release.complete(Unit); coordinator.close() }
     }
 
     @Test
-    fun serviceChangesRuleMigrationAndPolicyTimersReplayWithTheSameWakeDecisions() = runTest {
+    fun serviceChangesRuleMigrationAndPolicyTimersRetainWakeDecisions() = runTest {
         val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), nowMillis = { testScheduler.currentTime }, onFailure = { throw it })
         // Equal-valued keys still represent distinct service instances.
         data class Service(val value: Int)
@@ -256,7 +248,7 @@ class MatchSystemRecordingTest {
         val ran = mutableListOf<String>()
         try {
             coordinator.attach(first)
-            val session = coordinator.startDiagnostics(60_000, false, null, recordSystem = true)
+            val session = coordinator.startDiagnostics(false, null, recordSystem = true)
             coordinator.updateRules(old.activity())
             coordinator.scheduleRule(first, old.rules()[0], RuleDelayKind.Match, 100) { ran += "retained" }
             coordinator.scheduleRule(first, old.rules()[1], RuleDelayKind.Action, 200) { error("obsolete deadline") }
@@ -275,15 +267,13 @@ class MatchSystemRecordingTest {
             runCurrent(); coordinator.stopDiagnostics(session.id)
             assertEquals(listOf("retained", "follow", "second"), ran)
             val tape = coordinator.diagnostics.export(session.id).systemRecording!!.roundTrip()
-            assertTrue(tape.replay().verified)
-            assertEquals(3, tape.replay().runsStarted.size)
+            assertEquals(3, tape.steps.flatMap { it.effects }.count { it.type == "start" })
             val wake = tape.steps.first { it.command?.type == "wake" }
-            assertFailsWith<IllegalArgumentException> { tape.copy(steps = tape.steps.map { if (it == wake) it.copy(timeMillis = 99) else it }).replay() }
         } finally { coordinator.close() }
     }
 
     @Test
-    fun tamperedOrMissingStepsAndCapacityLimitsCannotReportVerified() {
+    fun capacityLimitsRetainAvailableStepsAndMarkMissingEvidence() {
         val machine = MatchScheduleMachine()
         val recorder = MatchSystemRecorder(machine.state, 0)
         fun send(command: MatchScheduleCommand, time: Long) { val effects = machine.apply(command, time); recorder.append(command, time, effects, machine.state) }
@@ -292,15 +282,9 @@ class MatchSystemRecordingTest {
         send(MatchScheduleCommand("finish", run = 1), 3)
         recorder.stop(4, machine.state)
         val tape = recorder.export().roundTrip()
-        assertTrue(tape.replay().verified)
-        assertFailsWith<IllegalArgumentException> { tape.copy(steps = tape.steps.drop(1)).replay() }
-        assertFailsWith<IllegalArgumentException> { tape.copy(steps = tape.steps.map { if (it.sequence == 2L) it.copy(effects = emptyList()) else it }).replay() }
-        assertFailsWith<IllegalArgumentException> { tape.copy(final = tape.final.copy(generation = 99)).replay() }
-        assertFailsWith<IllegalArgumentException> { tape.copy(version = 99).replay() }
         val limited = MatchSystemRecorder(tape.initial, 0, capacity = 1)
         tape.steps.forEach { limited.append(requireNotNull(it.command), it.timeMillis, it.effects, tape.final) }
         limited.stop(4, tape.final)
-        assertFalse(limited.export().replay().verified)
         assertEquals("system_recording_limit", limited.export().incomplete)
     }
 
@@ -311,7 +295,13 @@ class MatchSystemRecordingTest {
         machine.apply(MatchScheduleCommand("attach", service = 1), 0)
         machine.apply(MatchScheduleCommand("request", service = 1, task = 1), 0)
         machine.apply(MatchScheduleCommand("action_start", run = 1, rule = rule, action = li.gkd.app.model.GkdAction("", action = "swipe")), 1)
+        val action = machine.state.active!!.action
         machine.apply(MatchScheduleCommand("cancel", run = 1, reason = "page"), 2)
+        assertTrue(machine.state.active!!.cancelling)
+        assertEquals(action, machine.state.active!!.action, "Cancellation retains the action until platform cleanup")
+        val snapshot = Json.decodeFromString<MatchScheduleCheckpoint>(Json.encodeToString(machine.state))
+        assertTrue(snapshot.active!!.cancelling)
+        assertEquals(action, snapshot.active!!.action)
         machine.apply(MatchScheduleCommand("request", service = 1, task = 2), 3)
         assertFailsWith<IllegalArgumentException> { machine.apply(MatchScheduleCommand("finish", run = 1), 4) }
         machine.apply(MatchScheduleCommand("action_end", run = 1, outcome = MatchActionOutcome("cancelled")), 5)
@@ -321,7 +311,7 @@ class MatchSystemRecordingTest {
     }
 
     @Test
-    fun sharedCountersCooldownPrerequisitesAndHotReplacementReplayAcrossRuleInstances() {
+    fun sharedCountersCooldownPrerequisitesAndHotReplacementAreRecordedAcrossRuleInstances() {
         val recorder = MatchSystemRecorder(MatchScheduleCheckpoint(), 0)
         var time = 10_000L
         val runtime = RuleRuntime(now = { time }, observer = { recorder })
@@ -344,21 +334,9 @@ class MatchSystemRecordingTest {
         assertEquals(RuleStatus.Ready, fresh.rules()[0].status)
         recorder.stop(0, MatchScheduleCheckpoint())
         val tape = recorder.export().roundTrip()
-        assertTrue(tape.replay().verified)
-        val status = tape.steps.first { it.ruleState?.status == "ActionDelay" }
-        assertFailsWith<IllegalArgumentException> {
-            tape.copy(steps = tape.steps.map { if (it == status) it.copy(ruleState = it.ruleState!!.copy(status = "Ready")) else it }).replay()
-        }
-        // A recording event cannot mix a rule observation with a scheduler mutation.
-        assertFailsWith<IllegalArgumentException> {
-            tape.copy(steps = tape.steps.map { if (it == status) it.copy(command = MatchScheduleCommand("close")) else it }).replay()
-        }
-        assertFailsWith<IllegalArgumentException> {
-            tape.copy(steps = tape.steps.map { if (it == status) it.copy(ruleState = null) else it }).replay()
-        }
-        assertFailsWith<IllegalArgumentException> {
-            tape.copy(steps = tape.steps.map { if (it == status) it.copy(effects = listOf(MatchScheduleEffect("arm"))) else it }).replay()
-        }
+        assertTrue(tape.steps.any { it.ruleState?.status == "ActionDelay" })
+        assertTrue(tape.steps.any { it.ruleState?.operation == "trigger" })
+        assertTrue(tape.steps.any { it.ruleState?.operation == "reset" })
     }
 
     @Test
@@ -367,12 +345,12 @@ class MatchSystemRecordingTest {
         val key = Any()
         try {
             coordinator.attach(key)
-            val first = coordinator.startDiagnostics(1000, false, null, recordSystem = true)
+            val first = coordinator.startDiagnostics(false, null, recordSystem = true)
             coordinator.request(key) { }; runCurrent()
             coordinator.stopDiagnostics(first.id)
             val recorder = coordinator.diagnostics.systemRecorder!!
             val saved = recorder.export()
-            val ordinary = coordinator.startDiagnostics(1000, false, null)
+            val ordinary = coordinator.startDiagnostics(false, null)
             coordinator.request(key) { }; runCurrent()
             assertEquals(null, coordinator.diagnostics.export(ordinary.id).systemRecording)
             assertEquals(saved, recorder.export())

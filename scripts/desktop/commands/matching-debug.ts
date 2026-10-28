@@ -35,6 +35,102 @@ async function request(base: string, path: string, token?: string, body?: unknow
   });
 }
 
+export async function matchingDebug(options: Options, token?: string): Promise<unknown> {
+  options.signal?.throwIfAborted();
+  if (options.detailed && !options.recordSystem && !options.rule?.trim()) throw new Error('--detailed requires --rule or --record-system');
+  if (options.recordQueries && !options.recordSystem && !options.rule?.trim()) throw new Error('--record-queries requires --rule');
+  const base = `http://127.0.0.1:${options.port}`;
+  const appPaths: Record<string, string> = {
+    app: '/debug/app', catalog: '/debug/app/catalog',
+    foreground: '/debug/android/foreground', capabilities: '/debug/capabilities', engine: '/debug/engine',
+    readiness: '/debug/readiness',
+  };
+  if (appPaths[options.operation]) {
+    const result = await request(base, appPaths[options.operation]!, token);
+    if (options.output) await writeFile(options.output, JSON.stringify(result, null, 2));
+    return result;
+  }
+  const sessionPath = `/debug/sessions/${encodeURIComponent(options.session ?? '')}`;
+  if (!['start', 'capture', 'policy', 'benchmark', 'android-benchmark'].includes(options.operation) && !options.session) throw new Error('--session is required');
+  switch (options.operation) {
+    case 'capture': {
+      if (!options.output) throw new Error('capture requires --output');
+      const session = await matchingDebug({ ...options, operation: 'start' }, token) as { id: string };
+      const connection = { ...options, session: session.id };
+      const failures: unknown[] = [];
+      try {
+        if (options.input) await matchingDebug({ ...connection, operation: 'run' }, token);
+        await matchingDebug({ ...connection, operation: 'watch' }, token);
+      } catch (error) { failures.push(error); }
+      // Export even when watching or stopping fails, and ignore an already aborted
+      // capture signal during cleanup. A stopped session may still have cancelling runs.
+      try { await matchingDebug({ ...connection, signal: undefined, operation: 'stop' }, token); }
+      catch (error) { failures.push(error); }
+      try {
+        const deadline = Date.now() + 30_000;
+        while (true) {
+          const state = await request(base, `/debug/sessions/${encodeURIComponent(session.id)}`, token) as { trackingComplete: boolean };
+          if (state.trackingComplete) break;
+          if (Date.now() >= deadline) throw new Error('Diagnostic cleanup is still pending after 30s; exported runs do not confirm physical input release');
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) { failures.push(error); }
+      let exported: unknown;
+      try {
+        exported = await matchingDebug({ ...connection, signal: undefined, operation: 'export' }, token);
+        process.stderr.write(`Diagnostic export: ${options.output}\n`);
+      } catch (error) { failures.push(error); }
+      if (failures.length) throw new AggregateError(failures, 'Diagnostic capture failed; see export path above if export succeeded');
+      return exported;
+    }
+    case 'run': {
+      if (!options.input) throw new Error('--input must contain a MatchDebugRunRequest JSON');
+      return request(base, `${sessionPath}/runs`, token, JSON.parse(await readFile(options.input, 'utf8')));
+    }
+    case 'run-status':
+    case 'cancel': {
+      if (!options.run) throw new Error('--run is required');
+      return request(base, `${sessionPath}/runs/${encodeURIComponent(options.run)}${options.operation === 'cancel' ? '/cancel' : ''}`,
+        token, options.operation === 'cancel' ? {} : undefined);
+    }
+    case 'start': return request(base, '/debug/sessions', token, {
+      ruleFilter: options.rule ?? null, detailed: options.detailed ?? false, recordQueries: options.recordQueries ?? false,
+      ...(options.recordSystem ? { recordSystem: true } : {}),
+    });
+    case 'status': return request(base, sessionPath, token);
+    case 'events': return request(base, `${sessionPath}/events?after=${Number(options.after ?? 0)}`, token);
+    case 'stop': return request(base, `${sessionPath}/stop`, token, {});
+    case 'policy': return request(base, '/debug/policy', token,
+      options.input ? JSON.parse(await readFile(options.input, 'utf8')) : undefined);
+    case 'export': {
+      const result = await request(base, `${sessionPath}/export`, token, {});
+      if (options.output) await writeFile(options.output, JSON.stringify(result, null, 2));
+      return options.output ? { output: options.output } : result;
+    }
+    case 'watch': {
+      await new Promise<void>((resolve, reject) => {
+        const req = httpRequest(`${base}${sessionPath}/stream`, {
+          signal: options.signal,
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Last-Event-ID': options.after ?? '0' },
+        }, response => {
+          if (response.statusCode !== 200) {
+            response.resume(); reject(new Error(`SSE failed: ${response.statusCode}`)); return;
+          }
+          response.on('data', chunk => process.stdout.write(chunk));
+          response.on('end', resolve);
+          response.on('error', reject);
+        });
+        const timer = setTimeout(() => { resolve(); req.destroy(); }, options.duration);
+        req.on('close', () => clearTimeout(timer));
+        req.on('error', reject);
+        req.end();
+      });
+      return { stopped: true };
+    }
+    default: throw new Error(`Unknown diagnostic operation: ${options.operation}`);
+  }
+}
+
 /** Bounded device capture owns its forwarding and restores automation through the existing helper. */
 export async function deviceMatchingDebug(serial: string, options: Options) {
   const backend = options.backend ?? 'accessibility';

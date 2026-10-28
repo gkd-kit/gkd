@@ -35,6 +35,8 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 `A11yRuntime` 选择真实服务，各服务持有自己的规则引擎、事件缓存及延迟任务，资源随所属 Android 组件释放。页面退出不销毁应用仓库；Desktop 场景重建不清空持久化数据。
 
+`RuleRuntime` 通过可选 `RuleStateObserver` 观察实际状态变化，系统录制器实现该接口；关闭录制时不构造状态快照。`MatchCoordinator` 持有诊断会话的协程生命周期，调试请求作为会话子任务运行，停止/过期取消请求，执行通道仍等待动作收尾；生产运行时不再回调 `MatchDebugRuns`。Android 查询的诊断对象由调用方显式传入，缓存上下文不自行查找全局诊断会话。
+
 ## 数据读写与兼容
 
 | 数据 | 读取 | 写入与一致性 |

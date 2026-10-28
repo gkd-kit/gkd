@@ -25,6 +25,7 @@ enum class ForegroundNotificationKey(
     Activity(id = 106),
     Event(id = 107),
     Track(id = 108),
+    MatchDiagnostic(id = 109),
 }
 
 enum class PostedNotificationKey(
@@ -83,6 +84,13 @@ data class PostedNotification(
 }
 
 object NotificationCatalog {
+    fun matchDiagnostic(saving: Boolean = false) = ForegroundNotification(
+        key = ForegroundNotificationKey.MatchDiagnostic,
+        title = (if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing).getSync(),
+        text = if (saving) null else Res.string.match_debug_notification_help.getSync(),
+        uri = "gkd://page/matching-diagnostics",
+        stopService = if (saving) null else li.gkd.app.service.MatchDiagnosticService::class,
+    )
     fun status(
         title: String = META.appName,
         text: String? = Res.string.a11y_running.getSync(),

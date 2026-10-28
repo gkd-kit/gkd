@@ -1102,4 +1102,24 @@
     <string name="subscription_adding_parse">正在解析订阅…</string>
     <string name="subscription_adding_check">正在检查订阅…</string>
     <string name="subscription_adding_save">正在保存订阅…</string>
+    <string name="match_debug_title">匹配运行诊断</string>
+    <string name="match_debug_start">开启诊断</string>
+    <string name="match_debug_stop">关闭诊断</string>
+    <string name="match_debug_export">导出诊断</string>
+    <string name="match_debug_capturing">正在采集</string>
+    <string name="match_debug_service_busy">诊断正在采集或保存，请等待完成</string>
+    <string name="match_debug_service_failed">诊断服务未能启动，采集未开启</string>
+    <string name="match_debug_notification_required">请先允许通知，以便在通知栏停止诊断采集</string>
+    <string name="match_debug_notification_help">点击返回诊断页面，可在通知中停止采集</string>
+    <string name="match_debug_saving">正在保存诊断…</string>
+    <string name="match_debug_collect">诊断采集</string>
+    <string name="match_debug_intro">记录运行过程，帮助排查问题</string>
+    <string name="match_debug_records">诊断记录</string>
+    <string name="match_debug_empty">暂无诊断记录</string>
+    <string name="match_debug_read_failed">读取失败：%1$s</string>
+    <string name="match_debug_delete_confirm">删除选中的 %1$s 条诊断记录？</string>
+    <string name="match_debug_collecting_empty">正在采集，停止后生成记录</string>
+    <string name="match_debug_saved">已保存诊断记录</string>
+    <string name="match_debug_start_title">开启诊断采集</string>
+    <string name="match_debug_start_description">诊断会记录规则匹配、操作结果和调用耗时，可能包含页面文字等信息，用于排查问题。关闭后会保存一条诊断记录。\n\n开始前，请先启用需要排查的规则，确认相关服务已开启，并准备好复现步骤。\n\n点击继续后，前往目标应用复现问题，完成后及时关闭诊断。请勿长时间开启，也不要在采集期间输入密码、支付信息或浏览敏感内容。分享前请确认接收方可信。</string>
 </resources>

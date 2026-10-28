@@ -17,6 +17,7 @@ class AppStorageLayout(
     val store get() = directory(files, "store")
     val subscription get() = directory(files, "subscription")
     val snapshot get() = directory(files, "snapshot")
+    val matchingDiagnostics get() = directory(files, "matching-diagnostics")
     val log get() = directory(files, "log")
     val crash get() = directory(files, "crash")
     val crashTemp get() = directory(files, "crash/temp")

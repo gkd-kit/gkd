@@ -79,6 +79,7 @@ fun GkAppNavigation(
                 AboutRoute -> AboutPage(host)
                 BlockA11ySetupRoute -> BlockA11ySetupPage(host)
                 AdvancedPageRoute -> AdvancedPage(host)
+                MatchDebugRoute -> li.gkd.app.ui.log.MatchDebugPage(host)
                 ExternalCallsRoute -> ExternalCallsPage()
                 QuickSettingsTilesRoute -> QuickSettingsTilesPage()
                 PrivilegeServiceRoute -> PrivilegeServicePage(host)
