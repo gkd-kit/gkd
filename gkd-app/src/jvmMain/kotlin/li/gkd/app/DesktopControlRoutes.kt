@@ -31,6 +31,7 @@ import kotlinx.serialization.json.JsonObject
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.AppInventory
 import li.gkd.app.window.DesktopWindowGeometry
+import li.gkd.app.snapshot.SnapshotCaptureOutcome
 
 private object Edt : CoroutineDispatcher() {
     override fun isDispatchNeeded(context: CoroutineContext) =
@@ -139,8 +140,8 @@ fun Route.desktopControlRoutes(
             val result = withContext(Edt) { runtime.replaySnapshot(request) }
             awaitFrame()
             when (result) {
-                is li.gkd.app.snapshot.SnapshotCaptureOutcome.Captured -> call.respond(result.value)
-                li.gkd.app.snapshot.SnapshotCaptureOutcome.Busy -> call.respond(
+                is SnapshotCaptureOutcome.Captured -> call.respond(result.value)
+                SnapshotCaptureOutcome.Busy -> call.respond(
                     io.ktor.http.HttpStatusCode.Conflict, mapOf("error" to "SNAPSHOT_CAPTURE_BUSY"),
                 )
             }
@@ -394,9 +395,7 @@ private fun readNode(
 
 private fun activeWindow(window: Window, includeNonFocusable: Boolean = true): Window =
     window.ownedWindows.lastOrNull {
-        it.isVisible && (includeNonFocusable || DesktopTestWindows.acceptsInput(
-            it
-        ))
+        it.isVisible && (includeNonFocusable || it.focusableWindowState)
     }
         ?.let { activeWindow(it, includeNonFocusable) } ?: window
 

@@ -221,9 +221,7 @@ object SettingsRepository {
     private val restoreMutex = Mutex()
     private val termsMutex = Mutex()
     val termsAccepted: StateFlow<Boolean>
-        field = MutableStateFlow(
-            storage.read("terms_accepted.txt")?.let { it == "true" } ?: defaultTermsAccepted()
-        )
+        field = createTermsAcceptedFlow(storage)
 
     suspend fun acceptTerms() = termsMutex.withLock {
         if (!termsAccepted.value) {

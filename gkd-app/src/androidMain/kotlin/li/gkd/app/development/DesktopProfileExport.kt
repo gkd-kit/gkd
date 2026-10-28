@@ -12,6 +12,9 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -26,9 +29,9 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import li.gkd.app.META
 import li.gkd.app.MainActivity
-import li.gkd.app.a11y.launcherAppIdFlow
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.matching.input.launcherAppIdFlow
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.AndroidTarget
@@ -36,9 +39,6 @@ import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 /** Explicit adb development export. Release builds consume but never execute this action. */
 object DesktopProfileExport {

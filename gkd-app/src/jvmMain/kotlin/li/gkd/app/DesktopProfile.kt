@@ -13,7 +13,6 @@ import androidx.compose.ui.text.platform.Font
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.float
 import kotlinx.serialization.json.int
@@ -116,8 +115,7 @@ object DesktopProfile {
 
     val typography: Typography by lazy {
         val base = Typography()
-        val file = directory.resolve("DeviceSans.ttf").takeIf { it.isFile }
-            ?: directory.resolve("MiSansVF.ttf")
+        val file = directory.resolve("DeviceSans.ttf")
         val family = if (file.isFile) FontFamily(
             Font(file, weight = FontWeight.Normal),
             Font(file, weight = FontWeight.Medium),
@@ -142,9 +140,4 @@ object DesktopProfile {
         )
     }
 
-    fun boolean(key: String, fallback: Boolean) =
-        settings[key]?.jsonPrimitive?.booleanOrNull ?: fallback
-
-    fun text(key: String, fallback: String) =
-        settings[key]?.jsonPrimitive?.contentOrNull ?: fallback
 }

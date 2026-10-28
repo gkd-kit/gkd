@@ -206,7 +206,6 @@ fun runDesktop(args: Array<String>) {
                 state = controlsWindowState,
                 visible = controlsReady,
                 icon = windowIcon,
-                focusable = !backgroundTest
             ) {
                 SideEffect { controlsWindow = window }
                 DisposableEffect(window) { onDispose { controlsWindow = null } }
@@ -240,7 +239,6 @@ fun runDesktop(args: Array<String>) {
             state = windowState,
             visible = appReady,
             icon = windowIcon,
-            focusable = !backgroundTest
         ) {
             LaunchedEffect(closeAttempt) {
                 if (closing) {

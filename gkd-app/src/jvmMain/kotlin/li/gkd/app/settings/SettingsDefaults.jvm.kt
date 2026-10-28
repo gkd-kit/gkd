@@ -1,11 +1,12 @@
 package li.gkd.app.settings
 
-import li.gkd.app.META
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import li.gkd.app.DesktopProfile
+import li.gkd.app.META
 
 private val settingsJson = Json { ignoreUnknownKeys = true }
 
@@ -15,11 +16,12 @@ actual fun defaultSettings(): SettingsStore {
             mapOf(
                 "actionToast" to JsonPrimitive(META.appName),
                 "customNotifTitle" to JsonPrimitive(META.appName),
-            ) + DesktopProfile.settings
-        )
+            ) + DesktopProfile.settings,
+        ),
     )
 }
 
 actual fun defaultBlockMatchAppList(): Set<String> = DesktopProfile.blocked
 
-actual fun defaultTermsAccepted(): Boolean = true
+actual fun createTermsAcceptedFlow(storage: SettingsStorage): MutableStateFlow<Boolean> =
+    MutableStateFlow(true)

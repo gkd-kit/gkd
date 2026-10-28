@@ -14,9 +14,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.serialization.Serializable
 import li.gkd.app.network.AppLinks
+import li.gkd.app.permission.SimulatorPermissionRequester
 import li.gkd.app.platform.writeClipboardText
 import li.gkd.app.resources.*
-import li.gkd.app.permission.SimulatorPermissionRequester
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.ToastState
 import li.gkd.app.ui.home.BottomNavItem
@@ -27,7 +27,6 @@ import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.ActionToastRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
-import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
@@ -35,13 +34,14 @@ import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
+import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.HomeRoute
-import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.ImagePreviewRoute
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
-import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
+import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
@@ -184,7 +184,7 @@ class DesktopState(
                 mainVm.navigator.popToHome()
             }
 
-            is GkdLink.Page -> if (link.route == li.gkd.app.ui.navigation.MatchDebugRoute) mainVm.navigator.openDiagnosticPage() else mainVm.navigator.navigate(link.route)
+            is GkdLink.Page -> if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage() else mainVm.navigator.navigate(link.route)
             GkdLink.WeChatScanner -> unsupported()
             null -> toast.show(Res.string.uri_unknown.getSync(uri))
         }
