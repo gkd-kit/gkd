@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.IBinder
 import android.os.Process
+import android.view.IWindowManager
 import li.gkd.aidl.IUserService
 import li.gkd.app.META
 import li.gkd.app.app
@@ -53,7 +54,9 @@ class PrivilegeContext private constructor(
         requireNotNull(PrivilegeBinderWrapper.fromSystemService(Context.INPUT_SERVICE)),
     )
     private val a11yManager = CompatAccessibilityManager()
-    private val wmManager = CompatWindowManager()
+    private val wmManager = IWindowManager.Stub.asInterface(
+        requireNotNull(PrivilegeBinderWrapper.fromSystemService(Context.WINDOW_SERVICE)),
+    )
     private val userService = IUserService.Stub.asInterface(userServiceConnection.binder)
     private var taskStackListenerRegistered = false
     private var surfaceJob: Job? = null
@@ -208,20 +211,8 @@ class PrivilegeContext private constructor(
         a11yManager.value.unregisterUiTestAutomationService(client)
     }
 
-    fun isRotationFrozen(): Boolean = wmManager.value.isRotationFrozen
-
-    fun getDefaultDisplayRotation(): Int = wmManager.value.defaultDisplayRotation
-
-    fun freezeRotation(rotation: Int, caller: String) {
-        wmManager.freezeRotation(rotation, caller)
-    }
-
-    fun thawRotation(caller: String) {
-        wmManager.thawRotation(caller)
-    }
-
     fun screenshot(): Bitmap? {
-        return CompatScreenshot.capture(app, wmManager.value, userService)
+        return CompatScreenshot.capture(app, wmManager, userService)
     }
 
     private fun setAllowSelfMode(code: Int) {
