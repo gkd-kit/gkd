@@ -95,6 +95,7 @@ import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkPageBottomSpaceDefaults
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
+import li.gkd.app.ui.home.appLabel
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.navigation.ActionLogRoute
@@ -229,7 +230,7 @@ fun ActionLogPage(
                     }
                 }
                 GkLogTimeline(
-                    appLabel = { rememberRuleControlEnvironment().apps[it]?.name ?: it },
+                    appLabel = { appLabel(it) },
                     appIcon = { GkAppIcon(it, 24.dp) },
                     appName = { id, modifier ->
                         GkAppNameText(

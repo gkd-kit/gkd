@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +43,7 @@ import li.gkd.app.ui.component.GkSizedIconButton
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
@@ -324,7 +324,7 @@ private fun DebugServiceItem(
         )
     }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
@@ -336,7 +336,7 @@ private fun DebugServiceItem(
                         start = itemHorizontalPadding,
                         top = itemVerticalPadding,
                         end = itemHorizontalPadding,
-                        bottom = 4.dp,
+                        bottom = itemVerticalPadding,
                     )
         ) {
             GkTextSwitch(
@@ -372,7 +372,7 @@ private fun DebugServiceItem(
                         start = itemHorizontalPadding,
                         top = 0.dp,
                         end = itemHorizontalPadding,
-                        bottom = 4.dp,
+                        bottom = itemVerticalPadding,
                     )
             ) {
                 serverAddresses.forEach { host ->

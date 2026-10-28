@@ -108,8 +108,9 @@ fun GkImagePreviewContent(
     val previewItems = route.items
     val previewUris = remember(previewItems) { previewItems.map { it.uri } }
     val singleItem = previewItems.singleOrNull()
-    val localPagerState = rememberPagerState(pageCount = { previewItems.size.coerceAtLeast(1) })
-    val activePagerState = pagerState ?: localPagerState
+    val activePagerState = pagerState ?: rememberPagerState(
+        pageCount = { previewItems.size.coerceAtLeast(1) }
+    )
     val currentPage = activePagerState.currentPage
 
     systemBars(showBars)

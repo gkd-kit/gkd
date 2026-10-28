@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.updateAndGet
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.appScope
@@ -54,11 +53,10 @@ class PermissionState(
         private set
 
     fun updateAndGet(): Boolean {
-        return stateFlow.updateAndGet {
-            val granted = check()
-            lastCheck = PermissionCheck(System.currentTimeMillis(), granted)
-            granted
-        }
+        val granted = check()
+        lastCheck = PermissionCheck(System.currentTimeMillis(), granted)
+        stateFlow.value = granted
+        return granted
     }
 
     fun refresh(): Boolean {

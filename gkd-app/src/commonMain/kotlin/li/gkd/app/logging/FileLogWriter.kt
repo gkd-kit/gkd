@@ -34,6 +34,8 @@ class FileLogWriter(private val directory: File, private val metadata: LogMetada
     private data class Entry(val sequence: Long, val level: LogLevel, val time: Long, val bytes: ByteArray) {
         val size: Int get() = bytes.size + 13 // ASCII HH:mm:ss.SSS and one space, rendered by the worker.
     }
+    // Object exposes wait()/notifyAll(), which are unavailable on Kotlin's Any.
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     private val lock = Object()
     private val filesLock = Any()
     private val queue = ArrayDeque<Entry>()
