@@ -21,3 +21,4 @@ kotlin-js-store
 local.properties
 libs.versions.updates.toml
 /.local/
+/.temp/
