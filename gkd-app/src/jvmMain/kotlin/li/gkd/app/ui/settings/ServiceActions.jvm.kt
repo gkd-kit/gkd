@@ -8,7 +8,7 @@ import li.gkd.app.simulatedServiceRunning
 
 actual fun UiHost.setSnapshotButtonEnabled(enabled: Boolean) = DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Button, enabled)
 
-actual fun UiHost.setHttpServiceEnabled(enabled: Boolean) = DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Http, enabled)
+actual fun UiHost.setDebugServiceEnabled(enabled: Boolean) = DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Debug, enabled)
 
 actual fun UiHost.setActivityMonitorEnabled(enabled: Boolean) = DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Activity, enabled)
 
@@ -17,7 +17,7 @@ actual fun UiHost.setEventMonitorEnabled(enabled: Boolean) = DesktopRuntime.requ
 actual fun UiHost.setTrackServiceEnabled(enabled: Boolean) = DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Track, enabled)
 
 @Composable
-actual fun httpRunning() = simulatedServiceRunning(SimulatedService.Http)
+actual fun debugServiceRunning() = simulatedServiceRunning(SimulatedService.Debug)
 @Composable
 actual fun httpServerAddresses() = listOf(li.gkd.app.util.Constants.loopbackHost)
 @Composable
@@ -29,4 +29,4 @@ actual fun eventMonitorRunning() = simulatedServiceRunning(SimulatedService.Even
 @Composable
 actual fun trackServiceRunning() = simulatedServiceRunning(SimulatedService.Track)
 
-actual fun UiHost.httpServerPortChanged() = DesktopRuntime.requireCurrent().httpService.restartIfRunning()
+actual fun UiHost.httpServerPortChanged() = DesktopRuntime.requireCurrent().debugService.restartIfRunning()

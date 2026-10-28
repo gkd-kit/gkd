@@ -1,3 +1,4 @@
+import { resolveDesktopPort } from './lib/desktop-connection.ts';
 import { parseArgs } from 'node:util';
 import { repositoryRoot as repo, desktopProfile } from './lib/local-paths.ts';
 import { resolve } from 'node:path';
@@ -22,9 +23,9 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   'record-system': { type: 'boolean' },
   attach: { type: 'boolean' },
   backend: { type: 'string' },
-  port: { type: 'string', default: '17322' }, service: { type: 'string' },
+  port: { type: 'string' }, service: { type: 'string' },
   event: { type: 'string' }, attempt: { type: 'string' }, reason: { type: 'string' },
-  'rpc-port': { type: 'string', default: '8888' },
+  connection: { type: 'string' },
   operation: { type: 'string' }, session: { type: 'string' },
   after: { type: 'string' }, rule: { type: 'string' }, duration: { type: 'string', default: '20000' },
   input: { type: 'string' }, run: { type: 'string' },
@@ -33,10 +34,10 @@ try {
   const command = positionals[0];
   if (values.help || !command) {
     console.log(`pnpm app:tools capture-profile [--serial SERIAL] [--apps FILE] [--font DEVICE_PATH] [--install] [--screens] [--output DIR]
-pnpm app:tools services [--port 17322]
-pnpm app:tools check-subscription-http [--port 17322] [--rpc-port 8888]
-pnpm app:tools service-start|service-stop --service Activity [--port 17322]
-pnpm app:tools service-event --service Activity --event Connected --attempt 1 [--reason TEXT] [--port 17322]
+pnpm app:tools services [--port 8888 | --connection FILE]
+pnpm app:tools check-subscription-http [--port 8888 | --connection FILE]
+pnpm app:tools service-start|service-stop --service Activity [--port 8888 | --connection FILE]
+pnpm app:tools service-event --service Activity --event Connected --attempt 1 [--reason TEXT] [--port 8888 | --connection FILE]
 pnpm app:tools matching-debug --operation readiness|start|capture|status|events|watch|stop|export|policy|engine|replay|replay-query|replay-system|replay-capture|benchmark|run|run-status|cancel [--session ID] [--run ID] [--input JSON] [--duration 20000] [--detailed --rule ID] [--record-queries --rule ID] [--record-system] [--after SEQUENCE] [--output FILE]
 pnpm app:tools device-matching-debug --serial SERIAL [--attach | --install] [--operation capture|start|status|events|watch|stop|export|run|run-status|cancel] [--session ID] [--run ID] [--input JSON] [--duration 20000] [--output FILE] [--detailed --rule ID]
 pnpm app:tools device-app-debug --serial SERIAL --operation readiness|app|catalog|foreground|capabilities|engine [--attach | --install] [--output FILE]
@@ -49,7 +50,7 @@ pnpm app:tools device-service-stop-check --serial SERIAL [--backend accessibilit
 pnpm app:tools device-query-safety --serial SERIAL [--install] [--output FILE]
 pnpm app:tools device-test-apps --serial SERIAL --operation status|cleanup
 
-Service commands require an isolated Desktop (--test). Services: Status, Button, Activity, Event, Track, Screenshot, Http, Accessibility, Automation.
+Service commands require an isolated Desktop (--test). Services: Status, Button, Activity, Event, Track, Screenshot, Debug, Accessibility, Automation.
 Events: Authorized, Cancelled, Connected, Failed. Use the attempt returned by services.
 
 Device commands require adb and an installed gkdDebug app; --install also needs a built APK and skips identical installed content. Controlled capture restores automation settings in finally.
@@ -71,7 +72,7 @@ If recovery fails, keep .local/device-recovery and use device-recovery after rec
   }
   else if (command === 'matching-debug' || command === 'device-matching-debug' || command === 'device-app-debug' || command === 'device-matching-benchmark' || command === 'device-gesture-check' || command === 'device-session-check' || command === 'device-service-stop-check' || command === 'device-query-safety') {
     const duration = Number(values.duration);
-    const port = Number(values.port);
+    const port = command === 'matching-debug' ? await resolveDesktopPort(values.port, values.connection) : 8888;
     if (!Number.isInteger(duration) || duration < 1 || duration > 600000) throw new Error('Invalid duration');
     if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid port');
     const options = { port, duration, operation: command === 'device-query-safety' ? 'query-safety' : command === 'device-matching-benchmark' ? 'android-benchmark' : command === 'device-gesture-check' ? 'gesture-check' : command === 'device-session-check' ? 'session-check' : command === 'device-service-stop-check' ? 'service-stop-check' :
@@ -93,16 +94,14 @@ If recovery fails, keep .local/device-recovery and use device-recovery after rec
     }
   }
   else if (command === 'check-subscription-http') {
-    const port = Number(values.port);
-    const rpcPort = Number(values['rpc-port']);
-    for (const value of [port, rpcPort]) if (!Number.isInteger(value) || value < 1024 || value > 65535) throw new Error('Invalid port');
-    console.log(await checkSubscriptionHttp(new DesktopClient(port), rpcPort));
+    const port = await resolveDesktopPort(values.port, values.connection);
+    console.log(await checkSubscriptionHttp(new DesktopClient(port)));
   } else if (command === 'capture-profile') {
     await captureProfile({ serial: values.serial, apps: values.apps, font: values.font,
       install: !!values.install, screens: !!values.screens,
       output: resolve(values.output ?? desktopProfile) }, repo);
   } else if (['services', 'service-start', 'service-stop', 'service-event'].includes(command)) {
-    const port = Number(values.port);
+    const port = await resolveDesktopPort(values.port, values.connection);
     if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid port');
     const client = new DesktopClient(port);
     if (command === 'services') console.log(JSON.stringify(await client.services(), null, 2));

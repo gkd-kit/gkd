@@ -15,7 +15,7 @@ enum class SimulatedService(
     Event(Res.string.event_service_label),
     Track(Res.string.track_overlay),
     Screenshot(Res.string.screenshot_service),
-    Http(Res.string.http_service_label, Res.string.http_service_compact_label),
+    Debug(Res.string.debug_service_label, Res.string.debug_service_compact_label),
     Accessibility(Res.string.a11y_label),
     Automation(Res.string.automation_label);
 
@@ -68,7 +68,7 @@ data class SimulatedServiceState(
 @Serializable
 data class SimulatedServices(
     val plans: Map<SimulatedService, ServiceSimulationPlan> = SimulatedService.entries
-        .filter { it != SimulatedService.Http }
+        .filter { it != SimulatedService.Debug }
         .associateWith { ServiceSimulationPlan(authorization = if (it == SimulatedService.Screenshot) ServiceAuthorization.Manual else ServiceAuthorization.Allow) },
     val runtime: Map<SimulatedService, SimulatedServiceState> = SimulatedService.entries.associateWith { SimulatedServiceState() },
     val a11yEnabled: Boolean = false,

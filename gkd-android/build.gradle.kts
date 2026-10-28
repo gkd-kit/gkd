@@ -15,6 +15,7 @@ val gitInfo = project.gitInfo
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.codeorigin)
 }
 
@@ -77,6 +78,8 @@ android {
             manifestPlaceholders["channel"] = name
         }
     }
+    sourceSets.getByName("debug").kotlin.srcDir("../gkd-app/src/androidDebug/kotlin")
+
     // https://github.com/LSPosed/AndroidHiddenApiBypass
     dependenciesInfo {
         includeInApk = false

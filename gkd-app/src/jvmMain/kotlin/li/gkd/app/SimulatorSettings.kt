@@ -103,7 +103,7 @@ data class SimulatorSettings(
 
     fun validate() {
         environment().validate()
-        require(services.plans.keys == SimulatedService.entries.toSet() - SimulatedService.Http) { "Invalid service plans" }
+        require(services.plans.keys == SimulatedService.entries.toSet() - SimulatedService.Debug) { "Invalid service plans" }
         require(services.runtime.keys == SimulatedService.entries.toSet()) { "Missing service states" }
         require(privilege.tcpPort in 1..65535) { "Invalid TCP port" }
         require(privilege.activeTcpPort == null || privilege.activeTcpPort in 1..65535) { "Invalid active TCP port" }

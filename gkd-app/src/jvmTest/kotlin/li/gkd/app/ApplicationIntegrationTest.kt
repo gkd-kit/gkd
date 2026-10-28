@@ -118,6 +118,7 @@ class ApplicationIntegrationTest {
                 assertLogCallerValues()
                 withTimeout(20_000) { runtime.subscriptionInitialization.join() }
                 withTimeout(5_000) { runtime.crashInitialization.join() }
+                li.gkd.app.network.inspection.assertDesktopDebugServiceLifecycle(runtime)
                 val items = Db.subsItemDao.queryAll().associateBy { it.id }
                 assertTrue(items.getValue(13).enable)
                 assertFalse(items.getValue(92).enable)

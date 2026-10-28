@@ -45,7 +45,7 @@ import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
 import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
-import li.gkd.app.service.clearHttpSubs
+import li.gkd.app.service.clearDebugSubscription
 import li.gkd.app.service.initA11yWhiteAppList
 import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
@@ -265,7 +265,7 @@ class App : Application() {
         }
         appScope.launchLogged(Dispatchers.IO) {
             SubscriptionRepository.initialize(SubscriptionDefaults.fromResources())
-            clearHttpSubs()
+            clearDebugSubscription()
         }
         initA11yWhiteAppList()
         RuntimeStateSynchronizer.requestSync()

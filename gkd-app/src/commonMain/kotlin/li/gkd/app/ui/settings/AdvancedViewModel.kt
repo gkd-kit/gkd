@@ -58,10 +58,10 @@ class AdvancedViewModel : BaseViewModel() {
         showEditPortDialog.value = false
     }
 
-    val showHttpSettingsDialog: StateFlow<Boolean>
+    val showDebugSettingsDialog: StateFlow<Boolean>
         field = MutableStateFlow(false)
 
-    fun setShowHttpSettingsDialog(value: Boolean) {
-        showHttpSettingsDialog.value = value
+    fun setShowDebugSettingsDialog(value: Boolean) {
+        showDebugSettingsDialog.value = value
     }
 }

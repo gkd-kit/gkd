@@ -6,7 +6,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
 import li.gkd.app.service.EventService
-import li.gkd.app.service.HttpService
+import li.gkd.app.service.DebugService
 import li.gkd.app.service.ScreenshotService
 import li.gkd.app.service.TrackService
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
@@ -20,7 +20,7 @@ enum class ForegroundNotificationKey(
     Status(id = 100),
     Screenshot(id = 101),
     Button(id = 102),
-    Http(id = 103),
+    Debug(id = 103),
     Expose(id = 104),
     Activity(id = 106),
     Event(id = 107),
@@ -110,13 +110,13 @@ object NotificationCatalog {
         stopService = ButtonService::class,
     )
 
-    fun http(port: Int, localNetworkIps: List<String> = emptyList()) = ForegroundNotification(
-        key = ForegroundNotificationKey.Http,
-        title = Res.string.http_service_enabled.getSync(),
+    fun debug(port: Int, localNetworkIps: List<String> = emptyList()) = ForegroundNotification(
+        key = ForegroundNotificationKey.Debug,
+        title = Res.string.debug_service_enabled.getSync(),
         text = localNetworkIps.ifEmpty { listOf(Constants.loopbackHost) }
             .joinToString(", ") { "$it:$port" },
         uri = "gkd://page/1",
-        stopService = HttpService::class,
+        stopService = DebugService::class,
     )
 
     fun expose() = ForegroundNotification(

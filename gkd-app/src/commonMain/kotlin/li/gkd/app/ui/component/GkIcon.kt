@@ -84,7 +84,7 @@ import li.gkd.app.ui.icon.PageInfo as SharedPageInfo
 import li.gkd.app.ui.icon.StackedDocuments as SharedStackedDocuments
 import li.gkd.app.ui.icon.TileStatus as SharedTileStatus
 import li.gkd.app.ui.icon.TileCapture as SharedTileCapture
-import li.gkd.app.ui.icon.TileHttp as SharedTileHttp
+import li.gkd.app.ui.icon.TileDebug as SharedTileDebug
 import li.gkd.app.ui.icon.TileButton as SharedTileButton
 import li.gkd.app.ui.icon.TileActivity as SharedTileActivity
 import li.gkd.app.ui.icon.TileEvent as SharedTileEvent
@@ -170,7 +170,7 @@ object GkIcons {
     val Logo get() = SharedLogo
     val TileStatus get() = SharedTileStatus
     val TileCapture get() = SharedTileCapture
-    val TileHttp get() = SharedTileHttp
+    val TileDebug get() = SharedTileDebug
     val TileButton get() = SharedTileButton
     val TileActivity get() = SharedTileActivity
     val TileEvent get() = SharedTileEvent

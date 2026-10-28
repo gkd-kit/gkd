@@ -181,19 +181,22 @@ fun runDesktop(args: Array<String>) {
         DisposableEffect(Unit) { onDispose { persistence.close(); state.close(); runtime.close() } }
         DisposableEffect(appWindow) {
             val host = appWindow
-            val server = host?.let {
-                DesktopDebugServer.start(
-                    state,
-                    runtime,
-                    host,
-                    controlsWindow = { controlsWindow },
-                    hostKey = handleHostKey,
-                    awaitFrame = {
-                        snapshotFlow { renderedRevision == state.revision }.first { it }
-                        appFrameClock?.let { clock -> withContext(clock) { withFrameNanos { }; withFrameNanos { } } }
-                    })
+            host?.let {
+                runtime.debugService.bindControls {
+                    desktopControlRoutes(
+                        state,
+                        runtime,
+                        host,
+                        controlsWindow = { controlsWindow },
+                        hostKey = handleHostKey,
+                        awaitFrame = {
+                            snapshotFlow { renderedRevision == state.revision }.first { it }
+                            appFrameClock?.let { clock -> withContext(clock) { withFrameNanos { }; withFrameNanos { } } }
+                        },
+                    )
+                }
             }
-            onDispose { server?.close() }
+            onDispose { if (host != null) runtime.debugService.unbindControls() }
         }
         if (controlsVisible) {
             var controlsReady by remember { mutableStateOf(false) }

@@ -1,6 +1,8 @@
 package li.gkd.app.service
 
+import android.content.Intent
 import androidx.lifecycle.lifecycleScope
+import li.gkd.app.app
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
@@ -10,10 +12,10 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.appScope
 import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.currentDeviceInfo
+import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.network.AppLinks
 import li.gkd.app.network.NetworkAddresses
 import li.gkd.app.network.inspection.ServerInfo
@@ -31,7 +33,8 @@ import li.gkd.app.util.launchLogged
 import li.gkd.app.util.mapState
 import li.gkd.db.SubscriptionIds
 
-class HttpService : LifecycleHookService() {
+class DebugService : LifecycleHookService() {
+    private var diagnostics: DebugServerDiagnostics? = null
     val httpServerPortFlow by lazy {
         settings.mapState(lifecycleScope) { s -> s.httpServerPort }
     }
@@ -40,7 +43,7 @@ class HttpService : LifecycleHookService() {
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.http_service_compact_label.getSync(),
+            name = Res.string.debug_service_compact_label.getSync(),
         )
         useStopServiceReceiver()
         onDestroyed {
@@ -50,21 +53,28 @@ class HttpService : LifecycleHookService() {
                 }
             }
         }
+        onDestroyed { diagnostics?.close() }
         onCreated {
-            NotificationCatalog.http(httpServerPortFlow.value).startForeground()
+            if (!NotificationCatalog.debug(httpServerPortFlow.value).startForeground()) return@onCreated
+            diagnostics = app.applicationInfoWithMetadata.metaData?.getString("debugServerDiagnostics")
+                ?.let { Class.forName(it).getDeclaredConstructor().newInstance() as DebugServerDiagnostics }
             var startedOnce = false
             lifecycleScope.launchLogged(Dispatchers.IO) {
                 httpServerPortFlow.collectLatest { port ->
                     if (!NetworkAddresses.isPortAvailable(port)) {
-                        ToastUtils.show(Res.string.http_port_occupied.getSync(port))
+                        ToastUtils.show(Res.string.debug_port_occupied.getSync(port))
                         stopSelf()
                         return@collectLatest
                     }
-                    val server = try {
-                        createServer(port).apply { start() }
+                    val server = createServer(port, diagnostics)
+                    try {
+                        server.start()
+                        diagnostics?.publish(port)
                     } catch (e: Exception) {
-                        ToastUtils.show(Res.string.http_service_start_failed.getSync(e.stackTraceToString()))
-                        LogUtils.e("HTTP服务启动失败", e)
+                        server.stop()
+                        diagnostics?.unpublish()
+                        ToastUtils.show(Res.string.debug_service_start_failed.getSync(e.stackTraceToString()))
+                        LogUtils.e("调试服务启动失败", e)
                         stopSelf()
                         return@collectLatest
                     }
@@ -76,20 +86,26 @@ class HttpService : LifecycleHookService() {
                         emptyList()
                     }
                     localNetworkIpsFlow.value = localNetworkIps
-                    NotificationCatalog.http(port, localNetworkIps).startForeground()
+                    NotificationCatalog.debug(port, localNetworkIps).startForeground()
                     if (startedOnce) {
-                        ToastUtils.show(Res.string.http_service_restart_success.getSync())
+                        ToastUtils.show(Res.string.debug_service_restart_success.getSync())
                     }
                     startedOnce = true
                     try {
                         awaitCancellation()
                     } finally {
+                        diagnostics?.unpublish()
                         httpServerFlow.compareAndSet(server, null)
                         server.stop()
                     }
                 }
             }
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        return START_NOT_STICKY
     }
 
     companion object {
@@ -100,22 +116,23 @@ class HttpService : LifecycleHookService() {
         val localNetworkIpsFlow: StateFlow<List<String>>
             field = MutableStateFlow(emptyList())
 
-        fun stop() = IntentUtils.stopService(HttpService::class)
-        fun start() = IntentUtils.startForegroundService(HttpService::class)
+        fun stop() = IntentUtils.stopService(DebugService::class)
+        fun start() = IntentUtils.startForegroundService(DebugService::class)
 
     }
 }
 
 typealias ServerType = EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>
 
-suspend fun clearHttpSubs() {
+suspend fun clearDebugSubscription() {
     // Clear abandoned HTTP rules only after the subscription repository has loaded.
-    if (!HttpService.isRunning.value && settings.value.autoClearMemorySubs) {
+    if (!DebugService.isRunning.value && settings.value.autoClearMemorySubs) {
         SubscriptionRepository.delete(SubscriptionIds.LOCAL_HTTP)
     }
 }
 
-private fun createServer(port: Int) = embeddedServer(CIO, port) {
+private fun createServer(port: Int, diagnostics: DebugServerDiagnostics?) = embeddedServer(CIO, port) {
+    diagnostics?.configure(this)
     configureInspectionServer(
         serverInfo = {
             ServerInfo(

@@ -3,15 +3,15 @@ package li.gkd.app.platform.service
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
 import li.gkd.app.service.EventService
-import li.gkd.app.service.HttpService
+import li.gkd.app.service.DebugService
 import li.gkd.app.service.StatusService
 import li.gkd.app.settings.SettingsRepository
 
 object ServiceController {
-    fun setHttpEnabled(enabled: Boolean) = setEnabled(
+    fun setDebugEnabled(enabled: Boolean) = setEnabled(
         enabled = enabled,
-        start = HttpService::start,
-        stop = HttpService::stop,
+        start = DebugService::start,
+        stop = DebugService::stop,
     )
 
     fun setSnapshotButtonEnabled(enabled: Boolean) = setEnabled(

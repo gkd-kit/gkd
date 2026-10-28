@@ -87,13 +87,13 @@ val TileCapture: ImageVector
 private var _tileCapture: ImageVector? = null
 
 // Matches gkd-android/src/main/res/drawable/ic_http.xml.
-val TileHttp: ImageVector
+val TileDebug: ImageVector
     get() {
         if (_tileHttp != null) {
             return _tileHttp!!
         }
         _tileHttp = ImageVector.Builder(
-            name = "TileHttp",
+            name = "TileDebug",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 960f,

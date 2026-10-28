@@ -57,7 +57,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
   const parent = join(localRoot, 'tmp', 'matching-debug');
   await mkdir(parent, { recursive: true });
   const folder = await mkdtemp(join(parent, 'capture-'));
-  const component = 'li.songe.gkd.debug/li.gkd.app.development.AppDebugService';
+  const component = 'li.songe.gkd.debug/li.gkd.app.service.DebugService';
   const cancellation = new AbortController();
   const adb = withInstallConfirmation(rawAdb, cancellation.signal);
   const interrupt = () => cancellation.abort(new Error('Device diagnostic interrupted; cleaning up this command'));

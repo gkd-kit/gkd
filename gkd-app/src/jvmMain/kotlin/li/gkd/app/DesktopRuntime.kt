@@ -19,7 +19,7 @@ import li.gkd.app.crash.CrashRecorder
 import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.FileCrashStorage
 import li.gkd.app.network.NetworkClients
-import li.gkd.app.network.inspection.DesktopHttpService
+import li.gkd.app.network.inspection.DesktopDebugService
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.StorageMaintenance
@@ -42,8 +42,8 @@ class DesktopRuntime(
     private val scope = applicationScope()
     val appCatalog = DesktopAppCatalog(simulator)
     val toast = ToastState()
-    val httpService = DesktopHttpService(simulator, scope, toast::show)
-    val services = DesktopServiceSimulation(simulator, httpService::setEnabled) { enabled ->
+    val debugService = DesktopDebugService(simulator, scope, toast::show)
+    val services = DesktopServiceSimulation(simulator, debugService::setEnabled) { enabled ->
         SettingsRepository.updateSettings { it.copy(enableStatusService = enabled) }
     }
     private var pendingCrashData = emptyList<CrashData>()
@@ -163,7 +163,7 @@ class DesktopRuntime(
             previousCrashHandler
         )
         try {
-            httpService.close()
+            debugService.close()
             services.close()
             runBlocking {
                 try {

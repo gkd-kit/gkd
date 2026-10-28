@@ -10,6 +10,7 @@ Windows 绿色版脱离仓库运行时，以 `GKD.exe` 所在目录为根，沿�
 | `desktop/data/` | 日常应用数据 |
 | `desktop/profile/` | 设备资料、字体、应用清单和样本 |
 | `desktop/simulator.json` | 日常模拟配置 |
+| `desktop/debug-server.json` | 运行中的调试服务端口，停止时删除；隔离会话在自身目录保存 |
 | `desktop-packages/` | Windows 绿色版 ZIP |
 | `desktop/*-imported` | 日常数据对应的导入标记 |
 | `cache/` | 可重新获取的依赖及工具缓存 |
@@ -38,6 +39,6 @@ Desktop 整个 data 目录视为私有，privateFiles 与 files 共用根目录�
 
 ## 隔离与清理
 
-Desktop `--test` 创建随机会话，交互写入前核对 `/state` 的 `isolated` 标记；截图与报告放在当前会话 `reports/`，不得写入日常目录。启动与导入操作见 [开发文档](../gkd-app/README.md)。
+Desktop `--test` 创建随机会话，交互写入前核对 `/desktop/state` 的 `isolated` 标记；截图与报告放在当前会话 `reports/`，不得写入日常目录。启动与导入操作见 [开发文档](../gkd-app/README.md)。
 
 Gradle clean 不删除日常数据。缓存和临时文件可按需清理；日常数据、备份以及包含未处理自动化恢复记录的会话必须保留。历史报告保留原名称，不推测所属会话。可复用工具提交到源码目录，不长期放在忽略目录；不增加旧目录回退或双写。

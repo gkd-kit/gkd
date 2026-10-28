@@ -19,13 +19,13 @@ interface Rules { subscription: Subscription; configuration: Configuration }
 interface RpcError { code: string; message: string; path: string | null; stackTrace: string | null }
 
 /** Exercises the running production HTTP service; all writes require the isolated Desktop host. */
-export async function checkSubscriptionHttp(desktop: DesktopClient, rpcPort: number) {
+export async function checkSubscriptionHttp(desktop: DesktopClient) {
   assert.equal((await desktop.state()).isolated, true, 'Start Desktop with --test before running write checks');
-  const catalog = await desktop.json<{ profileDirectory: string }>('app-catalog');
+  const catalog = await desktop.json<{ profileDirectory: string }>('desktop/app-catalog');
   const session = dirname(catalog.profileDirectory);
   assertDesktopTestPath(session);
   const reportFile = join(session, 'reports', 'subscription-http.json');
-  const rpc = new DesktopClient(rpcPort);
+  const rpc = desktop;
   const calls: unknown[] = [];
   const checks: string[] = [];
   const checked = (name: string) => { checks.push(name); console.log(`PASS ${name}`); };
@@ -53,8 +53,8 @@ export async function checkSubscriptionHttp(desktop: DesktopClient, rpcPort: num
   const formalFile = join(session, 'data', 'files', 'subscription', '-2.json');
   let failure: string | undefined;
   try {
-    await desktop.serviceCommand('Http', true);
-    assert.equal((await desktop.services()).runtime.Http.phase, 'Running');
+    await desktop.serviceCommand('Debug', true);
+    assert.equal((await desktop.services()).runtime.Debug.phase, 'Running');
     const info = await call<{ device: { device: string } }>('getServerInfo', {});
     assert.equal(info.device.device, 'Desktop');
     checked('Desktop lifecycle starts the real HTTP listener');
@@ -163,7 +163,7 @@ export async function checkSubscriptionHttp(desktop: DesktopClient, rpcPort: num
     throw error;
   } finally {
     await mkdir(dirname(reportFile), { recursive: true });
-    await writeFile(reportFile, JSON.stringify({ session, rpcPort, passed: !failure, checks, calls, failure }, null, 2));
+    await writeFile(reportFile, JSON.stringify({ session, port: desktop.port, passed: !failure, checks, calls, failure }, null, 2));
     console.log(`Report: ${reportFile}`);
   }
   return { reportFile, checks: checks.length, calls: calls.length };

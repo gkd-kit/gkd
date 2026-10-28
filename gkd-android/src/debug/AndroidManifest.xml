@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <meta-data
+            android:name="debugServerDiagnostics"
+            android:value="li.gkd.app.development.AndroidServerDiagnostics" />
+        <service
+            android:name="li.gkd.app.service.DebugService"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
+            tools:replace="android:exported" />
+    </application>
+</manifest>

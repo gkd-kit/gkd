@@ -8,6 +8,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.request.path
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
@@ -130,6 +131,8 @@ fun Application.configureInspectionServer(
 
 private fun getKtorCorsPlugin() = createApplicationPlugin(name = "KtorCorsPlugin") {
     onCall { call ->
+        val path = call.request.path()
+        if (path != "/" && !path.startsWith("/api/")) return@onCall
         mapOf(
             HttpHeaders.AccessControlAllowOrigin to "*",
             HttpHeaders.AccessControlAllowMethods to "*",

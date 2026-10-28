@@ -3,16 +3,16 @@ package li.gkd.app
 /** Explicit commands only; lifecycle snapshots belong to SimulatorStore, never to a page. */
 class DesktopServiceSimulation(
     private val store: SimulatorStore,
-    private val setHttpEnabled: (Boolean) -> Unit,
+    private val setDebugEnabled: (Boolean) -> Unit,
     private val setStatusPreference: (Boolean) -> Unit,
 ) : AutoCloseable {
     fun setEnabled(service: SimulatedService, enabled: Boolean) {
-        if (service == SimulatedService.Http) {
+        if (service == SimulatedService.Debug) {
             if (enabled && store.settings.value.services.running(service)) return
             val denied = if (enabled) prerequisiteFailure(store.settings.value, service) else null
             if (denied != null) {
                 store.update { it.copy(services = it.services.transition(service, ServicePhase.Failed, denied)) }
-            } else setHttpEnabled(enabled)
+            } else setDebugEnabled(enabled)
             return
         }
         if (!enabled) {
@@ -51,7 +51,7 @@ class DesktopServiceSimulation(
     }
 
     fun event(event: ServiceEvent) = store.update { settings ->
-        require(event.service != SimulatedService.Http) { "HTTP uses a real listener; use start/stop commands" }
+        require(event.service != SimulatedService.Debug) { "Debug service uses a real listener; use start/stop commands" }
         val current = settings.services.state(event.service)
         // Completion belongs to the request that produced it, including after stop/restart.
         if (current.attempt != event.attempt) return@update settings
@@ -81,7 +81,7 @@ class DesktopServiceSimulation(
     }
 
     fun configure(service: SimulatedService, plan: ServiceSimulationPlan) = store.update {
-        require(service != SimulatedService.Http) { "HTTP uses a real listener" }
+        require(service != SimulatedService.Debug) { "Debug service uses a real listener" }
         it.copy(services = it.services.copy(plans = it.services.plans + (service to plan)))
     }
 
@@ -130,7 +130,7 @@ class DesktopServiceSimulation(
         if (!permissions.notificationGranted) return "Notification permission denied"
         if (service != SimulatedService.Screenshot && permissions.restricted) return "Foreground service restricted"
         if (service in setOf(SimulatedService.Button, SimulatedService.Activity, SimulatedService.Event, SimulatedService.Track) && !permissions.overlayGranted) return "Overlay permission denied"
-        if (service == SimulatedService.Http && !permissions.localNetworkGranted) return "Local network permission denied"
+        if (service == SimulatedService.Debug && !permissions.localNetworkGranted) return "Local network permission denied"
         return null
     }
 

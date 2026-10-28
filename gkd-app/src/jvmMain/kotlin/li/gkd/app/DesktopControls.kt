@@ -44,6 +44,7 @@ fun DesktopControls(
     flushSettings: () -> Unit,
     onBack: () -> Unit
 ) {
+    val store by li.gkd.app.settings.SettingsRepository.settings.collectAsStateWithLifecycle()
     val settings by state.simulator.settings.collectAsStateWithLifecycle()
     val saveStatus by persistence.status.collectAsStateWithLifecycle()
     val environment = settings.environment()
@@ -293,7 +294,7 @@ fun DesktopControls(
                 "数据目录：${DesktopStorage.data}",
                 style = MaterialTheme.typography.bodySmall
             )
-            Text("HTTP：${DesktopDebugServer.address}")
+            Text("调试服务：127.0.0.1:${store.httpServerPort}")
         }
     }
 }
@@ -345,6 +346,7 @@ private fun GkControlSlider(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ServiceSimulationControls(state: DesktopState) {
+    val store by li.gkd.app.settings.SettingsRepository.settings.collectAsStateWithLifecycle()
     val settings by state.simulator.settings.collectAsStateWithLifecycle()
     val controller = DesktopRuntime.requireCurrent().services
     Text(stringResource(Res.string.simulation_services), style = MaterialTheme.typography.titleMedium)
@@ -387,7 +389,7 @@ private fun ServiceSimulationControls(state: DesktopState) {
             OutlinedButton(onClick = { state.simulatorCommand { controller.setEnabled(service, false) } }) {
                 Text(stringResource(Res.string.action_stop))
             }
-            if (current.phase == ServicePhase.Starting && service != SimulatedService.Http) {
+            if (current.phase == ServicePhase.Starting && service != SimulatedService.Debug) {
                 OutlinedButton(onClick = { event(ServiceEventType.Connected) }) { Text(stringResource(Res.string.simulation_complete)) }
                 OutlinedButton(onClick = { event(ServiceEventType.Failed) }) { Text(stringResource(Res.string.simulation_failed)) }
             }
@@ -395,11 +397,11 @@ private fun ServiceSimulationControls(state: DesktopState) {
                 OutlinedButton(onClick = { event(ServiceEventType.Authorized) }) { Text(stringResource(Res.string.action_agree)) }
                 OutlinedButton(onClick = { event(ServiceEventType.Cancelled) }) { Text(stringResource(Res.string.action_cancel)) }
             }
-            if (current.phase == ServicePhase.Running && service != SimulatedService.Http) {
+            if (current.phase == ServicePhase.Running && service != SimulatedService.Debug) {
                 OutlinedButton(onClick = { event(ServiceEventType.Failed) }) { Text(stringResource(Res.string.simulation_terminate)) }
             }
         }
-        if (service != SimulatedService.Http) {
+        if (service != SimulatedService.Debug) {
             val plan = settings.services.plans.getValue(service)
             Text(stringResource(Res.string.simulation_start_result), style = MaterialTheme.typography.labelMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

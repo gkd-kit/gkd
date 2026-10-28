@@ -7,7 +7,7 @@ import li.gkd.app.platform.service.ServiceController
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
 import li.gkd.app.service.EventService
-import li.gkd.app.service.HttpService
+import li.gkd.app.service.DebugService
 import li.gkd.app.service.TrackService
 import li.gkd.app.ui.androidState
 import li.gkd.app.ui.platform.UiHost
@@ -26,7 +26,7 @@ actual fun UiHost.setSnapshotButtonEnabled(enabled: Boolean) {
     }
 }
 
-actual fun UiHost.setHttpServiceEnabled(enabled: Boolean) {
+actual fun UiHost.setDebugServiceEnabled(enabled: Boolean) {
     mainVm.scope.launchUi {
         if (!enabled || mainVm.androidState.permissionRequests.ensurePermissions(
                 PermissionStates.foregroundServiceSpecialUse,
@@ -34,7 +34,7 @@ actual fun UiHost.setHttpServiceEnabled(enabled: Boolean) {
                 PermissionStates.localNetwork,
             )
         ) {
-            ServiceController.setHttpEnabled(enabled)
+            ServiceController.setDebugEnabled(enabled)
         }
     }
 }
@@ -79,12 +79,12 @@ actual fun UiHost.setTrackServiceEnabled(enabled: Boolean) {
 }
 
 @Composable
-actual fun httpRunning() =
-    HttpService.httpServerFlow.collectAsStateWithLifecycle().value != null
+actual fun debugServiceRunning() =
+    DebugService.httpServerFlow.collectAsStateWithLifecycle().value != null
 
 @Composable
 actual fun httpServerAddresses() =
-    listOf(li.gkd.app.util.Constants.loopbackHost) + HttpService.localNetworkIpsFlow.collectAsStateWithLifecycle().value
+    listOf(li.gkd.app.util.Constants.loopbackHost) + DebugService.localNetworkIpsFlow.collectAsStateWithLifecycle().value
 
 @Composable
 actual fun snapshotButtonRunning() =

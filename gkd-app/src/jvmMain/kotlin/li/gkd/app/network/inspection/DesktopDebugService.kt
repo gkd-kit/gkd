@@ -1,5 +1,14 @@
 package li.gkd.app.network.inspection
 
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.routing
+import io.ktor.server.routing.route
+import io.ktor.server.routing.get
+import io.ktor.server.response.respond
+import li.gkd.app.DesktopStorage
+import li.gkd.app.development.appDebugRoutes
+import li.gkd.app.development.matching.matchDebugRoutes
+import li.gkd.app.development.matching.matchBenchmarkRoutes
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
@@ -28,13 +37,26 @@ import java.net.BindException
 import javax.swing.SwingUtilities
 import li.gkd.db.SubscriptionIds
 
-/** The production inspection routes, bound only to the desktop host's loopback interface. */
-class DesktopHttpService(
+/** One loopback listener for browser inspection, app diagnostics and JVM host controls. */
+class DesktopDebugService(
     private val store: SimulatorStore,
     private val scope: CoroutineScope,
     private val showToast: (String) -> Unit,
 ) : AutoCloseable {
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
+
+    private var controls: (Route.() -> Unit)? = null
+    private val connectionFile get() = DesktopStorage.sessionDirectory.resolve("debug-server.json")
+
+    fun bindControls(routes: Route.() -> Unit) {
+        controls = routes
+        setEnabled(true)
+    }
+
+    fun unbindControls() {
+        stop()
+        controls = null
+    }
 
     fun setEnabled(enabled: Boolean) {
         if (!enabled) {
@@ -47,14 +69,16 @@ class DesktopHttpService(
 
     fun restartIfRunning() {
         val previous = server ?: return
+        connectionFile.delete()
         previous.stop(0, 1000)
         server = null
         start(SettingsRepository.settings.value.httpServerPort)
-        if (server != null) showToast(Res.string.http_service_restart_success.getSync())
+        if (server != null) showToast(Res.string.debug_service_restart_success.getSync())
     }
 
     private fun start(port: Int) {
-        if (!store.settings.value.services.running(SimulatedService.Http)) update(ServicePhase.Starting)
+        val routes = checkNotNull(controls) { "Desktop controls are not bound" }
+        if (!store.settings.value.services.running(SimulatedService.Debug)) update(ServicePhase.Starting)
         lateinit var candidate: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>
         val failureHandler = CoroutineExceptionHandler { _, cause ->
             if (cause !is Exception) throw cause
@@ -63,12 +87,20 @@ class DesktopHttpService(
                 if (server === candidate) {
                     candidate.stop(0, 1000)
                     server = null
+                    connectionFile.delete()
                     failed(port, cause)
                 }
             }
         }
         candidate = scope.embeddedServer(CIO, port = port, host = Constants.loopbackHost,
             parentCoroutineContext = failureHandler) {
+            routing {
+                get("/health") { call.respond(mapOf("status" to "ready", "protocol" to "1")) }
+                appDebugRoutes()
+                matchDebugRoutes()
+                matchBenchmarkRoutes()
+                route("/desktop") { routes() }
+            }
             configureInspectionServer(
                 serverInfo = {
                     ServerInfo(
@@ -87,26 +119,30 @@ class DesktopHttpService(
         try {
             // CIO start returns only after its connectors have bound, including bind failures.
             candidate.start(wait = false)
+            connectionFile.writeText("""{"port":$port}""")
         } catch (e: Exception) {
             candidate.stop(0, 1000)
+            connectionFile.delete()
             if (e is CancellationException && e.cause == null) throw e
             failed(port, if (e is CancellationException) e.cause!! else e)
             return
         }
         server = candidate
         update(ServicePhase.Running)
+        println("GKD debug service: http://${Constants.loopbackHost}:$port; connection: ${connectionFile.absolutePath}")
     }
 
     private fun failed(port: Int, cause: Throwable) {
         update(ServicePhase.Failed, cause.message ?: cause.toString())
-        LogUtils.e("HTTP service failed", cause)
+        LogUtils.e("Debug service failed", cause)
         showToast(if (generateSequence(cause) { it.cause }.any { it is BindException })
-            Res.string.http_port_occupied.getSync(port.toString())
-        else Res.string.http_service_start_failed.getSync(cause.stackTraceToString()))
+            Res.string.debug_port_occupied.getSync(port.toString())
+        else Res.string.debug_service_start_failed.getSync(cause.stackTraceToString()))
     }
 
     private fun stop() {
         val previous = server
+        connectionFile.delete()
         previous?.stop(0, 1000)
         server = null
         update(ServicePhase.Stopped)
@@ -116,7 +152,7 @@ class DesktopHttpService(
     }
 
     private fun update(phase: ServicePhase, failure: String? = null) = store.update {
-        it.copy(services = it.services.transition(SimulatedService.Http, phase, failure,
+        it.copy(services = it.services.transition(SimulatedService.Debug, phase, failure,
             newAttempt = phase == ServicePhase.Starting || phase == ServicePhase.Stopped))
     }
 

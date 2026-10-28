@@ -5,6 +5,9 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.response.respond
+import io.ktor.server.routing.get
+import io.ktor.http.HttpStatusCode
+import li.gkd.app.development.configureDebugAccess
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.utils.io.ByteReadChannel
@@ -81,6 +84,7 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
     var received: GkdAction? = null
     var snapshotBusy = false
     val server = embeddedServer(CIO, host = "127.0.0.1", port = 0) {
+        configureDebugAccess("test-token") { false }
         configureInspectionServer(
             { ServerInfo(device, app) },
             { if (snapshotBusy) SnapshotCaptureOutcome.Busy else SnapshotCaptureOutcome.Captured(snapshot) },
@@ -108,6 +112,8 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
             json
         )
         routing {
+            get("/health") { call.respond(mapOf("status" to "ready")) }
+            get("/debug/conflict") { call.respond(HttpStatusCode.Conflict, mapOf("error" to "busy")) }
             post("/api/bytes-send-failure") {
                 call.respond(object : OutgoingContent.ByteArrayContent() {
                     override val contentType = ContentType.Application.Json
@@ -126,6 +132,20 @@ suspend fun assertInspectionProtocol(layout: AppStorageLayout, repository: Subsc
         server.start()
         val port = server.engine.resolvedConnectors().single().port
         val client = HttpClient.newHttpClient()
+        // Merged listener: diagnostics stay authenticated and retain HTTP error semantics;
+        // the browser RPC tests below still run without any token on this same port.
+        for (path in listOf("/health", "/debug/conflict")) {
+            for (method in listOf("GET", "OPTIONS")) {
+                val denied = client.send(HttpRequest.newBuilder(URI("http://127.0.0.1:$port$path"))
+                    .method(method, HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString())
+                assertEquals(401, denied.statusCode())
+                assertTrue(denied.headers().allValues("GKD-RPC-Status").isEmpty())
+            }
+            val allowed = client.send(HttpRequest.newBuilder(URI("http://127.0.0.1:$port$path"))
+                .header("Authorization", "Bearer test-token").GET().build(), HttpResponse.BodyHandlers.ofString())
+            assertEquals(if (path == "/health") 200 else 409, allowed.statusCode())
+            assertTrue(allowed.headers().allValues("GKD-RPC-Status").isEmpty())
+        }
         // Preflight returns the shared JSON success without executing the business route.
         val preflight = client.send(
             HttpRequest.newBuilder(URI("http://127.0.0.1:$port/api/execSelector"))

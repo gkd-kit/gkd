@@ -68,8 +68,8 @@ fun QuickSettingsTilesPage() {
                 singleAction = true,
             )
             TileDescription(
-                GkIcons.TileHttp, stringResource(Res.string.http_service_compact_label),
-                stringResource(Res.string.quick_settings_tile_http_description),
+                GkIcons.TileDebug, stringResource(Res.string.debug_service_compact_label),
+                stringResource(Res.string.quick_settings_tile_debug_description),
             )
             TileDescription(
                 GkIcons.TileButton, stringResource(Res.string.snapshot_button_label),
