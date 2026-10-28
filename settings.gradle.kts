@@ -1,5 +1,9 @@
 pluginManagement {
     repositories {
+        exclusiveContent {
+            forRepository { mavenLocal() }
+            filter { includeVersionByRegex(".*", ".*", ".*-SNAPSHOT") }
+        }
         mavenCentral()
         google {
             content {
@@ -30,6 +34,10 @@ include(
 
 dependencyResolutionManagement {
     repositories {
+        exclusiveContent {
+            forRepository { mavenLocal() }
+            filter { includeVersionByRegex(".*", ".*", ".*-SNAPSHOT") }
+        }
         mavenCentral()
         google {
             content {

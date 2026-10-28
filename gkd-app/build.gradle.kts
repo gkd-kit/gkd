@@ -56,7 +56,7 @@ kotlin {
             api(project(":gkd-selector"))
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.atomicfu)
-            api(libs.exp4j)
+            implementation(libs.expression)
             api(libs.androidx.paging.compose)
             api(libs.coil.compose)
             api(libs.coil.network)
@@ -87,6 +87,7 @@ kotlin {
             api(libs.kotlinx.serialization.json)
         }
         androidMain.dependencies {
+            api(libs.priv.kit.input)
             api(project(":gkd-aidl"))
             api(libs.androidx.lifecycle.service)
             api(libs.compose.activity)
@@ -127,6 +128,7 @@ kotlin {
             }
         }
         jvmTest.dependencies {
+            implementation(libs.exp4j) // Differential compatibility oracle; absent from production.
             implementation(libs.androidx.sqlite.bundled)
         }
     }
@@ -156,7 +158,7 @@ compose.desktop.application {
             iconFile.set(project.file("src/jvmMain/resources/gkd.ico"))
         }
         // suggestModules plus dynamic JDBC/naming providers used by runtime dependencies.
-        modules("java.instrument", "java.management", "jdk.unsupported", "java.sql", "java.naming")
+        modules("java.instrument", "java.management", "jdk.management", "jdk.unsupported", "java.sql", "java.naming")
     }
     buildTypes.release.proguard {
         version.set(libs.versions.proguard)
