@@ -20,6 +20,7 @@ import li.gkd.app.ui.snapshot.SnapshotPlatformActions
 import li.gkd.app.ui.snapshot.SnapshotViewModel
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
+import li.gkd.app.storage.FileSource
 
 /** Uses the integration test's real application lifetime and isolated snapshot storage. */
 suspend fun assertSnapshotSharing(layout: AppStorageLayout) = withContext(Dispatchers.Main) {
@@ -138,5 +139,5 @@ private class SharePlatform(
     override suspend fun share(files: List<File>) = onShare(files)
     override suspend fun ensureSavePermission(): Boolean = error("Sharing needs no save permission")
     override suspend fun save(file: File): PlatformResult<Boolean> = error("Not saving")
-    override suspend fun pickImage(): li.gkd.app.storage.FileSource? = error("Not picking")
+    override suspend fun pickImage(): FileSource? = error("Not picking")
 }

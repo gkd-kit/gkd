@@ -8,6 +8,10 @@ import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import li.gkd.app.matching.diagnostics.MatchDiagnosticFileStore
+import li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
+import li.gkd.app.matching.diagnostics.MatchDiagnostics
+import li.gkd.app.matching.input.MatchTimingPolicy
 
 class LogArchiveChecks {
     fun archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance() {
@@ -17,20 +21,20 @@ class LogArchiveChecks {
             privilegeCrash.resolve("priv-crash_uid2000_20261007001234.json").writeText("{\"processType\":\"server\"}")
             val previous = layout.tempCache.listFiles().orEmpty().toSet()
             layout.log.resolve("event.txt").writeText("event")
-            val diagnostics = li.gkd.app.matching.diagnostics.MatchDiagnostics()
-            val session = diagnostics.start(li.gkd.app.matching.input.MatchTimingPolicy())
+            val diagnostics = MatchDiagnostics()
+            val session = diagnostics.start(MatchTimingPolicy())
             diagnostics.stop(session.id)
-            li.gkd.app.matching.diagnostics.MatchDiagnosticFiles.enqueue(diagnostics.export(session.id))
-            kotlinx.coroutines.runBlocking { li.gkd.app.matching.diagnostics.MatchDiagnosticFiles.flush() }
+            MatchDiagnosticFiles.enqueue(diagnostics.export(session.id))
+            kotlinx.coroutines.runBlocking { MatchDiagnosticFiles.flush() }
             layout.startupLog.apply { mkdirs() }.resolve("gkd-startup-20261006162246.json").writeText("{\"reason\":\"external_null_fallback\"}")
             val captureDirectory = layout.matchingDiagnostics.listFiles()!!.single { it.name.endsWith(session.id.take(8)) }
             captureDirectory.resolve("attachments").apply { mkdirs() }.resolve("evidence.txt").writeText("evidence")
-            val record = li.gkd.app.matching.diagnostics.MatchDiagnosticFileStore(layout.matchingDiagnostics).records()
+            val record = MatchDiagnosticFileStore(layout.matchingDiagnostics).records()
                 .single { it.id == session.id.take(8) }
-            val second = diagnostics.start(li.gkd.app.matching.input.MatchTimingPolicy())
+            val second = diagnostics.start(MatchTimingPolicy())
             diagnostics.stop(second.id)
-            li.gkd.app.matching.diagnostics.MatchDiagnosticFiles.enqueue(diagnostics.export(second.id))
-            kotlinx.coroutines.runBlocking { li.gkd.app.matching.diagnostics.MatchDiagnosticFiles.flush() }
+            MatchDiagnosticFiles.enqueue(diagnostics.export(second.id))
+            kotlinx.coroutines.runBlocking { MatchDiagnosticFiles.flush() }
             val singleArchive = kotlinx.coroutines.runBlocking { createLogArchive(listOf(record)) }
             assertTrue(Regex("gkd-log-[0-9]{14}(-[0-9]+)?\\.zip").matches(singleArchive.name))
             ZipFile(singleArchive).use { zip ->
@@ -40,7 +44,7 @@ class LogArchiveChecks {
                 assertTrue(names.any { it.endsWith("event.txt") })
                 assertFalse(names.any { it.contains(second.id.take(8)) })
             }
-            val selectedRecords = kotlinx.coroutines.runBlocking { li.gkd.app.matching.diagnostics.MatchDiagnosticFiles.records() }
+            val selectedRecords = kotlinx.coroutines.runBlocking { MatchDiagnosticFiles.records() }
                 .filter { it.id in setOf(record.id, second.id.take(8)) }
             val batchArchive = kotlinx.coroutines.runBlocking { createLogArchive(selectedRecords) }
             ZipFile(batchArchive).use { zip ->
@@ -67,7 +71,7 @@ class LogArchiveChecks {
                 )
             }
             kotlinx.coroutines.runBlocking {
-                val files = li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
+                val files = MatchDiagnosticFiles
                 val beforeDelete = files.changes.value
                 files.delete(listOf(record))
                 assertTrue(files.changes.value > beforeDelete)

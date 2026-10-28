@@ -6,6 +6,7 @@ import li.gkd.app.record.ActionRecordInput
 import li.gkd.app.record.AppVisitInput
 import li.gkd.db.ActionLog
 import li.gkd.db.Db
+import li.gkd.app.record.RuntimeRecordRepository
 
 /** Explicit synthetic event input, never an Accessibility action or fixture import. */
 @Serializable
@@ -30,15 +31,15 @@ suspend fun DesktopRuntime.replayRecords(request: DesktopRuntimeRecordRequest): 
     require(DesktopStorage.isolated) { "Runtime record replay requires --test" }
     require(request.activities.size + request.visits.size + request.actions.size <= 2000)
     request.activities.forEach {
-        li.gkd.app.record.RuntimeRecordRepository.recordActivity(
+        RuntimeRecordRepository.recordActivity(
             it.appId,
             it.activityId,
             it.time
         )
     }
-    request.visits.forEach { li.gkd.app.record.RuntimeRecordRepository.recordVisit(it) }
-    request.actions.forEach { li.gkd.app.record.RuntimeRecordRepository.recordAction(it) }
-    li.gkd.app.record.RuntimeRecordRepository.flush()
+    request.visits.forEach { RuntimeRecordRepository.recordVisit(it) }
+    request.actions.forEach { RuntimeRecordRepository.recordAction(it) }
+    RuntimeRecordRepository.flush()
     return DesktopRuntimeRecordSnapshot(
         Db.activityLogDao.count().first(), Db.actionLogDao.count().first(),
         Db.appLastVisitDao.query().first(), Db.actionLogDao.queryLatest().first(),

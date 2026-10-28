@@ -1,8 +1,5 @@
 package li.gkd.app.development.matching
 
-import li.gkd.app.matching.diagnostics.MatchDebugRunState
-import li.gkd.app.matching.diagnostics.MatchDebugResult
-import li.gkd.app.matching.diagnostics.MatchDebugRunRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -11,9 +8,13 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import li.gkd.app.matching.ForegroundRuleSnapshot
+import li.gkd.app.matching.MatchEngineSnapshot
 import li.gkd.app.matching.MatchWork
 import li.gkd.app.matching.MatchingRuntime
-import li.gkd.app.rule.RuleRuntime
+import li.gkd.app.matching.diagnostics.MatchDebugResult
+import li.gkd.app.matching.diagnostics.MatchDebugRunPhase
+import li.gkd.app.matching.diagnostics.MatchDebugRunRequest
+import li.gkd.app.matching.diagnostics.MatchDebugRunState
 import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.diagnostics.MatchSystemRecorder
 import li.gkd.app.matching.query.RuleQueryNodes
@@ -23,6 +24,7 @@ import li.gkd.app.model.AppInfo
 import li.gkd.app.rule.AppRule
 import li.gkd.app.rule.GlobalRule
 import li.gkd.app.rule.ResolvedRule
+import li.gkd.app.rule.RuleRuntime
 import li.gkd.app.rule.RuleSummary
 import li.gkd.app.rule.RuleSummaryBuilder
 import li.gkd.app.rule.TopActivity
@@ -58,17 +60,17 @@ object MatchDebugRuns {
                 return@synchronized it
             }
             check(runs.size < 100) { "Diagnostic run limit reached" }
-            val initial = MatchDebugRunState(request, "running")
+            val initial = MatchDebugRunState(request, MatchDebugRunPhase.Running)
             update(id, initial)
             val job = scope.launch(start = CoroutineStart.LAZY) {
                 val result = try {
-                    MatchDebugRunState(request, "completed", runMatchDebug(request) { engineRunId ->
+                    MatchDebugRunState(request, MatchDebugRunPhase.Completed, runMatchDebug(request) { engineRunId ->
                         synchronized(lock) { update(id, runs.getValue(request.requestId).copy(engineRunId = engineRunId)) }
                     })
                 } catch (error: CancellationException) {
-                    MatchDebugRunState(request, "cancelled")
+                    MatchDebugRunState(request, MatchDebugRunPhase.Cancelled)
                 } catch (error: Exception) {
-                    MatchDebugRunState(request, "failed", error = error.toString())
+                    MatchDebugRunState(request, MatchDebugRunPhase.Failed, error = error.toString())
                 }
                 synchronized(lock) { update(id, result.copy(engineRunId = runs.getValue(request.requestId).engineRunId)) }
             }
@@ -77,8 +79,8 @@ object MatchDebugRuns {
                 jobs.remove(request.requestId)
                 // A session may stop before a lazy request enters its body.
                 val current = runs.getValue(request.requestId)
-                if (error is CancellationException && (current.phase == "running" || current.phase == "cancelling")) {
-                    update(id, current.copy(phase = "cancelled"))
+                if (error is CancellationException && (current.phase == MatchDebugRunPhase.Running || current.phase == MatchDebugRunPhase.Cancelling)) {
+                    update(id, current.copy(phase = MatchDebugRunPhase.Cancelled))
                 }
             } }
             job.start()
@@ -94,7 +96,7 @@ object MatchDebugRuns {
         require(sessionId == id)
         val current = requireNotNull(runs[runId])
         jobs[runId]?.let {
-            update(id, current.copy(phase = "cancelling"))
+            update(id, current.copy(phase = MatchDebugRunPhase.Cancelling))
             it.cancel()
         }
         checkNotNull(runs[runId])
@@ -107,9 +109,9 @@ object MatchDebugRuns {
     }
 
     // Keep engine access outside the request lock; coroutine completion also updates these requests.
-    private fun MatchDebugRunState.observedPhase(engine: li.gkd.app.matching.MatchEngineSnapshot) =
-        if (phase == "running" && engineRunId != null && engineRunId == engine.activeRunId && engine.cancelling)
-            copy(phase = "cancelling") else this
+    private fun MatchDebugRunState.observedPhase(engine: MatchEngineSnapshot) =
+        if (phase == MatchDebugRunPhase.Running && engineRunId != null && engineRunId == engine.activeRunId && engine.cancelling)
+            copy(phase = MatchDebugRunPhase.Cancelling) else this
 }
 
 fun prepareDebugRule(request: MatchDebugRunRequest, apps: Map<String, AppInfo>, recording: () -> MatchSystemRecorder? = { null }): ResolvedRule {

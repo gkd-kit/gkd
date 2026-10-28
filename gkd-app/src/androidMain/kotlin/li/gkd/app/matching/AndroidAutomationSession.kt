@@ -1,4 +1,4 @@
-package li.gkd.app.a11y
+package li.gkd.app.matching
 
 import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo
@@ -6,13 +6,13 @@ import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.coroutines.CoroutineScope
 import li.gkd.app.settings.AutomatorMode
 
-interface A11yCommonImpl {
+interface AndroidAutomationSession {
     suspend fun screenshot(): Bitmap?
     val windowNodeInfo: AccessibilityNodeInfo?
     val windowInfos: List<AccessibilityWindowInfo>
     val scope: CoroutineScope
     var justStarted: Boolean
     val mode: AutomatorMode
-    val ruleEngine: A11yRuleEngine
+    val matchHost: AndroidMatchHost
     fun shutdown(temp: Boolean = false)
 }

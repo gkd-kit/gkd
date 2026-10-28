@@ -1,5 +1,7 @@
 package li.gkd.app.ui
 
+import li.gkd.app.logging.logUrl
+
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.View
@@ -304,7 +306,7 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
     ): WebResourceResponse? {
         try {
             if (request != null && request.run { isForMainFrame && url.host == "gkd.li" && method == "GET" }) {
-                LogUtils.d { "${request.method} ${li.gkd.app.logging.logUrl(request.url.toString())}" }
+                LogUtils.d { "${request.method} ${logUrl(request.url.toString())}" }
                 runBlocking(Dispatchers.IO) {
                     val docConfig = NetworkClients.client.get(DOC_CONFIG_URL).body<DocConfig>()
                     val path = request.url.path.let { if (it.isNullOrEmpty()) "/" else it }

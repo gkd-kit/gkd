@@ -36,6 +36,7 @@ import li.gkd.app.ui.subscription.SubsCategoryPage
 import li.gkd.app.ui.subscription.SubsGlobalGroupExcludePage
 import li.gkd.app.ui.subscription.SubsGlobalGroupListPage
 import li.gkd.app.ui.subscription.UpsertRuleGroupPage
+import li.gkd.app.ui.log.MatchDebugPage
 
 /** Shared production route registry for both hosts. */
 @Composable
@@ -79,7 +80,7 @@ fun GkAppNavigation(
                 AboutRoute -> AboutPage(host)
                 BlockA11ySetupRoute -> BlockA11ySetupPage(host)
                 AdvancedPageRoute -> AdvancedPage(host)
-                MatchDebugRoute -> li.gkd.app.ui.log.MatchDebugPage(host)
+                MatchDebugRoute -> MatchDebugPage(host)
                 ExternalCallsRoute -> ExternalCallsPage()
                 QuickSettingsTilesRoute -> QuickSettingsTilesPage()
                 PrivilegeServiceRoute -> PrivilegeServicePage(host)

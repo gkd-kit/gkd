@@ -34,6 +34,7 @@ import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
+import li.gkd.app.ui.navigation.MatchDebugRoute
 
 fun createMainViewModel(): MainViewModel {
     lateinit var vm: MainViewModel
@@ -75,7 +76,7 @@ class AndroidMainState(
                 mainVm.navigator.popToHome()
             }
 
-            is GkdLink.Page -> mainVm.navigator.navigate(link.route)
+            is GkdLink.Page -> if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage() else mainVm.navigator.navigate(link.route)
             GkdLink.WeChatScanner -> IntentUtils.openWeChatScanner()
             null -> notFoundToast()
         }

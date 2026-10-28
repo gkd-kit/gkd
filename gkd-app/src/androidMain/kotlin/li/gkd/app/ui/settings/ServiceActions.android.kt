@@ -12,6 +12,7 @@ import li.gkd.app.service.TrackService
 import li.gkd.app.ui.androidState
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
+import li.gkd.app.util.Constants
 
 actual fun UiHost.setSnapshotButtonEnabled(enabled: Boolean) {
     mainVm.scope.launchUi {
@@ -84,7 +85,7 @@ actual fun debugServiceRunning() =
 
 @Composable
 actual fun httpServerAddresses() =
-    listOf(li.gkd.app.util.Constants.loopbackHost) + DebugService.localNetworkIpsFlow.collectAsStateWithLifecycle().value
+    listOf(Constants.loopbackHost) + DebugService.localNetworkIpsFlow.collectAsStateWithLifecycle().value
 
 @Composable
 actual fun snapshotButtonRunning() =

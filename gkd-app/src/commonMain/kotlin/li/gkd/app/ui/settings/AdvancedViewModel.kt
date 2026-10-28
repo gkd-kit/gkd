@@ -9,6 +9,7 @@ import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.state.BaseViewModel
 import org.jetbrains.compose.resources.getString
+import li.gkd.app.matching.diagnostics.startDiagnosticCapture
 
 class AdvancedViewModel : BaseViewModel() {
     fun requestDiagnosticCapture() {
@@ -19,7 +20,7 @@ class AdvancedViewModel : BaseViewModel() {
                 confirmText = getString(Res.string.action_continue),
                 dismissOnRequest = true,
             )
-            if (confirmed) li.gkd.app.matching.diagnostics.startDiagnosticCapture()
+            if (confirmed) startDiagnosticCapture()
         }
     }
 

@@ -24,8 +24,8 @@ import li.gkd.app.data.currentDeviceInfo
 import li.gkd.app.error.displayMessage
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
-import li.gkd.app.a11y.A11yRuntime
-import li.gkd.app.a11y.currentTopActivity
+import li.gkd.app.matching.AndroidAutomationSessions
+import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.PlatformResult
@@ -210,7 +210,7 @@ object SnapshotCaptureHost {
             null
         } else {
             try {
-                A11yRuntime.screenshot()
+                AndroidAutomationSessions.screenshot()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -268,11 +268,11 @@ object SnapshotCaptureHost {
     }
 
     suspend fun capture(forcedCropStatusBar: Boolean = false): SnapshotCaptureOutcome<ComplexSnapshot> {
-        val service = A11yRuntime.service
+        val service = AndroidAutomationSessions.service
             ?: throw InspectionException(InspectionFailure.AccessibilityAuthorizationRequired)
         val settings = settings.value
         val outcome = SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
-            val rootNode = A11yRuntime.getRoot(service)
+            val rootNode = AndroidAutomationSessions.getRoot(service)
                 ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
             val appId = rootNode.packageName.toString()
             val screenSize = ScreenUtils.getSize()

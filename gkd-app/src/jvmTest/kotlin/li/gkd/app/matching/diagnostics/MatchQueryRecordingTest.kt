@@ -23,12 +23,14 @@ import li.gkd.selector.NodeAdapter
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorEvaluation
 import li.gkd.selector.SelectorObserver
+import li.gkd.app.matching.query.MatchNodeReadUnavailable
+import li.gkd.app.matching.query.MatchNodeReader
 
 class MatchQueryRecordingTest {
     @Test fun timedOutPhysicalReadStillUpdatesOldQueryAfterSessionReplacement() = runBlocking {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), ruleFilter = "manual", recordQueries = true)
-        val reader = li.gkd.app.matching.query.MatchNodeReader(diagnostics)
+        val reader = MatchNodeReader(diagnostics)
         val release = java.util.concurrent.CountDownLatch(1)
         val adapter = object : NodeAdapter<String>() {
             override fun getAttr(target: Any, name: String): Any? = reader.read(timeoutMillis = 100, name = "Text", runId = 1) {
@@ -42,7 +44,7 @@ class MatchQueryRecordingTest {
             override fun getParent(node: String): String? = null
         }
         try {
-            assertFailsWith<li.gkd.app.matching.query.MatchNodeReadUnavailable> {
+            assertFailsWith<MatchNodeReadUnavailable> {
                 recordManualQuery(Selector.compile("[text='target']").value, MatchOptions(), "node", { "node" }, adapter, diagnostics, session, 1)
             }
             diagnostics.stop(session.id)
@@ -85,7 +87,7 @@ class MatchQueryRecordingTest {
         assertEquals("cancelled", recording.outcome)
         assertEquals(error.javaClass.name, recording.failure)
         assertNotNull(recording.durationNanos)
-        assertEquals("null", recording.result?.type)
+        assertEquals(MatchRecordedValueType.Null, recording.result?.type)
     }
 
     @Test fun blockedQueryExportsCompletedReadsAndFinishesIntoOldSessionAfterReplacement() = runBlocking {
@@ -95,7 +97,7 @@ class MatchQueryRecordingTest {
         val entered = java.util.concurrent.CountDownLatch(1)
         val release = java.util.concurrent.CountDownLatch(1)
         val node = Any()
-        val reader = li.gkd.app.matching.query.MatchNodeReader(diagnostics)
+        val reader = MatchNodeReader(diagnostics)
         val adapter = object : NodeAdapter<Any>() {
             override fun getAttr(target: Any, name: String): Any? = when (name) {
                 "text" -> "ready"
@@ -123,7 +125,7 @@ class MatchQueryRecordingTest {
             assertNull(partial.durationNanos)
             assertNull(partial.endedAt)
             assertNull(partial.result)
-            assertEquals("ready", partial.calls.single { it.operation == "attr" }.result!!.value)
+            assertEquals("ready", partial.calls.single { it.operation == MatchNodeOperation.Attr }.result!!.value)
             assertFalse(stopped.session.trackingComplete)
             val next = diagnostics.start(MatchTimingPolicy())
             release.countDown()
@@ -133,10 +135,10 @@ class MatchQueryRecordingTest {
             assertTrue(finished.queryRecordings.single().completed)
             assertNotNull(finished.queryRecordings.single().durationNanos)
             assertEquals("matched", finished.queryRecordings.single().outcome)
-            assertEquals(3, finished.queryRecordings.single().calls.count { it.operation == "attr" })
+            assertEquals(3, finished.queryRecordings.single().calls.count { it.operation == MatchNodeOperation.Attr })
             assertNotNull(finished.queryRecordings.single().result)
             assertFalse(partial.completed, "Previously exported partial snapshots stay immutable")
-            assertEquals("ready", partial.calls.single { it.operation == "attr" }.result!!.value)
+            assertEquals("ready", partial.calls.single { it.operation == MatchNodeOperation.Attr }.result!!.value)
             assertTrue(saved.all { it.session.id == session.id })
             assertEquals(finished, saved.last())
             assertTrue(diagnostics.export(next.id).events.isEmpty())
@@ -148,7 +150,7 @@ class MatchQueryRecordingTest {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy())
         val query = diagnostics.beginOperation("SelectorQuery", 42, "rule")!!
-        val reader = li.gkd.app.matching.query.MatchNodeReader(diagnostics)
+        val reader = MatchNodeReader(diagnostics)
         val node = Any()
         val failure = IllegalStateException("platform failure")
         val delegate = object : NodeAdapter<Any>() {
@@ -179,7 +181,7 @@ class MatchQueryRecordingTest {
             assertEquals(wait.id, physical.parentOperationId)
             assertEquals(selector.arguments, wait.arguments)
             assertEquals(wait.arguments, physical.arguments)
-            assertEquals("reference", physical.arguments.first().type)
+            assertEquals(MatchRecordedValueType.Reference, physical.arguments.first().type)
             assertEquals("3", physical.arguments.last().value)
             assertEquals(failure.toString(), physical.outcome)
         } finally { reader.close() }
@@ -310,7 +312,7 @@ class MatchQueryRecordingTest {
             val fixture = Fixture()
             val (target, capture) = fixture.record(plan)
             assertNull(capture.failure)
-            assertEquals(target != null, (capture.result?.type != "null"))
+            assertEquals(target != null, (capture.result?.type != MatchRecordedValueType.Null))
         }
     }
 
@@ -364,15 +366,15 @@ class MatchQueryRecordingTest {
                 { fixture.root }, fixture.adapter, diagnostics, session, 1)
             assertSame(expected, target)
             val recording = diagnostics.export(session.id).queryRecordings.single()
-            assertEquals(target != null, (recording.result?.type != "null"))
+            assertEquals(target != null, (recording.result?.type != MatchRecordedValueType.Null))
         }
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), recordSystem = true)
         assertNull(recordManualQuery(Selector.compile("[parent=null]").value, MatchOptions.default, fixture.a,
             { null }, fixture.adapter, diagnostics, session, 2))
         val recording = diagnostics.export(session.id).queryRecordings.single()
-        assertEquals(listOf("queryRoot"), recording.calls.map { it.operation })
-        assertEquals("null", recording.result?.type)
+        assertEquals(listOf(MatchNodeOperation.QueryRoot), recording.calls.map { it.operation })
+        assertEquals(MatchRecordedValueType.Null, recording.result?.type)
     }
 
     @Test fun recordedCancellationRemainsAFailureWithoutExecutingUnvisitedReads() {

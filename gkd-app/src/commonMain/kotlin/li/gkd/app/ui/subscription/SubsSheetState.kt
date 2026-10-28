@@ -96,6 +96,7 @@ import li.gkd.db.Db
 import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.db.RuleTriggerStats
 
 private data class SubsSheetSnapshot(
     val item: SubsItem,
@@ -140,7 +141,7 @@ class SubsSheetState(
         val triggerSummaryFlow = remember(subsId) {
             if (subsId == null) flowOf<Loadable<TriggerSummary>>(Loadable.Loading)
             else Db.ruleTriggerStatsDao.observe(subsId = subsId)
-                .map<List<li.gkd.db.RuleTriggerStats>, Loadable<TriggerSummary>> { records ->
+                .map<List<RuleTriggerStats>, Loadable<TriggerSummary>> { records ->
                     Loadable.Ready(records.summarizeTriggers())
                 }
                 .catch { emit(Loadable.Failure(it)) }

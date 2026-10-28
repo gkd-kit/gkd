@@ -18,6 +18,50 @@ import org.junit.Test
 
 class MatchDeadlinesTest {
     @Test
+    fun taskOwnershipSurvivesQueryCommandsAndReleasesRejectedReplacedAndCancelledTasks() = runTest {
+        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler),
+            nowMillis = { testScheduler.currentTime }, onFailure = { throw it })
+        // Inspect retained closures without adding a production-only testing API.
+        val tasks = MatchCoordinator::class.java.getDeclaredField("tasks").apply { isAccessible = true }
+            .get(coordinator) as Map<*, *>
+        val service = Any()
+        val release = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val rule = rule(RuleRuntime())
+        val runs = mutableListOf<String>()
+        try {
+            coordinator.attach(service)
+            coordinator.request(service) {
+                match(rule) { assertEquals(1, tasks.size); "matched" }
+                assertEquals(1, tasks.size)
+                release.await()
+                runs += "active"
+            }
+            runCurrent()
+            coordinator.request(Any()) { error("Rejected task ran") }
+            assertEquals(1, tasks.size)
+            coordinator.request(service) { error("Replaced task ran") }
+            coordinator.request(service) { runs += "pending" }
+            assertEquals(2, tasks.size)
+            coordinator.scheduleFollowUp(service) { error("Replaced follow-up ran") }
+            coordinator.scheduleFollowUp(service) { runs += "follow-up" }
+            coordinator.scheduleRule(service, rule, RuleDelayKind.Action, 100) { runs += "rule" }
+            coordinator.scheduleRule(service, rule, RuleDelayKind.Action, 100) { error("Duplicate ran") }
+            assertEquals(4, tasks.size)
+            coordinator.cancelRuleDelays(rule)
+            assertEquals(3, tasks.size)
+            release.complete(Unit)
+            runCurrent()
+            assertEquals(listOf("active", "pending"), runs)
+            assertEquals(1, tasks.size)
+            coordinator.invalidate(MatchInvalidationReason.PageChanged)
+            assertEquals(0, tasks.size)
+            advanceUntilIdle()
+            assertEquals(listOf("active", "pending"), runs)
+        } finally { coordinator.close() }
+        assertEquals(0, tasks.size)
+    }
+
+    @Test
     fun policyUpdateRebasesFollowUpButPreservesRuleDeadlines() = runTest {
         val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler),
             nowMillis = { testScheduler.currentTime }, onFailure = { throw it })

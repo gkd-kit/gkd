@@ -14,6 +14,7 @@ import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.record.TriggerSummary
 
 @Composable
 fun GkSubsAppCard(
@@ -22,7 +23,7 @@ fun GkSubsAppCard(
     appInfo: AppInfo?,
     control: RuleControlState,
     enabledGroupCount: Int,
-    triggerSummary: li.gkd.app.record.TriggerSummary? = null,
+    triggerSummary: TriggerSummary? = null,
     onClick: (() -> Unit),
     onSettingChange: (RuleSetting) -> Unit,
     selectedMode: Boolean = false,

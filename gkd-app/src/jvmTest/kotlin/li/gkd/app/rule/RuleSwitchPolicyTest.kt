@@ -63,6 +63,81 @@ class RuleSwitchPolicyTest {
         }
     }
 
+    @Test
+    fun invalidVersionPatternsKeepAppAndGlobalAppPreferencesAndRepairUsesThosePreferences() {
+        for (inherited in listOf(true, false)) {
+            val condition = "versionName:{pattern:'['}"
+            val appBody = if (inherited) "$condition,rules:[{matches:'*'}]"
+            else "rules:[{matches:'*',$condition}]"
+            val globalBody = if (inherited) "apps:[{id:'app.id',$condition}],rules:[{matches:'*'}]"
+            else "rules:[{matches:'*',apps:[{id:'app.id',$condition}]}]"
+            val source = """{id:-2,name:'Test',version:1,
+                apps:[{id:'app.id',groups:[{key:2,name:'App',$appBody}]}],
+                globalGroups:[{key:3,name:'Global',$globalBody}]}"""
+            val invalid = RawSubscriptionParser.parse(source)
+            val repaired = RawSubscriptionParser.parse(source.replace("pattern:'['", "pattern:'1[.].*'"))
+            for (enabled in listOf(true, false)) {
+                val setting = RuleSetting.from(enabled)
+                val appConfig = RuleSwitchPolicy.updateGroup(
+                    RuleSwitchTarget.AppGroup(-2, "app.id", 2), SubsAppGroupConfig(-2, "app.id", 2), setting,
+                ) as SubsAppGroupConfig
+                val globalConfig = RuleSwitchPolicy.updateGroup(
+                    RuleSwitchTarget.GlobalApp(-2, 3, "app.id"), SubsGlobalGroupConfig(-2, 3, true), setting,
+                ) as SubsGlobalGroupConfig
+                val configs = initial.copy(appGroupConfigs = listOf(appConfig), globalGroupConfigs = listOf(globalConfig))
+                for (subscription in listOf(invalid, repaired)) {
+                    val valid = subscription === repaired
+                    val app = subscription.apps.single().groups.single()
+                    val global = subscription.globalGroups.single()
+                    for (group in listOf(app, global)) {
+                        val state = RuleGroupPolicy.controlState(subscription, group, info.id, configs, info, "launcher", emptySet())
+                        assertTrue(state.canEnable)
+                        assertEquals(setting, state.setting)
+                        assertEquals(enabled, state.configuredEnabled)
+                        assertEquals(enabled && valid, state.available)
+                        assertFalse(RuleRestriction.VersionMismatch in state.restrictions)
+                    }
+                    // Configuration permission never changes the strict matching result.
+                    assertEquals(valid, RuleScopePolicy.appVersionMatches(app, app.rules.single(), info))
+                    assertEquals(valid, RuleScopePolicy.versionMatches(
+                        RuleScopePolicy.globalApp(global, global.rules.single(), info.id)!!, info,
+                    ))
+                    val summary = RuleSummaryBuilder.build(
+                        RuleRuntime(), listOf(UsedSubsEntry(configs.subsItems.single(), subscription)),
+                        mapOf(info.id to info), configs.appConfigs,
+                        configs.appGroupConfigs + configs.globalGroupConfigs, configs.categoryConfigs,
+                    )
+                    assertEquals(enabled && valid, summary.appIdToRules[info.id].orEmpty().isNotEmpty())
+                    assertEquals(enabled && valid, summary.globalRules.any { it.matchActivity(info.id, "app.id.Main") })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun invalidDefinitionsDoNotBypassRealVersionRestrictionsWhenSavingPreferences() {
+        // Even an invalid pattern cannot override explicit code/name lists; valid patterns still restrict.
+        val conditions = listOf(
+            "versionCode:{minimum:20},versionName:{pattern:'['}",
+            "versionName:{pattern:'[',include:['2.0']}",
+            "versionName:{pattern:'[',exclude:['1.0']}",
+            "versionName:{pattern:'2[.].*'}",
+        )
+        for (condition in conditions) {
+            val definition = "{matches:'*',position:{x:'unknown',y:0}}"
+            val subscription = RawSubscriptionParser.parse("""{id:-2,name:'Test',version:1,
+                apps:[{id:'app.id',groups:[{key:2,name:'App',$condition,rules:[$definition]}]}],
+                globalGroups:[{key:3,name:'Global',apps:[{id:'app.id',$condition}],rules:[$definition]}]}""")
+            for (group in listOf(subscription.apps.single().groups.single(), subscription.globalGroups.single())) {
+                val state = RuleGroupPolicy.controlState(subscription, group, info.id, initial, info, "launcher", emptySet())
+                assertFalse(group.valid)
+                assertFalse(state.canEnable)
+                assertFalse(state.available)
+                assertTrue(RuleRestriction.VersionMismatch in state.restrictions)
+            }
+        }
+    }
+
     @get:Rule
     val temporaryFolder = TemporaryFolder(TestFiles.root)
 

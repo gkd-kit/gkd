@@ -88,12 +88,13 @@ import li.gkd.app.ui.style.itemPadding
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.app.record.TriggerStats
 
 data class AppListContentState(
     val appInfos: List<AppInfo>,
     val listState: Loadable<Unit> = Loadable.Ready(Unit),
     val ruleStatsFailed: Boolean = false,
-    val triggerStats: li.gkd.app.record.TriggerStats? = null,
+    val triggerStats: TriggerStats? = null,
     val searchText: String = "",
     val showSearchBar: Boolean = false,
     val editWhiteListMode: Boolean = false,

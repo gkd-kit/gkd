@@ -29,6 +29,7 @@ import li.gkd.app.rule.toRuleGroupTarget
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.error.messageResource
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.app.record.TriggerSummary
 
 @Composable
 fun GkRuleGroupCard(
@@ -37,7 +38,7 @@ fun GkRuleGroupCard(
     appId: String?,
     group: RawSubscription.RawGroupProps,
     control: RuleControlState,
-    triggerSummary: li.gkd.app.record.TriggerSummary? = null,
+    triggerSummary: TriggerSummary? = null,
     onOpen: () -> Unit,
     onSettingChange: (RuleSetting) -> Unit,
     highlighted: Boolean = false,

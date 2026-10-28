@@ -10,7 +10,7 @@ expect fun ignoresBatteryOptimizations(): Boolean
 @Composable
 expect fun RefreshPermissions()
 expect fun openAppDetails()
-expect fun openRecents()
+expect suspend fun openRecents()
 expect fun openA11ySettings()
 expect fun switchAutomator()
 expect fun dynamicColorAvailable(): Boolean

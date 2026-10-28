@@ -15,10 +15,11 @@ import li.gkd.app.ui.component.GkPlatformWarningDialogs
 import li.gkd.app.ui.component.GkTermsAcceptDialog
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.util.ToastUtils
+import li.gkd.app.MainActivity
 
 @Composable
 fun AppOverlayHost() {
-    val activity = LocalActivity.current as li.gkd.app.MainActivity
+    val activity = LocalActivity.current as MainActivity
     val mainVm = activity.mainVm
     if (!SettingsRepository.termsAccepted.collectAsStateWithLifecycle().value) {
         GkTermsAcceptDialog(
@@ -58,7 +59,7 @@ private fun dismissAccessRestrictedSettingsDialog() {
 
 @Composable
 private fun PlatformWarnings() {
-    val mainVm = (androidx.activity.compose.LocalActivity.current as li.gkd.app.MainActivity).mainVm
+    val mainVm = (androidx.activity.compose.LocalActivity.current as MainActivity).mainVm
     val a11y by A11yService.isRunning.collectAsStateWithLifecycle()
     val restricted by accessRestrictedSettingsShowFlow.collectAsStateWithLifecycle()
     val occupied by uiAutomationOccupiedFlow.collectAsStateWithLifecycle()

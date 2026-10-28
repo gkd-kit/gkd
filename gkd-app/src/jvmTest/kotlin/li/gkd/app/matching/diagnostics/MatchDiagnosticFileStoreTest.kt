@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import li.gkd.app.matching.MatchCoordinator
 import li.gkd.app.matching.input.MatchTimingPolicy
 import li.gkd.app.testing.TestFiles
+import li.gkd.app.matching.MatchEngineSnapshot
 
 class MatchDiagnosticFileStoreTest {
     @Test
@@ -101,16 +102,16 @@ class MatchDiagnosticFileStoreTest {
             val diagnostics = MatchDiagnostics(nanoTime = { nanos }, wallTime = { nanos / 1_000_000 },
                 onStoppedCapture = { writes++; store.save(it) })
             val session = diagnostics.start(MatchTimingPolicy())
-            val runtime = MatchDebugSnapshot(li.gkd.app.matching.MatchEngineSnapshot(true, 4, 7, false, null, 0, MatchTimingPolicy()), null)
+            val runtime = MatchDebugSnapshot(MatchEngineSnapshot(true, 4, 7, false, null, 0, MatchTimingPolicy()), null)
             diagnostics.captureRuntime(runtime)
-            val request = MatchDebugRunState(MatchDebugRunRequest("request", "{}", "rule"), "running", engineRunId = 7)
+            val request = MatchDebugRunState(MatchDebugRunRequest("request", "{}", "rule"), MatchDebugRunPhase.Running, engineRunId = 7)
             diagnostics.recordRequest(session.id, request)
             val operation = diagnostics.beginOperation("NodeRead:Root", 7)!!
             assertEquals(0, writes)
             nanos = 10_000_000
             diagnostics.stop(session.id)
             // Request jobs finish before replacement; only the physical API may outlive it.
-            diagnostics.recordRequest(session.id, request.copy(phase = "cancelled"))
+            diagnostics.recordRequest(session.id, request.copy(phase = MatchDebugRunPhase.Cancelled))
             val stopped = diagnostics.export(session.id)
             store.save(stopped)
             val next = diagnostics.start(MatchTimingPolicy())
@@ -128,7 +129,7 @@ class MatchDiagnosticFileStoreTest {
             assertEquals(listOf(operation), restored.session.operationsAtStop)
             assertTrue(restored.session.openOperations.isEmpty())
             assertEquals(30_000_000L, restored.events.last().operation!!.durationNanos)
-            assertEquals("cancelled", restored.runs.single().phase)
+            assertEquals(MatchDebugRunPhase.Cancelled, restored.runs.single().phase)
             assertEquals(restored.runs, diagnostics.requests(session.id))
             assertFailsWith<IllegalArgumentException> { diagnostics.requests("unknown-session") }
             assertTrue(file.readText().contains("appVersion"))

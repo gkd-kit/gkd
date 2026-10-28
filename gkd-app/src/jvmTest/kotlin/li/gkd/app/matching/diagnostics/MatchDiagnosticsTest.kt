@@ -1,5 +1,9 @@
 package li.gkd.app.matching.diagnostics
 
+import li.gkd.app.matching.MatchScheduleCommandType
+
+import li.gkd.app.matching.query.MatchNodeReadFailure
+
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -21,6 +25,14 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
+import li.gkd.app.matching.MatchScheduleCheckpoint
+import li.gkd.app.matching.MatchScheduleCommand
+import li.gkd.app.matching.MatchScheduledRun
+import li.gkd.app.matching.MatchWork
+import li.gkd.app.matching.input.MatchEventKey
+import li.gkd.app.matching.input.MatchEventKind
+import li.gkd.app.model.ActionResult
+import li.gkd.app.model.GkdAction
 
 class MatchDiagnosticsTest {
     @Test
@@ -63,9 +75,9 @@ class MatchDiagnosticsTest {
     @Test
     fun workKeepsResultsAndRecordsOperationsOnlyWhileCaptureIsEnabled() = runTest {
         val diagnostics = MatchDiagnostics()
-        val work = li.gkd.app.matching.MatchWork(42, MatchTimingPolicy(), diagnostics) { true }
+        val work = MatchWork(42, MatchTimingPolicy(), diagnostics) { true }
         val rule = activity().currentRules.first()
-        val result = li.gkd.app.model.ActionResult("click", true)
+        val result = ActionResult("click", true)
         assertEquals("before", work.match(rule) { "before" })
         assertEquals(result, work.performAction(rule) { result })
         val session = diagnostics.start(MatchTimingPolicy())
@@ -135,13 +147,13 @@ class MatchDiagnosticsTest {
     fun actionApiTimingKeepsItsParentAcrossDispatcherChanges() = kotlinx.coroutines.test.runTest {
         val clock = java.util.concurrent.atomic.AtomicLong(0)
         val diagnostics = MatchDiagnostics(nanoTime = clock::get, wallTime = { 0 })
-        val session = diagnostics.start(li.gkd.app.matching.input.MatchTimingPolicy())
-        val work = li.gkd.app.matching.MatchWork(42, li.gkd.app.matching.input.MatchTimingPolicy(), diagnostics) { true }
-        val result = work.performAction(li.gkd.app.model.GkdAction("*", action = "click")) {
+        val session = diagnostics.start(MatchTimingPolicy())
+        val work = MatchWork(42, MatchTimingPolicy(), diagnostics) { true }
+        val result = work.performAction(GkdAction("*", action = "click")) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                 observeActionOperation("PlatformClick") {
                     clock.addAndGet(5_000_000)
-                    li.gkd.app.model.ActionResult("click", true)
+                    ActionResult("click", true)
                 }
             }
         }
@@ -176,7 +188,7 @@ class MatchDiagnosticsTest {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), detailed = true, recordSystem = true)
         fun query(id: Long) = MatchQueryRecording(id, "rule", MatchSelectorPlan(listOf("*")),
-            MatchRecordedValue("null"), emptyList(), null, null, null)
+            MatchRecordedValue(MatchRecordedValueType.Null), emptyList(), null, null, null)
         repeat(40) {
             assertTrue(diagnostics.shouldRecordQuery(session.id))
             diagnostics.registerQuery(session.id, MatchQueryEvidence(query(it.toLong())))
@@ -213,8 +225,8 @@ class MatchDiagnosticsTest {
     fun sessionFollowsSystemCleanupAndExportPreservesSteps() {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), recordSystem = true)
-        val active = li.gkd.app.matching.MatchScheduleCheckpoint(
-            active = li.gkd.app.matching.MatchScheduledRun(1, 1, 0))
+        val active = MatchScheduleCheckpoint(
+            active = MatchScheduledRun(1, 1, 0))
         val recorder = MatchSystemRecorder(active, 0)
         diagnostics.systemRecorder = recorder
         diagnostics.stop(session.id)
@@ -222,7 +234,7 @@ class MatchDiagnosticsTest {
         assertTrue(diagnostics.session(session.id).systemFinalizing)
         assertFalse(diagnostics.export(session.id).systemRecording!!.sealed)
         val finished = active.copy(active = null)
-        recorder.append(li.gkd.app.matching.MatchScheduleCommand("finish", run = 1), 20, emptyList(), finished)
+        recorder.append(MatchScheduleCommand(MatchScheduleCommandType.Finish, run = 1), 20, emptyList(), finished)
         assertFalse(diagnostics.session(session.id).systemFinalizing)
         val capture = diagnostics.export(session.id)
         assertEquals(1, capture.systemRecording!!.steps.size)
@@ -240,7 +252,7 @@ class MatchDiagnosticsTest {
             diagnostics.observeOperation("Child") { throw failure }
         })
         assertEquals(null, diagnostics.beginOperation("Root"))
-        diagnostics.nodeReadPressure("node_read_timeout", 1, 4)
+        diagnostics.nodeReadPressure(MatchNodeReadFailure.Timeout, 1, 4)
         diagnostics.entry("event_queue", "event_queue_overflow")
         assertEquals(null, diagnostics.state.value)
     }
@@ -255,8 +267,8 @@ class MatchDiagnosticsTest {
         val read = diagnostics.beginOperation("NodeRead")!!
         wall -= 100_000
         nanos = 100_000_000
-        diagnostics.nodeReadPressure("node_read_timeout", 2, 4)
-        val drop = MatchEventDrop(li.gkd.app.matching.input.MatchEventKey(li.gkd.app.matching.input.MatchEventKind.Content, "app", "Window"), 64, 300)
+        diagnostics.nodeReadPressure(MatchNodeReadFailure.Timeout, 2, 4)
+        val drop = MatchEventDrop(MatchEventKey(MatchEventKind.Content, "app", "Window"), 64, 300)
         diagnostics.entry("event_queue", "event_queue_overflow", eventDrop = drop)
         wall += 900_000
         nanos = 200_000_000

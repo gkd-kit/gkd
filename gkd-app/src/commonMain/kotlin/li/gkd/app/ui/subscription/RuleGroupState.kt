@@ -35,6 +35,7 @@ import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.ToastUtils
+import li.gkd.db.RuleTriggerStats
 
 private data class RuleSheetSnapshot(
     val target: RuleGroupTarget,
@@ -128,7 +129,7 @@ class RuleGroupState(
             else Db.ruleTriggerStatsDao.observe(
                 subsId = target.subsId, appId = target.pageAppId,
                 groupType = target.groupType, groupKey = target.groupKey,
-            ).map<List<li.gkd.db.RuleTriggerStats>, Loadable<TriggerSummary>> { Loadable.Ready(it.summarizeTriggers()) }
+            ).map<List<RuleTriggerStats>, Loadable<TriggerSummary>> { Loadable.Ready(it.summarizeTriggers()) }
                 .catch { emit(Loadable.Failure(it)) }
         }
         val stats = key(requested) { statsFlow.collectAsStateWithLifecycle(Loadable.Loading).value }

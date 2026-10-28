@@ -22,11 +22,12 @@ import li.gkd.app.rule.TopActivity
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
+import li.gkd.app.model.ActionResult
 
 class RuleReconciliationTest {
     @Test
     fun foregroundTransitionFinishesStartedGestureDespiteNewPageRules() = runTest {
-        for (reason in listOf("page_changed", "foreground_conflict")) {
+        for (reason in listOf(MatchInvalidationReason.PageChanged, MatchInvalidationReason.ForegroundConflict)) {
             val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
             val service = Any()
             val finish = CompletableDeferred<Unit>()
@@ -45,12 +46,12 @@ class RuleReconciliationTest {
                         events += "started"
                         finish.await()
                         events += "finished"
-                        li.gkd.app.model.ActionResult("swipe", true)
+                        ActionResult("swipe", true)
                     }
                     assertFalse(coordinator.canCommit(id, rule))
                     performAction(rule) {
                         events += "obsolete_action"
-                        li.gkd.app.model.ActionResult("click", true)
+                        ActionResult("click", true)
                     }
                 }
                 runCurrent()

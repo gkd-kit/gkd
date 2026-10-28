@@ -100,6 +100,7 @@ object KeepAliveOverlayCoordinator {
         init {
             val layoutParams = WindowManager.LayoutParams().apply {
                 type = windowType
+                alpha = 0f
                 format = PixelFormat.TRANSLUCENT
                 flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE

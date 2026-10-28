@@ -18,6 +18,7 @@ import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
 import li.gkd.db.SubscriptionIds
+import li.gkd.db.RuleGroupType
 
 data class SubsGlobalGroupListUiState(
     val subscription: RawSubscription,
@@ -40,7 +41,7 @@ class SubsGlobalGroupListViewModel(
     private val subscription = RequiredSubscription(route.subsItemId, scope)
 
     val uiState = subscription.buildUiState { rawSubscription ->
-        combine(SubscriptionConfigStore.observe(), Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = li.gkd.db.RuleGroupType.Global)) { configs, records ->
+        combine(SubscriptionConfigStore.observe(), Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = RuleGroupType.Global)) { configs, records ->
             SubsGlobalGroupListUiState(
                 subscription = rawSubscription,
                 configs = configs,

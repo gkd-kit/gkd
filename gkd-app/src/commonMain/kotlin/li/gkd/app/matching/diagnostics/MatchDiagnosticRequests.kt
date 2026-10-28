@@ -42,7 +42,7 @@ data class MatchDebugResult(
 @Serializable
 data class MatchDebugRunState(
     val request: MatchDebugRunRequest,
-    val phase: String,
+    val phase: MatchDebugRunPhase,
     val result: MatchDebugResult? = null,
     val error: String? = null,
     val engineRunId: Long? = null,

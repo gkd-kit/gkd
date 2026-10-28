@@ -28,6 +28,10 @@ class GlobalRule(
         }
 
     override val type = "global"
+    override fun sameScope(other: ResolvedRule): Boolean = other is GlobalRule &&
+        apps == other.apps && groupExcludeAppIds == other.groupExcludeAppIds && matchAnyApp == other.matchAnyApp &&
+        group.matchAnyApp == other.group.matchAnyApp && group.matchSystemApp == other.group.matchSystemApp &&
+        group.matchLauncher == other.group.matchLauncher
 
     override fun matchActivity(appId: String, activityId: String?): Boolean {
         val environment = runtime.environment()

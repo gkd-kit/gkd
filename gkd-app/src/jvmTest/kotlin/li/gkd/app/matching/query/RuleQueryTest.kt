@@ -29,6 +29,8 @@ import kotlinx.serialization.json.Json
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
+import li.gkd.app.matching.diagnostics.recordRuleQuery
+import li.gkd.selector.NodeAdapter
 
 class RuleQueryTest {
     /** An unvisited excluded node must not become a false negative or allow an action. */
@@ -40,14 +42,14 @@ class RuleQueryTest {
             val session = if (record) diagnostics.start(MatchTimingPolicy(), ruleFilter = rule.matchIdentity(), recordQueries = true) else null
             val work = MatchWork(1, MatchTimingPolicy(), diagnostics) { true }
             var children = listOf(1, 2, 3)
-            val adapter = object : li.gkd.selector.NodeAdapter<Int>() {
+            val adapter = object : NodeAdapter<Int>() {
                 override fun getAttr(target: Any, name: String): Any? = if (name == "text") "safe" else null
                 override fun getName(node: Int) = "Node"
                 override fun getChildCount(node: Int) = if (node == 0) children.size else 0
                 override fun getChild(node: Int, index: Int) = if (node == 0) children.getOrNull(index) else null
                 override fun getParent(node: Int): Int? = null
                 override fun getNodeKey(node: Int): Any = node
-                override fun getDescendants(node: Int) = children.asSequence().withQueryLimit(2, "query_descendant_limit")
+                override fun getDescendants(node: Int) = children.asSequence().withQueryLimit(2, MatchQueryIncompleteReason.DescendantLimit)
             }
             var actions = 0
             var commits = 0
@@ -56,7 +58,7 @@ class RuleQueryTest {
                 override fun appId(node: Int) = "app.test"
                 override suspend fun refresh(node: Int) = node
                 override suspend fun match(rule: ResolvedRule, node: Int): Int? = if (session != null) {
-                    li.gkd.app.matching.diagnostics.recordRuleQuery(rule, node, { 0 }, adapter, diagnostics, session, work.id, rootOnlySelectors = false)
+                    recordRuleQuery(rule, node, { 0 }, adapter, diagnostics, session, work.id, rootOnlySelectors = false)
                 } else matchRuleSelectors(rule, node, { 0 }, { target, selector ->
                     selector.match(target, adapter) ?: adapter.querySelector(target, selector)
                 })
@@ -90,10 +92,10 @@ class RuleQueryTest {
 
     @Test
     fun queryBudgetAllowsShortCircuitAndExactExhaustionButRejectsTruncation() {
-        assertEquals(1, sequenceOf(1, 2, 3).withQueryLimit(2, "query_descendant_limit").first())
-        assertEquals(listOf(1, 2), sequenceOf(1, 2).withQueryLimit(2, "query_descendant_limit").toList())
-        assertEquals("query_descendant_limit", kotlin.test.assertFailsWith<MatchQueryIncomplete> {
-            sequenceOf(1, 2, 3).withQueryLimit(2, "query_descendant_limit").toList()
+        assertEquals(1, sequenceOf(1, 2, 3).withQueryLimit(2, MatchQueryIncompleteReason.DescendantLimit).first())
+        assertEquals(listOf(1, 2), sequenceOf(1, 2).withQueryLimit(2, MatchQueryIncompleteReason.DescendantLimit).toList())
+        assertEquals(MatchQueryIncompleteReason.DescendantLimit, kotlin.test.assertFailsWith<MatchQueryIncomplete> {
+            sequenceOf(1, 2, 3).withQueryLimit(2, MatchQueryIncompleteReason.DescendantLimit).toList()
         }.reason)
     }
     /** Coordinate failure reaches existing traces/export, and does not trigger successful rule state. */

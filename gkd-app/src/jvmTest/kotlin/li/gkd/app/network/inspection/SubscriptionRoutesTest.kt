@@ -159,13 +159,18 @@ suspend fun assertSubscriptionRoutes(
     error("replaceRuleGroup", "RuleMissing", id, group, source)
     error("setCategorySetting", "CategoryMissing", id, "categoryKey" to JsonPrimitive(999), "config" to JsonNull)
 
-    // The older whole-memory-subscription route can load invalid groups; switching still uses the production policy.
+    // Invalid imported definitions retain enable preferences, while validation still blocks execution.
     request("updateSubscription", "id" to JsonPrimitive(1), "name" to JsonPrimitive("fixture"), "version" to JsonPrimitive(1),
         "globalGroups" to Json.parseToJsonElement("""[{"key":8,"name":"invalid","rules":[{"matches":"["}]}]"""))
     val memoryId = "subsId" to JsonPrimitive(-1)
-    val rejected = request("setRuleGroupSetting", memoryId, "target" to globalTarget(8), "enable" to JsonPrimitive(true)).jsonObject
-    assertEquals(1, rejected.getValue("invalid").jsonPrimitive.int)
-    assertEquals(0, rejected.getValue("changed").jsonPrimitive.int)
+    val saved = request("setRuleGroupSetting", memoryId, "target" to globalTarget(8), "enable" to JsonPrimitive(true)).jsonObject
+    assertEquals(0, saved.getValue("invalid").jsonPrimitive.int)
+    assertEquals(1, saved.getValue("changed").jsonPrimitive.int)
+    assertEquals(1, saved.getValue("restricted").jsonPrimitive.int)
+    val stored = request("getRules", memoryId).jsonObject.getValue("configuration").jsonObject
+        .getValue("globalGroupConfigs").jsonArray.single().jsonObject
+    assertEquals(true, stored.getValue("enable").jsonPrimitive.boolean)
+    assertFalse(repository.awaitSnapshot().subscriptions.getValue(-1).globalGroups.single().valid)
     for (subscriptionId in listOf(id, memoryId)) {
         val configuration = request("getRules", subscriptionId).jsonObject.getValue("configuration").jsonObject
         assertEquals(subscriptionId.second, configuration.getValue("subsItems").jsonArray.single().jsonObject.getValue("id"))

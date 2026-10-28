@@ -12,8 +12,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import li.gkd.app.GkDesktopBackHandler
 import li.gkd.app.ui.component.GkDialog
+import li.gkd.app.DesktopSession
 
-actual typealias UiHost = li.gkd.app.DesktopSession
+actual typealias UiHost = DesktopSession
 
 @Composable
 actual fun GkBackHandler(

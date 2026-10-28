@@ -22,6 +22,7 @@ import li.gkd.db.SubsAppGroupConfig
 import li.gkd.db.SubsCategoryConfig
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
+import li.gkd.db.RuleGroupType
 
 data class SubsCategoryGroupUiState(
     val subscription: RawSubscription,
@@ -71,7 +72,7 @@ class SubsCategoryGroupViewModel(
         combine(
             SubscriptionConfigStore.observe(),
             Db.actionLogDao.queryLatestUniqueAppIds(route.subsId),
-            Db.ruleTriggerStatsDao.observe(subsId = route.subsId, groupType = li.gkd.db.RuleGroupType.App),
+            Db.ruleTriggerStatsDao.observe(subsId = route.subsId, groupType = RuleGroupType.App),
         ) { snapshot, actionAppIds, records ->
             val disabledAppIds = snapshot.appConfigs.filter {
                 it.subsId == subscription.id && it.enable == false

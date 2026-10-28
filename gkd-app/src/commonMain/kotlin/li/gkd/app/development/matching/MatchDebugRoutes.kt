@@ -1,5 +1,7 @@
 package li.gkd.app.development.matching
 
+import li.gkd.app.util.JsonUtils
+
 import li.gkd.app.matching.diagnostics.matchForegroundSnapshot
 import li.gkd.app.matching.diagnostics.MatchDebugSnapshot
 import io.ktor.http.ContentType
@@ -18,6 +20,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import li.gkd.app.matching.MatchCoordinator
 import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.diagnostics.MatchDiagnosticState
 
 @Serializable
 data class MatchDebugStart(
@@ -34,7 +37,7 @@ fun matchDebugSnapshot(coordinator: MatchCoordinator = MatchingRuntime.coordinat
 fun Route.matchDebugRoutes(
     coordinator: MatchCoordinator = MatchingRuntime.coordinator,
     onSessionStarted: (String) -> Unit = {},
-    startCapture: suspend (MatchDebugStart) -> li.gkd.app.matching.diagnostics.MatchDiagnosticState = { request ->
+    startCapture: suspend (MatchDebugStart) -> MatchDiagnosticState = { request ->
         coordinator.startDiagnostics(request.detailed, request.ruleFilter, request.recordQueries, request.recordSystem)
     },
 ) = route("/debug") {
@@ -92,7 +95,7 @@ fun Route.matchDebugRoutes(
         call.respondTextWriter(ContentType.Text.EventStream) {
             while (true) {
                 val page = coordinator.diagnostics.read(id, cursor)
-                write("id: ${page.cursor}\nevent: records\ndata: ${li.gkd.app.util.JsonUtils.keepingNulls.encodeToString(page)}\n\n")
+                write("id: ${page.cursor}\nevent: records\ndata: ${JsonUtils.keepingNulls.encodeToString(page)}\n\n")
                 flush()
                 cursor = page.cursor
                 if (page.trackingComplete && !page.hasMore) break

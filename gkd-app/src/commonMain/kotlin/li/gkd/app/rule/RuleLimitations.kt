@@ -143,7 +143,7 @@ object RuleLimitationPolicy {
                             )
                         )
                     }
-                    if (!RuleScopePolicy.appVersionMatches(group, rule, info)) {
+                    if (!RuleScopePolicy.appVersionMatches(group, rule, info, forConfiguration = true)) {
                         blocked++
                         blockedReasons.add(RuleRestriction.VersionMismatch)
                     }

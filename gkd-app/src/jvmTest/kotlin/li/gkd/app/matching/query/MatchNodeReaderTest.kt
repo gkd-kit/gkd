@@ -1,5 +1,9 @@
 package li.gkd.app.matching.query
 
+import li.gkd.app.matching.diagnostics.MatchRecordedValueType
+
+import li.gkd.app.matching.MatchInvalidationReason
+
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
@@ -8,7 +12,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.assertSame
 import kotlin.test.assertFailsWith
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -20,6 +23,10 @@ import li.gkd.app.matching.MatchCoordinator
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.input.MatchTimingPolicy
 import kotlinx.coroutines.delay
+import li.gkd.app.matching.diagnostics.MatchNodeObservation
+import li.gkd.app.matching.diagnostics.MatchRecordedValue
+import li.gkd.app.model.ActionResult
+import li.gkd.app.model.GkdAction
 
 class MatchNodeReaderTest {
     /** Old-query timeouts and capacity rejection must not become the next session's evidence. */
@@ -34,17 +41,17 @@ class MatchNodeReaderTest {
         val release = CountDownLatch(1)
         val entered = CountDownLatch(4)
         try {
-            li.gkd.app.matching.diagnostics.MatchNodeObservation.observe(operation,
-                { li.gkd.app.matching.diagnostics.MatchRecordedValue("null") }, {
+            MatchNodeObservation.observe(operation,
+                { MatchRecordedValue(MatchRecordedValueType.Null) }, {
                     repeat(4) {
-                        assertEquals("node_read_timeout", assertFailsWith<MatchNodeReadUnavailable> {
+                        assertEquals(MatchNodeReadFailure.Timeout, assertFailsWith<MatchNodeReadUnavailable> {
                             reader.read(50) { entered.countDown(); release.await() }
-                        }.message)
+                        }.reason)
                     }
                     assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS))
-                    assertEquals("node_read_capacity", assertFailsWith<MatchNodeReadUnavailable> {
+                    assertEquals(MatchNodeReadFailure.CapacityExceeded, assertFailsWith<MatchNodeReadUnavailable> {
                         reader.read { error("Occupied reader must reject the fifth read") }
-                    }.message)
+                    }.reason)
                 })
             assertTrue(diagnostics.export(next.id).events.isEmpty())
             assertTrue(diagnostics.export(next.id).entries.isEmpty())
@@ -94,9 +101,9 @@ class MatchNodeReaderTest {
             } }
             withTimeout(5000) { entered.forEach { it.await() }; jobs.forEach { it.cancelAndJoin() } }
             nanos.set(700_000_000)
-            assertEquals("node_read_capacity", assertFailsWith<MatchNodeReadUnavailable> {
+            assertEquals(MatchNodeReadFailure.CapacityExceeded, assertFailsWith<MatchNodeReadUnavailable> {
                 reader.query { reader.read { error("Fifth read must not execute") } }
-            }.message)
+            }.reason)
             val capture = diagnostics.export(session.id)
             val pressure = capture.events.single { it.nodePressure != null }.nodePressure!!
             assertEquals(4, pressure.activeReads)
@@ -117,9 +124,9 @@ class MatchNodeReaderTest {
         val release = CountDownLatch(1)
         try {
             assertEquals(7, reader.query { reader.read { 7 } })
-            assertEquals("node_read_timeout", assertFailsWith<MatchNodeReadUnavailable> {
+            assertEquals(MatchNodeReadFailure.Timeout, assertFailsWith<MatchNodeReadUnavailable> {
                 reader.query { reader.read(20) { release.await() } }
-            }.message)
+            }.reason)
             assertEquals(null, diagnostics.state.value)
         } finally { release.countDown(); reader.close() }
     }
@@ -142,5 +149,152 @@ class MatchNodeReaderTest {
         } finally { release.countDown(); reader.close() }
     }
 
+    @Test
+    fun timeoutReleasesWaiterWithoutCommittingLateResultsOrStoppingPhysicalRead() = runBlocking {
+        val reader = MatchNodeReader()
+        val release = CountDownLatch(1)
+        val entered = CompletableDeferred<Unit>()
+        val returned = CompletableDeferred<Unit>()
+        val committed = AtomicBoolean(false)
+        try {
+            val waiting = async { reader.query {
+                reader.read(100) {
+                    entered.complete(Unit)
+                    release.await()
+                    returned.complete(Unit)
+                    "old page"
+                }
+                committed.set(true)
+            } }
+            withTimeout(5000) { entered.await() }
+            assertEquals(MatchNodeReadFailure.Timeout, assertFailsWith<MatchNodeReadUnavailable> { waiting.await() }.reason)
+            assertFalse(returned.isCompleted)
+            assertEquals("new page", reader.query { reader.read { "new page" } })
+            release.countDown()
+            withTimeout(5000) { returned.await() }
+            assertFalse(committed.get())
+        } finally { release.countDown(); reader.close() }
+    }
 
+    @Test
+    fun blockedRootAndSourceLeaveCapacityForSerialMatching() = runBlocking {
+        val reader = MatchNodeReader()
+        val release = CountDownLatch(1)
+        val entered = List(2) { CompletableDeferred<Unit>() }
+        val coordinator = MatchCoordinator(this, Dispatchers.Default, onFailure = { throw it })
+        val service = Any()
+        val actionStarted = CompletableDeferred<Unit>()
+        val actionRelease = CompletableDeferred<Unit>()
+        val nextMatched = CompletableDeferred<Unit>()
+        val waiting = entered.map { started -> async { reader.query { reader.read(5000) {
+            started.complete(Unit)
+            release.await()
+        } } } }
+        try {
+            withTimeout(5000) { entered.forEach { it.await() } }
+            coordinator.attach(service)
+            coordinator.request(service) {
+                assertEquals("source target", reader.query { reader.read { "source target" } })
+                performAction(GkdAction("*", action = "click")) {
+                    actionStarted.complete(Unit)
+                    actionRelease.await()
+                    ActionResult("click", true)
+                }
+            }
+            withTimeout(5000) { actionStarted.await() }
+            coordinator.request(service) { nextMatched.complete(Unit) }
+            assertFalse(nextMatched.isCompleted)
+            actionRelease.complete(Unit)
+            withTimeout(5000) { nextMatched.await() }
+            assertTrue(waiting.none { it.isCompleted })
+        } finally {
+            actionRelease.complete(Unit)
+            release.countDown()
+            waiting.forEach { it.cancelAndJoin() }
+            coordinator.close()
+            reader.close()
+        }
+    }
+
+    @Test
+    fun pageChangeFreesSerialMatcherBeforeOldPlatformReadReturns() = runBlocking {
+        val reader = MatchNodeReader()
+        val release = CountDownLatch(1)
+        val entered = CompletableDeferred<Unit>()
+        val returned = CompletableDeferred<Unit>()
+        val next = CompletableDeferred<Int>()
+        val committedOldResult = AtomicBoolean(false)
+        val coordinator = MatchCoordinator(this, Dispatchers.Default, onFailure = { next.completeExceptionally(it) })
+        val service = Any()
+        try {
+            coordinator.attach(service)
+            coordinator.request(service) {
+                reader.query {
+                    reader.read {
+                        entered.complete(Unit)
+                        release.await() // Remains blocked after cancelling the matching task.
+                        returned.complete(Unit)
+                        1
+                    }
+                    committedOldResult.set(true)
+                }
+            }
+            withTimeout(5000) { entered.await() }
+            coordinator.invalidate(MatchInvalidationReason.PageChanged)
+            coordinator.request(service) { next.complete(reader.query { reader.read { 2 } }) }
+            assertEquals(2, withTimeout(5000) { next.await() })
+            assertFalse(returned.isCompleted)
+            assertFalse(committedOldResult.get())
+            release.countDown()
+            withTimeout(5000) { returned.await() }
+            assertFalse(committedOldResult.get())
+        } finally {
+            release.countDown()
+            coordinator.close()
+            reader.close()
+        }
+    }
+
+    @Test
+    fun cancelledReadsKeepTheirCapacityUntilPhysicalReturn() = runBlocking {
+        val reader = MatchNodeReader()
+        val release = CountDownLatch(1)
+        val entered = List(4) { CompletableDeferred<Unit>() }
+        val returned = List(4) { CompletableDeferred<Unit>() }
+        try {
+            val jobs = entered.mapIndexed { index, signal ->
+                launch {
+                    reader.query { reader.read {
+                        signal.complete(Unit)
+                        release.await()
+                        returned[index].complete(Unit)
+                    } }
+                }
+            }
+            withTimeout(5000) { entered.forEach { it.await() }; jobs.forEach { it.cancelAndJoin() } }
+            val excess = async { reader.query { reader.read { error("Must not submit a fifth physical read") } } }
+            assertEquals(MatchNodeReadFailure.CapacityExceeded, assertFailsWith<MatchNodeReadUnavailable> { excess.await() }.reason)
+            assertFalse(returned.any { it.isCompleted })
+            release.countDown()
+            withTimeout(5000) { returned.forEach { it.await() } }
+        } finally { release.countDown(); reader.close() }
+    }
+
+    @Test
+    fun returnValuesFailuresAndClosedReaderAreNotReportedAsNoMatch() = runBlocking {
+        val reader = MatchNodeReader()
+        try {
+            assertEquals(null, reader.query { reader.read<Any?> { null } })
+            val error = IllegalArgumentException("platform error")
+            val propagated = assertFailsWith<IllegalArgumentException> {
+                reader.query {
+                    // Verify the executor unwraps its exception; coroutine stack recovery may copy it later.
+                    assertSame(error, assertFailsWith<IllegalArgumentException> { reader.read { throw error } })
+                    throw error
+                }
+            }
+            assertEquals(error.message, propagated.message)
+        } finally { reader.close() }
+        assertEquals(MatchNodeReadFailure.ReaderClosed, assertFailsWith<MatchNodeReadUnavailable> { reader.query { reader.read { 1 } } }.reason)
+    }
 }

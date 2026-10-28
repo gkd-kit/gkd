@@ -29,6 +29,9 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlin.coroutines.resume
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -42,8 +45,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.gkd.app.a11y.topActivityFlow
 import li.gkd.app.app
+import li.gkd.app.matching.input.topActivityFlow
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -55,13 +58,9 @@ import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.util.BarUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.ThreadUtils
-import li.gkd.app.util.TimeUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.px
 import org.jetbrains.compose.resources.stringResource
-import kotlin.coroutines.resume
-import kotlin.math.abs
-import kotlin.time.Duration.Companion.milliseconds
 
 private var tempShareContext: ShareContext? = null
 private fun acquireShareContext(): ShareContextLease {
@@ -152,7 +151,7 @@ abstract class OverlayWindowService(
                     contentDescription = minimizeContentDescription,
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClick = TimeUtils.throttle(onMinimizeRequest))
+                        .clickable(onClick = onMinimizeRequest)
                         .iconTextSize(),
                 )
             }
@@ -160,7 +159,7 @@ abstract class OverlayWindowService(
                 imageVector = GkIcons.Close,
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = TimeUtils.throttle {
+                    .clickable(onClick = {
                         stopSelf()
                     })
                     .iconTextSize()
@@ -275,7 +274,8 @@ abstract class OverlayWindowService(
         }
         var screenSize = ScreenUtils.getSize()
         var paramsXy = layoutParams.x to layoutParams.y
-        var fixMoveFlag = 0
+        var positionAnimator: ValueAnimator? = null
+        onDestroyed { positionAnimator?.cancel() }
         val fixLimitXy = {
             screenSize = ScreenUtils.getSize()
             val x = layoutParams.x.coerceIn(marginX, screenSize.width - view.width - marginX)
@@ -288,26 +288,21 @@ abstract class OverlayWindowService(
                 savePosition()
                 val startX = layoutParams.x
                 val startY = layoutParams.y
-                fixMoveFlag++
-                val tempFlag = fixMoveFlag
-                ValueAnimator.ofFloat(0f, 1f).apply {
+                positionAnimator?.cancel()
+                val animator = ValueAnimator.ofFloat(0f, 1f).apply {
                     duration = 300
                     addUpdateListener { animator ->
-                        if (tempFlag == fixMoveFlag) {
-                            val fraction = animator.animatedValue as Float
-                            layoutParams.x = (startX + (x - startX) * fraction).toInt()
-                            layoutParams.y = (startY + (y - startY) * fraction).toInt()
-                            app.windowManager.updateViewLayout(view, layoutParams)
-                        } else {
-                            pause()
-                        }
+                        val fraction = animator.animatedValue as Float
+                        layoutParams.x = (startX + (x - startX) * fraction).toInt()
+                        layoutParams.y = (startY + (y - startY) * fraction).toInt()
+                        app.windowManager.updateViewLayout(view, layoutParams)
                     }
                     doOnEnd {
-                        if (tempFlag == fixMoveFlag) {
-                            fixMoveFlag = 0
-                        }
+                        positionAnimator = null
                     }
-                }.start()
+                }
+                positionAnimator = animator
+                animator.start()
             }
         }
         lifecycleScope.launch {
@@ -321,9 +316,9 @@ abstract class OverlayWindowService(
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         @SuppressLint("ClickableViewAccessibility")
         view.setOnTouchListener { _, event ->
-            if (fixMoveFlag > 0) return@setOnTouchListener true
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    positionAnimator?.cancel()
                     downXy = event.rawX to event.rawY
                     screenSize = ScreenUtils.getSize()
                     paramsXy = layoutParams.x to layoutParams.y

@@ -105,6 +105,8 @@ import li.gkd.app.util.ToastUtils
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.app.app.AppInfoRepository
+import li.gkd.db.Db
 
 @Composable
 fun SnapshotPage(
@@ -126,7 +128,7 @@ fun SnapshotPage(
     val firstLoading = loadableState is Loadable.Loading
     val loadError = (loadableState as? Loadable.Failure)?.cause
     val snapshots = loadableState.value.orEmpty()
-    val catalog by li.gkd.app.app.AppInfoRepository.state.collectAsStateWithLifecycle()
+    val catalog by AppInfoRepository.state.collectAsStateWithLifecycle()
     val appNames =
         remember(catalog.snapshot) { catalog.snapshot?.apps.orEmpty().mapValues { it.value.name } }
     val groups = remember(snapshots, appNames, displayMode) {
@@ -157,7 +159,7 @@ fun SnapshotPage(
 
     fun showCurrentLinks(targetIds: List<Long>) {
         vm.scope.launchUi {
-            val byId = li.gkd.db.Db.snapshotDao.query().first().associateBy { it.id }
+            val byId = Db.snapshotDao.query().first().associateBy { it.id }
             showLinks(targetIds.mapNotNull(byId::get))
         }
     }

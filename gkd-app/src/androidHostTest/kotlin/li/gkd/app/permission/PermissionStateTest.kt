@@ -10,6 +10,35 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PermissionStateTest {
+    /** A competing result must not make one refresh repeat its external permission query. */
+    @Test
+    fun concurrentUpdateDoesNotRetryThePermissionCheck() {
+        val started = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val checks = java.util.concurrent.atomic.AtomicInteger()
+        val permission = PermissionState("notification", Res.string.permission_notifications, {
+            if (checks.incrementAndGet() == 1) {
+                started.countDown()
+                check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                false
+            } else true
+        })
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        try {
+            val pending = executor.submit<Boolean> { permission.updateAndGet() }
+            assertTrue(started.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            assertTrue(permission.updateAndGet())
+            release.countDown()
+            assertFalse(pending.get(5, java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals(2, checks.get())
+            assertFalse(permission.value)
+            assertEquals(false, permission.lastCheck!!.granted)
+        } finally {
+            release.countDown()
+            executor.shutdownNow()
+        }
+    }
+
     @Test
     fun uncheckedStateIsUnknownAndReadingDiagnosticsDoesNotRunChecks() {
         var reads = 0

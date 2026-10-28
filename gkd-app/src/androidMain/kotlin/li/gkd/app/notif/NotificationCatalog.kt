@@ -12,6 +12,7 @@ import li.gkd.app.service.TrackService
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import li.gkd.app.util.Constants
 import kotlin.reflect.KClass
+import li.gkd.app.service.MatchDiagnosticService
 
 enum class ForegroundNotificationKey(
     val id: Int,
@@ -89,7 +90,7 @@ object NotificationCatalog {
         title = (if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing).getSync(),
         text = if (saving) null else Res.string.match_debug_notification_help.getSync(),
         uri = "gkd://page/matching-diagnostics",
-        stopService = if (saving) null else li.gkd.app.service.MatchDiagnosticService::class,
+        stopService = if (saving) null else MatchDiagnosticService::class,
     )
     fun status(
         title: String = META.appName,

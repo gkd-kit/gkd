@@ -54,6 +54,7 @@ import li.gkd.app.subscription.refreshSubscriptionsOnLauncher
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.AndroidToastUtils
 import li.gkd.app.util.monotonicTimeMillis
+import li.gkd.app.matching.diagnostics.MatchEventDrop
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -115,6 +116,13 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             coordinator.diagnostics.entry("service_connected", "connection_query_not_required")
         }
     }
+
+    fun onScreenForcedActive() {
+        // 关闭屏幕 -> Activity::onStop -> 点亮屏幕 -> Activity::onStart -> Activity::onResume
+        AndroidForegroundState.onScreenForcedActive()
+        startQueryJob()
+    }
+
     val safeActiveWindow: AccessibilityNodeInfo?
         get() =
             readA11yWindow(coordinator.diagnostics, "ActiveWindow") {
@@ -134,7 +142,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     "event_queue",
                     "event_queue_overflow",
                     eventDrop =
-                        li.gkd.app.matching.diagnostics.MatchEventDrop(
+                        MatchEventDrop(
                             removed.key,
                             capacity,
                             monotonicTimeMillis() - removed.time,
@@ -222,6 +230,40 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         }
     }
 
+    private fun consumePendingEvents() {
+        if (eventConsumer != null) return
+        val job =
+            scope.launch(eventDispatcher, start = CoroutineStart.LAZY) {
+                while (true) {
+                    val head = synchronized(eventDeque) { eventDeque.firstOrNull() } ?: break
+                    consumeEvent(head)
+                }
+            }
+        eventConsumer = job
+        job.invokeOnCompletion {
+            synchronized(eventDeque) {
+                eventConsumer = null
+                if (eventDeque.isNotEmpty() && scope.coroutineContext[Job]?.isActive == true)
+                    consumePendingEvents()
+            }
+        }
+        job.start()
+    }
+
+    private data class PageNode(val page: Any, val node: AccessibilityNodeInfo)
+
+    private val sourceLock = Any()
+    private var pendingSource: PageNode? = null
+    @Volatile private var rootNode: PageNode? = null
+
+    init {
+        scope.coroutineContext[Job]?.invokeOnCompletion {
+            eventDeque.clear()
+            synchronized(sourceLock) { pendingSource = null }
+            rootNode = null
+        }
+    }
+
     private suspend fun consumeEvent(headEvent: A11yEvent) {
         val consumedEvents = eventDeque.takeBatch(headEvent)
         if (consumedEvents.isEmpty()) return
@@ -302,6 +344,16 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         }
     }
 
+    private fun availableRoot(): AccessibilityNodeInfo? =
+        rootNode
+            ?.takeIf {
+                it.page === AndroidForegroundState.currentPage && !it.node.isExpired(1000)
+            }
+            ?.node
+
+    private var rootRequest: Job? = null
+    private var rootRequestPage: Any? = null
+
     private fun requestRoot() {
         val page = AndroidForegroundState.currentPage
         val job =
@@ -361,6 +413,9 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             reader.read(timeout, name = name, page = page, block = read)
         }
     }
+
+    private var foregroundCheck: Job? = null
+
     @Synchronized
     fun confirmForeground() {
         if (foregroundCheck?.isActive == true) return
@@ -441,6 +496,32 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         }
     }
 
+    private fun fixAppId(rightAppId: String) {
+        if (currentTopActivity.appId == rightAppId) return
+        val page = AndroidForegroundState.currentPage
+        val context = privilegeContextFlow.value
+        val topCpn = context?.topCpn()
+        AndroidForegroundState.withTopActivityLock {
+            if (
+                page !== AndroidForegroundState.currentPage ||
+                    context !== privilegeContextFlow.value
+            )
+                return@withTopActivityLock
+            if (topCpn?.packageName == rightAppId) {
+                updateTopActivity(topCpn.packageName, topCpn.className, ActivityScene.Nodes)
+            } else {
+                updateTopActivity(rightAppId, null, ActivityScene.Nodes)
+            }
+        }
+        coordinator.scheduleFollowUp(service) {
+            try {
+                queryAction(this)
+            } finally {
+                checkFutureStartJob()
+            }
+        }
+    }
+
     private suspend fun queryAction(
         work: MatchWork,
         byEvent: A11yEvent? = null,
@@ -518,5 +599,13 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             a11yContext.queryJob = null
             a11yContext.queryPage = null
         }
+    }
+
+    private fun checkOutDate(
+        page: Any,
+        stateEvent: A11yEvent?,
+    ): Boolean {
+        if (stateEvent !== latestStateEvent) return true
+        return page !== AndroidForegroundState.currentPage
     }
 }

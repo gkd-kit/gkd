@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <application>
+        <activity
+            android:name="li.gkd.app.development.GestureDebugActivity"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
+            android:launchMode="singleTop" />
         <meta-data
             android:name="debugServerDiagnostics"
             android:value="li.gkd.app.development.AndroidServerDiagnostics" />

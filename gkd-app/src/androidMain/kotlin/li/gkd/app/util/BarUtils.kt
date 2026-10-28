@@ -6,8 +6,8 @@ import android.graphics.Rect
 import android.view.WindowInsets
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.annotation.WorkerThread
-import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.app
+import li.gkd.app.matching.AndroidAutomationSessions
 
 @SuppressLint("DiscouragedApi", "InternalInsetResource")
 object BarUtils {
@@ -36,7 +36,7 @@ object BarUtils {
             null
         }
         if (r == false) return r
-        val windows = A11yRuntime.compatWindows()
+        val windows = AndroidAutomationSessions.compatWindows()
         val rect = Rect() // Rect(0, 0 - 1280, 152)
         if (windows.isNotEmpty()) {
             return windows.any { w ->

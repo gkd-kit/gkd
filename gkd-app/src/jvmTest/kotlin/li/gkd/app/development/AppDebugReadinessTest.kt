@@ -7,6 +7,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import li.gkd.app.matching.MatchEngineSnapshot
+import li.gkd.app.matching.input.ForegroundDecisionReason
 import li.gkd.app.matching.input.ForegroundDecision
 import li.gkd.app.matching.input.ForegroundIdentity
 import li.gkd.app.matching.input.MatchTimingPolicy
@@ -15,7 +16,7 @@ class AppDebugReadinessTest {
     private val app = AppDebugState("test", "1", true, 1, false)
     private val catalog = AppDebugCatalogStatus(true, false, null, 1)
     private val surface = ForegroundDebugState(true, false, 1, ForegroundDecision(
-        ForegroundIdentity("com.android.systemui"), null, "surface_confirmed", false,
+        ForegroundIdentity("com.android.systemui"), null, ForegroundDecisionReason.SurfaceConfirmed, false,
         task = ForegroundIdentity("underlying.app", "Main"), nodeAppId = "com.android.systemui",
     ), true)
     private val runtime = MatchDebugSnapshot(MatchEngineSnapshot(true, 1, null, false, null, 0, MatchTimingPolicy()), surface)

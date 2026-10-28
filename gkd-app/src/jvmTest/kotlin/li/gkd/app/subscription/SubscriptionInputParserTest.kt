@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import li.gkd.app.error.ErrorMessage
 
 class SubscriptionInputParserTest {
 
@@ -127,7 +128,7 @@ class SubscriptionInputParserTest {
         }
 
         assertEquals(SubscriptionFailureReason.FormatInvalidDetail, syntaxError.reason)
-        assertTrue((syntaxError.errorMessage as li.gkd.app.error.ErrorMessage.Resource).arguments.isNotEmpty())
+        assertTrue((syntaxError.errorMessage as ErrorMessage.Resource).arguments.isNotEmpty())
         assertEquals(SubscriptionFailureReason.RuleObjectRequired, typeError.reason)
     }
 }

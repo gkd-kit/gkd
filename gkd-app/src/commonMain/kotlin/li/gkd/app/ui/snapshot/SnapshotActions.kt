@@ -3,6 +3,8 @@ package li.gkd.app.ui.snapshot
 import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.db.Snapshot
+import li.gkd.app.platform.PlatformResult
+import li.gkd.app.storage.FileSource
 
 data class SnapshotImage(val path: String, val modifiedAt: Long, val exists: Boolean)
 
@@ -10,11 +12,11 @@ data class SnapshotImage(val path: String, val modifiedAt: Long, val exists: Boo
 interface SnapshotPlatformActions {
     suspend fun ensureSavePermission(): Boolean
     /** Success means the share chooser was launched, not that the receiver accepted the files. */
-    suspend fun share(files: List<java.io.File>): li.gkd.app.platform.PlatformResult<Unit>
+    suspend fun share(files: List<java.io.File>): PlatformResult<Unit>
 
     /** Success(false) means the user cancelled the destination picker. */
-    suspend fun save(file: java.io.File): li.gkd.app.platform.PlatformResult<Boolean>
-    suspend fun pickImage(): li.gkd.app.storage.FileSource?
+    suspend fun save(file: java.io.File): PlatformResult<Boolean>
+    suspend fun pickImage(): FileSource?
 }
 
 interface SnapshotActions {

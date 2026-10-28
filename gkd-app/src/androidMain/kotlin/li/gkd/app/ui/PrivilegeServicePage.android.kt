@@ -12,6 +12,7 @@ import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.ui.page.GkPrivilegeTopBar
 import li.gkd.app.ui.page.PrivilegeServiceInfoDialog
 import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.util.ToastUtils
 import priv.kit.ui.PrivilegeScaffold
 import priv.kit.ui.PrivilegeUiViewModel
 
@@ -34,6 +35,7 @@ actual fun PrivilegeServicePage(host: UiHost) {
     PrivilegeScaffold(
         modifier = Modifier.fillMaxSize(),
         viewModel = privilegeVm,
+        onShowToast = { message -> ToastUtils.show(message) },
         topBar = {
             GkPrivilegeTopBar(mainVm.navigator::pop) {
                 vm.setShowInfo(true)

@@ -5,6 +5,7 @@ import android.accessibilityservice.IAccessibilityServiceClient
 import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -21,6 +22,23 @@ import li.gkd.app.logging.LogUtils
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.PrivilegeUserServiceConnection
+import priv.kit.core.binder.PrivilegeBinderWrapper
+import priv.kit.input.PrivilegeInput
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import li.gkd.app.appScope
+import li.gkd.app.matching.input.AndroidForegroundState
+import li.gkd.app.service.A11yService
+import li.gkd.app.settings.SettingsRepository
+import li.gkd.aidl.ISystemSurfaceListener
+import li.gkd.app.matching.MatchingRuntime
 
 class PrivilegeContext private constructor(
     val serverInfo: PrivilegeServerInfo,
@@ -31,11 +49,61 @@ class PrivilegeContext private constructor(
     private val userManager = CompatUserManager()
     private val activityManager = CompatActivityManager()
     private val appOpsService = CompatAppOpsService()
-    private val inputManager = CompatInputManager()
+    private val inputManager = PrivilegeInput(
+        requireNotNull(PrivilegeBinderWrapper.fromSystemService(Context.INPUT_SERVICE)),
+    )
     private val a11yManager = CompatAccessibilityManager()
     private val wmManager = CompatWindowManager()
     private val userService = IUserService.Stub.asInterface(userServiceConnection.binder)
     private var taskStackListenerRegistered = false
+    private var surfaceJob: Job? = null
+
+    fun observeSystemSurface() {
+        if (android.os.Build.VERSION.SDK_INT < 34) return
+        check(surfaceJob == null)
+        surfaceJob = appScope.launch(Dispatchers.IO) {
+            var subscription: SurfaceSubscription? = null
+            fun clear() {
+                val previous = subscription ?: return
+                subscription = null
+                previous.deactivate()
+                userService.setSystemSurfaceListener(null)
+            }
+            try {
+                combine(SettingsRepository.settings, uiAutomationFlow, A11yService.isRunning) { settings, automation, accessibility ->
+                    settings.enableAutomator && (automation != null || accessibility)
+                }.distinctUntilChanged().collect { enabled ->
+                    try {
+                        clear()
+                        if (enabled) {
+                            val next = SurfaceSubscription()
+                            subscription = next
+                            userService.setSystemSurfaceListener(next)
+                        }
+                    } catch (e: Exception) {
+                        subscription?.deactivate()
+                        LogUtils.w("System window observation unavailable", e)
+                    }
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    try { clear() } catch (e: Exception) { LogUtils.e("System window observation cleanup failed", e) }
+                }
+            }
+        }
+    }
+
+    private inner class SurfaceSubscription : ISystemSurfaceListener.Stub() {
+        private var active = true
+        override fun onSurfaceChanged(state: Int, uptimeMillis: Long) = AndroidForegroundState.withTopActivityLock {
+            if (!active || privilegeContextFlow.value !== this@PrivilegeContext || !SettingsRepository.settings.value.enableAutomator) return@withTopActivityLock
+            AndroidForegroundState.updateSystemSurface(when (state) { 0 -> false; 1 -> true; else -> null }, uptimeMillis)
+        }
+        fun deactivate() = AndroidForegroundState.withTopActivityLock {
+            active = false
+            AndroidForegroundState.updateSystemSurface(null)
+        }
+    }
 
     private fun hasPermission(name: String): Boolean =
         Privilege.checkServerPermission(name) == PackageManager.PERMISSION_GRANTED
@@ -48,6 +116,7 @@ class PrivilegeContext private constructor(
 
     suspend fun destroy() {
         try {
+            surfaceJob?.cancelAndJoin()
             if (taskStackListenerRegistered && Privilege.pingServer()) {
                 activityManager.value.unregisterTaskStackListener(CompatTaskStackListener)
                 taskStackListenerRegistered = false
@@ -77,7 +146,9 @@ class PrivilegeContext private constructor(
         )
     }
 
-    fun topTask() = activityManager.getTasks().firstOrNull()
+    fun topTask() = MatchingRuntime.coordinator.diagnostics.observeOperation("ActivityManager.getTasks") {
+        activityManager.getTasks()
+    }.firstOrNull()
     fun topCpn() = topTask()?.topActivity
 
     fun getUsers(excludeDying: Boolean = true): List<AppUser> {
@@ -92,13 +163,27 @@ class PrivilegeContext private constructor(
     }
 
     // null means no input was attempted; false means an attempted input failed and must not be replayed.
-    private inline fun injectInputIfPermitted(block: () -> Boolean): Boolean? =
-        if (hasPermission(AndroidPermissions.INJECT_EVENTS)) block() else null
+    private inline fun injectInputIfPermitted(block: () -> Unit): Boolean? {
+        if (!hasPermission(AndroidPermissions.INJECT_EVENTS)) return null
+        return try {
+            block()
+            true
+        } catch (e: IOException) {
+            LogUtils.w("Privileged input failed", e)
+            false
+        }
+    }
 
-    fun tap(x: Float, y: Float, duration: Long = 0): Boolean? =
-        injectInputIfPermitted { inputManager.tap(x, y, duration) }
+    suspend fun tap(x: Float, y: Float, duration: Long = 0): Boolean? =
+        injectInputIfPermitted {
+            if (duration > 0) {
+                inputManager.swipe(x, y, x, y, durationMillis = duration)
+            } else {
+                inputManager.tap(x, y)
+            }
+        }
 
-    fun swipe(
+    suspend fun swipe(
         x1: Float,
         y1: Float,
         x2: Float,
@@ -106,7 +191,8 @@ class PrivilegeContext private constructor(
         duration: Long,
     ): Boolean? = injectInputIfPermitted { inputManager.swipe(x1, y1, x2, y2, duration) }
 
-    fun keyevent(keyCode: Int): Boolean? = injectInputIfPermitted { inputManager.keyevent(keyCode) }
+    suspend fun keyevent(keyCode: Int): Boolean? =
+        injectInputIfPermitted { inputManager.keyEvent(keyCode) }
 
     fun registerUiTestAutomationService(
         owner: IBinder,

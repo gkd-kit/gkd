@@ -32,7 +32,7 @@ val privilegeContextFlow: StateFlow<PrivilegeContext?>
 
 private val userServiceSpec = PrivilegeUserServiceSpec(
     serviceClassName = UserService::class.java.name,
-    version = 2, // Bump whenever the UserService implementation or its AIDL contract changes.
+    version = 3, // Bump whenever the UserService implementation or its AIDL contract changes.
     embedded = true,
 )
 
@@ -65,6 +65,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             val userServiceConnection = Privilege.bindUserService(userServiceSpec)
             val privilegeContext = PrivilegeContext.create(serverInfo, userServiceConnection)
             privilegeContextFlow.value = privilegeContext
+            privilegeContext.observeSystemSurface()
             privilegeContext.topCpn()?.let { cpn ->
                 updateTopTaskAppId(cpn.packageName)
             }

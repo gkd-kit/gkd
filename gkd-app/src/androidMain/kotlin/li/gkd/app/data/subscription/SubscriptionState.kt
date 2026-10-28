@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import li.gkd.app.a11y.RuleExecutionHost
 import li.gkd.app.appScope
+import li.gkd.app.matching.RuleExecutionHost
 import li.gkd.app.rule.RuleSummaryBuilder
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.state.Loadable

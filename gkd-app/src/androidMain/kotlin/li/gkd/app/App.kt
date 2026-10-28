@@ -33,7 +33,9 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import li.gkd.app.a11y.initA11yFeat
+import li.gkd.app.matching.input.initMatchingRuleObservers
+import li.gkd.app.matching.input.initScreenEvents
+import li.gkd.app.snapshot.initVolumeSnapshotTrigger
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.crash.CrashMetadata
 import li.gkd.app.crash.CrashRecorder
@@ -255,7 +257,9 @@ class App : Application() {
     private fun initializeRuntimeComponents() {
         NotificationChannels.initialize()
         PackageAppCatalog.initialize()
-        initA11yFeat()
+        initMatchingRuleObservers()
+        initVolumeSnapshotTrigger()
+        initScreenEvents()
         initPrivilege()
         appScope.launchLogged(Dispatchers.IO) {
             PrivilegeUi.prepareExternalShellScript(gkdPrivilegeUiConfig.manualShellScriptPath)

@@ -1,13 +1,13 @@
 package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.gkd.app.a11y.MAX_CHILD_SIZE
-import li.gkd.app.a11y.currentTopActivity
+import kotlin.system.measureTimeMillis
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.query.MAX_CHILD_SIZE
 import li.gkd.app.model.NodeInfo
 import li.gkd.app.resources.*
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
-import kotlin.system.measureTimeMillis
 
 private data class TempNodeData(
     val node: AccessibilityNodeInfo,

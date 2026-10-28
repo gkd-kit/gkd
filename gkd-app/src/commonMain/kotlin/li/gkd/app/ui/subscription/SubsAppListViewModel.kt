@@ -17,6 +17,7 @@ import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
+import li.gkd.db.RuleGroupType
 
 data class SubsAppListUiState(
     val subscription: RawSubscription,
@@ -49,7 +50,7 @@ class SubsAppListViewModel(
         combine(
             SubscriptionConfigStore.observe(),
             Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId),
-            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = li.gkd.db.RuleGroupType.App)
+            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = RuleGroupType.App)
         ) { configs, ids, records ->
             SubsAppListUiState(subscription, configs, ids.mapIndexed { i, id -> id to i }.toMap(), TriggerStats(records))
         }

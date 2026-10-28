@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,6 +58,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun BlockA11ySetupPage(host: UiHost) {
+    val scope = rememberCoroutineScope()
     val mainVm = MainViewModel.requireCurrent()
     val entry = remember { mainVm.navigator.topEntry }
     val enableOnRemoval = remember { mutableStateOf(false) }
@@ -192,7 +194,7 @@ fun BlockA11ySetupPage(host: UiHost) {
                     onClickLabel =
                         if (platform.privilegeAvailable) stringResource(Res.string.recents_open)
                         else stringResource(Res.string.recents_lock_manual_hint),
-                    onClick = ::openRecents,
+                    onClick = scope.launchUiAction { openRecents() },
                 )
             }
             BlockA11ySectionTitle(text = stringResource(Res.string.usage_notice))

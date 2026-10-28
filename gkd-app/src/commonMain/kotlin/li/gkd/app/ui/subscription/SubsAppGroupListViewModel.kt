@@ -24,6 +24,7 @@ import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
 import li.gkd.db.SubscriptionIds
+import li.gkd.db.RuleGroupType
 
 data class SubsAppGroupListUiState(
     val subscription: RawSubscription,
@@ -71,7 +72,7 @@ class SubsAppGroupListViewModel(
     private val subscription = RequiredSubscription(route.subsItemId, scope)
 
     val uiState = subscription.buildUiState { rawSubscription ->
-        combine(SubscriptionConfigStore.observe(), Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, appId = route.appId, groupType = li.gkd.db.RuleGroupType.App)) { configs, records ->
+        combine(SubscriptionConfigStore.observe(), Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, appId = route.appId, groupType = RuleGroupType.App)) { configs, records ->
             SubsAppGroupListUiState(
                 subscription = rawSubscription,
                 app = rawSubscription.getApp(

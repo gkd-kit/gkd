@@ -19,7 +19,7 @@ class MatchQueryEvidence(initial: MatchQueryRecording? = null) {
 
     fun append(call: MatchNodeCall) = synchronized(lock) {
         if (incomplete != null) return@synchronized
-        characters += call.operation.length + call.arguments.sumOf { it.value.length + 32 } + (call.result?.value?.length ?: 0) + 64
+        characters += call.operation.wireValue.length + call.arguments.sumOf { it.value.length + 32 } + (call.result?.value?.length ?: 0) + 64
         if (calls.size >= 10_000 || characters > 1_000_000) { incomplete = "recording_limit"; return@synchronized }
         calls.add(call)
     }

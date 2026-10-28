@@ -11,6 +11,7 @@ import li.gkd.selector.MatchOptions
 import li.gkd.selector.NodeAdapter
 import li.gkd.selector.TraversalCandidate
 import li.gkd.selector.relation.RelationExpression
+import li.gkd.selector.Selector
 
 @Serializable
 data class MatchSelectorPlan(
@@ -21,11 +22,11 @@ data class MatchSelectorPlan(
 )
 
 @Serializable
-data class MatchRecordedValue(val type: String, val value: String = "", val reference: Int = 0, val offset: Int = 0, val equality: Int = 0)
+data class MatchRecordedValue(val type: MatchRecordedValueType, val value: String = "", val reference: Int = 0, val offset: Int = 0, val equality: Int = 0)
 
 @Serializable
 data class MatchNodeCall(
-    val operation: String, val arguments: List<MatchRecordedValue>,
+    val operation: MatchNodeOperation, val arguments: List<MatchRecordedValue>,
     val startedNanos: Long, val durationNanos: Long, val thread: String,
     val result: MatchRecordedValue? = null, val failure: String? = null,
     val failureMessage: String? = null, val operationId: Long? = null,
@@ -61,29 +62,29 @@ class RecordingNodeAdapter<N : Any>(private val delegate: NodeAdapter<N>,
     val incomplete: String? get() = evidence.incomplete
 
     fun value(value: Any?): MatchRecordedValue = when (value) {
-        null -> MatchRecordedValue("null")
+        null -> MatchRecordedValue(MatchRecordedValueType.Null)
         is CharSequence -> {
             if (value.length > 16_384) evidence.truncate("value_limit")
-            MatchRecordedValue("string", value.take(16_384).toString())
+            MatchRecordedValue(MatchRecordedValueType.String, value.take(16_384).toString())
         }
-        is Boolean -> MatchRecordedValue("boolean", value.toString())
-        is Int -> MatchRecordedValue("int", value.toString())
-        is Long -> MatchRecordedValue("long", value.toString())
-        is Float -> MatchRecordedValue("float", value.toString())
-        is Double -> MatchRecordedValue("double", value.toString())
-        is TraversalCandidate<*> -> MatchRecordedValue("candidate", reference = reference(value.node), offset = value.offset, equality = equality(value.node))
-        else -> MatchRecordedValue("reference", reference = reference(value), equality = equality(value))
+        is Boolean -> MatchRecordedValue(MatchRecordedValueType.Boolean, value.toString())
+        is Int -> MatchRecordedValue(MatchRecordedValueType.Int, value.toString())
+        is Long -> MatchRecordedValue(MatchRecordedValueType.Long, value.toString())
+        is Float -> MatchRecordedValue(MatchRecordedValueType.Float, value.toString())
+        is Double -> MatchRecordedValue(MatchRecordedValueType.Double, value.toString())
+        is TraversalCandidate<*> -> MatchRecordedValue(MatchRecordedValueType.Candidate, reference = reference(value.node), offset = value.offset, equality = equality(value.node))
+        else -> MatchRecordedValue(MatchRecordedValueType.Reference, reference = reference(value), equality = equality(value))
     }
 
     private fun reference(value: Any): Int = objects.getOrPut(value) { objects.size + 1 }
     private fun equality(value: Any): Int = equalObjects.getOrPut(value) { equalObjects.size + 1 }
 
-    private fun <T> call(operation: String, args: List<Any?>, encode: (T) -> MatchRecordedValue = { value(it) }, block: () -> T): T {
+    private fun <T> call(operation: MatchNodeOperation, args: List<Any?>, encode: (T) -> MatchRecordedValue = { value(it) }, block: () -> T): T {
         if (incomplete != null) return block()
         val arguments = args.map(::value)
         val operationTrace = when (operation) {
-            "key", "name" -> null
-            else -> queryOperation?.let { diagnostics?.beginOperation("Selector.$operation", it.runId, it.rule,
+            MatchNodeOperation.Key, MatchNodeOperation.Name -> null
+            else -> queryOperation?.let { diagnostics?.beginOperation("Selector.${operation.wireValue}", it.runId, it.rule,
                 parentOperationId = it.id, arguments = arguments, sessionId = it.sessionId, recording = evidence) }
         }
         val started = nanoTime()
@@ -104,7 +105,7 @@ class RecordingNodeAdapter<N : Any>(private val delegate: NodeAdapter<N>,
         }
     }
 
-    fun root(block: () -> N?): N? = call("queryRoot", emptyList(), block = block)
+    fun root(block: () -> N?): N? = call(MatchNodeOperation.QueryRoot, emptyList(), block = block)
 
     fun begin(runId: Long, rule: String, plan: MatchSelectorPlan, source: MatchRecordedValue) =
         evidence.begin(MatchQueryRecording(runId, rule, plan, source, emptyList(), null, null, null,
@@ -114,48 +115,48 @@ class RecordingNodeAdapter<N : Any>(private val delegate: NodeAdapter<N>,
         if (failure == null) { if (result == null) "not_matched" else "matched" }
         else if (cancelled) "cancelled" else "failed")
 
-    private fun <T> stream(operation: String, args: List<Any?>, block: () -> Sequence<T>): Sequence<T> {
+    private fun <T> stream(operation: MatchNodeOperation, args: List<Any?>, block: () -> Sequence<T>): Sequence<T> {
         if (incomplete != null) return block()
         val id = ++sequence
         val source = call(operation, args, { value(id) }, block)
         return Sequence {
-            val iterator = call("iterator", listOf(id), { value(id) }) { source.iterator() }
+            val iterator = call(MatchNodeOperation.Iterator, listOf(id), { value(id) }) { source.iterator() }
             object : Iterator<T> {
-                override fun hasNext() = call("hasNext", listOf(id)) { iterator.hasNext() }
-                override fun next() = call("next", listOf(id)) { iterator.next() }
+                override fun hasNext() = call(MatchNodeOperation.HasNext, listOf(id)) { iterator.hasNext() }
+                override fun next() = call(MatchNodeOperation.Next, listOf(id)) { iterator.next() }
             }
         }
     }
 
-    override fun getAttr(target: Any, name: String) = call("attr", listOf(target, name)) { delegate.getAttr(target, name) }
-    override fun getInvoke(target: Any, name: String, args: List<Any>) = call("invoke", listOf(target, name) + args) { delegate.getInvoke(target, name, args) }
-    override fun getName(node: N) = call("name", listOf(node)) { delegate.getName(node) }
-    override fun getChildCount(node: N) = call("count", listOf(node)) { delegate.getChildCount(node) }
-    override fun getChild(node: N, index: Int) = call("child", listOf(node, index)) { delegate.getChild(node, index) }
-    override fun getParent(node: N) = call("parent", listOf(node)) { delegate.getParent(node) }
-    override fun getRoot(node: N) = call("root", listOf(node)) { delegate.getRoot(node) }
-    override fun getNodeKey(node: N) = call("key", listOf(node), { MatchRecordedValue("key", reference = keys.getOrPut(it) { keys.size + 1 }) }) { delegate.getNodeKey(node) }
-    override fun getChildren(node: N) = stream("children", listOf(node)) { delegate.getChildren(node) }
-    override fun getDescendants(node: N) = stream("descendants", listOf(node)) { delegate.getDescendants(node) }
+    override fun getAttr(target: Any, name: String) = call(MatchNodeOperation.Attr, listOf(target, name)) { delegate.getAttr(target, name) }
+    override fun getInvoke(target: Any, name: String, args: List<Any>) = call(MatchNodeOperation.Invoke, listOf(target, name) + args) { delegate.getInvoke(target, name, args) }
+    override fun getName(node: N) = call(MatchNodeOperation.Name, listOf(node)) { delegate.getName(node) }
+    override fun getChildCount(node: N) = call(MatchNodeOperation.Count, listOf(node)) { delegate.getChildCount(node) }
+    override fun getChild(node: N, index: Int) = call(MatchNodeOperation.Child, listOf(node, index)) { delegate.getChild(node, index) }
+    override fun getParent(node: N) = call(MatchNodeOperation.Parent, listOf(node)) { delegate.getParent(node) }
+    override fun getRoot(node: N) = call(MatchNodeOperation.Root, listOf(node)) { delegate.getRoot(node) }
+    override fun getNodeKey(node: N) = call(MatchNodeOperation.Key, listOf(node), { MatchRecordedValue(MatchRecordedValueType.Key, reference = keys.getOrPut(it) { keys.size + 1 }) }) { delegate.getNodeKey(node) }
+    override fun getChildren(node: N) = stream(MatchNodeOperation.Children, listOf(node)) { delegate.getChildren(node) }
+    override fun getDescendants(node: N) = stream(MatchNodeOperation.Descendants, listOf(node)) { delegate.getDescendants(node) }
     override fun getFastQueryDescendants(node: N, fastQueryList: List<FastQuery>) =
-        stream("fast", listOf(node) + fastQueryList.map { it.toString() }) { delegate.getFastQueryDescendants(node, fastQueryList) }
+        stream(MatchNodeOperation.Fast, listOf(node) + fastQueryList.map { it.toString() }) { delegate.getFastQueryDescendants(node, fastQueryList) }
     override fun traverseChildren(node: N, relationExpression: RelationExpression) =
-        stream("childRelation", relationArgs(node, relationExpression)) { delegate.traverseChildren(node, relationExpression) }
+        stream(MatchNodeOperation.ChildRelation, relationArgs(node, relationExpression)) { delegate.traverseChildren(node, relationExpression) }
     override fun traverseAncestors(node: N, relationExpression: RelationExpression) =
-        stream("ancestorRelation", relationArgs(node, relationExpression)) { delegate.traverseAncestors(node, relationExpression) }
+        stream(MatchNodeOperation.AncestorRelation, relationArgs(node, relationExpression)) { delegate.traverseAncestors(node, relationExpression) }
     override fun traversePreviousSiblings(node: N, relationExpression: RelationExpression) =
-        stream("previousRelation", relationArgs(node, relationExpression)) { delegate.traversePreviousSiblings(node, relationExpression) }
+        stream(MatchNodeOperation.PreviousRelation, relationArgs(node, relationExpression)) { delegate.traversePreviousSiblings(node, relationExpression) }
     override fun traverseFollowingSiblings(node: N, relationExpression: RelationExpression) =
-        stream("followingRelation", relationArgs(node, relationExpression)) { delegate.traverseFollowingSiblings(node, relationExpression) }
+        stream(MatchNodeOperation.FollowingRelation, relationArgs(node, relationExpression)) { delegate.traverseFollowingSiblings(node, relationExpression) }
     override fun traverseDescendants(node: N, relationExpression: RelationExpression) =
-        stream("descendantRelation", relationArgs(node, relationExpression)) { delegate.traverseDescendants(node, relationExpression) }
+        stream(MatchNodeOperation.DescendantRelation, relationArgs(node, relationExpression)) { delegate.traverseDescendants(node, relationExpression) }
 }
 
 private fun relationArgs(node: Any, expression: RelationExpression) =
     listOf(node, expression.minOffset, expression.maxOffset, expression.matchesAllOffsets)
 
 fun <N : Any> recordManualQuery(
-    selector: li.gkd.selector.Selector, options: MatchOptions, node: N, root: () -> N?, adapter: NodeAdapter<N>,
+    selector: Selector, options: MatchOptions, node: N, root: () -> N?, adapter: NodeAdapter<N>,
     diagnostics: MatchDiagnostics, session: MatchDiagnosticState, runId: Long,
 ): N? {
     val operation = diagnostics.beginOperation("SelectorQuery", runId, "manual", sessionId = session.id)
@@ -197,7 +198,7 @@ fun <N : Any> recordRuleQuery(
     var failure: String? = null
     var cancelled = false
     try {
-        val query: (N, li.gkd.selector.Selector) -> N? = { target, selector ->
+        val query: (N, Selector) -> N? = { target, selector ->
             querySingleSelector(target, selector, { recording.root(root) }, recording, rule.matchOptions, rootOnlySelectors, observer)
         }
         result = MatchNodeObservation.observe(operation, recording::value, {

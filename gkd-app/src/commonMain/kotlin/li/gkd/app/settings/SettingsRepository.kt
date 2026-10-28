@@ -1,5 +1,7 @@
 package li.gkd.app.settings
 
+import li.gkd.app.matching.MatchInvalidationReason
+
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +26,8 @@ import li.gkd.app.storage.appStorage
 import li.gkd.app.logging.LogUtils
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
+import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.platform.requestAutomatorRestart
 
 private class PreparedValueRestore(
     val begin: suspend () -> Unit,
@@ -211,7 +215,7 @@ object SettingsRepository {
     fun setBlockA11yAppListEnabled(enabled: Boolean) {
         updateSettings { it.copy(enableBlockA11yAppList = enabled) }
         if (!enabled) {
-            li.gkd.app.platform.requestAutomatorRestart()
+            requestAutomatorRestart()
         }
     }
 
@@ -349,8 +353,16 @@ object SettingsRepository {
      * Updates memory and enqueues persistence.
      * The transform must be pure: a concurrent backup restore may evaluate it twice.
      */
-    fun updateSettings(transform: (SettingsStore) -> SettingsStore) =
+    fun updateSettings(transform: (SettingsStore) -> SettingsStore) {
+        val previous = settings.value
         settingsValue.update(transform)
+        val current = settings.value
+        if ((previous.enableMatch && !current.enableMatch) ||
+            (previous.enableAutomator && !current.enableAutomator)
+        ) {
+            MatchingRuntime.coordinator.invalidate(MatchInvalidationReason.AutomationDisabled)
+        }
+    }
 
     /** Re-selecting the active mode must not stop automation. */
     fun updateAutomatorMode(value: Int) {

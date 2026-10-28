@@ -33,6 +33,7 @@ import li.gkd.db.RuleGroupType
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
+import li.gkd.db.RuleTriggerStats
 
 data class AppRuleSubscription(val subsItem: SubsItem, val subscription: RawSubscription)
 
@@ -87,7 +88,7 @@ class AppConfigViewModel(
             when (source) {
                 Loadable.Loading -> flowOf(Loadable.Loading)
                 is Loadable.Failure -> flowOf(source)
-                is Loadable.Ready -> combine<SubscriptionConfigSnapshot, List<ActionLog>, List<li.gkd.db.RuleTriggerStats>, Loadable<AppConfigUiState>>(
+                is Loadable.Ready -> combine<SubscriptionConfigSnapshot, List<ActionLog>, List<RuleTriggerStats>, Loadable<AppConfigUiState>>(
                     SubscriptionConfigStore.observe(),
                     Db.actionLogDao.queryLatestByAppId(route.appId),
                     Db.ruleTriggerStatsDao.observe(appId = route.appId),

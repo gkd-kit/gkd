@@ -12,6 +12,7 @@ import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFalse
+import li.gkd.app.app.launcherAppIdFlow
 
 /** Queries and fault injection use the real isolated application database. */
 suspend fun assertRuntimeRecords(database: File) = coroutineScope {
@@ -52,7 +53,7 @@ suspend fun assertRuntimeRecords(database: File) = coroutineScope {
         try {
             clear()
             val self = META.appId
-            val launcher = li.gkd.app.app.launcherAppIdFlow.value
+            val launcher = launcherAppIdFlow.value
             val records = RuntimeRecordRepository
             records.recordVisit(AppVisitInput(self, launcher, 200_000))
             assertEquals(79_999, visit(self))

@@ -1,6 +1,5 @@
 package li.gkd.app.rule
 
-import li.gkd.app.META
 import li.gkd.app.model.AppInfo
 import li.gkd.app.subscription.RawSubscription
 
@@ -28,6 +27,9 @@ class AppRule(
             .map { e -> e.second })).distinct()
 
     override val type = "app"
+    override fun sameScope(other: ResolvedRule): Boolean = other is AppRule &&
+        enable == other.enable && appId == other.appId && activityIds == other.activityIds &&
+        excludeActivityIds == other.excludeActivityIds
     override fun matchActivity(appId: String, activityId: String?): Boolean {
         if (!enable) return false
         if (appId != app.id) return false

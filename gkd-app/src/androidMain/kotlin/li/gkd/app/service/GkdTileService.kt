@@ -1,6 +1,7 @@
 package li.gkd.app.service
 
 import android.provider.Settings
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,10 +12,10 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import li.gkd.app.META
-import li.gkd.app.a11y.currentTopActivity
-import li.gkd.app.a11y.systemRecentCn
 import li.gkd.app.app
 import li.gkd.app.appScope
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.systemRecentCn
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.priv.AutomationService
@@ -29,7 +30,6 @@ import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.mapState
 import li.songe.codeorigin.CallSite
-import kotlin.time.Duration.Companion.milliseconds
 
 class GkdTileService : BaseTileService() {
     override val activeFlow = combine(A11yService.isRunning, uiAutomationFlow) { a11y, automator ->

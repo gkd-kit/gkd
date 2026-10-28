@@ -1,6 +1,5 @@
 package li.gkd.app.rule
 
-import kotlinx.atomicfu.atomic
 import li.gkd.app.resources.*
 import li.gkd.app.subscription.RawSubscription
 
@@ -17,9 +16,27 @@ sealed class ResolvedRule(
         return "id:${subsItem.id}, v:${rawSubs.version}, type:${type}, gKey=${g.group.key}, gName:${g.group.name}, index:${index}, key:${key}, status:$description"
     }
 
+    private var state = RuleExecutionState()
+    private var dependencies = emptySet<ResolvedRule>()
+
+    fun sameExecution(other: ResolvedRule): Boolean = state === other.state
+    val executionIdentity: Any get() = state
+
+    fun retainExecution(previous: ResolvedRule) = synchronized(runtime) {
+        state = previous.state
+    }
+
+    fun executionDependencies(): Set<ResolvedRule> = dependencies
+
+    fun sharesState(other: ResolvedRule): Boolean =
+        state.actionCount === other.state.actionCount || state.actionTriggerTime === other.state.actionTriggerTime ||
+            (actionCdKey != null && other.key == actionCdKey) ||
+            (actionMaximumKey != null && other.key == actionMaximumKey)
+
     fun sameDefinition(other: ResolvedRule): Boolean =
         parameters == other.parameters && excludeData == other.excludeData && sameScope(other)
 
+    protected abstract fun sameScope(other: ResolvedRule): Boolean
     private val group get() = g.group
     val subsItem get() = g.subsItem
     val rawSubs get() = g.subscription
@@ -45,12 +62,12 @@ sealed class ResolvedRule(
     val priorityEnabled: Boolean
         get() = priorityTime > 0
 
-    fun isPriority(): Boolean {
-        if (!priorityEnabled) return false
-        if (priorityActionMaximum <= actionCount.value) return false
-        if (!status.ok) return false
+    fun isPriority(): Boolean = synchronized(runtime) {
+        if (!priorityEnabled) return@synchronized false
+        if (priorityActionMaximum <= state.actionCount.value) return@synchronized false
+        if (!status.ok) return@synchronized false
         val t = runtime.now()
-        return t - matchChangedTime.value < priorityTime + matchDelay
+        return@synchronized t - state.matchChangedTime.value < priorityTime + matchDelay
     }
 
     fun bindGroupRules(
@@ -63,19 +80,22 @@ sealed class ResolvedRule(
                     groupToRules.entries.find { e -> e.key.key == k }?.value ?: emptyList()
                 }
         val groupRules = selfGroupRules + othersGroupRules
+        val sharedDependencies = mutableSetOf<ResolvedRule>()
 
         // 共享次数
         if (actionMaximumKey != null) {
             val otherRule = groupRules.find { r -> r.key == actionMaximumKey }
             if (otherRule != null) {
-                actionCount = otherRule.actionCount
+                state.shareCount(otherRule.state)
+                sharedDependencies += otherRule
             }
         }
         // 共享 cd
         if (actionCdKey != null) {
             val otherRule = groupRules.find { r -> r.key == actionCdKey }
             if (otherRule != null) {
-                actionTriggerTime = otherRule.actionTriggerTime
+                state.shareCooldown(otherRule.state)
+                sharedDependencies += otherRule
             }
         }
         preRules = groupRules.filter { otherRule ->
@@ -83,57 +103,47 @@ sealed class ResolvedRule(
                 otherRule.key
             )
         }.toSet()
+        dependencies = preRules + sharedDependencies
     }
 
     private var preRules = emptySet<ResolvedRule>()
 
-    private fun transition(operation: String, time: Long) {
+    private fun transition(operation: RuleTransition, time: Long) {
         val recorder = runtime.observer()
         val before = recorder?.let { state.values() }
         state.transition(operation, time)
-        if (recorder != null && before != null) recorder.recordRule(operation, time, runtime, this, state, before, parameters, preRules, null)
+        if (recorder != null && before != null) recorder.recordRule(operation.recordOperation, time, runtime, this, state, before, parameters, preRules, null)
     }
 
-    private val actionDelayTriggerTime = atomic(0L)
-    fun checkDelay(): Boolean {
-        if (actionDelay > 0 && actionDelayTriggerTime.value == 0L) {
-            actionDelayTriggerTime.value = runtime.now()
-            return true
+    fun checkDelay(): Boolean = synchronized(runtime) {
+        if (actionDelay > 0 && state.actionDelayTriggerTime.value == 0L) {
+            transition(RuleTransition.Delay, runtime.now())
+            return@synchronized true
         }
-        return false
+        return@synchronized false
     }
 
-    fun checkForced(): Boolean {
-        if (forcedTime <= 0) return false
-        return runtime.now() < matchChangedTime.value + matchDelay + forcedTime
+    fun checkForced(): Boolean = synchronized(runtime) {
+        if (forcedTime <= 0) return@synchronized false
+        return@synchronized runtime.now() < state.matchChangedTime.value + matchDelay + forcedTime
     }
 
-    private var actionTriggerTime = atomic(0L)
-    fun trigger() {
+    fun trigger(): Unit = synchronized(runtime) {
         val t = runtime.now()
-        actionTriggerTime.value = t
-        actionDelayTriggerTime.value = 0L
-        actionCount.incrementAndGet()
+        transition(RuleTransition.Trigger, t)
         runtime.onTriggered(this, t)
     }
 
-    private var actionCount = atomic(0)
 
-    private val matchChangedTime = atomic(0L)
     val isFirstMatchApp: Boolean
-        get() = matchChangedTime.value < runtime.appChangeTime
+        get() = state.matchChangedTime.value < runtime.appChangeTime
 
-    private val matchLimitTime = (matchTime ?: 0) + matchDelay
-
-    fun resetState(t: Long) {
-        actionCount.value = 0
-        actionDelayTriggerTime.value = 0L
-        actionTriggerTime.value = 0
+    fun resetState(t: Long): Unit = synchronized(runtime) {
+        transition(RuleTransition.Reset, t)
         runtime.onReset(this)
-        matchChangedTime.value = t
     }
 
-    fun onActivityTransition(time: Long, previouslyMatched: Boolean) {
+    fun onActivityTransition(time: Long, previouslyMatched: Boolean): Unit = synchronized(runtime) {
         when (parameters.resetMatchType) {
             ResetMatchType.App -> if (isFirstMatchApp) resetState(time)
             ResetMatchType.Activity -> resetState(time)
@@ -150,7 +160,7 @@ sealed class ResolvedRule(
             val t = if (!prerequisite || limited) 0L else runtime.now()
             val result = evaluateRuleStatus(count, maximum, prerequisite, t, state.matchChangedTime.value,
                 matchDelay, matchTime, state.actionTriggerTime.value, parameters.actionCd, state.actionDelayTriggerTime.value, actionDelay)
-            runtime.observer()?.let { it.recordRule("status", t, runtime, this, state, state.values(), parameters, preRules, result) }
+            runtime.observer()?.let { it.recordRule(RuleStateOperation.Status, t, runtime, this, state, state.values(), parameters, preRules, result) }
             result
         }
 

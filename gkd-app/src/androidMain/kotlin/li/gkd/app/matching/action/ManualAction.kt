@@ -14,6 +14,7 @@ import li.gkd.selector.MatchOptions
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
 import li.gkd.selector.SelectorTypeResult
+import li.gkd.app.matching.diagnostics.MatchStage
 
 suspend fun executeManualAction(gkdAction: GkdAction): ActionResult {
     val selectorResult = Selector.compile(gkdAction.selector)
@@ -42,7 +43,7 @@ suspend fun executeManualAction(gkdAction: GkdAction): ActionResult {
                 ActionPerformer.getAction(gkdAction.action ?: ActionPerformer.None.action)
                     .perform(targetNode, gkdAction, MatchingRuntime.coordinator.diagnostics.enabled)
             }
-            trace(li.gkd.app.matching.diagnostics.MatchStage.Action, result.outcomeReason, action = result)
+            trace(MatchStage.Action, result.outcomeReason, action = result)
             result
         }
     }

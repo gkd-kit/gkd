@@ -22,6 +22,7 @@ import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.ui.style.clearJson5TransformationCache
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
+import li.gkd.app.state.Loadable
 
 data class UpsertRuleGroupUiState(
     val initialGroup: RawSubscription.RawGroupProps?,
@@ -121,10 +122,10 @@ class UpsertRuleGroupViewModel(
 
     private suspend fun performSave(text: String): SubscriptionEditResult<String?> = withContext(Dispatchers.Default) {
         val state = when (val current = uiState.value) {
-            li.gkd.app.state.Loadable.Loading -> return@withContext SubscriptionEditResult.Rejected(
+            Loadable.Loading -> return@withContext SubscriptionEditResult.Rejected(
                 SubscriptionFailureReason.SubscriptionNotLoadedId, listOf(route.subsId.toString()))
-            is li.gkd.app.state.Loadable.Failure -> throw current.cause
-            is li.gkd.app.state.Loadable.Ready -> current.value
+            is Loadable.Failure -> throw current.cause
+            is Loadable.Ready -> current.value
         }
         val groupKey = groupKey
         val appId = appId

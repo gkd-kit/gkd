@@ -20,6 +20,8 @@ import li.gkd.app.matching.diagnostics.MatchDiagnosticState
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.notif.StopServiceReceiver
 import li.gkd.app.resources.*
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.util.ToastUtils
 
 /** Owns capture, not matching work. Closing a page never stops this service. */
 class MatchDiagnosticService : LifecycleHookService() {
@@ -61,7 +63,7 @@ class MatchDiagnosticService : LifecycleHookService() {
                 NotificationCatalog.matchDiagnostic(saving = true).startForeground()
                 MatchDiagnosticFiles.state.first { it.containsKey(session.id) }
                 MatchDiagnosticFiles.flush()
-                li.gkd.app.util.ToastUtils.show(org.jetbrains.compose.resources.getString(Res.string.match_debug_saved))
+                ToastUtils.show(org.jetbrains.compose.resources.getString(Res.string.match_debug_saved))
             } catch (error: Exception) {
                 if (sessionId == null) reply?.send(if (error is IllegalArgumentException) 2 else 1,
                     Bundle().apply { putString("error", error.message ?: error.toString()) })
@@ -78,7 +80,7 @@ class MatchDiagnosticService : LifecycleHookService() {
     companion object {
         suspend fun start(detailed: Boolean, ruleFilter: String?,
             recordQueries: Boolean, recordSystem: Boolean): MatchDiagnosticState {
-            check(li.gkd.app.permission.PermissionStates.notification.updateAndGet()) { Res.string.match_debug_notification_required.getSync() }
+            check(PermissionStates.notification.updateAndGet()) { Res.string.match_debug_notification_required.getSync() }
             return suspendCancellableCoroutine { continuation ->
                 val reply = object : ResultReceiver(Handler(Looper.getMainLooper())) {
                     override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {

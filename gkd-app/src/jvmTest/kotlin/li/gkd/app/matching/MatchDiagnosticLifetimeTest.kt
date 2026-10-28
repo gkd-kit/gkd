@@ -1,5 +1,7 @@
 package li.gkd.app.matching
 
+import li.gkd.app.matching.diagnostics.MatchDebugRunPhase
+
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -15,6 +17,8 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import li.gkd.app.matching.diagnostics.MatchDebugRunRequest
+import li.gkd.app.matching.diagnostics.MatchDebugRunState
 
 class MatchDiagnosticLifetimeTest {
     @Test
@@ -23,14 +27,14 @@ class MatchDiagnosticLifetimeTest {
         val release = CompletableDeferred<Unit>()
         try {
             val old = coordinator.startDiagnostics(false, null)
-            val state = li.gkd.app.matching.diagnostics.MatchDebugRunState(
-                li.gkd.app.matching.diagnostics.MatchDebugRunRequest("request", "{}", "rule"), "running")
+            val state = MatchDebugRunState(
+                MatchDebugRunRequest("request", "{}", "rule"), MatchDebugRunPhase.Running)
             coordinator.diagnostics.recordRequest(old.id, state)
             val request = coordinator.diagnosticScope(old.id).launch {
                 try { awaitCancellation() }
                 finally {
                     withContext(NonCancellable) { release.await() }
-                    coordinator.diagnostics.recordRequest(old.id, state.copy(phase = "cancelled"))
+                    coordinator.diagnostics.recordRequest(old.id, state.copy(phase = MatchDebugRunPhase.Cancelled))
                 }
             }
             runCurrent()
@@ -38,12 +42,12 @@ class MatchDiagnosticLifetimeTest {
             runCurrent()
             assertFalse(request.isCompleted)
             assertFailsWith<IllegalStateException> { coordinator.startDiagnostics(false, null) }
-            assertEquals("running", coordinator.diagnostics.requests(old.id).single().phase)
+            assertEquals(MatchDebugRunPhase.Running, coordinator.diagnostics.requests(old.id).single().phase)
             release.complete(Unit)
             runCurrent()
             assertTrue(request.isCompleted)
             val next = coordinator.startDiagnostics(false, null)
-            assertEquals("cancelled", coordinator.exportDiagnostics(old.id).runs.single().phase)
+            assertEquals(MatchDebugRunPhase.Cancelled, coordinator.exportDiagnostics(old.id).runs.single().phase)
             assertTrue(coordinator.diagnostics.requests(next.id).isEmpty())
         } finally { release.complete(Unit); coordinator.close(); runCurrent() }
     }

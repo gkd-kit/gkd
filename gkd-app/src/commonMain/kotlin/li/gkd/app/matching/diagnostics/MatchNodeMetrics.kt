@@ -2,6 +2,8 @@ package li.gkd.app.matching.diagnostics
 
 import kotlinx.serialization.Serializable
 
+const val NODE_READ_OPERATION_NAME = "NodeRead"
+
 @Serializable
 enum class NodeReadOperation { Root, Child, Parent, FindText, FindId, Refresh }
 

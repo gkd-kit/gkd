@@ -24,7 +24,7 @@ actual fun openAppDetails() {
     ToastUtils.show(Res.string.platform_action_unsupported.getSync())
 }
 
-actual fun openRecents() {
+actual suspend fun openRecents() {
     ToastUtils.show(Res.string.platform_action_unsupported.getSync())
 }
 

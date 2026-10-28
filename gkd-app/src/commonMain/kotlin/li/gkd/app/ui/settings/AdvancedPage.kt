@@ -59,6 +59,8 @@ import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.util.Constants
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.ui.navigation.MatchDebugRoute
 
 @Composable
 fun AdvancedPage(
@@ -430,7 +432,7 @@ private fun EditHttpPortDialog(
 @Composable
 private fun DiagnosticSettings(vm: AdvancedViewModel) {
     val main = MainViewModel.requireCurrent()
-    val diagnostics = li.gkd.app.matching.MatchingRuntime.coordinator.diagnostics
+    val diagnostics = MatchingRuntime.coordinator.diagnostics
     val control = remember(diagnostics) {
         diagnostics.state.map { it?.id to (it?.active == true) }.distinctUntilChanged()
     }
@@ -443,11 +445,11 @@ private fun DiagnosticSettings(vm: AdvancedViewModel) {
         checked = current.second,
         onCheckedChange = { enabled ->
             if (enabled) vm.requestDiagnosticCapture()
-            else current.first?.let { li.gkd.app.matching.MatchingRuntime.coordinator.stopDiagnostics(it) }
+            else current.first?.let { MatchingRuntime.coordinator.stopDiagnostics(it) }
         },
     )
     GkSettingItem(
         title = stringResource(Res.string.match_debug_records),
-        onClick = { main.navigator.navigate(li.gkd.app.ui.navigation.MatchDebugRoute) },
+        onClick = { main.navigator.navigate(MatchDebugRoute) },
     )
 }

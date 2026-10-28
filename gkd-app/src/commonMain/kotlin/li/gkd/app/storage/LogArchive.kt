@@ -2,6 +2,7 @@ package li.gkd.app.storage
 
 import java.io.File
 import java.nio.file.Files
+import li.gkd.app.logging.LogUtils
 
 object LogArchive {
     private val layout get() = appStorage()
@@ -10,7 +11,7 @@ object LogArchive {
         val directory = StorageMaintenance.temporaryDirectory(layout)
         val metadataDirectory = Files.createDirectory(directory.resolve("metadata").toPath()).toFile()
         val logs = directory.resolve("log")
-        li.gkd.app.logging.LogUtils.copyLogs(logs)
+        LogUtils.copyLogs(logs)
         metadata.forEach { (name, content) ->
             metadataDirectory.resolve(name).writeText(content())
         }

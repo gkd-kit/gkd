@@ -12,6 +12,8 @@ import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import java.util.Base64
+import li.gkd.app.platform.PlatformResult
+import li.gkd.app.snapshot.SnapshotCaptureRepository
 
 /** Explicit development input. The source id is ignored; capture assigns a new timestamp. */
 @Serializable
@@ -29,7 +31,7 @@ data class DesktopSnapshotCaptureResult(
 
 suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest): SnapshotCaptureOutcome<DesktopSnapshotCaptureResult> {
     require(DesktopStorage.isolated) { "Snapshot capture replay requires --test" }
-    val outcome = li.gkd.app.snapshot.SnapshotCaptureRepository.capture(request.autoExport) {
+    val outcome = SnapshotCaptureRepository.capture(request.autoExport) {
         withContext(Dispatchers.Default) {
             val source = request.source
             val screenshot =
@@ -55,8 +57,8 @@ suspend fun DesktopRuntime.replaySnapshot(request: DesktopSnapshotCaptureRequest
             SnapshotAutoExportResult.Disabled -> "disabled"
             SnapshotAutoExportResult.PermissionDenied -> "permissionDenied"
             is SnapshotAutoExportResult.Completed -> when (exported.result) {
-                is li.gkd.app.platform.PlatformResult.Success -> "saved"
-                li.gkd.app.platform.PlatformResult.Unsupported -> "unsupported"
+                is PlatformResult.Success -> "saved"
+                PlatformResult.Unsupported -> "unsupported"
             }
 
             is SnapshotAutoExportResult.Failed -> "failed: ${exported.cause.message}"

@@ -17,6 +17,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import li.gkd.app.storage.StorageException
 
 class BackupFormatTest {
 
@@ -146,10 +147,10 @@ class BackupFormatTest {
 
     @Test
     fun unsupportedVersionsAndTypesFailBeforeImportCanStart() {
-        assertThrows(li.gkd.app.storage.StorageException::class.java) {
+        assertThrows(StorageException::class.java) {
             BackupFormat.decode("""{"formatVersion":99}""")
         }
-        assertThrows(li.gkd.app.storage.StorageException::class.java) {
+        assertThrows(StorageException::class.java) {
             BackupFormat.decode("""{"subsConfigs":[{"id":1,"type":99,"subsId":7}]}""")
         }
     }

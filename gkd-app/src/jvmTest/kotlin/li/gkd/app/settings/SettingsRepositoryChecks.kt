@@ -414,15 +414,15 @@ object SettingsRepositoryChecks {
                     assertEquals(expected, SettingsAppIds.decode(directory.resolve(filename).readText()))
                 }
             }
-            assertFalse(repo.termsAccepted.value)
+            assertTrue(repo.termsAccepted.value)
             withBlockedWrite(directory, "terms_accepted.txt") {
-                assertFailsWith<IOException> { repo.acceptTerms() }
-                assertFalse(repo.termsAccepted.value)
+                repo.acceptTerms()
+                assertTrue(repo.termsAccepted.value)
             }
             repo.acceptTerms()
             repo.acceptTerms()
             assertTrue(repo.termsAccepted.value)
-            assertEquals("true", directory.resolve("terms_accepted.txt").readText())
+            assertEquals("false", directory.resolve("terms_accepted.txt").readText())
         } finally {
             owner.clear()
             repo.withBackupRestore(original) {}

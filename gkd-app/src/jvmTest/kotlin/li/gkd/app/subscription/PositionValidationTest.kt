@@ -6,6 +6,7 @@ import li.gkd.app.rule.RuleRestriction
 import li.gkd.db.SubscriptionConfigSnapshot
 import org.junit.Assert.*
 import org.junit.Test
+import li.gkd.app.error.ErrorMessage
 
 class PositionValidationTest {
     /** Every editing entry, the card message and enable policy share the same invalid field. */
@@ -45,7 +46,7 @@ class PositionValidationTest {
         val bad = parseInput("""{key:1,name:'G',rules:[{swipeArg:{start:{x:0,y:0},end:{x:0,y:'min(1,2)'},duration:100}}]}""")
         val error = assertRejected { bad.parseGlobalGroup() }
         assertEquals("rules[0].swipeArg.end.y", error.errorPath)
-        assertTrue((error.errorMessage as li.gkd.app.error.ErrorMessage.Resource).arguments.toString().contains("UNKNOWN_FUNCTION"))
+        assertTrue((error.errorMessage as ErrorMessage.Resource).arguments.toString().contains("UNKNOWN_FUNCTION"))
         val missing = RawSubscription.Position(null, null, null, null, "0", null)
         assertEquals("MISSING_VERTICAL_COORDINATE", missing.validationError?.code)
         val group = parseInput("""{key:1,name:'G',rules:[{position:{x:'100/width',y:0}}]}""").parseGlobalGroup().expectValue()

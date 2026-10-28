@@ -1,7 +1,7 @@
 package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
-import li.gkd.app.a11y.compatChecked
+import li.gkd.app.matching.query.compatChecked
 import li.gkd.app.model.AttrInfo
 import li.gkd.app.priv.toHidden
 

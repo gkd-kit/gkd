@@ -11,8 +11,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import li.gkd.app.ui.component.GkFullscreenDialog as AndroidFullscreenDialog
 import li.gkd.app.ui.share.optimizedImePadding
+import li.gkd.app.MainActivity
 
-actual typealias UiHost = li.gkd.app.MainActivity
+actual typealias UiHost = MainActivity
 
 @Composable
 actual fun GkBackHandler(

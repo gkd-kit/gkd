@@ -5,6 +5,7 @@ import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.DesktopRuntime
 import li.gkd.app.SimulatedService
 import li.gkd.app.simulatedServiceRunning
+import li.gkd.app.util.Constants
 
 actual fun UiHost.setSnapshotButtonEnabled(enabled: Boolean) = DesktopRuntime.requireCurrent().services.setEnabled(SimulatedService.Button, enabled)
 
@@ -19,7 +20,7 @@ actual fun UiHost.setTrackServiceEnabled(enabled: Boolean) = DesktopRuntime.requ
 @Composable
 actual fun debugServiceRunning() = simulatedServiceRunning(SimulatedService.Debug)
 @Composable
-actual fun httpServerAddresses() = listOf(li.gkd.app.util.Constants.loopbackHost)
+actual fun httpServerAddresses() = listOf(Constants.loopbackHost)
 @Composable
 actual fun snapshotButtonRunning() = simulatedServiceRunning(SimulatedService.Button)
 @Composable

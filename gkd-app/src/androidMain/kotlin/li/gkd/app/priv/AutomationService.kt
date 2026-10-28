@@ -1,5 +1,6 @@
 package li.gkd.app.priv
 
+import li.gkd.app.util.monotonicTimeMillis
 import android.annotation.SuppressLint
 import android.app.UiAutomation
 import android.app.UiAutomationHidden
@@ -15,23 +16,24 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import li.gkd.app.a11y.A11yCommonImpl
-import li.gkd.app.a11y.A11yRuleEngine
-import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.appScope
+import li.gkd.app.matching.AndroidAutomationSession
+import li.gkd.app.matching.AndroidAutomationSessions
+import li.gkd.app.matching.AndroidMatchHost
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
-import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.settings.AutomatorMode
+import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
+import li.gkd.app.matching.MatchingRuntime
 
 class AutomationService private constructor(
     private val privilegeContext: PrivilegeContext,
-) : A11yCommonImpl {
+) : AndroidAutomationSession {
     override val mode get() = AutomatorMode.Automation
     private val handlerThread = HandlerThread("UiAutomatorHandlerThread")
     private val uiAutomationDelegate = lazy {
@@ -44,28 +46,23 @@ class AutomationService private constructor(
 
     override val scope = MainScope()
 
-    override val ruleEngine by lazy { A11yRuleEngine(this) }
+    override val matchHost by lazy { AndroidMatchHost(this) }
 
     private val listener = UiAutomation.OnAccessibilityEventListener {
-        ruleEngine.onA11yEvent(it)
+        matchHost.onA11yEvent(it)
     }
 
     override suspend fun screenshot(): Bitmap? = withContext(Dispatchers.IO) {
-        try {
-            privilegeContextFlow.value?.screenshot()
-        } catch (e: Throwable) {
-            LogUtils.d("takeScreenshot failed", e)
-            null
-        }
+        privilegeContext.screenshot()
     }
 
     override val windowNodeInfo: AccessibilityNodeInfo? get() = uiAutomation.rootInActiveWindow
     override val windowInfos: List<AccessibilityWindowInfo> get() = uiAutomation.windows
-    private val startTime = System.currentTimeMillis()
+    private val startTime = monotonicTimeMillis()
     override var justStarted: Boolean = true
         get() {
             if (field) {
-                field = System.currentTimeMillis() - startTime < 3_000
+                field = monotonicTimeMillis() - startTime < 3_000
             }
             return field
         }
@@ -80,10 +77,11 @@ class AutomationService private constructor(
         connected = true
         ToastUtils.show(Res.string.automation_started.getSync())
         updateEnableAutomator(true)
-        A11yRuntime.onA11yConnected(this)
+        AndroidAutomationSessions.onA11yConnected(this)
     }
 
     private fun disconnect() {
+        MatchingRuntime.coordinator.detach(this)
         scope.cancel()
         handlerThread.quit()
         if (!uiAutomationDelegate.isInitialized()) return

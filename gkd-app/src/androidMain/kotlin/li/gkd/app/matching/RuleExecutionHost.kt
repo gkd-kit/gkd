@@ -7,6 +7,13 @@ import li.gkd.app.matching.input.launcherAppId
 
 object RuleExecutionHost {
     val runtime = RuleRuntime(
+        environment = {
+            RuleMatchEnvironment(
+                launcherAppId,
+                AppInfoRepository.snapshot?.systemApps.orEmpty()
+            )
+        },
+        cancelPending = { MatchingRuntime.coordinator.cancelRuleDelays(it) },
         observer = { MatchingRuntime.coordinator.diagnostics.systemRecorder?.takeUnless { it.sealed } },
     )
 }

@@ -89,7 +89,7 @@ private fun subsManageContent(
 
     val refreshProgress by SubscriptionRepository.refreshing.collectAsStateWithLifecycle()
     val refreshing by
-        li.gkd.app.subscription.SubscriptionRepository.updating.collectAsStateWithLifecycle()
+        SubscriptionRepository.updating.collectAsStateWithLifecycle()
     val selectionState = vm.selection
     val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
     val allIds = remember(subItems) { subItems.mapTo(mutableSetOf()) { it.id } }

@@ -15,6 +15,7 @@ import li.gkd.app.rule.RuleSummaryBuilder
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
+import li.gkd.app.util.monotonicTimeMillis
 
 class RuleRuntimeTest {
     /** Android foreground timestamps and the default runtime must share the elapsed-time domain. */
@@ -23,7 +24,7 @@ class RuleRuntimeTest {
         val runtime = RuleRuntime()
         val rule = build(runtime, """[{key:1,name:'Timed',rules:[{matches:'*',matchDelay:60000}]}]""")
             .appIdToRules.getValue("app.test").single()
-        val transition = li.gkd.app.util.monotonicTimeMillis()
+        val transition = monotonicTimeMillis()
         runtime.onAppChanged(transition)
         rule.resetState(transition)
         assertEquals(RuleStatus.MatchDelay, rule.status)

@@ -1,19 +1,15 @@
 package li.gkd.app.subscription
 
-import li.gkd.app.model.ScreenSize
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.db.RuleGroupType
 import li.gkd.db.SubscriptionIds
-import li.gkd.selector.Selector
-import li.gkd.selector.SelectorCompileResult
-import li.gkd.selector.SelectorTypeResult
-import li.gkd.selector.createDefaultSelectorTypeModel
-import kotlin.random.Random
+import java.util.regex.PatternSyntaxException
 
 @Serializable
 data class RawSubscription(
@@ -111,18 +107,30 @@ data class RawSubscription(
         val include: List<String>?,
         val exclude: List<String>?,
     ) {
-        private val patternRegex by lazy {
+        private val patternCompilation: Result<Regex>? by lazy {
             pattern?.let { p ->
-                runCatching { Regex(p) }.getOrNull()
+                try {
+                    Result.success(Regex(p))
+                } catch (error: PatternSyntaxException) {
+                    Result.failure(error)
+                }
             }
         }
 
-        fun match(value: String?): Boolean {
+        val patternError: String?
+            get() = patternCompilation?.exceptionOrNull()?.let { it.message ?: it.toString() }
+
+        fun match(value: String?): Boolean = match(value, ignoreInvalidPattern = false)
+
+        /** Saving a preference may ignore a syntax error, but still respects the other conditions. */
+        fun matchValidConditions(value: String?): Boolean = match(value, ignoreInvalidPattern = true)
+
+        private fun match(value: String?, ignoreInvalidPattern: Boolean): Boolean {
             if (value == null) return false
             if (exclude?.contains(value) == true) return false
             if (include?.contains(value) == false) return false
-            if (patternRegex?.matches(value) == false) return false
-            return true
+            val compiled = patternCompilation ?: return true
+            return compiled.getOrNull()?.matches(value) ?: ignoreInvalidPattern
         }
     }
 
@@ -169,57 +177,19 @@ data class RawSubscription(
         val x: String?,
         val y: String?,
     ) {
-        private val leftExp by lazy { getExpression(left) }
-        private val topExp by lazy { getExpression(top) }
-        private val rightExp by lazy { getExpression(right) }
-        private val bottomExp by lazy { getExpression(bottom) }
-        private val xExp by lazy { getExpression(x) }
-        private val yExp by lazy { getExpression(y) }
+        private val compilation by lazy { RulePositionCompilation(this) }
 
-        private val xArr by lazy { arrayOf(leftExp, rightExp, xExp) }
-        private val yArr by lazy { arrayOf(topExp, bottomExp, yExp) }
+        val validationError: PositionError? get() = compilation.error
+        val isValid get() = validationError == null
 
-        val isValid by lazy {
-            xArr.any { it != null } && yArr.any { it != null }
-        }
-
-        /**
-         * return (x, y)
-         */
+        /** Missing configuration is handled by the caller; invalid or failed coordinates throw. */
         fun calc(
             rect: RuleBounds,
             screenSize: ScreenSize,
-            onError: (Exception) -> Unit = {}
-        ): Pair<Float, Float>? {
-            if (!isValid) return null
-            xArr.forEach { setVariables(it, rect, screenSize) }
-            yArr.forEach { setVariables(it, rect, screenSize) }
-            try {
-                val x0 = xArr.find { it != null }!!.evaluate().toFloat()
-                val y0 = yArr.find { it != null }!!.evaluate().toFloat()
-                val x = when {
-                    leftExp != null -> rect.left + x0
-                    rightExp != null -> rect.right - x0
-                    xExp != null -> x0
-                    else -> null
-                }
-                val y = when {
-                    topExp != null -> rect.top + y0
-                    bottomExp != null -> rect.bottom - y0
-                    yExp != null -> y0
-                    else -> null
-                }
-                if (x != null && y != null) {
-                    return x to y
-                }
-            } catch (e: Exception) {
-                // 可能存在 1/0 导致错误
-                onError(e)
-            }
-            return null
-        }
+            fieldPrefix: String = "position",
+            captureInputs: Boolean = false,
+        ): Pair<Float, Float> = compilation.calculate(rect, screenSize, fieldPrefix, captureInputs)
     }
-
 
     sealed interface RawCommonProps {
         val actionCd: Long?
@@ -279,10 +249,10 @@ data class RawSubscription(
         val scopeKeys: List<Int>?
         val rules: List<RawRuleProps>
 
-        val valid: Boolean
-        val validationError: RuleValidationError?
+        val compilation: RuleGroupCompilation
+        val valid: Boolean get() = validationError == null
+        val validationError: RuleValidationError? get() = compilation.error
         val allExampleUrls: List<String>
-        val cacheMap: MutableMap<String, Selector?>
         val cacheStr: String
         val cacheJsonObject: JsonObject
 
@@ -352,9 +322,7 @@ data class RawSubscription(
         override val rules: List<RawGlobalRule>,
         val apps: List<RawGlobalApp>?,
     ) : RawGroupProps {
-        override val cacheMap by lazy { HashMap<String, Selector?>() }
-        override val validationError by lazy { validateRules() }
-        override val valid get() = validationError == null
+        override val compilation by lazy { RuleGroupCompilation.compile(this) }
         override val allExampleUrls by lazy {
             ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
                 r.exampleUrls ?: emptyList()
@@ -428,9 +396,7 @@ data class RawSubscription(
         override val versionName: StringMatcher?,
         val ignoreGlobalGroupMatch: Boolean?,
     ) : RawGroupProps, RawAppRuleProps {
-        override val cacheMap by lazy { HashMap<String, Selector?>() }
-        override val validationError by lazy { validateRules() }
-        override val valid get() = validationError == null
+        override val compilation by lazy { RuleGroupCompilation.compile(this) }
         override val allExampleUrls by lazy {
             ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
                 r.exampleUrls ?: emptyList()
@@ -477,71 +443,4 @@ data class RawSubscription(
         override val versionCode: IntegerMatcher?,
         override val versionName: StringMatcher?,
     ) : RawRuleProps, RawAppRuleProps
-
-    companion object {
-        private fun RawGroupProps.validateRules(): RuleValidationError? {
-            val allSelectorStrings = rules.flatMap { r ->
-                r.getAllSelectorStrings()
-            }
-            allSelectorStrings.forEach { source ->
-                val selector = when (val result = Selector.compile(source)) {
-                    is SelectorCompileResult.Success -> result.value
-                    is SelectorCompileResult.Failure -> {
-                        return RuleValidationError.SelectorError(
-                            source,
-                            result.error.message
-                        )
-                    }
-                }
-                when (val result = selector.validateType(createDefaultSelectorTypeModel())) {
-                    is SelectorTypeResult.Success -> cacheMap[source] = result.value
-                    is SelectorTypeResult.Failure -> {
-                        return RuleValidationError.SelectorError(
-                            source,
-                            result.error.message
-                        )
-                    }
-                }
-            }
-            rules.forEach { r ->
-                if (r.position?.isValid == false) {
-                    return RuleValidationError.InvalidPosition(r.position.toString())
-                }
-            }
-            return null
-        }
-
-        private val preFillExpVars = arrayOf(
-            "left",
-            "top",
-            "right",
-            "bottom",
-            "width",
-            "height",
-            "random",
-            "screenWidth",
-            "screenHeight",
-        )
-
-        private fun setVariables(
-            exp: RuleExpression?,
-            rect: RuleBounds,
-            screenWidth: Int,
-            screenHeight: Int
-        ) {
-            if (exp == null) return
-            exp.setVariable("left", rect.left.toDouble())
-            exp.setVariable("top", rect.top.toDouble())
-            exp.setVariable("right", rect.right.toDouble())
-            exp.setVariable("bottom", rect.bottom.toDouble())
-            exp.setVariable("width", rect.width().toDouble())
-            exp.setVariable("height", rect.height().toDouble())
-            exp.setVariable("random", Random.nextDouble())
-            exp.setVariable("screenWidth", screenWidth.toDouble())
-            exp.setVariable("screenHeight", screenHeight.toDouble())
-        }
-
-        private fun getExpression(value: String?): RuleExpression? =
-            value?.let { compileRuleExpression(it, preFillExpVars.toSet()) }
-    }
 }

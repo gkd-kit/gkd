@@ -94,8 +94,8 @@ suspend fun <N : Any> queryRules(
             work.match(rule) { nodes.match(rule, node) }
         } catch (error: MatchQueryIncomplete) {
             work.ensureCurrent()
-            work.trace(MatchStage.Selector, error.reason, rule)
-            observed?.invoke(rule, error.reason, false, null)
+            work.trace(MatchStage.Selector, error.reason.wireValue, rule)
+            observed?.invoke(rule, error.reason.wireValue, false, null)
             continue
         }
         work.ensureCurrent()

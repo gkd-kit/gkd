@@ -59,6 +59,26 @@ import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigStore
 import org.jetbrains.compose.resources.getString
+import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.app.openAppCatalog
+import li.gkd.app.backup.assertBackupSnapshotConsistency
+import li.gkd.app.external.assertExternalCalls
+import li.gkd.app.network.assertUpdateClient
+import li.gkd.app.network.inspection.assertDesktopDebugServiceLifecycle
+import li.gkd.app.network.isNetworkRequestAllowed
+import li.gkd.app.record.assertRuntimeRecords
+import li.gkd.app.rule.RuleSwitchPolicyTest
+import li.gkd.app.settings.GithubCookieStore
+import li.gkd.app.snapshot.SnapshotCaptureRepositoryTest
+import li.gkd.app.snapshot.SnapshotStoreTest
+import li.gkd.app.snapshot.assertSnapshotSharing
+import li.gkd.app.storage.LogArchiveChecks
+import li.gkd.app.subscription.SubscriptionDefaults
+import li.gkd.app.subscription.SubscriptionResult
+import li.gkd.app.subscription.assertCategorySaveResults
+import li.gkd.app.subscription.assertUpdateErrorDismissal
+import li.gkd.app.ui.navigation.SubsAppGroupListRoute
+import li.gkd.app.ui.subscription.SubsAppGroupListViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ApplicationIntegrationTest {
@@ -95,7 +115,7 @@ class ApplicationIntegrationTest {
             store.resolve("store.json")
                 .writeText("""{"appGroupType":7,"enableDynamicColor":false,"futureOption":123}""")
             store.resolve("overlay_position.json").writeText("""{"legacy":[12,34]}""")
-            // Explicit rejection keeps the acceptance persistence and failed-write checks active.
+            // Desktop must remain accepted even when an existing Android file says otherwise.
             store.resolve("terms_accepted.txt").writeText("false")
             // An Android recovery file without a database row must keep its user-supplied name.
             val subscriptions = DesktopStorage.data.resolve("files/subscription").apply { mkdirs() }
@@ -118,44 +138,44 @@ class ApplicationIntegrationTest {
                 assertLogCallerValues()
                 withTimeout(20_000) { runtime.subscriptionInitialization.join() }
                 withTimeout(5_000) { runtime.crashInitialization.join() }
-                li.gkd.app.network.inspection.assertDesktopDebugServiceLifecycle(runtime)
+                assertDesktopDebugServiceLifecycle(runtime)
                 val items = Db.subsItemDao.queryAll().associateBy { it.id }
                 assertTrue(items.getValue(13).enable)
                 assertFalse(items.getValue(92).enable)
                 assertTrue(appStorage().subscription.resolve("92.json").isFile)
                 assertPlatformInputs(runtime.simulator)
                 assertSubscriptionCreationNames()
-                li.gkd.app.subscription.assertCategorySaveResults()
-                li.gkd.app.subscription.assertUpdateErrorDismissal(runtime.simulator)
+                assertCategorySaveResults()
+                assertUpdateErrorDismissal(runtime.simulator)
                 assertHomeLifecycle()
                 assertActionLogSubscriptionLoadFailure()
                 assertRootNavigationLifecycle(runtime)
                 assertAppRuleParentVisibility()
                 assertAppRuleReorderPersistence()
                 SettingsRepositoryChecks.run(appStorage().store, META.appName)
-                li.gkd.app.network.assertUpdateClient(session.resolve("update-client"))
+                assertUpdateClient(session.resolve("update-client"))
                 assertManualUpdateIgnoresStoredVersions(runtime.toast)
                 assertCrashReports()
                 assertCookiePersistence(appStorage().privateStore)
-                li.gkd.app.external.assertExternalCalls()
-                li.gkd.app.rule.RuleSwitchPolicyTest()
+                assertExternalCalls()
+                RuleSwitchPolicyTest()
                     .requestRejectsChangedSwitchesButAcceptsConcurrentPageAndOtherAppEdits()
-                li.gkd.app.snapshot.SnapshotCaptureRepositoryTest(appStorage()).runAll()
-                li.gkd.app.snapshot.SnapshotStoreTest(appStorage()).runAll()
-                li.gkd.app.snapshot.assertSnapshotSharing(appStorage())
+                SnapshotCaptureRepositoryTest(appStorage()).runAll()
+                SnapshotStoreTest(appStorage()).runAll()
+                assertSnapshotSharing(appStorage())
                 DesktopAppCatalogTest().profileReloadUsesSharedSelectionAndRecoversFromCorruptFile(
                     profileDir
                 )
-                li.gkd.app.record.assertRuntimeRecords(appStorage().database)
-                li.gkd.app.storage.LogArchiveChecks().apply {
+                assertRuntimeRecords(appStorage().database)
+                LogArchiveChecks().apply {
                     archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance()
                     materialFailurePreservesCauseAndLeavesFilesForCacheMaintenance()
                 }
-                li.gkd.app.backup.assertBackupSnapshotConsistency()
+                assertBackupSnapshotConsistency()
                 assertBackupRoundTrip(appStorage())
             }
-            assertFailsWith<IllegalStateException> { li.gkd.app.network.isNetworkRequestAllowed() }
-            assertFailsWith<IllegalStateException> { li.gkd.app.app.openAppCatalog() }
+            assertFailsWith<IllegalStateException> { isNetworkRequestAllowed() }
+            assertFailsWith<IllegalStateException> { openAppCatalog() }
             val logs = appStorage().log.listFiles()!!.associate { it.name to it.readText() }
             LogUtils.d("log-after-close")
             LogUtils.flush()
@@ -173,8 +193,8 @@ class ApplicationIntegrationTest {
             val beforeOfflineRefresh = SubscriptionRepository.snapshotFlow.value
             // The repository uses the active host's current network state on every operation.
             assertEquals(
-                li.gkd.app.subscription.SubscriptionResult.Failure(
-                    li.gkd.app.subscription.SubscriptionResult.FailureReason.NetworkUnavailable
+                SubscriptionResult.Failure(
+                    SubscriptionResult.FailureReason.NetworkUnavailable
                 ),
                 SubscriptionRepository.refresh(),
             )
@@ -182,22 +202,22 @@ class ApplicationIntegrationTest {
             assertEquals(beforeOfflineRefresh, SubscriptionRepository.snapshotFlow.value)
             simulator.update { it.copy(device = it.device.copy(wifi = true)) }
             // These imported subscriptions have no update URL: success requires no external network.
-            assertTrue(SubscriptionRepository.refresh() is li.gkd.app.subscription.SubscriptionResult.Success)
+            assertTrue(SubscriptionRepository.refresh() is SubscriptionResult.Success)
             simulator.update { it.copy(device = it.device.copy(wifi = false, mobileSignal = 0)) }
             assertEquals(
-                li.gkd.app.subscription.SubscriptionResult.Failure(
-                    li.gkd.app.subscription.SubscriptionResult.FailureReason.NetworkUnavailable
+                SubscriptionResult.Failure(
+                    SubscriptionResult.FailureReason.NetworkUnavailable
                 ),
                 SubscriptionRepository.refresh(),
             )
-            val query = li.gkd.app.app.openAppCatalog()
+            val query = openAppCatalog()
             assertTrue(query.isCurrent())
             simulator.update {
                 it.copy(permissions = it.permissions.copy(canQueryPackages = !query.canQueryPackages))
             }
             assertFalse(query.isCurrent())
-            li.gkd.app.app.AppInfoRepository.refresh()
-            assertEquals(!query.canQueryPackages, li.gkd.app.app.AppInfoRepository.snapshot!!.canQueryPackages)
+            AppInfoRepository.refresh()
+            assertEquals(!query.canQueryPackages, AppInfoRepository.snapshot!!.canQueryPackages)
         } finally {
             simulator.update {
                 it.copy(
@@ -205,7 +225,7 @@ class ApplicationIntegrationTest {
                     permissions = it.permissions.copy(canQueryPackages = previous.permissions.canQueryPackages),
                 )
             }
-            li.gkd.app.app.AppInfoRepository.refresh()
+            AppInfoRepository.refresh()
         }
     }
 
@@ -216,33 +236,33 @@ class ApplicationIntegrationTest {
         val localFile = appStorage().subscription.resolve("$localId.json")
         val originalBytes = localFile.readBytes()
         // A retry with a different language creates only missing built-in data.
-        Db.subsItemDao.upsert(li.gkd.db.SubsItem(memoryId, order = 0))
-        SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Local rules", "Memory rules"))
+        Db.subsItemDao.upsert(SubsItem(memoryId, order = 0))
+        SubscriptionRepository.initialize(SubscriptionDefaults("Local rules", "Memory rules"))
         assertTrue(originalBytes.contentEquals(localFile.readBytes()))
         val memoryFile = appStorage().subscription.resolve("$memoryId.json")
         assertEquals("Memory rules", RawSubscriptionParser.parse(memoryFile.readText()).name)
         val memoryBytes = memoryFile.readBytes()
-        SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("本地订阅", "内存订阅"))
+        SubscriptionRepository.initialize(SubscriptionDefaults("本地订阅", "内存订阅"))
         assertTrue(originalBytes.contentEquals(localFile.readBytes()))
         assertTrue(memoryBytes.contentEquals(memoryFile.readBytes()))
         // A failed built-in file creation stays local to that subscription and can be retried.
         assertTrue(memoryFile.delete())
         assertTrue(memoryFile.mkdir())
         val obstruction = memoryFile.resolve("occupied").apply { writeText("blocked") }
-        SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Other", "Retry memory"))
+        SubscriptionRepository.initialize(SubscriptionDefaults("Other", "Retry memory"))
         assertTrue(memoryId in SubscriptionRepository.awaitSnapshot().loadErrors)
         assertTrue(originalBytes.contentEquals(localFile.readBytes()))
         assertTrue(obstruction.delete())
         assertTrue(memoryFile.delete())
-        SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Other", "Retry memory"))
+        SubscriptionRepository.initialize(SubscriptionDefaults("Other", "Retry memory"))
         assertFalse(memoryId in SubscriptionRepository.awaitSnapshot().loadErrors)
         assertEquals("Retry memory", RawSubscriptionParser.parse(memoryFile.readText()).name)
         // First local creation uses the operation's name; subsequent retries leave it untouched.
         Db.subsItemDao.deleteById(localId)
         assertTrue(localFile.delete())
-        SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Fresh local", "Other memory"))
+        SubscriptionRepository.initialize(SubscriptionDefaults("Fresh local", "Other memory"))
         assertEquals("Fresh local", RawSubscriptionParser.parse(localFile.readText()).name)
-        SubscriptionRepository.initialize(li.gkd.app.subscription.SubscriptionDefaults("Another locale", "Other memory"))
+        SubscriptionRepository.initialize(SubscriptionDefaults("Another locale", "Other memory"))
         assertEquals("Fresh local", SubscriptionRepository.awaitSnapshot().subscriptions.getValue(localId).name)
     }
 
@@ -250,7 +270,7 @@ class ApplicationIntegrationTest {
         val file = appStorage().store.resolve("ignore_version_list.json")
         val previous = file.takeIf { it.exists() }?.readBytes()
         val initialRevision = toast.revision
-        assertFalse(li.gkd.app.network.isNetworkRequestAllowed())
+        assertFalse(isNetworkRequestAllowed())
         val networkUnavailable = getString(Res.string.network_unavailable)
         // This headless runtime has no composition to dispatch global snapshot changes.
         val snapshotChanges = Channel<Unit>(Channel.CONFLATED)
@@ -312,7 +332,7 @@ class ApplicationIntegrationTest {
     }
 
     private suspend fun assertCookiePersistence(directory: File) {
-        val store = li.gkd.app.settings.GithubCookieStore
+        val store = GithubCookieStore
         val original = store.value.value
         val blocked = directory.resolve("github_cookie.txt.tmp")
         try {
@@ -344,8 +364,8 @@ class ApplicationIntegrationTest {
         val owner = ViewModelStore()
         try {
             SubscriptionRepository.update(id) { original }
-            val vm = li.gkd.app.ui.subscription.SubsAppGroupListViewModel(
-                li.gkd.app.ui.navigation.SubsAppGroupListRoute(id, "test.alpha")
+            val vm = SubsAppGroupListViewModel(
+                SubsAppGroupListRoute(id, "test.alpha")
             ).also { owner.put("reorder", it) }
             withTimeout(5_000) { vm.uiState.first { it is Loadable.Ready } }
             // A content edit after the drag snapshot must survive saving the requested keys.
@@ -396,7 +416,7 @@ class ApplicationIntegrationTest {
         try {
             SubscriptionRepository.saveWithItem(
                 subscription,
-                li.gkd.db.SubsItem(id, order = 0, enable = true)
+                SubsItem(id, order = 0, enable = true)
             )
             val vm = AppConfigViewModel(
                 AppConfigRoute("test.alpha")
@@ -524,8 +544,8 @@ class ApplicationIntegrationTest {
     private suspend fun assertHomeLifecycle() {
         val owner = ViewModelStore()
         val originalPowerWarning = SettingsRepository.settings.value.subsPowerWarn
-        val first = li.gkd.db.SubsItem(id = 900001, order = 100, enable = true)
-        val second = li.gkd.db.SubsItem(id = 900002, order = 101)
+        val first = SubsItem(id = 900001, order = 100, enable = true)
+        val second = SubsItem(id = 900002, order = 101)
         try {
             val vm = HomeViewModel().also { owner.put("home", it) }
             // A retained page keeps selection; both user and host tab changes clear it.
@@ -541,8 +561,8 @@ class ApplicationIntegrationTest {
             vm.homeState.selectTab(BottomNavItem.AppList)
             assertFalse(vm.selection.state.value.active)
             withTimeout(5_000) { vm.appsState.first { it.value?.apps?.size == 2 } }
-            withTimeout(5_000) { vm.latestState.first { it is li.gkd.app.state.Loadable.Ready } }
-            withTimeout(5_000) { vm.subscriptionsState.first { it is li.gkd.app.state.Loadable.Ready } }
+            withTimeout(5_000) { vm.latestState.first { it is Loadable.Ready } }
+            withTimeout(5_000) { vm.subscriptionsState.first { it is Loadable.Ready } }
             SettingsRepository.updateSettings { it.copy(subsPowerWarn = true) }
             // Do not wait for the presentation flow: commands must consult current persisted items.
             Db.subsItemDao.upsert(first, second)

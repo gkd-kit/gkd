@@ -35,6 +35,7 @@ import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.stringResource
+import li.gkd.app.settings.SettingsRepository
 
 @Composable
 fun DesktopControls(
@@ -44,7 +45,7 @@ fun DesktopControls(
     flushSettings: () -> Unit,
     onBack: () -> Unit
 ) {
-    val store by li.gkd.app.settings.SettingsRepository.settings.collectAsStateWithLifecycle()
+    val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val settings by state.simulator.settings.collectAsStateWithLifecycle()
     val saveStatus by persistence.status.collectAsStateWithLifecycle()
     val environment = settings.environment()
@@ -346,7 +347,7 @@ private fun GkControlSlider(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ServiceSimulationControls(state: DesktopState) {
-    val store by li.gkd.app.settings.SettingsRepository.settings.collectAsStateWithLifecycle()
+    val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val settings by state.simulator.settings.collectAsStateWithLifecycle()
     val controller = DesktopRuntime.requireCurrent().services
     Text(stringResource(Res.string.simulation_services), style = MaterialTheme.typography.titleMedium)

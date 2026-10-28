@@ -30,8 +30,16 @@ object RuleScopePolicy {
         values.orEmpty().map { if (it.startsWith('.')) appId + it else it }
 
     fun versionMatches(props: RawSubscription.RawAppRuleProps, info: AppInfo?): Boolean =
-        info == null || (props.versionCode?.match(info.versionCode) != false &&
-                props.versionName?.match(info.versionName) != false)
+        versionMatches(props.versionCode, props.versionName, info, forConfiguration = false)
+
+    private fun versionMatches(
+        versionCode: RawSubscription.IntegerMatcher?,
+        versionName: RawSubscription.StringMatcher?,
+        info: AppInfo?,
+        forConfiguration: Boolean,
+    ): Boolean = info == null || (versionCode?.match(info.versionCode) != false &&
+            (if (forConfiguration) versionName?.matchValidConditions(info.versionName)
+            else versionName?.match(info.versionName)) != false)
 
     fun globalScope(app: RawSubscription.RawGlobalApp, info: AppInfo?, explicitlyIncluded: Boolean = true): GlobalAppScope =
         GlobalAppScope(
@@ -42,14 +50,14 @@ object RuleScopePolicy {
             explicitlyIncluded,
         )
 
+    /** Configuration keeps invalid patterns editable; execution uses the strict default. */
     fun appVersionMatches(
         group: RawSubscription.RawAppGroup,
         rule: RawSubscription.RawAppRule,
-        info: AppInfo?
+        info: AppInfo?,
+        forConfiguration: Boolean = false,
     ): Boolean =
-        info == null || ((rule.versionCode
-            ?: group.versionCode)?.match(info.versionCode) != false &&
-                (rule.versionName ?: group.versionName)?.match(info.versionName) != false)
+        versionMatches(rule.versionCode ?: group.versionCode, rule.versionName ?: group.versionName, info, forConfiguration)
 
     fun globalApp(
         group: RawSubscription.RawGlobalGroup,
@@ -88,6 +96,7 @@ object RuleScopePolicy {
         else -> null
     }
 
+    /** Configuration restrictions are independent of the group's static execution validity. */
     fun globalRuleRestriction(
         group: RawSubscription.RawGlobalGroup,
         rule: RawSubscription.RawGlobalRule?,
@@ -98,7 +107,7 @@ object RuleScopePolicy {
     ): RuleRestriction? {
         val app = globalApp(group, rule, appId)
         return globalAppRestriction(
-            app?.enable != false, app == null || versionMatches(app, info),
+            app?.enable != false, app == null || versionMatches(app.versionCode, app.versionName, info, forConfiguration = true),
             groupExcluded, manuallyEnabled,
         )
     }

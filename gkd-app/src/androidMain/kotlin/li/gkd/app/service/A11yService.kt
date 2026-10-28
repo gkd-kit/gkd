@@ -1,5 +1,6 @@
 package li.gkd.app.service
 
+import li.gkd.app.util.monotonicTimeMillis
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -9,6 +10,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -18,28 +20,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.gkd.app.a11y.A11yCommonImpl
-import li.gkd.app.a11y.A11yRuleEngine
-import li.gkd.app.a11y.A11yRuntime
-import li.gkd.app.a11y.A11yState
-import li.gkd.app.a11y.currentTopActivity
-import li.gkd.app.a11y.updateTopActivity
 import li.gkd.app.appScope
+import li.gkd.app.matching.AndroidAutomationSession
+import li.gkd.app.matching.AndroidAutomationSessions
+import li.gkd.app.matching.AndroidMatchHost
+import li.gkd.app.matching.input.AndroidForegroundState
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.platform.lifecycle.LifecycleHooks
 import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
-import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.settings.AutomatorMode
+import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.componentName
-import kotlin.coroutines.resume
+import li.gkd.app.matching.MatchingRuntime
 
 @SuppressLint("AccessibilityPolicy")
-abstract class A11yService : AccessibilityService(), A11yCommonImpl {
+abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     private val lifecycleHooks = LifecycleHooks()
     override val scope = MainScope()
     override val mode get() = AutomatorMode.A11y
@@ -77,16 +79,16 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
         }
     }
 
-    override val ruleEngine by lazy { A11yRuleEngine(this) }
+    override val matchHost by lazy { AndroidMatchHost(this) }
 
     override fun onInterrupt() {}
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) = ruleEngine.onA11yEvent(event)
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) = matchHost.onA11yEvent(event)
 
-    private val startTime = System.currentTimeMillis()
+    private val startTime = monotonicTimeMillis()
     override var justStarted: Boolean = true
         get() {
             if (field) {
-                field = System.currentTimeMillis() - startTime < 3_000
+                field = monotonicTimeMillis() - startTime < 3_000
             }
             return field
         }
@@ -127,6 +129,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             }
         }
         lifecycleHooks.onDestroyed {
+            MatchingRuntime.coordinator.detach(this)
             scope.cancel()
             if (instance === this) {
                 instance = null
@@ -139,14 +142,13 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                 ToastUtils.show(Res.string.a11y_stopped.getSync())
                 updateEnableAutomator(false)
             }
-            A11yState.withTopActivityLock {
-                privilegeContextFlow.value?.run {
-                    topCpn()?.let { cpn ->
-                        // com.android.systemui
-                        if (!currentTopActivity.sameAs(cpn.packageName, cpn.className)) {
-                            updateTopActivity(cpn.packageName, cpn.className)
-                        }
-                    }
+            val context = privilegeContextFlow.value
+            val page = AndroidForegroundState.currentPage
+            val cpn = context?.topCpn()
+            AndroidForegroundState.withTopActivityLock {
+                if (cpn != null && context === privilegeContextFlow.value && page === AndroidForegroundState.currentPage &&
+                    !currentTopActivity.sameAs(cpn.packageName, cpn.className)) {
+                    updateTopActivity(cpn.packageName, cpn.className)
                 }
             }
             destroyed = true
@@ -199,7 +201,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
         connected = true
         ToastUtils.show(Res.string.a11y_started.getSync())
         if (currentAppUseA11y) {
-            A11yRuntime.onA11yConnected(this)
+            AndroidAutomationSessions.onA11yConnected(this)
         }
     }
 

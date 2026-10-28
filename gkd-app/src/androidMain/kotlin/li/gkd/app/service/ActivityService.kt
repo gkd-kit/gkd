@@ -1,6 +1,5 @@
 package li.gkd.app.service
 
-import li.gkd.app.util.copyText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,11 +30,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.gkd.app.a11y.A11yState
-import li.gkd.app.a11y.ActivityScene
-import li.gkd.app.a11y.currentTopActivity
-import li.gkd.app.a11y.topActivityFlow
-import li.gkd.app.a11y.updateTopActivity
+import li.gkd.app.matching.input.ActivityScene
+import li.gkd.app.matching.input.AndroidForegroundState
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.topActivityFlow
+import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
@@ -44,6 +43,7 @@ import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.util.IntentUtils
+import li.gkd.app.util.copyText
 
 class ActivityService : OverlayWindowService(
     positionKey = "activity"
@@ -113,7 +113,7 @@ class ActivityService : OverlayWindowService(
                 }
             }
             if (!A11yService.isRunning.value) {
-                A11yState.withTopActivityLock {
+                AndroidForegroundState.withTopActivityLock {
                     privilegeContextFlow.value?.run {
                         topCpn()?.let { cpn ->
                             updateTopActivity(

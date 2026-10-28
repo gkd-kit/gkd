@@ -16,6 +16,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import li.gkd.app.logging.LogUtils
+import li.gkd.app.storage.appStorage
 
 /** Real transport and decoding through the production client, inside the isolated app lifecycle. */
 suspend fun assertUpdateClient(directory: File) {
@@ -72,8 +74,8 @@ suspend fun assertUpdateClient(directory: File) {
         assertEquals(NewVersion(2, "2", "gkd.apk", bytes.size.toLong()), version)
         logNetworkFailure("transport-log-check", java.net.UnknownHostException("secret-host-log-check"))
         logNetworkFailure("storage-log-check", java.io.IOException("disk-log-check"))
-        li.gkd.app.logging.LogUtils.flush()
-        val logText = li.gkd.app.storage.appStorage().log.listFiles().orEmpty().joinToString("\n") { it.readText() }
+        LogUtils.flush()
+        val logText = appStorage().log.listFiles().orEmpty().joinToString("\n") { it.readText() }
         assertTrue(logText.contains("http-status-log-check-403: HTTP 403"))
         assertFalse(logText.contains("secret-host-log-check"))
         assertTrue(logText.contains("java.io.IOException: disk-log-check"))

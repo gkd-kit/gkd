@@ -6,8 +6,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.atomicfu.atomic
 import li.gkd.app.META
-import li.gkd.app.a11y.currentTopActivity
-import li.gkd.app.a11y.updateTopActivity
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.map
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.state.Loadable
 import li.gkd.db.Db
+import li.gkd.app.record.TriggerStats
 
 val scopeAppSource by lazy {
     combine(
@@ -16,7 +17,7 @@ val scopeAppSource by lazy {
         Db.appLastVisitDao.query(),
         Db.ruleTriggerStatsDao.observe()
     ) { apps, order, visits, records ->
-        AppListSources.build(apps, order, visits).copy(triggerStats = li.gkd.app.record.TriggerStats(records))
+        AppListSources.build(apps, order, visits).copy(triggerStats = TriggerStats(records))
     }
 }
 

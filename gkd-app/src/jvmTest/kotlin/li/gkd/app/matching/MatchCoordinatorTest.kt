@@ -19,8 +19,32 @@ import li.gkd.app.matching.action.continuousSwipe
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.input.MatchTimingPolicy
+import li.gkd.app.model.ActionResult
+import li.gkd.app.model.GkdAction
 
 class MatchCoordinatorTest {
+    @Test
+    fun synchronousCompletionKeepsNewlyScheduledTaskUntilItsDeadline() = runTest {
+        val coordinator = MatchCoordinator(this, kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler),
+            nowMillis = { testScheduler.currentTime }, onFailure = { throw it })
+        val service = Any()
+        val runs = mutableListOf<String>()
+        try {
+            coordinator.attach(service)
+            coordinator.request(service) {
+                runs += "first"
+                coordinator.scheduleFollowUp(service) { runs += "follow-up" }
+                coordinator.request(service) { runs += "pending" }
+            }
+            assertEquals(listOf("first", "pending"), runs)
+            assertEquals(null, coordinator.snapshot().activeRunId)
+            advanceTimeBy(coordinator.policy.value.followUpMillis)
+            runCurrent()
+            assertEquals(listOf("first", "pending", "follow-up"), runs)
+            assertEquals(null, coordinator.snapshot().nextWakeMillis)
+        } finally { coordinator.close() }
+    }
+
     @Test
     fun captureWithoutLoadedRulesDoesNotInventAnEmptyInitialIndex() = runTest {
         val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
@@ -29,6 +53,101 @@ class MatchCoordinatorTest {
             assertEquals(null, coordinator.exportDiagnostics(session.id).initialRules)
             coordinator.stopDiagnostics(session.id)
             assertEquals(null, coordinator.exportDiagnostics(session.id).initialRules)
+        } finally { coordinator.close() }
+    }
+
+    @Test
+    fun foregroundTransitionCancelsBeforeActionStarts() = runTest {
+        for (reason in listOf(MatchInvalidationReason.PageChanged, MatchInvalidationReason.ForegroundConflict)) {
+            val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+            val service = Any()
+            val ready = CompletableDeferred<Unit>()
+            var actionStarted = false
+            try {
+                coordinator.attach(service)
+                coordinator.request(service) {
+                    ready.await()
+                    performAction(GkdAction("*", action = "click")) {
+                        actionStarted = true
+                        ActionResult("click", true)
+                    }
+                }
+                runCurrent()
+                coordinator.invalidate(reason)
+                ready.complete(Unit)
+                runCurrent()
+                assertFalse(actionStarted)
+                assertEquals(null, coordinator.snapshot().activeRunId)
+            } finally { coordinator.close() }
+        }
+    }
+
+    @Test
+    fun explicitStopStillCancelsGestureAfterForegroundTransition() = runTest {
+        for (stop in listOf(MatchInvalidationReason.AutomationDisabled, MatchInvalidationReason.ScreenOff, MatchInvalidationReason.ServiceDisconnected)) {
+            val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+            val service = Any()
+            var released = false
+            try {
+                coordinator.attach(service)
+                coordinator.request(service) {
+                    performAction(GkdAction("*", action = "swipe")) {
+                        try { awaitCancellation() } finally { released = true }
+                    }
+                }
+                runCurrent()
+                coordinator.invalidate(MatchInvalidationReason.PageChanged)
+                runCurrent()
+                assertFalse(released)
+                if (stop == MatchInvalidationReason.ServiceDisconnected) coordinator.detach(service) else coordinator.invalidate(stop)
+                runCurrent()
+                assertTrue(released)
+                assertEquals(null, coordinator.snapshot().activeRunId)
+            } finally { coordinator.close() }
+        }
+    }
+
+    @Test
+    fun cancellationWaitsForContinuousSwipeReleaseAndPropagatesCleanupFailure() = runTest {
+        val failures = mutableListOf<Throwable>()
+        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { failures += it })
+        val service = Any()
+        val segmentFinished = CompletableDeferred<Unit>()
+        val releaseFinished = CompletableDeferred<Unit>()
+        var failure: Throwable? = null
+        var nextStarted = false
+        var submissions = 0
+        try {
+            coordinator.attach(service)
+            val caller = launch {
+                try {
+                    coordinator.execute(service) {
+                        continuousSwipe<SwipeSegment>(0f, 0f, 100f, 100f, 1000,
+                            create = { _, segment -> segment },
+                            dispatch = {
+                                submissions++
+                                if (it.continues) {
+                                    segmentFinished.await()
+                                    GestureSegmentResult.Completed
+                                } else {
+                                    releaseFinished.await()
+                                    GestureSegmentResult.Rejected
+                                }
+                            }, nowMillis = { testScheduler.currentTime })
+                    }
+                } catch (error: Throwable) { failure = error }
+            }
+            runCurrent(); caller.cancel(); runCurrent()
+            coordinator.request(service) { nextStarted = true }
+            segmentFinished.complete(Unit); runCurrent()
+            assertEquals(2, submissions)
+            assertFalse(nextStarted)
+            assertFalse(caller.isCompleted)
+            releaseFinished.complete(Unit); runCurrent()
+            assertTrue(caller.isCompleted)
+            assertTrue(failure is IllegalStateException)
+            assertTrue(failure?.message?.contains("release is unconfirmed") == true)
+            assertEquals(1, failures.size)
         } finally { coordinator.close() }
     }
 
@@ -70,6 +189,58 @@ class MatchCoordinatorTest {
     }
 
     @Test
+    fun pageCancellationWaitsForQueryCleanupBeforeStartingNextQuery() = runTest {
+        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+        val service = Any()
+        val released = CompletableDeferred<Unit>()
+        val events = mutableListOf<String>()
+        try {
+            coordinator.attach(service)
+            coordinator.request(service) {
+                events += "old_started"
+                try {
+                    awaitCancellation()
+                } finally {
+                    withContext(NonCancellable) { released.await() }
+                    events += "old_released"
+                }
+            }
+            runCurrent()
+            coordinator.invalidate(MatchInvalidationReason.PageChanged)
+            coordinator.request(service) { events += "new_started" }
+            runCurrent()
+            assertEquals(listOf("old_started"), events)
+            released.complete(Unit)
+            runCurrent()
+            assertEquals(listOf("old_started", "old_released", "new_started"), events)
+        } finally {
+            released.complete(Unit)
+            coordinator.close()
+        }
+    }
+
+    @Test
+    fun contentBurstCoalescesWithoutCancellingAnActiveAction() = runTest {
+        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+        val service = Any()
+        val finish = CompletableDeferred<Unit>()
+        val runs = mutableListOf<Int>()
+        try {
+            coordinator.attach(service)
+            coordinator.request(service) { finish.await(); runs += 0 }
+            runCurrent()
+            repeat(1000) { value -> coordinator.request(service) { runs += value + 1 } }
+            runCurrent()
+            assertTrue(runs.isEmpty())
+            finish.complete(Unit)
+            runCurrent()
+            assertEquals(listOf(0, 1000), runs)
+        } finally {
+            coordinator.close()
+        }
+    }
+
+    @Test
     fun disconnectedCallbackWaitIsVisibleAndDoesNotReleaseTheLaneForANewService() = runTest {
         val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
         val old = Any()
@@ -93,6 +264,27 @@ class MatchCoordinatorTest {
             assertTrue(nextStarted)
             assertFalse(coordinator.snapshot().cancelling)
         } finally { callback.complete(Unit); coordinator.close() }
+    }
+
+    @Test
+    fun serviceHandoffDropsOldPendingWorkAndRejectsDetachedService() = runTest {
+        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+        val old = Any()
+        val fresh = Any()
+        val runs = mutableListOf<String>()
+        try {
+            coordinator.attach(old)
+            coordinator.request(old) { awaitCancellation() }
+            runCurrent()
+            coordinator.request(old) { runs += "old_pending" }
+            coordinator.attach(fresh)
+            coordinator.request(old) { runs += "old_late" }
+            coordinator.request(fresh) { runs += "fresh" }
+            runCurrent()
+            assertEquals(listOf("fresh"), runs)
+        } finally {
+            coordinator.close()
+        }
     }
 
     @Test

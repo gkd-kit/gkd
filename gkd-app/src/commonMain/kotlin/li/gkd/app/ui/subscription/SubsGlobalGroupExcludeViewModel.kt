@@ -25,6 +25,7 @@ import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.Db
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
+import li.gkd.db.RuleGroupType
 
 data class SubsGlobalGroupExcludeUiState(
     val subscription: RawSubscription,
@@ -96,7 +97,7 @@ class SubsGlobalGroupExcludeViewModel(
         combine(
             SubscriptionConfigStore.observe(),
             Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId, route.groupKey),
-            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = li.gkd.db.RuleGroupType.Global, groupKey = route.groupKey)
+            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = RuleGroupType.Global, groupKey = route.groupKey)
         ) { configs, ids, records ->
             SubsGlobalGroupExcludeUiState(
                 subscription,

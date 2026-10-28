@@ -25,7 +25,12 @@ class SubscriptionException(
         }
 
     override val errorPath: String?
-        get() = inputParseError?.path ?: if (reason == SubscriptionFailureReason.FormatInvalidDetail) "$" else null
+        get() = inputParseError?.path ?: (cause as? PositionCalculationException)?.errorPath
+            ?: when (reason) {
+                SubscriptionFailureReason.FormatInvalidDetail -> "$"
+                SubscriptionFailureReason.RuleInvalidVersionPattern -> arguments.firstOrNull()
+                else -> null
+            }
 
     override val errorMessage: ErrorMessage
         get() {
@@ -77,6 +82,7 @@ enum class SubscriptionFailureReason(val messageResource: StringResource) {
     RuleInputRequired(Res.string.rule_input_required),
     RuleInvalidDetail(Res.string.rule_invalid_detail),
     RuleInvalidPosition(Res.string.rule_invalid_position),
+    RuleInvalidVersionPattern(Res.string.rule_invalid_version_pattern),
     RuleKeyMismatch(Res.string.rule_key_mismatch),
     RuleMissing(Res.string.rule_missing),
     RuleMissingKey(Res.string.subscription_rule_missing_detail),

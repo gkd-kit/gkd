@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.collectLatest
 import li.gkd.app.appScope
 import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.currentDeviceInfo
-import li.gkd.app.a11y.A11yRuntime
+import li.gkd.app.matching.action.executeManualAction
 import li.gkd.app.network.AppLinks
 import li.gkd.app.network.NetworkAddresses
 import li.gkd.app.network.inspection.ServerInfo
@@ -141,7 +141,7 @@ private fun createServer(port: Int, diagnostics: DebugServerDiagnostics?) = embe
             )
         },
         captureSnapshot = { SnapshotCaptureHost.capture() },
-        execSelector = { A11yRuntime.execAction(it) },
+        execSelector = { executeManualAction(it) },
         scriptUrl = AppLinks.ServerScript, jsonFormat = JsonUtils.keepingNulls,
     )
 }

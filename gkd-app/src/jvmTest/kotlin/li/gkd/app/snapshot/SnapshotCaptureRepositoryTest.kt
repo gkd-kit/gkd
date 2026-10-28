@@ -21,8 +21,9 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import li.gkd.app.storage.AppStorageLayout
 
-class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppStorageLayout) {
+class SnapshotCaptureRepositoryTest(private val layout: AppStorageLayout) {
     fun missingScreenshotStillCommitsCompatibleFilesAndMetadata() = runBlocking {
         fixture { f ->
             val result = assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(f.capture(false) { input(SnapshotScreenshotStatus.Unavailable) }).value

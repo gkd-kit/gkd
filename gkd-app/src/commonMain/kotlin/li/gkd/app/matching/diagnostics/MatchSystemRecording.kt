@@ -1,19 +1,20 @@
 package li.gkd.app.matching.diagnostics
 
-
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import li.gkd.app.matching.MatchScheduleCheckpoint
 import li.gkd.app.matching.MatchScheduleCommand
+import li.gkd.app.matching.MatchScheduleCommandType
 import li.gkd.app.matching.MatchScheduleEffect
-import li.gkd.app.rule.RuleExecutionState
-import li.gkd.app.rule.RuleRuntime
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.rule.RuleExecutionParameters
-import li.gkd.app.rule.RuleStatus
+import li.gkd.app.rule.RuleExecutionState
+import li.gkd.app.rule.RuleRuntime
 import li.gkd.app.rule.RuleStateObserver
+import li.gkd.app.rule.RuleStateOperation
 import li.gkd.app.rule.RuleStateValues
+import li.gkd.app.rule.RuleStatus
 
 @Serializable
 data class MatchSystemStep(val sequence: Long, val timeMillis: Long, val command: MatchScheduleCommand? = null,
@@ -31,7 +32,6 @@ data class MatchSystemRecording(
     val stoppedAtMillis: Long? = null,
     val finishingRun: Long? = null,
 )
-
 
 /** Bounded, loss-explicit recording. Unlike the live log ring, it never evicts its prefix. */
 class MatchSystemRecorder(private val initial: MatchScheduleCheckpoint, private val startedAt: Long,
@@ -52,16 +52,23 @@ class MatchSystemRecorder(private val initial: MatchScheduleCheckpoint, private 
         if (sealed) return@synchronized
         final = state
         if (incomplete == null) recordStep(MatchSystemStep(++sequence, now, command, effects))
-        if (stoppedAt != null && command.type == "finish" && command.run == finishing) { sealed = true; identities.clear() }
+        if (stoppedAt != null && command.type == MatchScheduleCommandType.Finish && command.run == finishing) {
+            sealed = true
+            identities.clear()
+        }
     }
 
     private fun recordStep(step: MatchSystemStep) {
         val size = Json.encodeToString(step).length
-        if (steps.size >= capacity || chars + size > maxChars) incomplete = "system_recording_limit"
-        else { steps += step; chars += size }
+        if (steps.size >= capacity || chars + size > maxChars) {
+            incomplete = "system_recording_limit"
+        } else {
+            steps += step
+            chars += size
+        }
     }
 
-    override fun recordRule(operation: String, time: Long, runtime: RuleRuntime, rule: ResolvedRule, state: RuleExecutionState,
+    override fun recordRule(operation: RuleStateOperation, time: Long, runtime: RuleRuntime, rule: ResolvedRule, state: RuleExecutionState,
         before: RuleStateValues, parameters: RuleExecutionParameters, prerequisites: Set<ResolvedRule>, status: RuleStatus?) = synchronized(lock) {
         if (sealed || incomplete != null) return@synchronized
         fun id(value: Any) = identities.getOrPut(value) { identities.size + 1L }
@@ -77,7 +84,10 @@ class MatchSystemRecorder(private val initial: MatchScheduleCheckpoint, private 
             stoppedAt = now
             finishing = state.active?.id
             final = state
-            if (finishing == null) { sealed = true; identities.clear() }
+            if (finishing == null) {
+                sealed = true
+                identities.clear()
+            }
         }
     }
 

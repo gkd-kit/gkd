@@ -11,6 +11,7 @@ import li.gkd.app.model.AppInfo
 import li.gkd.app.rule.ResolvedAppGroup
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.component.GkRuleStatsData
+import li.gkd.db.RuleTriggerStats
 
 object AppListSources {
     fun <T : Any> observe(
@@ -18,7 +19,7 @@ object AppListSources {
         rules: Flow<Loadable<T>>,
         actionOrder: Flow<List<String>>,
         visits: Flow<List<String>>,
-        triggerStats: Flow<List<li.gkd.db.RuleTriggerStats>>,
+        triggerStats: Flow<List<RuleTriggerStats>>,
         globalGroupCounts: (T) -> Map<String, Int>,
         appGroups: (T) -> Map<String, List<ResolvedAppGroup>>,
     ): Flow<Loadable<AppListSource>> {

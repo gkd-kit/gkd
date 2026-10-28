@@ -581,6 +581,7 @@
     <string name="rule_invalid_cannot_enable">规则无效，无法开启</string>
     <string name="rule_invalid_detail">非法规则\n%1$s</string>
     <string name="rule_invalid_position">非法位置:%1$s</string>
+    <string name="rule_invalid_version_pattern">非法版本名称正则\n%1$s\n%2$s\n%3$s</string>
     <string name="rule_key_description">key=%1$s</string>
     <string name="rule_key_mismatch">规则key与当前规则不一致</string>
     <string name="rule_key_prefix">key=%1$s, </string>
