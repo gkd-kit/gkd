@@ -33,11 +33,47 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 滚动、焦点、动画等工具状态留在 Compose，使用官方 `rememberXxxState`；简单工具/组件状态确需恢复时允许 `rememberSaveable`，瞬时状态使用 `remember`。Navigation3 和官方组件内部的保存机制保留；主题通过 `rememberAppearance` 跟随组合生命周期。具体边界统一见 [开发规范](../AGENTS.md#ui-与生命周期)。
 
-`A11yRuntime` 选择真实服务，各服务持有自己的规则引擎、事件缓存及延迟任务，资源随所属 Android 组件释放。页面退出不销毁应用仓库；Desktop 场景重建不清空持久化数据。
+`AndroidAutomationSessions` 选择真实服务；应用生命周期的 `MatchingRuntime.coordinator` 统一自动规则、业务 HTTP 与单次诊断的输入通道。commonMain 的 `queryRules`、`matchRuleSelectors`、`ForegroundTracker`、`MatchInputReducer` 和规则运行状态承载共享决策；规则快照安装通过 `RuleReconciliation` 保留未受依赖变更影响的状态；Android 引擎保留事件接入、节点缓存和平台调用。服务交接会取消旧上下文，旧输入收尾完成后才能开始新输入。事件使用独立副本与有界队列，资源随所属 Android 组件释放。页面退出不销毁应用仓库；Desktop 场景重建不清空持久化数据。实现边界与操作说明见 [匹配引擎调试](matching-engine-debugging.md)，完整目标见 [重构方案](matching-engine-redesign.md)。
+
+匹配相关代码按职责组织在 `li.gkd.app` 下，Android/JVM 实现在各自源码集的对应包中：
+
+| 包 | 当前职责 |
+| --- | --- |
+| `rule` | 规则定义、解析、分组、配置、身份、运行状态、限制与状态判定；声明可选的状态观察接口 |
+| `matching` | 应用运行时组装、协程协调、调度状态机、规则状态复用与前台规则快照 |
+| `matching.input` | 事件输入、前台判定、时序策略；Android 前台状态、系统应用信息及屏幕/规则观察 |
+| `matching.query` | 查询流程、选择器组合、根节点读取；Android `A11yQueryContext` 与节点缓存 |
+| `matching.action` | 连续手势、Android 动作执行、手动查询动作与全局返回 |
+| `matching.diagnostics` | 诊断会话、节点指标、属性解释、查询与系统录制、统一诊断包及停止现场保存 |
+| `development.matching` | 调试 HTTP、单次运行、模拟节点与性能基准 |
+
+这些是职责包，不是独立 Gradle 模块，也不构成严格的逐包分层。平台宿主和调试入口组装同一个协调器；`rule` 不依赖 `matching` 或调试实现。选择器组合算法只依赖规则与 `gkd-selector`，诊断从外侧观察。`MatchScheduleMachine` 只接收生产调度命令，不引用诊断记录；采集器保存输入、实际节点访问、调度效果和规则状态供分析，不再提供离线重放。
 
 `RuleRuntime` 通过可选 `RuleStateObserver` 观察实际状态变化，系统录制器实现该接口；关闭录制时不构造状态快照。`MatchCoordinator` 持有诊断会话的协程生命周期，调试请求作为会话子任务运行，停止/过期取消请求，执行通道仍等待动作收尾；生产运行时不再回调 `MatchDebugRuns`。Android 查询的诊断对象由调用方显式传入，缓存上下文不自行查找全局诊断会话。
 
+协调器与诊断、`queryRules` 与 `MatchWork` 仍有直接协作：前者负责记录真实调度顺序，后者提供统一的取消、提交和动作边界。它们属于同一执行核心，未为包图形式增加接口或转发层。前台判定与规则快照的原子更新、动作期间的规则依赖检查也保留原有一致性边界。
+
+`AndroidAutomationSession` 是两种 Android 运行模式共用的会话接口，`AndroidMatchHost` 接入平台事件。`AndroidForegroundState` 在同一锁内更新前台身份和 `ForegroundRuleSnapshot`；系统应用信息与动作记录已从该状态对象所在文件分离。截图事件/音量触发归 `snapshot`，桌面事件触发订阅刷新归 `subscription`。已注册的服务、Activity、特权入口仍保留原组件名。
+
 ## 数据读写与兼容
+
+订阅的坐标表达式在 commonMain 使用 `li.songe:expression:0.1.0-SNAPSHOT` 编译求值。`Expression.compile` 直接解析原始表达式，随后 `validateBindings` 静态检查变量白名单并拒绝所有函数调用，不执行计算；不再保留外层语法解析或字符串改写。不绑定任何函数，也不启用库的标准函数或常量集。支持范围如下，名称区分大小写：
+
+| 类型 | 支持范围 |
+| --- | --- |
+| 变量 | `left`、`top`、`right`、`bottom`、`width`、`height`、`screenWidth`、`screenHeight`、`random` |
+| 数字 | 整数、完整小数（如 `0.5`）、科学计数法（如 `1e-3`）；不接受 `.5`、`2.` |
+| 运算 | 二元 `+ - * / %`、单个前缀正负号、圆括号；正负号优先于乘除取余，最后加减，同级二元运算从左向右；`%` 是向零截断除法对应的余数 |
+| 函数 | 不支持，包括 `min`、`max`、`clamp` 在内的所有函数调用均被拒绝 |
+| 空白 | 词法单元之间允许 ASCII 空格、Tab、CR、LF，不接受其他 Unicode 空白 |
+
+幂运算 `^`/`**`、`pow()`、数学常量、三角/对数等其他函数、隐式乘法、连续前缀符号、方/花括号、赋值和无括号函数调用均在规则表达式编译阶段拒绝。库支持的点分变量名也必须符合 GKD 的变量白名单，不能引入额外能力。当前 143 条本地订阅表达式均属于上述支持范围；此结论不代表未采集到的外部订阅。源码最长 16,384 个 UTF-16 单元，解析嵌套与 AST 深度上限各为 128，超限视为无效表达式。`Position` 懒加载不可变编译结果，每次求值单独绑定所需变量；同一表达式中的 `random` 使用同一次采样，不同求值重新采样。选择器仍由 `gkd-selector` 编译，不经过坐标表达式库。exp4j 只保留在 JVM 测试依赖中用于兼容性对照。
+
+未知变量、所有函数调用及语法错误在规则表达式编译阶段拒绝；静态校验不受前面的除零等算术错误影响。`position` 和滑动起终点的所有已填写字段均参与校验，包括被更高优先级锚点遮盖的字段。有效坐标仍按 `left/right/x`、`top/bottom/y` 的顺序选择；缺少任一轴则无效。规则组缓存同一份校验结果，用于阻止无效规则参与匹配、卡片错误提示及手动编辑提交拦截；坐标错误携带字段路径、错误码、原始表达式和源码区间。无效规则仍可多选及保存启用设置，修复后遵循保存值。卡片以警告按钮替换开关并弹窗展示详情，两者共用固定尺寸容器；设置面板不显示静态错误，保留其他限制提示。
+
+运行时除零/取余零保留 `DIVISION_BY_ZERO` 和源码区间；最终坐标转换成 Float 后拒绝 NaN、Infinity 和溢出。`PositionCalculationException` 在动作执行边界转为失败的 `ActionResult.coordinateError`，本次点击/长按/滑动在注入之前终止，不回退中心点或其他表达式，也不推进成功触发状态。只有未配置 `position` 时继续使用中心点，未配置滑动终点时继续使用起点。诊断开启时错误附带本次求值实际使用的变量（含同一次采样的 `random`），通过 `coordinate_calculation_failed` 事件及现有诊断导出链路输出；关闭诊断时不采集附加输入。
+
+`RuleExpressionCompatibilityTest` 对照本地订阅提取的脱敏表达式夹具、支持范围内的边界语法和固定随机种子生成的算式，验证数值、编译/求值错误阶段及算术错误语义；另验证错误码/源码区间、函数调用拒绝、静态校验与已移除特性的拒绝边界，同时报告模板编译和隔离求值的 JVM 耗时/分配量。夹具采集工具为 `pnpm app:tools expression-corpus --input SUBSCRIPTIONS_DIR --output FILE`，仅读取 JSON 订阅中的 position 和 swipeArg 起终点表达式；报告不含应用标识或节点内容。Android 另以 API 26/33 的 Robolectric 测试验证实际依赖变体与坐标计算；宿主基准不代表真机耗时。
 
 | 数据 | 读取 | 写入与一致性 |
 | --- | --- | --- |

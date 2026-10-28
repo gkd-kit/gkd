@@ -16,6 +16,7 @@ Windows 绿色版脱离仓库运行时，以 `GKD.exe` 所在目录为根，沿�
 | `cache/` | 可重新获取的依赖及工具缓存 |
 | `tests/desktop/<会话ID>/` | 隔离 data、profile、模拟配置、导入标记及 reports |
 | `tests/android/<会话ID>/` | Android 验证截图、日志和恢复记录 |
+| `device-test-apps/` | 按设备保存的测试轮次安装记录，整轮清理成功后移除对应记录 |
 | `backups/` | 主动保留的备份 |
 | `tmp/<任务名>/` | 临时脚本、中间文件和一次性输出 |
 
@@ -29,6 +30,7 @@ Android 与 Desktop 共用 `AppStorageLayout`，宿主注入 files/cache/private
 | `files/store/` | 生产设置 |
 | `files/subscription/` | 订阅文件 |
 | `files/snapshot/` | 应用自身快照 |
+| `files/log/` | 普通运行日志；按日期和 2 MiB 滚动，总量 16 MiB，保留 7 天 |
 | `files/matching-diagnostics/<开始时间Z>-<短ID>/` | 每次采集的 `diagnostic.json` 及附件；UTC 开始时间加会话 ID 前 8 位。停止时保存未完成现场，收尾后更新，选中的目录随公用日志包分享，普通日志不自动包含历史诊断 |
 | `files/crash/temp/` | 临时崩溃文件 |
 | `files/private-store/` | 私有配置 |
@@ -43,3 +45,5 @@ Desktop 整个 data 目录视为私有，privateFiles 与 files 共用根目录�
 Desktop `--test` 创建随机会话，交互写入前核对 `/desktop/state` 的 `isolated` 标记；截图与报告放在当前会话 `reports/`，不得写入日常目录。启动与导入操作见 [开发文档](../gkd-app/README.md)。
 
 Gradle clean 不删除日常数据。缓存和临时文件可按需清理；日常数据、备份以及包含未处理自动化恢复记录的会话必须保留。历史报告保留原名称，不推测所属会话。可复用工具提交到源码目录，不长期放在忽略目录；不增加旧目录回退或双写。
+
+日志写入队列最多 1024 条、2 MiB，单条最多 64 KiB；超限会标记截断或累计丢弃数量，队列拥塞时优先保留较高级别。Release 文件保留 INFO/WARN/ERROR，DEBUG 仅调试构建采集。公用日志分享先复制稳定的日志文件集，`metadata/log-writer.txt` 包含当前进程的丢弃、截断及写入失败状态。
