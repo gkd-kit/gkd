@@ -1,13 +1,17 @@
 package li.gkd.app.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,6 +55,7 @@ import li.gkd.app.ui.component.isFullVisible
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.icon.GkBackCloseIcon
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
+import li.gkd.app.ui.icon.LockOpenRight
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.platform.GkBackHandler
@@ -62,9 +68,10 @@ import li.gkd.app.ui.style.scaffoldPadding
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun A11yScopeAppListPage(host: UiHost) {
-    val vm = viewModel { A11yScopeAppListViewModel() }
+fun ServiceScopeAppListPage(host: UiHost, kind: ServiceScopeKind) {
+    val vm = viewModel { ServiceScopeAppListViewModel(kind) }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val followsMatch = kind == ServiceScopeKind.Disabled && store.blockA11yAppListFollowMatch
     val searchStr by vm.searchStr.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf(searchStr) }
     LaunchedEffect(searchStr) {
@@ -79,8 +86,8 @@ fun A11yScopeAppListPage(host: UiHost) {
                     AppQuery.select(
                         loaded.value.apps,
                         query,
-                        store.a11yScopeAppGroupType,
-                        store.a11yScopeAppSort,
+                        store.serviceScopeAppGroupType,
+                        store.serviceScopeAppSort,
                         actionOrder = loaded.value.actionOrder,
                         visitOrder = loaded.value.visitOrder,
                         triggerCounts =
@@ -114,7 +121,7 @@ fun A11yScopeAppListPage(host: UiHost) {
         topBar = {
             GkTopAppBar(
                 scrollBehavior = scrollBehavior,
-                canScroll = !editable,
+                canScroll = !editable && !followsMatch,
                 navigationIcon = {
                     IconButton(
                         onClick =
@@ -131,7 +138,7 @@ fun A11yScopeAppListPage(host: UiHost) {
                     if (showSearchBar) {
                         GkBackHandler(true) {
                             if (!host.hideIme()) {
-                                editorState.closeSearch { vm.setSearchStr(it.trim()) }
+                                editorState.closeSearch({ vm.setSearchStr(it.trim()) })
                             }
                         }
                         GkAppBarTextField(
@@ -149,7 +156,7 @@ fun A11yScopeAppListPage(host: UiHost) {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = stringResource(Res.string.a11y_scoped),
+                            text = stringResource(kind.title),
                         )
                     }
                 },
@@ -171,22 +178,25 @@ fun A11yScopeAppListPage(host: UiHost) {
                         contentFalse = {
                             Row {
                                 var expanded by remember { mutableStateOf(false) }
-                                GkSearchCloseIconButton(
-                                    onClick = {
-                                        editorState.toggleSearch(
-                                            searchStr,
-                                        ) {
-                                            vm.setSearchStr(it.trim())
-                                        }
-                                    },
-                                    isSearchOpen = showSearchBar,
-                                )
-                                GkFilterIconButton(
-                                    filtered = !showAllApps,
-                                    onClick = {
-                                        expanded = true
-                                    },
-                                )
+                                AnimatedVisibility(!followsMatch) {
+                                    Row {
+                                        GkSearchCloseIconButton(
+                                            onClick = {
+                                                editorState.toggleSearch(
+                                                    searchStr,
+                                                    { vm.setSearchStr(it.trim()) },
+                                                )
+                                            },
+                                            isSearchOpen = showSearchBar,
+                                        )
+                                        GkFilterIconButton(
+                                            filtered = !showAllApps,
+                                            onClick = {
+                                                expanded = true
+                                            },
+                                        )
+                                    }
+                                }
                                 Box(
                                     modifier = Modifier.wrapContentSize(Alignment.TopStart),
                                 ) {
@@ -203,7 +213,7 @@ fun A11yScopeAppListPage(host: UiHost) {
                                                     text = stringResource(option.labelResource),
                                                     selected =
                                                         AppSort.options.findOption(
-                                                            store.a11yScopeAppSort,
+                                                            store.serviceScopeAppSort,
                                                         ) == option,
                                                     onClick = { vm.setSortType(option) },
                                                 )
@@ -215,40 +225,86 @@ fun A11yScopeAppListPage(host: UiHost) {
                                         ) {
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue =
-                                                    option.invert(store.a11yScopeAppGroupType)
+                                                    option.invert(store.serviceScopeAppGroupType)
                                                 GkMenuItemCheckbox(
                                                     enabled = newValue != 0,
                                                     text = stringResource(option.labelResource),
                                                     checked =
-                                                        option.include(store.a11yScopeAppGroupType),
+                                                        option.include(
+                                                            store.serviceScopeAppGroupType,
+                                                        ),
                                                     onClick = { vm.setAppGroupType(newValue) },
                                                 )
                                             }
                                         }
                                     }
                                 }
+                                if (kind == ServiceScopeKind.Disabled) {
+                                    GkIconButton(
+                                        imageVector =
+                                            if (followsMatch) GkIcons.Lock else LockOpenRight,
+                                        animateMorph = true,
+                                        contentDescription =
+                                            if (followsMatch)
+                                                stringResource(
+                                                    Res.string.a11y_whitelist_follow_apps,
+                                                )
+                                            else
+                                                stringResource(
+                                                    Res.string.a11y_whitelist_independent,
+                                                ),
+                                        onClickLabel = stringResource(Res.string.mode_switch),
+                                        onClick = {
+                                            editorState.closeSearch({ vm.setSearchStr(it.trim()) })
+                                            vm.toggleFollowMatchList()
+                                        },
+                                    )
+                                }
                             }
                         },
                     )
-                    GkIconButton(
-                        imageVector = GkIcons.HelpOutline,
-                        contentDescription = stringResource(Res.string.scoped_a11y_help),
-                        onClick = vm.scope.launchUiAction { vm.showHelp() },
-                    )
+                    if (kind.help != null) {
+                        GkIconButton(
+                            imageVector = GkIcons.HelpOutline,
+                            contentDescription = stringResource(Res.string.help_view),
+                            onClick = vm.scope.launchUiAction { vm.showHelp() },
+                        )
+                    }
                 },
             )
         },
         floatingActionButton = {
             GkAnimatedFloatingActionButton(
-                visible = !editable && scrollBehavior.isFullVisible,
-                onClickLabel = stringResource(Res.string.text_edit_mode_enter),
+                visible = !editable && scrollBehavior.isFullVisible && !followsMatch,
+                onClickLabel =
+                    stringResource(
+                        if (kind == ServiceScopeKind.Disabled)
+                            Res.string.whitelist_text_edit_mode_enter
+                        else Res.string.text_edit_mode_enter,
+                    ),
                 onClick = vm::startEditing,
                 imageVector = GkIcons.Edit,
-                contentDescription = stringResource(Res.string.text_edit),
+                contentDescription =
+                    stringResource(
+                        if (kind == ServiceScopeKind.Disabled) Res.string.whitelist_text_edit
+                        else Res.string.text_edit,
+                    ),
             )
         },
     ) { contentPadding ->
-        if (editable) {
+        if (followsMatch) {
+            Column(
+                modifier = Modifier.scaffoldPadding(contentPadding),
+            ) {
+                GkPageBottomSpace()
+                Text(
+                    text = stringResource(Res.string.a11y_whitelist_follow_apps),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+        } else if (editable) {
             GkMultiTextField(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 text = editText,
@@ -258,19 +314,17 @@ fun A11yScopeAppListPage(host: UiHost) {
                 indicatorSize = editorUiState.indicatorSize,
             )
         } else {
-            val a11yScopeAppList by
-                SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
+            val selectedApps by vm.appList.collectAsStateWithLifecycle()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,
             ) {
                 items(appInfos, { it.id }) { appInfo ->
-                    val checked = a11yScopeAppList.contains(appInfo.id)
                     GkAppCheckboxCard(
                         appIcon = { GkAppIcon(appInfo.id, 32.dp) },
                         appName = { GkAppNameText(appInfo.id, appInfo.name) },
                         appInfo = appInfo,
-                        checked = checked,
+                        checked = selectedApps.contains(appInfo.id),
                         onCheckedChange = vm.scope.launchUiAction { vm.toggleApp(appInfo.id) },
                     )
                 }

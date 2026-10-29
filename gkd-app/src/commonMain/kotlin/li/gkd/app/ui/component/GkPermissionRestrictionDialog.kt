@@ -2,6 +2,7 @@ package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -22,6 +23,8 @@ fun GkPermissionRestrictionDialog(
     appRestrictions: Set<AppPermissionRestriction>,
     onDismiss: () -> Unit,
     onPrivilege: () -> Unit,
+    description: StringResource? = null,
+    alternativeButton: @Composable (() -> Unit)? = null,
 ) {
     val adbRestricted = privilegeAvailable && capabilities?.restricted == true
     val appRestricted = !privilegeAvailable && appRestrictions.isNotEmpty()
@@ -61,10 +64,14 @@ fun GkPermissionRestrictionDialog(
                             appRestricted -> Res.string.restriction_app_intro
                             privilegeAvailable && capabilities == null ->
                                 Res.string.privilege_permissions_unverified
-                            else -> Res.string.automation_privilege_required_description
+                            else ->
+                                description ?: Res.string.automation_privilege_required_description
                         },
                     ),
                 )
+                if (description != null && (adbRestricted || appRestricted)) {
+                    Text(stringResource(description))
+                }
                 if (items.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items.forEach { Text("• " + stringResource(it)) }
@@ -82,13 +89,21 @@ fun GkPermissionRestrictionDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    onDismiss()
-                    onPrivilege()
-                },
-            ) {
-                Text(stringResource(Res.string.restriction_details_go))
+            FlowRow(horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    onClick = {
+                        onDismiss()
+                        onPrivilege()
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (alternativeButton != null) Res.string.action_authorize
+                            else Res.string.restriction_details_go,
+                        ),
+                    )
+                }
+                alternativeButton?.invoke()
             }
         },
     )

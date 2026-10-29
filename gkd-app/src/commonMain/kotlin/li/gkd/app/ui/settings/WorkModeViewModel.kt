@@ -4,12 +4,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.gkd.app.ui.state.BaseViewModel
 
-class WorkModeViewModel : BaseViewModel() {
-    val showPrivilegeRequired: StateFlow<Boolean>
-        field = MutableStateFlow(false)
+enum class WorkModePrivilegeAction {
+    SwitchMode,
+    EditScope,
+}
 
-    fun setShowPrivilegeRequired(value: Boolean) {
-        showPrivilegeRequired.value = value
+class WorkModeViewModel : BaseViewModel() {
+    val privilegeAction: StateFlow<WorkModePrivilegeAction?>
+        field = MutableStateFlow(null)
+
+    fun setPrivilegeAction(value: WorkModePrivilegeAction?) {
+        privilegeAction.value = value
     }
 
     val showKeepAlive: StateFlow<Boolean>

@@ -104,6 +104,8 @@ fun dashboardPage(
     val appName = META.appName
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val scopeApps by SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
+    val automationScopeApps by
+        SettingsRepository.automationScopeAppList.collectAsStateWithLifecycle()
     val platform = dashboardPlatformState()
     val showRestrictionDetails by vm.showRestrictionDetails.collectAsStateWithLifecycle()
     if (showRestrictionDetails) {
@@ -236,10 +238,18 @@ fun dashboardPage(
                     }
                 }
                 ServiceStatusCard(
-                    stringResource(platform.subtitle(store, scopeApps)),
-                    platform.serviceEnabled(store, scopeApps),
+                    stringResource(platform.subtitle(store, scopeApps, automationScopeApps)),
+                    platform.serviceEnabled(store, scopeApps, automationScopeApps),
                     { enabled ->
-                        when (val route = platform.authorizationRoute(enabled, store, scopeApps)) {
+                        when (
+                            val route =
+                                platform.authorizationRoute(
+                                    enabled,
+                                    store,
+                                    scopeApps,
+                                    automationScopeApps,
+                                )
+                        ) {
                             PrivilegeServiceRoute -> vm.setShowRestrictionDetails(true)
                             null -> switchAutomator()
                             else -> mainVm.navigator.navigate(route)

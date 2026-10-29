@@ -32,9 +32,10 @@ object SettingsRepositoryChecks {
     suspend fun run(directory: File, appName: String) {
         val repo = SettingsRepository
         assertEquals(appName, repo.settings.value.actionToast)
-        assertEquals(7, repo.settings.value.a11yAppGroupType)
+        assertEquals(7, repo.settings.value.serviceScopeAppGroupType)
         assertFalse(repo.settings.value.enableDynamicColor)
         assertEquals(listOf(12, 34), repo.overlayPositions.value["legacy"])
+        assertTrue(repo.automationScopeAppList.value.isEmpty())
         val original = repo.exportBackupEntries()
         fun diskSettings() =
             json.decodeFromString<SettingsStore>(directory.resolve("store.json").readText())
@@ -117,6 +118,7 @@ object SettingsRepositoryChecks {
                     "block_match_app_list.txt" to repo::saveBlockMatchAppList,
                     "block_a11y_app_list.txt" to repo::saveBlockA11yAppList,
                     "a11y_scope_app_list.txt" to repo::saveA11yScopeAppList,
+                    "automation_scope_app_list.txt" to repo::saveAutomationScopeAppList,
                 )
             for ((filename, save) in platformPackageLists) {
                 save(platformPackageIds)
@@ -283,6 +285,11 @@ object SettingsRepositoryChecks {
                                 { repo.a11yScopeAppList.value },
                                 repo::saveA11yScopeAppList,
                             ),
+                        "automation_scope_app_list.txt" to
+                            AppIdListEditor(
+                                { repo.automationScopeAppList.value },
+                                repo::saveAutomationScopeAppList,
+                            ),
                     )) {
                     assertTrue(editor.save("test.independent"))
                     assertEquals("test.independent", directory.resolve(filename).readText())
@@ -382,6 +389,11 @@ object SettingsRepositoryChecks {
                             { repo.a11yScopeAppList.value },
                             repo::saveA11yScopeAppList,
                         ),
+                    "automation_scope_app_list.txt" to
+                        AppIdListEditor(
+                            { repo.automationScopeAppList.value },
+                            repo::saveAutomationScopeAppList,
+                        ),
                 )
             for ((filename, editor) in editors) {
                 val beforeFailure = repo.exportBackupEntries().getValue(filename)
@@ -442,6 +454,11 @@ object SettingsRepositoryChecks {
                         "a11y_scope_app_list.txt",
                         repo.a11yScopeAppList,
                         repo::updateA11yScopeAppList,
+                    ),
+                    Triple(
+                        "automation_scope_app_list.txt",
+                        repo.automationScopeAppList,
+                        repo::updateAutomationScopeAppList,
                     ),
                 )) {
                 coroutineScope {

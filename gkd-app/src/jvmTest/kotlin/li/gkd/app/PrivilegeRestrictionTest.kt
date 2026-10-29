@@ -37,6 +37,27 @@ class PrivilegeRestrictionTest {
         )
 
     @Test
+    fun scopedAutomationUsesAutomationStatusAndAuthorization() {
+        val settings = SettingsStore()
+        val selected = setOf("example.app")
+        val state = dashboard(allowed).copy(privilegeAvailable = false)
+        assertEquals(
+            PrivilegeServiceRoute,
+            state.authorizationRoute(true, settings, emptySet(), selected),
+        )
+        assertNull(state.authorizationRoute(false, settings, emptySet(), selected))
+        assertTrue(
+            state.copy(automationRunning = true).serviceEnabled(settings, emptySet(), selected),
+        )
+        assertFalse(state.copy(a11yRunning = true).serviceEnabled(settings, emptySet(), selected))
+        assertTrue(
+            state
+                .copy(topAppId = "other.app", a11yRunning = true)
+                .serviceEnabled(settings, emptySet(), selected),
+        )
+    }
+
+    @Test
     fun unknownAndAllowedPermissionsDoNotBlockAutomationStart() {
         // Only a confirmed denial blocks the UI; starting performs the actual permission check.
         assertNull(dashboard(null).authorizationRoute(true, automation, emptySet()))

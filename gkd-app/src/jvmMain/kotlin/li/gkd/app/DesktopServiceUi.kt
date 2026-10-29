@@ -15,9 +15,7 @@ fun simulatedServiceRunning(service: SimulatedService): Boolean =
         .running(service)
 
 fun selectedSimulatedAutomator(): SimulatedService {
-    val settings = SettingsRepository.settings.value
     val topAppId = DesktopRuntime.requireCurrent().simulator.settings.value.device.topAppId
-    return if (settings.useA11y || topAppId in SettingsRepository.actualA11yScopeAppList)
-        SimulatedService.Accessibility
+    return if (SettingsRepository.appUsesA11y(topAppId)) SimulatedService.Accessibility
     else SimulatedService.Automation
 }

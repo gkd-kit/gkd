@@ -15,13 +15,13 @@ import li.gkd.app.ui.log.A11yEventLogPage
 import li.gkd.app.ui.log.ActivityLogPage
 import li.gkd.app.ui.log.MatchDebugPage
 import li.gkd.app.ui.platform.UiHost
-import li.gkd.app.ui.settings.A11yScopeAppListPage
 import li.gkd.app.ui.settings.AboutPage
 import li.gkd.app.ui.settings.AdvancedPage
 import li.gkd.app.ui.settings.AppWhitelistPage
-import li.gkd.app.ui.settings.BlockA11yAppListPage
 import li.gkd.app.ui.settings.ExternalCallsPage
 import li.gkd.app.ui.settings.QuickSettingsTilesPage
+import li.gkd.app.ui.settings.ServiceScopeAppListPage
+import li.gkd.app.ui.settings.ServiceScopeKind
 import li.gkd.app.ui.settings.WorkModePage
 import li.gkd.app.ui.snapshot.SnapshotPage
 import li.gkd.app.ui.snapshot.SnapshotPreviewPage
@@ -69,8 +69,11 @@ fun GkAppNavigation(
 
                 ActivityLogRoute -> ActivityLogPage()
                 A11yEventLogRoute -> A11yEventLogPage()
-                A11YScopeAppListRoute -> A11yScopeAppListPage(host)
-                BlockA11yAppListRoute -> BlockA11yAppListPage(host)
+                A11YScopeAppListRoute ->
+                    ServiceScopeAppListPage(host, ServiceScopeKind.Accessibility)
+                AutomationScopeAppListRoute ->
+                    ServiceScopeAppListPage(host, ServiceScopeKind.Automation)
+                BlockA11yAppListRoute -> ServiceScopeAppListPage(host, ServiceScopeKind.Disabled)
                 EditBlockAppListRoute -> AppWhitelistPage(host)
                 SnapshotPageRoute -> SnapshotPage(host)
                 HomeRoute -> HomePage(host)

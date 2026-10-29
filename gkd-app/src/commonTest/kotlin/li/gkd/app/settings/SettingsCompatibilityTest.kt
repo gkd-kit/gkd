@@ -13,6 +13,27 @@ import li.gkd.app.subscription.SubscriptionJson.json
 
 class SettingsCompatibilityTest {
     @Test
+    fun serviceScopePreferencesKeepExistingBlockListStorageKeys() {
+        // When the old lists disagree, the shared controls retain the block-list preferences.
+        val settings =
+            json.decodeFromString<SettingsStore>(
+                """{"a11yAppSort":1,"a11yAppGroupType":2,"a11yScopeAppSort":3,"a11yScopeAppGroupType":7}""",
+            )
+        assertEquals(1, settings.serviceScopeAppSort)
+        assertEquals(2, settings.serviceScopeAppGroupType)
+        val encoded =
+            json.encodeToString(
+                settings.copy(serviceScopeAppSort = 2, serviceScopeAppGroupType = 1),
+            )
+        assertTrue(encoded.contains("\"a11yAppSort\":2"))
+        assertTrue(encoded.contains("\"a11yAppGroupType\":1"))
+        assertFalse(encoded.contains("a11yScopeApp"))
+        val restored = json.decodeFromString<SettingsStore>(encoded)
+        assertEquals(2, restored.serviceScopeAppSort)
+        assertEquals(1, restored.serviceScopeAppGroupType)
+    }
+
+    @Test
     fun appListsAcceptWindowsLineEndingsInFilesAndBackups() {
         val text = "android\r\n# System\r\ncom.example.app\r\n"
         val expected = setOf("android", "com.example.app")
@@ -59,7 +80,7 @@ class SettingsCompatibilityTest {
         assertEquals(0, defaults.updateChannel)
         assertEquals(1, defaults.snapshotDisplayMode)
         val inherited = Json.decodeFromString<SettingsStore>("""{"appGroupType":7}""")
-        assertEquals(7, inherited.a11yScopeAppGroupType)
+        assertEquals(7, inherited.serviceScopeAppGroupType)
         assertEquals(7, inherited.subsExcludeAppGroupType)
     }
 

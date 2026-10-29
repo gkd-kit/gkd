@@ -49,6 +49,7 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
+import li.gkd.app.ui.navigation.AutomationScopeAppListRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.platform.RefreshPermissions
 import li.gkd.app.ui.platform.UiHost
@@ -73,14 +74,41 @@ fun WorkModePage(host: UiHost) {
 
     val automationAvailable =
         platform.privilegeAvailable && platform.privilegeCapabilities?.restricted != true
-    val showPrivilegeRequired by vm.showPrivilegeRequired.collectAsStateWithLifecycle()
-    if (showPrivilegeRequired)
+    val privilegeAction by vm.privilegeAction.collectAsStateWithLifecycle()
+    if (privilegeAction != null)
         GkPermissionRestrictionDialog(
             privilegeAvailable = platform.privilegeAvailable,
             capabilities = platform.privilegeCapabilities,
             appRestrictions = platform.appRestrictions,
-            onDismiss = { vm.setShowPrivilegeRequired(false) },
+            onDismiss = { vm.setPrivilegeAction(null) },
             onPrivilege = onPrivilege,
+            description =
+                if (privilegeAction == WorkModePrivilegeAction.EditScope)
+                    Res.string.scoped_automation_privilege_notice
+                else Res.string.automation_mode_privilege_notice,
+            alternativeButton = {
+                TextButton(
+                    onClick = {
+                        val action = privilegeAction
+                        vm.setPrivilegeAction(null)
+                        when (action) {
+                            WorkModePrivilegeAction.EditScope ->
+                                mainVm.navigator.navigate(AutomationScopeAppListRoute)
+                            WorkModePrivilegeAction.SwitchMode ->
+                                host.changeAutomatorMode(AutomatorMode.Automation)
+                            null -> Unit
+                        }
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (privilegeAction == WorkModePrivilegeAction.EditScope)
+                                Res.string.action_edit_only
+                            else Res.string.action_switch_only,
+                        ),
+                    )
+                }
+            },
         )
     val showKeepAlive by vm.showKeepAlive.collectAsStateWithLifecycle()
     if (showKeepAlive) {
@@ -247,6 +275,18 @@ fun WorkModePage(host: UiHost) {
                     if (!platform.writeSecureSettings) {
                         PrivilegeAuthButton(onPrivilege)
                     }
+                    TextButton(
+                        onClick = {
+                            if (automationAvailable)
+                                mainVm.navigator.navigate(AutomationScopeAppListRoute)
+                            else vm.setPrivilegeAction(WorkModePrivilegeAction.EditScope)
+                        },
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.automation_scoped),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
                     TextButton(onClick = { vm.setShowKeepAlive(true) }) {
                         Text(
                             text = stringResource(Res.string.keep_alive_title),
@@ -262,7 +302,7 @@ fun WorkModePage(host: UiHost) {
                 onClick = {
                     if (automationAvailable) {
                         host.changeAutomatorMode(AutomatorMode.Automation)
-                    } else vm.setShowPrivilegeRequired(true)
+                    } else vm.setPrivilegeAction(WorkModePrivilegeAction.SwitchMode)
                 },
                 colors = surfaceCardColors,
             ) {

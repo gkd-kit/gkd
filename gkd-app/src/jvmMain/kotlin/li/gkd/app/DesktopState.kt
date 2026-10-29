@@ -29,6 +29,7 @@ import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.AppRoute
+import li.gkd.app.ui.navigation.AutomationScopeAppListRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.CategoryEditorRoute
@@ -301,6 +302,7 @@ private val desktopRoutes by lazy {
         "subs-global-exclude" to SubsGlobalGroupExcludeRoute(SubscriptionIds.LOCAL, 0),
         "rule-exclude-editor" to RuleExcludeEditorRoute(SubscriptionIds.LOCAL, 0),
         "a11y-scope-apps" to A11YScopeAppListRoute,
+        "automation-scope-apps" to AutomationScopeAppListRoute,
         "block-a11y-apps" to BlockA11yAppListRoute,
         "app-config" to AppConfigRoute("li.gkd"),
         "action-log" to ActionLogRoute(),

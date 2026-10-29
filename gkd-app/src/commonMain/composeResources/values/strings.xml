@@ -10,7 +10,7 @@
     <string name="global_rule_default_apps_enabled">默认开启</string>
     <string name="global_rule_default_apps_disabled">默认关闭</string>
     <string name="a11y_about">关于无障碍</string>
-    <string name="a11y_automation_mode_notice">当前为自动化模式，无障碍将自动关闭</string>
+    <string name="a11y_automation_mode_notice">当前应用使用自动化，无障碍将自动关闭</string>
     <string name="a11y_background_running_warning">必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败</string>
     <string name="a11y_enable">开启无障碍</string>
     <string name="a11y_enable_failed">开启无障碍失败</string>
@@ -29,6 +29,8 @@
     <string name="a11y_restart_failed">重启无障碍失败</string>
     <string name="a11y_running">无障碍正在运行</string>
     <string name="a11y_scoped">局部无障碍</string>
+    <string name="automation_scoped">局部自动化</string>
+    <string name="scoped_automation_help">在无障碍模式下，进入所选应用时改用自动化，离开后恢复无障碍\n\n适用于因检测到无障碍而限制使用的应用，但仍可能在切换完成前被检测到\n\n需要启动特权服务。若应用同时配置了“局部关闭”，则关闭服务\n\n切换服务可能造成短暂卡顿</string>
     <string name="a11y_start_timeout">无障碍启动超时，请尝试关闭重启</string>
     <string name="a11y_start_unreliable_warning">某些场景下服务刚启动时概率不工作，如多次遇到此情况则不建议使用此功能</string>
     <string name="a11y_started">无障碍已启动</string>
@@ -45,6 +47,10 @@
     <string name="action_add">添加</string>
     <string name="action_agree">同意</string>
     <string name="action_authorize">授权</string>
+    <string name="action_edit_only">仅编辑</string>
+    <string name="action_switch_only">仅切换</string>
+    <string name="scoped_automation_privilege_notice">局部自动化需要特权服务</string>
+    <string name="automation_mode_privilege_notice">自动化需要特权服务</string>
     <string name="action_back">返回</string>
     <string name="action_cancel">取消</string>
     <string name="action_close">关闭</string>
@@ -645,10 +651,7 @@
     <string name="saved_to_downloads">已保存至下载</string>
     <string name="saving">保存中</string>
     <string name="saving_progress">正在保存...</string>
-    <string name="scoped_a11y_help">局部无障碍帮助</string>
-    <string name="scoped_a11y_help_behavior">为这些应用开启局部无障碍后，在自动化模式下切换到该应用时，GKD 会临时关闭自动化，改用无障碍服务；切换到未开启局部无障碍的应用后恢复自动化，无需手动切换。\n\n</string>
-    <string name="scoped_a11y_help_problem">某些应用会混淆无障碍节点信息，导致自动化模式无法正常识别和操作页面。\n\n</string>
-    <string name="scoped_a11y_help_scope">仅需为自动化模式下无法正常工作的应用开启</string>
+    <string name="scoped_a11y_help">在自动化模式下，进入所选应用时改用无障碍，离开后恢复自动化\n\n适用于自动化模式下无法正常识别或操作页面的应用\n\n需要启动特权服务。若应用同时配置了“局部关闭”，则关闭服务\n\n切换服务可能造成短暂卡顿</string>
     <string name="screen_nodes_unavailable">界面没有节点信息</string>
     <string name="screenshot_capture_enabled">快照截屏已开启</string>
     <string name="screenshot_capture_notification_description">保存快照时截取屏幕</string>

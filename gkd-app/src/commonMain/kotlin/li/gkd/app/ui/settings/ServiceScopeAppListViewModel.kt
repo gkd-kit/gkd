@@ -10,9 +10,23 @@ import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.home.scopeAppSource
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.util.ToastUtils
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
-class BlockA11yAppListViewModel : BaseViewModel() {
+enum class ServiceScopeKind(val title: StringResource, val help: StringResource?) {
+    Accessibility(Res.string.a11y_scoped, Res.string.scoped_a11y_help),
+    Automation(Res.string.automation_scoped, Res.string.scoped_automation_help),
+    Disabled(Res.string.a11y_whitelist, null),
+}
+
+class ServiceScopeAppListViewModel(private val kind: ServiceScopeKind) : BaseViewModel() {
+    val appList =
+        when (kind) {
+            ServiceScopeKind.Accessibility -> SettingsRepository.a11yScopeAppList
+            ServiceScopeKind.Automation -> SettingsRepository.automationScopeAppList
+            ServiceScopeKind.Disabled -> SettingsRepository.blockA11yAppList
+        }
+
     val editorState = AppListEditorState()
 
     val searchStr: StateFlow<String>
@@ -25,9 +39,24 @@ class BlockA11yAppListViewModel : BaseViewModel() {
     val uiState = scopeAppSource.stateLoadable()
     private val editor =
         AppIdListEditor(
-            { SettingsRepository.blockA11yAppList.value },
-            SettingsRepository::saveBlockA11yAppList,
+            { appList.value },
+            {
+                when (kind) {
+                    ServiceScopeKind.Accessibility -> SettingsRepository.saveA11yScopeAppList(it)
+                    ServiceScopeKind.Automation -> SettingsRepository.saveAutomationScopeAppList(it)
+                    ServiceScopeKind.Disabled -> SettingsRepository.saveBlockA11yAppList(it)
+                }
+            },
         )
+
+    suspend fun showHelp() {
+        MainViewModel.requireCurrent()
+            .dialogRequests
+            .showMessage(
+                title = getString(kind.title),
+                text = getString(requireNotNull(kind.help)),
+            )
+    }
 
     fun startEditing() {
         editorState.closeSearch(::setSearchStr)
@@ -59,15 +88,20 @@ class BlockA11yAppListViewModel : BaseViewModel() {
     }
 
     fun setSortType(value: AppSort) {
-        SettingsRepository.updateSettings { it.copy(a11yAppSort = value.value) }
+        SettingsRepository.updateSettings { it.copy(serviceScopeAppSort = value.value) }
     }
 
     fun setAppGroupType(value: Int) {
-        SettingsRepository.updateSettings { it.copy(a11yAppGroupType = value) }
+        SettingsRepository.updateSettings { it.copy(serviceScopeAppGroupType = value) }
     }
 
     suspend fun toggleApp(appId: String) {
-        SettingsRepository.updateBlockA11yAppList { if (appId in it) it - appId else it + appId }
+        val toggle: (Set<String>) -> Set<String> = { if (appId in it) it - appId else it + appId }
+        when (kind) {
+            ServiceScopeKind.Accessibility -> SettingsRepository.updateA11yScopeAppList(toggle)
+            ServiceScopeKind.Automation -> SettingsRepository.updateAutomationScopeAppList(toggle)
+            ServiceScopeKind.Disabled -> SettingsRepository.updateBlockA11yAppList(toggle)
+        }
     }
 
     fun toggleFollowMatchList() {

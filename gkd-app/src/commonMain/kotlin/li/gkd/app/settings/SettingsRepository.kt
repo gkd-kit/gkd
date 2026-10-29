@@ -327,6 +327,17 @@ object SettingsRepository {
         )
     }
 
+    private val automationScopeAppListValue by lazy {
+        PersistedValue(
+            filename = "automation_scope_app_list.txt",
+            storage = storage,
+            decode = { it?.let(SettingsAppIds::decode) ?: emptySet() },
+            encode = SettingsAppIds::encode,
+            scope = scope,
+            decodeBackup = SettingsAppIds::decodeBackup,
+        )
+    }
+
     private val overlayPositionsValue by lazy {
         PersistedValue(
             filename = "overlay_position.json",
@@ -353,9 +364,6 @@ object SettingsRepository {
                 blockA11yAppList.value,
             )
 
-    val actualA11yScopeAppList: Set<String>
-        get() = AppScopePolicy.a11yScope(settings.value, a11yScopeAppList.value)
-
     fun checkAppBlockMatch(appId: String): Boolean =
         AppScopePolicy.blocksMatch(
             settings.value,
@@ -379,6 +387,22 @@ object SettingsRepository {
     val a11yScopeAppList: StateFlow<Set<String>>
         get() = a11yScopeAppListValue.state
 
+    val automationScopeAppList: StateFlow<Set<String>>
+        get() = automationScopeAppListValue.state
+
+    fun appUsesA11y(appId: String): Boolean =
+        AppScopePolicy.usesA11y(
+            settings.value,
+            a11yScopeAppList.value,
+            automationScopeAppList.value,
+            appId,
+        )
+
+    val hasServiceScope: Boolean
+        get() =
+            if (settings.value.useA11y) automationScopeAppList.value.isNotEmpty()
+            else a11yScopeAppList.value.isNotEmpty()
+
     val backupFilenames: Set<String> by lazy {
         setOf(
             settingsValue.filename,
@@ -386,6 +410,7 @@ object SettingsRepository {
             blockMatchAppListValue.filename,
             blockA11yAppListValue.filename,
             a11yScopeAppListValue.filename,
+            automationScopeAppListValue.filename,
         )
     }
 
@@ -424,6 +449,7 @@ object SettingsRepository {
         blockMatchAppListValue.awaitPersistence()
         blockA11yAppListValue.awaitPersistence()
         a11yScopeAppListValue.awaitPersistence()
+        automationScopeAppListValue.awaitPersistence()
         overlayPositionsValue.awaitPersistence()
     }
 
@@ -444,6 +470,13 @@ object SettingsRepository {
 
     suspend fun saveA11yScopeAppList(value: Set<String>) = a11yScopeAppListValue.save { value }
 
+    suspend fun updateAutomationScopeAppList(transform: (Set<String>) -> Set<String>) =
+        automationScopeAppListValue.save(transform)
+
+    suspend fun saveAutomationScopeAppList(value: Set<String>) = automationScopeAppListValue.save {
+        value
+    }
+
     fun exportBackupEntries(): Map<String, String> =
         mapOf(
             settingsValue.filename to settingsValue.encodeCurrent(),
@@ -451,6 +484,7 @@ object SettingsRepository {
             blockMatchAppListValue.filename to blockMatchAppListValue.encodeCurrent(),
             blockA11yAppListValue.filename to blockA11yAppListValue.encodeCurrent(),
             a11yScopeAppListValue.filename to a11yScopeAppListValue.encodeCurrent(),
+            automationScopeAppListValue.filename to automationScopeAppListValue.encodeCurrent(),
         )
 
     /**
@@ -467,6 +501,7 @@ object SettingsRepository {
                         blockMatchAppListValue,
                         blockA11yAppListValue,
                         a11yScopeAppListValue,
+                        automationScopeAppListValue,
                     )
                     .mapNotNull { value ->
                         entries[value.filename]?.let(value::prepareRestore)

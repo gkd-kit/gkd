@@ -72,7 +72,6 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             }
             if (
                 SettingsRepository.settings.value.enableAutomator &&
-                    SettingsRepository.settings.value.useAutomation &&
                     !currentAppBlocked &&
                     !currentAppUseA11y
             ) {

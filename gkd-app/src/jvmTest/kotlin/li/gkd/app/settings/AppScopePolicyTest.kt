@@ -1,11 +1,24 @@
 package li.gkd.app.settings
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AppScopePolicyTest {
+    @Test
+    fun modeExceptionsAreIndependentAndNewAppsKeepTheDefaultMode() {
+        val a11y = setOf("app.a11y", "app.both")
+        val automation = setOf("app.automation", "app.both")
+        val defaults = SettingsStore()
+        assertFalse(AppScopePolicy.usesA11y(defaults, a11y, automation, "app.automation"))
+        assertFalse(AppScopePolicy.usesA11y(defaults, a11y, automation, "app.both"))
+        assertTrue(AppScopePolicy.usesA11y(defaults, a11y, automation, "app.new"))
+        val switched = defaults.copy(automatorMode = AutomatorMode.Automation.value)
+        assertTrue(AppScopePolicy.usesA11y(switched, a11y, automation, "app.a11y"))
+        assertTrue(AppScopePolicy.usesA11y(switched, a11y, automation, "app.both"))
+        assertFalse(AppScopePolicy.usesA11y(switched, a11y, automation, "app.new"))
+    }
+
     @Test
     fun matchingHonorsIndependentAndFollowedAccessibilityBlocks() {
         val settings =
@@ -37,25 +50,6 @@ class AppScopePolicyTest {
                 match,
                 a11y,
                 "blocked.match",
-            ),
-        )
-    }
-
-    @Test
-    fun disablingAutomationSuppressesScopeWithoutChangingSavedSelection() {
-        val scope = setOf("app.one")
-        assertEquals(
-            emptySet(),
-            AppScopePolicy.a11yScope(
-                SettingsStore(automatorMode = AutomatorMode.A11y.value),
-                scope,
-            ),
-        )
-        assertEquals(
-            scope,
-            AppScopePolicy.a11yScope(
-                SettingsStore(automatorMode = AutomatorMode.Automation.value),
-                scope,
             ),
         )
     }

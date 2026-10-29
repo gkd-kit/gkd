@@ -1,5 +1,6 @@
 package li.gkd.app.settings
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import li.gkd.app.app.AppGroupFlags
 import li.gkd.app.app.AppSort
@@ -51,11 +52,9 @@ data class SettingsStore(
     val subsPowerWarn: Boolean = true,
     val enableBlockA11yAppList: Boolean = false,
     val blockA11yAppListFollowMatch: Boolean = true,
-    val a11yAppSort: Int = AppSort.ByUsedTime.value,
-    val a11yScopeAppSort: Int = AppSort.ByUsedTime.value,
+    @SerialName("a11yAppSort") val serviceScopeAppSort: Int = AppSort.ByUsedTime.value,
     val appGroupType: Int = AppGroupFlags.Installed,
-    val a11yAppGroupType: Int = appGroupType,
-    val a11yScopeAppGroupType: Int = appGroupType,
+    @SerialName("a11yAppGroupType") val serviceScopeAppGroupType: Int = appGroupType,
     val subsExcludeAppGroupType: Int = appGroupType,
     val showDisabledRule: Boolean = true,
     val snapshotDisplayMode: Int = SnapshotDisplayMode.ByTime.value,
