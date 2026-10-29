@@ -152,13 +152,19 @@ fun runDesktop(args: Array<String>) {
         var browsersStopped by remember { mutableStateOf(false) }
         val closing = closeAttempt > 0
         val requestExit: () -> Unit = {
-            hostScope.launch {
-                if (persistence.flush() && !persistence.status.value.pending) {
-                    closeAttempt++
-                } else {
-                    openControls()
-                    state.toast.show("模拟设置尚未保存，请在控制窗口重试保存后退出")
+            try {
+                hostScope.launch {
+                    if (persistence.flush() && !persistence.status.value.pending) {
+                        closeAttempt++
+                    } else {
+                        openControls()
+                        state.toast.show("模拟设置尚未保存，请在控制窗口重试保存后退出")
+                    }
                 }
+            } catch (error: NoClassDefFoundError) {
+                // Rebuilding a running JAR can prevent even the exit coroutine from loading.
+                error.printStackTrace()
+                System.exit(1)
             }
         }
         val handleHostKey: (String) -> Boolean = { key ->
