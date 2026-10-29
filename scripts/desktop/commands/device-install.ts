@@ -2,7 +2,7 @@ import { execFile, spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { promisify } from 'node:util';
-import { localRoot, repositoryRoot } from '../lib/local-paths.ts';
+import { repositoryRoot } from '../lib/local-paths.ts';
 import { createAdb } from '../lib/device-adb.ts';
 import { withAutomationPaused } from '../lib/device-automation.ts';
 import { withInstallConfirmation } from '../lib/device-install.ts';
@@ -75,7 +75,7 @@ export async function deviceInstall(serial?: string) {
       cancellation.signal.throwIfAborted();
       console.log(`Checking and installing GKD on ${device}`);
       try {
-        const parent = join(localRoot, 'tmp', 'device-install');
+        const parent = join(repositoryRoot, '.temp', 'device-install');
         await mkdir(parent, { recursive: true });
         const folder = await mkdtemp(join(parent, 'update-'));
         const adb = withInstallConfirmation(createAdb(device), cancellation.signal);

@@ -10,7 +10,6 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,7 +90,9 @@ const packageRegistry = requireString(
   manifestFile,
 );
 const packageSpecifier = `${packageName}@${packageVersion}`;
-const temporaryDir = await mkdtemp(join(tmpdir(), 'gkd-selector-dist-'));
+const downloadRoot = join(dirname(packageDir), '.temp', 'selector-dist');
+await mkdir(downloadRoot, { recursive: true });
+const temporaryDir = await mkdtemp(join(downloadRoot, 'download-'));
 
 try {
   await writeFile(

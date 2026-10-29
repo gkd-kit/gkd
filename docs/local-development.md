@@ -7,6 +7,8 @@
 
 工具标准目录（`.gradle`、`.kotlin`、`node_modules`、模块 `build`）保持默认。应用自身存储布局中的缓存、日志与临时文件仍由应用管理，不属于开发任务的临时杂项。
 
+设备工具的临时工作目录为 `.temp/device-install/update-*/`、`.temp/test-app-cleanup/round-*/`、`.temp/matching-debug/capture-*/`；安装弹窗识别日志位于 `.temp/install-confirmation/attempt-*/`。设备设置传输中间文件位于 `.temp/device-automation/store-*/` 与 `scope-*/`，selector 下载中间文件位于 `.temp/selector-dist/download-*/`，操作结束后清理各自会话目录。设备设置恢复记录仍保存在 `.local/device-recovery/`，测试应用安装记录仍保存在 `.local/device-test-apps/`。
+
 Windows 绿色版脱离仓库运行时，以 `GKD.exe` 所在目录为根，沿用相同的 `.local/` 数据布局；不会访问打包机器的仓库路径。
 
 | 相对 `.local/` 的目录 | 用途 |

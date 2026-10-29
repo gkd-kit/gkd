@@ -7,6 +7,8 @@ import androidx.room3.withWriteTransaction
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
+import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
@@ -20,7 +22,14 @@ import kotlinx.coroutines.runBlocking
 
 class AppDbMigrationTest {
     private val schemaDirectory = Path.of(checkNotNull(System.getProperty("room.schemaDirectory")))
-    private val tempDirectory = createTempDirectory("app-db-migration-test")
+    private val tempDirectory = run {
+        val project =
+            generateSequence(File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
+                .first { it.resolve("settings.gradle.kts").isFile }
+        val parent = project.resolve(".local/tests/desktop").toPath()
+        Files.createDirectories(parent)
+        createTempDirectory(parent, "app-db-migration-test-")
+    }
 
     private fun databasePath(databaseName: String): Path = tempDirectory.resolve(databaseName)
 

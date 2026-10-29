@@ -7,6 +7,7 @@ import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import li.gkd.app.testing.TestFiles
 import priv.kit.ui.PrivilegeUiPermissionRestrictionStatus
 import priv.kit.ui.PrivilegeUiRuntimeStartSource
 import priv.kit.ui.PrivilegeUiRuntimeStatus
@@ -15,7 +16,8 @@ import priv.kit.ui.PrivilegeUiStartupMode
 class DesktopSimulatorStorageTest {
     @Test
     fun restartRestoresRootAndPermissionsButDropsPendingOperationsAndIme() {
-        val directory = Files.createTempDirectory("gkd-simulator-restart-").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-simulator-restart-").toFile()
         try {
             val storage = DesktopSimulatorStorage(directory.resolve("simulator.json"))
             val settings =
@@ -66,7 +68,8 @@ class DesktopSimulatorStorageTest {
 
     @Test
     fun configurationSurvivesRestartWithoutRestoringImeOrOverwritingInvalidInput() {
-        val directory = Files.createTempDirectory("gkd-simulator-test").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-simulator-test").toFile()
         try {
             val file = directory.resolve("simulator.json")
             val storage = DesktopSimulatorStorage(file)

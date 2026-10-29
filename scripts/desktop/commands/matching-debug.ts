@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { localRoot } from '../lib/local-paths.ts';
+import { repositoryRoot } from '../lib/local-paths.ts';
 import { withAutomationPaused, enableDebugAccessibility, prepareDebugPrivilegeMode } from '../lib/device-automation.ts';
 import { DesktopClient } from '../lib/desktop-client.ts';
 import { request as httpRequest } from 'node:http';
@@ -160,7 +160,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
   }
   if (benchmark && !options.input) throw new Error('--input must contain an AndroidBenchmarkRequest JSON');
   const rawAdb = createAdb(serial);
-  const parent = join(localRoot, 'tmp', 'matching-debug');
+  const parent = join(repositoryRoot, '.temp', 'matching-debug');
   await mkdir(parent, { recursive: true });
   const folder = await mkdtemp(join(parent, 'capture-'));
   const component = 'li.songe.gkd.debug/li.gkd.app.service.DebugService';

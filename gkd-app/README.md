@@ -111,17 +111,18 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 运行状态由 `SimulatorStore` 统一提供，页面重载不会停止服务；退出 Desktop 后不恢复运行状态。模拟条件会保存到会话 `simulator.json`。模拟不执行 Android 自动化、真实截屏或悬浮窗。调试服务复用 Android 的共享检查路由，实际监听 `127.0.0.1:<httpServerPort>`（默认 8888），浏览器、应用诊断和桌面控制共用该监听。页面可打开真实地址；修改端口时重启监听，关闭时释放端口，并按“自动清空内存订阅”设置清理 HTTP 订阅。快照列表/文件读取、删除和订阅更新使用真实 Repository/DAO；`captureSnapshot`、`execSelector` 返回不支持，设备信息标识 Desktop。特权模拟断开会结束依赖它的自动化模拟。
 
-工具默认读取日常会话 `.local/desktop/debug-server.json`；隔离宿主请使用启动日志中的连接文件，例如给以下命令追加 `--connection .local/tests/desktop/<会话>/debug-server.json`，也可显式指定 `--port 8888`：
+工具默认读取日常会话 `.local/desktop/debug-server.json`；隔离宿主请使用启动日志中的连接文件，下列示例显式使用隔离会话连接文件，请替换 `<会话>`；也可使用 `--port` 指定该实例的实际端口：
 
 ```powershell
-pnpm app-tools services
+$connection = ".local/tests/desktop/<会话>/debug-server.json"
+pnpm app-tools services --connection "$connection"
 # 检查运行中的真实订阅 HTTP 接口（仅 --test 宿主）：
-pnpm app-tools check-subscription-http
+pnpm app-tools check-subscription-http --connection "$connection"
 # 在控制窗口将界面服务的启动结果设为“手动完成”后：
-pnpm app-tools service-start --service Activity
+pnpm app-tools service-start --service Activity --connection "$connection"
 # 将 1 替换为启动输出中的 runtime.Activity.attempt：
-pnpm app-tools service-event --service Activity --event Connected --attempt 1
-pnpm app-tools service-stop --service Activity
+pnpm app-tools service-event --service Activity --event Connected --attempt 1 --connection "$connection"
+pnpm app-tools service-stop --service Activity --connection "$connection"
 ```
 
 `check-subscription-http` 启动真实调试服务，验证订阅读写、开关、解析错误和持久化结果，报告写入当前隔离会话的 `reports/subscription-http.json`。所有接口使用同一端口，工具通过 `--connection` 读取或通过 `--port` 显式指定。检查会更新内存订阅作为类别配置样本，并在成功后删除本次新增的正式订阅规则。

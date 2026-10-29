@@ -7,11 +7,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import li.gkd.app.testing.TestFiles
 
 class StartupLogsTest {
     @Test
     fun writesLocalSecondFilenameAndRetainsLatestThirtyStarts() {
-        val root = Files.createTempDirectory("gkd-startup-log").toFile()
+        val root = Files.createTempDirectory(TestFiles.root.toPath(), "gkd-startup-log").toFile()
         try {
             val directory = root.resolve("private/startup-log")
             val time =
@@ -38,7 +39,8 @@ class StartupLogsTest {
 
     @Test
     fun failedWriteDoesNotPruneExistingHistory() {
-        val root = Files.createTempDirectory("gkd-startup-log-failure").toFile()
+        val root =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-startup-log-failure").toFile()
         try {
             val time =
                 SimpleDateFormat("yyyyMMddHHmmss", Locale.ROOT).parse("20261006162246")!!.time

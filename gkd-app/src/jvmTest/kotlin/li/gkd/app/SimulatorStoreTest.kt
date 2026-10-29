@@ -10,6 +10,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import li.gkd.app.testing.TestFiles
 
 class SimulatorStoreTest {
     @Test
@@ -30,7 +31,8 @@ class SimulatorStoreTest {
 
     @Test
     fun failedWritePreservesFileAndSnapshotAndCanBeRetried() {
-        val directory = Files.createTempDirectory("simulator-store-").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "simulator-store-").toFile()
         try {
             val storage = DesktopSimulatorStorage(directory.resolve("simulator.json"))
             val initial = SimulatorSettings()
@@ -56,7 +58,8 @@ class SimulatorStoreTest {
 
     @Test
     fun concurrentFieldPatchesPreserveOtherCommandsAndPersistLatestSnapshot() {
-        val directory = Files.createTempDirectory("simulator-concurrent-").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "simulator-concurrent-").toFile()
         val executor = Executors.newFixedThreadPool(3)
         try {
             val storage = DesktopSimulatorStorage(directory.resolve("simulator.json"))

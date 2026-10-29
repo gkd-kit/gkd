@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, writeFile, rm, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
-import { localRoot } from './local-paths.ts';
+import { localRoot, repositoryRoot } from './local-paths.ts';
 
 type Store = Record<string, unknown>;
 export type Adb = (...args: string[]) => Promise<Buffer>;
@@ -12,13 +12,15 @@ const keys = ['enableAutomator', 'automatorMode'] as const;
 const accessibilityKeys = [...keys, 'enableMatch', 'enableBlockA11yAppList'] as const;
 const accessibilityComponent = `${packageName}/com.google.android.accessibility.selecttospeak.SelectToSpeakService`;
 const recoveryRoot = join(localRoot, 'device-recovery');
+const transferRoot = join(repositoryRoot, '.temp', 'device-automation');
 type Recovery = { serial: string; packageName: string; captureDirectory?: string; saved: Store;
   accessibility?: { services: string; enabled: string }; restoreTestAppA11yScope?: true };
 const a11yScopePath = `${remote}/store/a11y_scope_app_list.txt`;
 const readA11yScope = async (adb: Adb) => (await adb('shell', `if [ -f '${a11yScopePath}' ]; then cat '${a11yScopePath}'; fi`)).toString().split('\n').filter(Boolean);
 
-async function writeA11yScope(adb: Adb, ids: string[], directory: string) {
-  const temporary = await mkdtemp(join(directory, 'scope-'));
+async function writeA11yScope(adb: Adb, ids: string[]) {
+  await mkdir(transferRoot, { recursive: true });
+  const temporary = await mkdtemp(join(transferRoot, 'scope-'));
   try {
     const path = join(temporary, 'scope.txt');
     await writeFile(path, ids.join('\n'));
@@ -60,7 +62,7 @@ export async function prepareDebugPrivilegeMode(adb: Adb, directory: string, aut
   // A surviving privileged server can reconnect and restart the owner while the
   // paused baseline is being written. Stop that owner before selecting the mode.
   await adb('shell', 'am', 'force-stop', packageName);
-  await writeStore(adb, { ...current, enableAutomator: true, automatorMode: automation ? 2 : 1 }, directory);
+  await writeStore(adb, { ...current, enableAutomator: true, automatorMode: automation ? 2 : 1 });
   const configured = await readStore(adb);
   if (configured.enableMatch !== false || configured.enableAutomator !== true || configured.automatorMode !== (automation ? 2 : 1)) {
     throw new Error('Privileged diagnostic mode did not take effect');
@@ -97,10 +99,9 @@ export async function readStore(adb: Adb): Promise<Store> {
   )).toString()) as Store;
 }
 
-async function writeStore(adb: Adb, value: Store, directory: string) {
-  const temporary = join(directory, 'tmp');
-  await mkdir(temporary, { recursive: true });
-  const folder = await mkdtemp(join(temporary, 'store-'));
+async function writeStore(adb: Adb, value: Store) {
+  await mkdir(transferRoot, { recursive: true });
+  const folder = await mkdtemp(join(transferRoot, 'store-'));
   try {
     const path = join(folder, 'store.json');
     await writeFile(path, JSON.stringify(value));
@@ -152,7 +153,7 @@ export async function restoreAutomation(adb: Adb, directory = recoveryRoot) {
   await adb('shell', 'am', 'force-stop', packageName);
   if (record.restoreTestAppA11yScope) {
     const scope = await readA11yScope(adb);
-    if (!scope.includes(packageName)) await writeA11yScope(adb, [...scope, packageName], directory);
+    if (!scope.includes(packageName)) await writeA11yScope(adb, [...scope, packageName]);
     if (!(await readA11yScope(adb)).includes(packageName)) throw new Error('Test app accessibility scope restoration mismatch');
   }
   const latest = await readStore(adb);
@@ -160,7 +161,7 @@ export async function restoreAutomation(adb: Adb, directory = recoveryRoot) {
   for (const key of restoredKeys) {
     if (Object.hasOwn(record.saved, key)) latest[key] = record.saved[key]; else delete latest[key];
   }
-  await writeStore(adb, latest, directory);
+  await writeStore(adb, latest);
   const restored = await readStore(adb);
   for (const key of restoredKeys) {
     if (Object.hasOwn(record.saved, key) !== Object.hasOwn(restored, key) || record.saved[key] !== restored[key]) {
@@ -195,9 +196,9 @@ export async function withAutomationPaused<T>(adb: Adb, output: string, work: (o
   try {
     await adb('shell', 'am', 'force-stop', packageName);
     await writeStore(adb, { ...await readStore(adb), enableAutomator: false, automatorMode: 1,
-      ...(options.accessibilityForDiagnostics ? { enableMatch: false, enableBlockA11yAppList: false } : {}) }, directory);
+      ...(options.accessibilityForDiagnostics ? { enableMatch: false, enableBlockA11yAppList: false } : {}) });
     if (recovery.restoreTestAppA11yScope) {
-      await writeA11yScope(adb, (await readA11yScope(adb)).filter(id => id !== packageName), directory);
+      await writeA11yScope(adb, (await readA11yScope(adb)).filter(id => id !== packageName));
     }
     const paused = await readStore(adb);
     if (paused.enableAutomator !== false || paused.automatorMode !== 1) throw new Error('Automation preflight did not take effect');

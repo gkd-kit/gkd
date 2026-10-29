@@ -7,11 +7,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import li.gkd.app.settings.FileSettingsStorage
+import li.gkd.app.testing.TestFiles
 
 class AppStorageLayoutTest {
     @Test
     fun readsAndroidDirectoryCopyAndWritesBackWithoutFlatteningOrExposingPrivateData() = runTest {
-        val root = Files.createTempDirectory("gkd-storage-layout").toFile()
+        val root = Files.createTempDirectory(TestFiles.root.toPath(), "gkd-storage-layout").toFile()
         try {
             // These paths are the existing Android external storage compatibility contract.
             val external = root.resolve("external")

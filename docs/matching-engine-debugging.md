@@ -1,5 +1,7 @@
 # 匹配引擎调试
 
+本文说明现行操作与诊断契约。
+
 ## 用户入口
 
 在「高级设置 → 日志排查」打开「诊断采集」开关，切换到目标应用复现，通过通知栏「停止」或返回关闭开关结束。停止时自动保存当前现场，动作收尾后更新同一采集目录中的 `diagnostic.json`，从「高级设置 → 诊断记录」进入列表，点击记录查看摘要并分享或删除；长按进入多选，支持全选、反选、批量分享和删除。单条和多条分享统一命名为 `gkd-log-<导出时间yyyyMMddHHmmss>.zip`（本地时间，同秒重名自动追加序号）；分享统一通过日志包入口，包含现有常规日志与环境材料，只附加选中的诊断记录；多条分享为一个 ZIP，保留各自采集目录，其中每次采集保存到 `matching-diagnostics/<开始时间Z>-<短ID>/diagnostic.json`，例如 `20261028073012Z-a1b2c3d4/diagnostic.json`；时间取会话开始时间（UTC），短 ID 取会话 ID 前 8 位。页面和通知栏停止使用同一保存流程；保存失败会提示，分享选中的诊断记录时重试。已保存记录不再按次数或总容量自动清理，由用户主动删除；单次采集的内存、事件和明细上限不变。删除后迟到的 API 收尾不会重新创建该记录；未完成收尾的现场也可以分享，记录明确标注尚未完成。采集没有自动停止时限，由用户主动停止；进入或退出页面不会重建执行引擎。
@@ -53,23 +55,25 @@ pnpm app-tools matching-summary --input .local/diagnostics.json --output .local/
 
 ## Desktop 与 CLI
 
-启动隔离宿主：
+启动隔离宿主，然后在另一个终端执行 CLI。将 `$connection` 替换为启动日志中的实际连接文件；CLI 默认读取日常实例，不会自动发现隔离宿主：
 
 ```powershell
 ./gradlew.bat :gkd-app:run --args=--test
-pnpm app-tools matching-debug --operation start
-pnpm app-tools matching-debug --operation readiness
-# 将上一步的 id 作为下列 SESSION
-pnpm app-tools matching-debug --operation status --session SESSION
-pnpm app-tools matching-debug --operation events --session SESSION --after 0
-pnpm app-tools matching-debug --operation watch --session SESSION --duration 10000
-pnpm app-tools matching-debug --operation run --session SESSION --input .local/request.json
-pnpm app-tools matching-debug --operation run-status --session SESSION --run example-1
-pnpm app-tools matching-debug --operation cancel --session SESSION --run example-1
-pnpm app-tools matching-debug --operation stop --session SESSION
-pnpm app-tools matching-debug --operation export --session SESSION --output .local/diagnostics.json
+# 以下命令在另一个终端运行
+$connection = ".local/tests/desktop/<会话>/debug-server.json"
+pnpm app-tools matching-debug --connection "$connection" --operation start
+pnpm app-tools matching-debug --connection "$connection" --operation readiness
+# 将 start 返回的 id 作为下列 SESSION
+pnpm app-tools matching-debug --connection "$connection" --operation status --session SESSION
+pnpm app-tools matching-debug --connection "$connection" --operation events --session SESSION --after 0
+pnpm app-tools matching-debug --connection "$connection" --operation watch --session SESSION --duration 10000
+pnpm app-tools matching-debug --connection "$connection" --operation run --session SESSION --input .local/request.json
+pnpm app-tools matching-debug --connection "$connection" --operation run-status --session SESSION --run example-1
+pnpm app-tools matching-debug --connection "$connection" --operation cancel --session SESSION --run example-1
+pnpm app-tools matching-debug --connection "$connection" --operation stop --session SESSION
+pnpm app-tools matching-debug --connection "$connection" --operation export --session SESSION --output .local/diagnostics.json
 # 或者一次完成有界采集、停止和导出
-pnpm app-tools matching-debug --operation capture --duration 20000 --output .local/diagnostics.json
+pnpm app-tools matching-debug --connection "$connection" --operation capture --duration 20000 --output .local/diagnostics.json
 ```
 
 运行同一请求 ID 和相同内容会返回原任务；同一 ID 改变内容会被拒绝。每个会话最多 100 个单次请求。输入通道忙时，单次任务报告失败，不覆盖正在执行的动作，不自动重放。`start` 不设置采集时限；`capture --duration` 仅让命令行等待指定时长后主动调用停止，`watch --duration` 仅控制订阅时间。会话没有自动停止时限，默认环形缓冲保留 2000 条事件；分页的 `gap` 和会话的 `dropped` 表示记录已被覆盖。
@@ -100,11 +104,11 @@ pnpm app-tools matching-debug --operation capture --duration 20000 --output .loc
 
 模拟操作明确输出 `simulation: true`。`actionMillis` 与 `cleanupMillis` 可以复现长动作和取消后的收尾；取消后处于 `cancelling`，收尾完成才进入 `cancelled`。Android 请求删除 `simulation`，替换成实际应用、订阅和规则标识。
 
-时序策略通过下列命令读取或整份替换，仅在当前进程生效：
+时序策略通过下列命令读取或整份替换。写入前必须开启诊断会话，停止会话后恢复原策略，不持久化到设置：
 
 ```powershell
-pnpm app-tools matching-debug --operation policy
-pnpm app-tools matching-debug --operation policy --input .local/timing.json
+pnpm app-tools matching-debug --connection "$connection" --operation policy
+pnpm app-tools matching-debug --connection "$connection" --operation policy --input .local/timing.json
 ```
 
 策略包括内容事件合并、前台确认重试及等待窗口、根节点等待、后续查询间隔与窗口、页面稳定期、服务交接等待。新查询读取新策略；已经启动的等待不会因为修改参数自动重放。当前是可调参数策略，不是自动学习或自动调参。
@@ -112,7 +116,7 @@ pnpm app-tools matching-debug --operation policy --input .local/timing.json
 协议检查使用真实共享核心，覆盖仅匹配、重复请求、不同请求内容冲突、模拟动作取消收尾及详细选择器记录：
 
 ```powershell
-pnpm app-tools check-matching-debug
+pnpm app-tools check-matching-debug --connection "$connection"
 ```
 
 ## Debug 真机入口
@@ -135,7 +139,7 @@ pnpm app-tools device-matching-debug --serial DEVICE --attach --operation export
 
 如果用户已经在界面开启诊断，`readiness.session.id` 就是可观察或导出的会话 ID；直接使用 `events`、`watch`、`status` 或 `export`，不要再 `start`。新建会话在已有活动会话时会被拒绝，不会覆盖用户采集。`stop`、`cancel`、`run`、修改 `policy` 仍是显式操作；连接或读取状态本身不会执行它们。
 
-连接模式先确认主进程 PID，再幂等启动 Debug 服务、认证并建立本次 ADB 转发，操作后核对 PID。未运行时直接失败，不自动打开应用；期间进程退出或被系统重建会报错，不能把新进程的状态当成原现场。凭据可能残留时通过认证验证，不删除现有凭据、不输出 token。退出只移除本次转发，不停止共享 Debug 服务；服务不再定时退出，可以通过前台通知中的“停止”按钮结束。诊断会话仍按各自的采集期限停止，重复连接不会改变现有会话。
+连接模式先确认主进程 PID，再幂等启动 Debug 服务、认证并建立本次 ADB 转发，操作后核对 PID。未运行时直接失败，不自动打开应用；期间进程退出或被系统重建会报错，不能把新进程的状态当成原现场。凭据可能残留时通过认证验证，不删除现有凭据、不输出 token。退出只移除本次转发，不停止共享 Debug 服务；服务不再定时退出，可以通过前台通知中的“停止”按钮结束。诊断会话由用户主动停止，或由 CLI 有界采集在等待指定时长后停止；重复连接不会改变现有会话。
 
 `--attach` 不允许与安装、打开测试页面、性能基准或手势测试组合；这些操作继续使用下面的受控测试流程。首次升级到包含新接口的 APK 仍需正常安装，安装可能重建进程；完成升级后再复现现场并连接。连接只增加 Debug 前台服务及 HTTP 诊断开销，不代表零性能影响。
 
@@ -167,7 +171,7 @@ pnpm app-tools device-matching-debug --serial DEVICE --input .local/request.json
 
 工具沿用自动化暂停与恢复流程：记录开关和模式、停止进程、关闭自动化并退出自动化模式、启动 Debug 服务、通过 ADB 转发连接、启动诊断、可选单次请求、有限时间读取 SSE、停止并导出，最后关闭服务和端口转发并恢复本次修改的两个字段。恢复失败时保留 `.local/device-recovery/` 下按设备标识保存的记录。工具不会为了观察正常自动化而静默重新启用开关；正常自动化问题可直接在应用内开始采集。
 
-CLI 详细模式与界面使用同一入口：在 `start`、`capture` 或 `device-matching-debug` 后添加 `--detailed --rule '订阅ID/类型/应用ID/分组key/规则key'`，记录各条选择器命中情况；缺少规则标识时在建立会话前报错。对已经创建会话的有界采集，Ctrl+C 或 SSE 失败仍会尝试停止并导出；停止失败也会继续尝试导出，同时保留原错误并以非零状态退出。成功写入后在标准错误输出打印 `Diagnostic export: 路径`。进程被强杀、服务断连或启动前失败无法保证导出；设备恢复记录仍按原流程保留。
+CLI 详细模式与界面使用同一入口：在 `start`、`capture` 或 `device-matching-debug` 后添加 `--detailed --rule '订阅ID/类型/应用ID/分组key/规则key'`，记录各条选择器命中情况；未开启 `--record-system` 时，缺少规则标识会在建立会话前报错；`--detailed --record-system` 可省略 `--rule`，解释全部参与查询的规则。对已经创建会话的有界采集，Ctrl+C 或 SSE 失败仍会尝试停止并导出；停止失败也会继续尝试导出，同时保留原错误并以非零状态退出。成功写入后在标准错误输出打印 `Diagnostic export: 路径`。进程被强杀、服务断连或启动前失败无法保证导出；设备恢复记录仍按原流程保留。
 
 `li.gkd.app.service.DebugService` 统一承载浏览器接口 `/api/*` 和应用诊断 `/debug/*`，只监听用户配置的 `httpServerPort`（默认 8888）。Android 支持局域网连接；诊断接口和 `/health` 必须提供随机 Bearer token，旧浏览器接口保持原协议。诊断接入实现位于 `gkd-app/src/androidDebug`，由最终应用 Debug 源集编译并通过 Debug Manifest 元数据装配；Release 不包含该接入实现或注册诊断路由。Debug 构建允许 ADB 通过 `android.permission.INTERACT_ACROSS_USERS_FULL` 保护的同一服务入口启动；Release 服务不导出。每次服务启动生成 token，和实际端口一起写入私有目录的 `app-debug.json`，工具通过 `run-as` 读取，token 不输出到日志和诊断包。重复启动沿用现有监听与 token；修改端口会重启监听并更新凭据文件，工具需重新连接，采集会话继续。通知“停止”关闭统一监听、删除凭据、取消服务自有诊断会话，并按设置清理内存订阅；动作通过执行引擎完成取消收尾。
 
@@ -209,51 +213,25 @@ SSE 从同一有界缓冲读取，不直接订阅执行线程；客户端慢不�
 
 服务交接、服务断开、确认页面切换、前台冲突、熄屏以及关闭自动化会使当前执行上下文失效。熄屏后停止自动查询与后续唤醒调度；亮屏锁屏界面仍依据实际节点判断。普通内容事件合并为待查询请求，不持续打断正在进行的动作。普通业务 HTTP 输入、自动匹配和诊断输入共用执行通道。
 
-特权点击和滑动使用 priv-kit input 的挂起函数；取消后等待该调用的清理完成。无障碍滑动使用 100 ms 连续段：取消后等当前段回调，再在已到达的位置提交原地结束段，等收尾回调后释放通道。无障碍点击/长按仍等待其完整手势回调。系统不回调时继续占用通道；结束段无法提交时报告收尾失败与释放未确认，不把异常吞成正常取消。它结束的是触点注入，不能撤销已经产生的滚动、长按或抬手后的惯性；结束段产生 UP，不是对应用发送 ACTION_CANCEL。验证范围见下方连续手势记录。
+特权点击和滑动使用 priv-kit input 的挂起函数；取消后等待该调用的清理完成。无障碍滑动使用 100 ms 连续段：取消后等当前段回调，再在已到达的位置提交原地结束段，等收尾回调后释放通道。无障碍点击/长按仍等待其完整手势回调。系统不回调时继续占用通道；结束段无法提交时报告收尾失败与释放未确认，不把异常吞成正常取消。它结束的是触点注入，不能撤销已经产生的滚动、长按或抬手后的惯性；结束段产生 UP，不是对应用发送 ACTION_CANCEL。
 
 新的 TaskStack 与节点观察不一致时暂停执行，使用可调重试等待节点确认。节点先到可以通过重复观察确认；迟到旧回调不会直接改写已确认前台。通知栏、锁屏和桌面负一屏允许任务包与节点包长期不同：连续节点确认交互界面后，重复的底层任务回调不会将其覆盖，也不会反复取消动作。退出覆盖界面后重新确认节点，并在包名一致时复用任务的 Activity 信息。判断不依赖某个厂商的负一屏包名白名单。系统 UI 的内容事件也会经实际根节点核对，不再一律过滤。同一 Activity 内页面变化仍依赖收到的系统观察，不能保证识别没有相关事件的所有界面变化。
 
 诊断包包含观察输入和实际判断；`recordQueries` 增加实际节点访问、参数、返回值、耗时和异常；`recordSystem` 增加调度、规则状态与动作生命周期。离线摘要只读取证据，不执行选择器或调度状态机。节点记录可能含界面文本，分享前检查。性能基准仍由独立命令生成。
 
-## 模拟器验证记录（2026-10-21）
-
-- 雷电模拟器上验证了应用状态、应用列表、前台来源和能力列表接口；未携带凭据的请求返回 401。
-- 展开通知栏时，ADB `topResumedActivity` 仍为 `com.android.launcher3/.Launcher`，已确认节点包为 `com.android.systemui`，无待确认冲突；收起后恢复桌面包与 Activity。
-- 共享测试覆盖不同包的覆盖界面、重复底层任务回调、返回原任务、新任务等待节点，以及旧传输关闭不影响后续 UI 诊断会话。
-- 模拟器未提供有效的负一屏/安全锁屏验证。熄屏与唤醒广播快速交错，接收器改为读取当前 PowerManager 状态；熄屏事件仍使旧执行上下文失效。实际锁屏、厂商负一屏及输入中断效果仍需真机验证。
-- 设备检查后恢复并核对了临时无障碍配置及自动化开关、运行模式。详细观测保存在本机 `.local/emulator-surface-check/report.json`。
-
-## Android 13 真机验证（2026-10-21）
-
-- 设备 M2012K11AC（Android 13），经用户允许临时开启无障碍，正常规则匹配全程关闭。
-- 负一屏：ADB 顶层仍为 MIUI 桌面，节点确认 `com.miui.personalassistant`；返回后确认 `com.miui.home`。
-- 通知栏：ADB 顶层仍为 GKD，节点确认 `com.android.systemui`；收起后恢复 GKD。生产转换日志确认恢复 `li.gkd.app.MainActivity`；跟踪器中原始确认的 activityId 可为空，Android 应用层沿用已有 Activity 恢复逻辑。
-- 熄屏返回 interactive=false、locked=true；唤醒后 interactive=true、locked=true，节点保持系统锁屏界面。测试未启动特权任务栈监听，任务对照来自 ADB，不能据此声称真实 ITaskStackListener 时序已验证。
-- 实际无障碍短滑动成功（shell=false）；4 秒滑动开始约 300 毫秒后请求取消，立即返回 cancelling，3724 毫秒后终态 cancelled；后续仅匹配查询成功。本轮证实等待系统回调完成后释放通道，不是立即物理终止手势。本轮仅覆盖无障碍路径，特权与自动化结果见后文。
-- 最终核对 enableAutomator=false、automatorMode=2、enableMatch=true，以及原无障碍服务列表均已恢复。详细报告为本机 `.local/android13-surface-check/report.json` 和 `.local/android13-gesture-check/report.json`。
-
-## Android 13 特权与自动化验证（2026-10-21）
-
-- 通过应用生成的 `priv.sh` 以 ADB shell 身份启动特权服务。首次与应用静默启动重叠，握手被拒绝，短滑动实际回退到无障碍；测试以 `shell=true` 为必要条件，未将这次回退计为成功。按 priv-kit 启动互斥契约等待静默启动结束后重测成功。
-- 无障碍节点＋特权输入：确认 serviceMode=1、短滑动 shell=true；4 秒滑动开始约 300 毫秒后请求取消，请求到 cancelled 终态约 150 毫秒；取消后再次特权滑动成功。
-- UiAutomation 节点＋特权输入：确认 serviceMode=2、短滑动 shell=true；同样的长滑动取消约 26 毫秒，复测约 29 毫秒；取消后再次特权滑动成功。这些时间包含 HTTP 往返和状态轮询，不是输入注入器的精确延迟或性能保证。
-- 自动化模式切换通知栏：长滑动期间展开通知栏，未显式发送取消请求，约 254 毫秒后任务自动进入 cancelled；真实 TaskStack 观察保持 GKD/MainActivity，节点与已确认界面为 SystemUI，pending=null、reason=surface_confirmed。收起通知栏后恢复 GKD/MainActivity，随后再次滑动成功。
-- 全程关闭普通规则匹配。最终已恢复 enableAutomator=false、automatorMode=2、enableMatch=true 及原无障碍配置；本次新建的 shell 特权进程已退出。报告分别为 `.local/android13-privilege-check/report.json`、`.local/android13-automation-check/report.json`、`.local/android13-automation-transition-check/report.json`。
-
 ## 时序调整与现场快照
 
 共享诊断页现在展示服务模式、屏幕/锁屏、Task 与节点来源、确认/待确认界面、当前运行和下一次唤醒。可编辑时序 JSON 并应用到活动诊断会话；停止或拥有该会话的服务退出时恢复会话开始前的参数。运行中的查询保留其策略快照，后续查询使用新参数；引擎补查从原调度起点重算，规则 matchDelay/actionDelay 不被改写。
 
-`query_started` 事件携带该次查询的 policy，参数变化记录为 policy_updated；session.policy 始终是会话开始时的参数。导出 runtime 是导出时快照，不是所有事件同一时刻的系统状态。Desktop 的 foreground=null 明确表示没有 Android 前台观察。
+`query_started` 事件携带该次查询的 policy，参数变化记录为 policy_updated；session.policy 始终是会话开始时的参数。活动会话导出时刷新 runtime；停止时冻结 runtime，停止后的导出和收尾更新不再刷新它。该快照由各来源依次观察组成，不是原子系统状态。Desktop 的 foreground=null 明确表示没有 Android 前台观察。
 
 ```shell
-pnpm app-tools matching-debug --operation engine
-pnpm app-tools matching-debug --operation policy --input .local/timing.json
+pnpm app-tools matching-debug --connection "$connection" --operation engine
+pnpm app-tools matching-debug --connection "$connection" --operation policy --input .local/timing.json
 pnpm app-tools device-app-debug --serial DEVICE --operation engine
 ```
 
 参数写入前先开始诊断。页面不展示运行记录，完整证据从诊断文件或 HTTP 获取；停止采集后，已有单次任务处于 cancelling 时页面继续刷新到终态。设备采集命令收到 SIGINT/SIGTERM 后会取消流读取，随后停止服务、移除转发、恢复自动化字段；强制杀死进程或设备断开后可使用 `device-recovery` 恢复；新采集会先检查同一设备是否存在未完成恢复。
-本轮补充验证（2026-10-21）：75 项规则 JVM 测试通过；Desktop 协议覆盖策略快照、恢复和可中断 SSE；共享页面实测参数编辑/筛选/停止恢复，以及停止诊断后仍刷新取消收尾。最终 Debug 包已重新安装 Android 13，/debug/engine 返回服务未连接、无运行任务及实际屏幕/锁屏信息，认证检查通过，自动化字段已恢复。本轮没有重新启用真实匹配或执行手势。
 
 ## 输入现场
 
@@ -299,7 +277,7 @@ pnpm app-tools device-recovery --serial DEVICE --operation restore
 `simulation` 使用单次调试相同的完整 AppInfo/节点格式；以上空对象仅示意结构。模拟延迟和规则 `matchDelay` 必须为零，规则资格在测量期间应保持稳定。最多 200 次测量、100 次预热、20000 节点，15 秒超时，同一时间仅一个基准任务。
 
 ```shell
-pnpm app-tools matching-debug --operation benchmark --input .local/benchmark.json --output .local/benchmark-result.json
+pnpm app-tools matching-debug --connection "$connection" --operation benchmark --input .local/benchmark.json --output .local/benchmark-result.json
 ```
 
 三档 `off`/`flow`/`detailed` 使用相同规则和树，轮换执行顺序，返回中位/P95 纳秒、每次查询的节点适配器操作数、当前工作线程的分配字节（JVM 不支持时为 null）、匹配结果。结果或节点访问数不一致时失败，不把性能数据当成语义正确的证据。计数适配器仅在基准中存在，原始节点不会被逐节点包装，普通模拟查询没有计数开销。
@@ -391,7 +369,7 @@ pnpm app-tools matching-summary --input .local/capture.json --output .local/summ
 
 摘要提供 `inputs`、包含调用详情与独立摘要的 `queryRecordings`、按查询完整耗时排序的 `slowestQueries`、合并查询内记录及异常事件并按 ID 去重的 `operations`、`slowestNodeCalls`、`operationsAtStop`、`openOperations`、`completedAfterStop` 和 `systemRecording.timeline`。`runDetails` 按 runId 关联事件序号、查询索引、系统步骤和操作 ID；请求通过 engineRunId 对应同一运行。仅剩请求终态的运行也保留关联条目，缺失的事件、查询、系统步骤和操作列表为空，不补造证据。规则定义通过原始包的 ruleSnapshots、ruleDefinitions 和 initialRules 查看。摘要不重新执行任何业务逻辑。
 
-## 采集收尾与历史验收
+## 采集收尾
 
 关闭诊断时，无障碍事件直接进入同一过滤逻辑，不构造 `MatchEventContext`、`MatchInput.Accessibility`、`MatchInputRecord` 或该事件的 `MatchInputDecision`；队列仍保留实际需要的 `MatchEventKey` 和接受后的事件副本。其他输入也只在采集开启时构造 `MatchInputRecord`。序号、时间和过滤状态始终连续更新，开启诊断后仍记录完整上下文、接受/拒绝原因及采集前状态；未引入对象池，采集中不持续落盘。
 
@@ -405,9 +383,7 @@ CLI capture 在停止所属会话后，只轮询会话的 `trackingComplete`；�
 
 watch 现在将 `--after SEQUENCE` 作为 Last-Event-ID 发送，重连可以接着读取；服务返回的 gap 仍表示事件已被覆盖，不会由重连补造。
 
-此前离线重放的历史验收见 matching-engine-redesign.md；当前入口只保留诊断采集与摘要。
-
-证据保存在 `.local/refactor-remaining-*`：final-validation.log、tools-final.log、protocol-final.log、export.json、replay.json、capture.json 和 ui-check.json。隔离 Desktop 进程已清理，未操作任何真机设置。
+当前入口只保留诊断采集与摘要，不提供离线重放。
 
 ## 系统调度、规则状态与动作现场
 
@@ -473,7 +449,7 @@ Android 16 / 25060RK16C，现有 Debug APK `1.13.0-beta-2-fe6736f` 与本地构�
 
 证据：`.local/android16-session-{privilege,automation}/` 中各有 `final.json`、两份 `final-*-capture.json` 和两份 `offline-*.json`；汇总为 `.local/android16-session-summary.json`，恢复核对为 `.local/android16-session-device-after.json`，工具验证为 `.local/android16-session-tools-final.log`。
 
-## 查询不完整与节点拥塞诊断（2026-10-23）
+## 查询不完整与节点拥塞诊断
 
 查询触及子节点/后代预算，或声明存在的子节点、查询所需根节点无法取得时，终止对应规则的本次动作，不执行输入、不提交成功计数，也不永久禁用规则。日志原因分别为 `query_child_limit`、`query_descendant_limit`、`query_child_unavailable`、`query_root_unavailable`，不会归为 `not_matched`。这尤其避免 `excludeMatches` / `excludeAllMatches` 将未完成的查询误判为不存在。正常短路命中、关系范围内查询和恰好完成预算内遍历不需要扫描整树；后续事件可重新查询。
 
@@ -504,17 +480,13 @@ pnpm app-tools device-test-apps --serial DEVICE --operation cleanup
 
 本轮安装记录按设备保存在 `.local/device-test-apps/`，安装前先落盘，安装/卸载后核对真实设备状态。清理命令复用自动化暂停与恢复流程，只卸载本轮记录且 APK 哈希符合的应用；没有记录时不重启 GKD。未知来源的同包应用、被外部替换的 APK 不会被覆盖或删除。安装响应丢失、设备断连或卸载失败时保留记录，重连后可重试；清理完成前不要删除此目录。
 
-安装生命周期已于 2026-10-23 在 Android 13 真机复验：两次独立构建的 APK 哈希一致，证书与 GKD Debug 一致；首次安装后连续执行两次完整查询检查，第二次 GKD 与 fixture 均为 `unchanged`。随后用相同签名、增加验证资源的 APK 覆盖更新，结果为 `updated`，首次安装时间和私有数据未变，再次检查为 `unchanged`。整轮只在最后清理时卸载，重复清理无操作，安装记录、设置恢复记录、调试服务和转发均已清理。首次安装曾被系统拒绝，重试沿用同一签名和轮次记录，未重新生成密钥。26 项工具测试和类型检查通过；证据为 `.local/tests/fixture-signing/` 与 `.local/tests/android/fixture-lifecycle/`，后者包括两轮查询报告、`update.json`、清理日志及 `restored.json`。
-
 ### 安装弹窗自动确认
 
 设备调试和 profile 导出中的实际安装调用共用确认适配器；APK 内容相同直接跳过，不启动监视器。适配器先从 APK 读取并校验包名、全部本地化应用名称和大小，安装命令通过 `--pkg` 声明预期包名。只有安装前无活跃安装会话、安装期间唯一 shell 提交会话的包名和大小匹配，才继续识别界面。
 
 当前已验证 MIUI Android 13 的 `com.miui.securitycenter/com.miui.permcenter.install.AdbInstallActivity`：同时核对系统 pm 启动来源、前台 Activity/窗口、USB 安装标题、APK 应用名称、提示语及唯一可点击的“继续安装”按钮。此界面的确认按钮是 `android:id/button2`，`button1` 是拒绝，不能按常见按钮编号猜测。点击前再次核对窗口和安装会话，每次安装最多点击一次；不操作拒绝选项、复选框或系统设置。未知界面、身份不一致、并行会话或读取错误都不自动点击，仍由原安装结果决定成败。
 
-监视器仅存在于本次未完成的安装中，安装完成、失败或调用取消后不再点击；即使较早发起的 UI dump 随后才返回，也会丢弃其点击结果。最后仍校验已安装 APK 的 SHA-256。识别结果和必要的弹窗 XML 保存在 `.local/tmp/install-confirmation/attempt-*/`，命令输出具体路径，设备上的临时 XML 在结束后清理。
-
-2026-10-23 真机验证已自动点击目标 fixture 的“继续安装”，报告 `clicked=true`、`installed=true`，对应会话包名和 APK 大小正确，最终安装哈希一致；随后 6 个查询安全场景通过。再次使用相同 APK 时安装、UI 检查和点击次数均为 0。整轮已统一卸载测试应用并恢复设置。回归覆盖错误应用、错误前台/来源/会话、并行会话、按钮禁用或歧义、完成/取消后迟到 UI、点击失败、dump 响应丢失后的清理及相同 APK 跳过；36 项工具测试与类型检查通过。证据位于 `.local/tests/android/install-confirmation/`，主要文件为 `verification.json`、`auto/report.json`、`tools-tests.log`。此次只确认该机型的中文 MIUI USB 提示，未把未识别的厂商界面视为支持。
+监视器仅存在于本次未完成的安装中，安装完成、失败或调用取消后不再点击；即使较早发起的 UI dump 随后才返回，也会丢弃其点击结果。最后仍校验已安装 APK 的 SHA-256。识别结果和必要的弹窗 XML 保存在仓库根目录的 `.temp/install-confirmation/attempt-*/`，命令输出具体路径，设备上的临时 XML 在结束后清理。
 
 安装与清理入口覆盖：
 
@@ -528,48 +500,17 @@ pnpm app-tools device-test-apps --serial DEVICE --operation cleanup
 | `device-query-safety` 的 fixture | 使用 `ensureDeviceTestApp` 记录本轮所有权；单次结束停止进程，整轮结束由 `device-test-apps cleanup` 卸载 |
 | `device-test-apps cleanup` / `device-recovery restore` | 分别完成本轮测试应用清理和中断后的设置恢复；不执行安装 |
 
-2026-10-23 入口复核未发现源码、Gradle 或 CI 中另行安装/逐次卸载的测试入口。当时的本地安装脚本、`device-app-debug` 和 `capture-profile` 在真机均报告 `unchanged`，设置恢复通过；本地脚本现已由上述 TypeScript 命令替代。最终确认无本轮测试 APK、待恢复记录、调试服务、额外转发或安装 XML；空轮次清理也未重启应用。此次复核未重新触发安装弹窗，弹窗实测证据见上一段。入口日志和恢复核对位于 `.local/tests/android/device-entry-audit/`。
-
-2026-10-23 新 `device-install` 入口在同一真机验证指定 serial 和默认设备发现，两次构建成功，均跳过相同 APK 并恢复设置；默认发现还验证了 PATH 缺少 adb 时使用 SDK 路径。无效 serial 在构建前停止，无效 JAVA_HOME 导致构建失败后未进入安装；构建期间取消仅终止本次构建树，未开始安装，PATH 和信号监听恢复。类型检查及 38 项工具测试通过，旧 PowerShell 文件已删除。证据位于 `.local/tests/android/device-install-cli/`；本次只有一台设备，未实测多设备失败汇总，也未重新触发安装弹窗。
-
-2026-10-23 在 Android 13 / M2012K11AC 完成真实节点和 Binder 复验，安装包 SHA-256 与本地 gkd Debug 构建一致：
-
-| 场景 | 请求结果 | 测试页面真实触摸 |
-| --- | --- | --- |
-| 完整查询，排除条件不存在 | `action_finished`，无障碍点击成功 | 1 DOWN / 1 UP |
-| 完整查询，排除条件存在 | `not_matched` | 0 |
-| 513 个同级节点，排除节点位于末尾 | `query_child_limit`，无 action | 0 |
-| 33 组 × 128 个子节点，排除节点位于末尾 | `query_descendant_limit`，无 action | 0 |
-| 1500 个内容事件，节点响应延迟最多 4500 ms | 8 次请求均 cancelled | 0 |
-| 物理读取返回后重新请求 | `action_finished`，无障碍点击成功 | 新增 1 DOWN / 1 UP |
-
-拥塞导出中的 `entries` 累计记录 1435 次队列溢出，保留事件中有 618 条 `eventDrop`，均包含事件键、容量 64 与非负等待时间；读取器记录 4 次超时、140 次容量不足，压力记录确认 4/4 个槽仍被物理读取占用。最长 NodeRead 约 4463 ms，结束后 `openOperations` 为空，执行通道空闲。这里的计数和耗时是单次设备结果，不是性能预算。
-
-压力会话的诊断环形日志覆盖了 1779 条旧记录，和无障碍输入队列丢弃是不同概念。离线摘要正确提示记录缺失、队列溢出和 Binder 尚未返回的区别；累计次数仍由 `entries` 保留。没有用缺失的 action 日志证明“未点击”，而是同时检查请求结果及独立测试进程的触摸计数。此次未强制构造根节点缺失或已声明子节点突然消失，也未扩展到特权/UiAutomation 和其他 Android 版本。
-
-证据位于 `.local/tests/matching-safety/device-5/`：`report.json`、`query-safety-artifacts/` 下的原始导出及 `*-summary.json`、`restored.json`、`recovery.log` 和 `crash.log`。测试应用已卸载，Debug 服务与 ADB 转发已清理，配置恢复为 enableAutomator=true、automatorMode=2、enableMatch=true、enableBlockA11yAppList=false，原三个无障碍服务与全局开关 1 保留。
-
 ### 诊断页面与真机只读采集验证
 
 `pnpm app-tools device-diagnostic-page-check --serial DEVICE --apps com.ss.android.ugc.aweme --output .local/tests/diagnostic-page/douyin-records` 可验证开关、通知返回/停止、记录列表、文本预览和单条系统分享，并对指定应用执行三次 `execute: false` 的节点遍历。脚本不接受应用协议；目标应用应提前处于需要验证的页面。测试会保存并恢复自动化、匹配和无障碍配置。
 
-本轮真机证据位于 `.local/tests/diagnostic-page/douyin-records-verified/`。抖音处于首次隐私协议弹窗，三次查询分别约 71.6、59.4、45.8 ms，每次记录 49 次节点接口调用，均完成且无查询异常，不能代表正常信息流的大节点场景。即时现场没有事件覆盖；返回页面并操作通知后的最终文件保留 2000 条事件、覆盖 793 条旧事件，但三份查询调用记录仍完整。最终 JSON 约 10.4 MB，其中开始时配置约 8.5 MB。大文本预览有界读取，分享包仍含完整原始记录。
-
-### 查询摘要与调用去重验证
+### 查询摘要与调用去重
 
 `pnpm app-tools device-diagnostic-performance --serial DEVICE --apps com.ss.android.ugc.aweme --output .local/tests/diagnostic-performance/douyin` 使用同一页面、同一只读完整遍历规则，以 Cold 应用缓存模式预热后交替执行 off/flow/detailed 各三次。flow 和 detailed 都启用查询记录，区别是条件解释；三档都使用生产节点读取线程。多轮 Debug benchmark 总预算为 120 秒，与用户采集无自动停止无关。节点接口计数不等于 Binder 事务数；活跃视频场景并非固定树快照。
 
 验证覆盖事件覆盖后的独立查询摘要、取消终态、停止/替换会话后物理读取晚到，以及离线摘要合并。事件容量、配置快照和保存队列不变，仍不在采集中持续落盘。`slowestRuns` 仍只报告有完整运行边界证据的总运行耗时，不用选择器耗时冒充运行总耗时。`attributeNodeCount` 从现有属性调用的节点引用去重得到，记录截断时不能当作完整树节点数。
 
-最终真机证据：`.local/tests/diagnostic-performance/douyin-final/`。抖音推荐页每轮属性访问覆盖 846 个节点；三档各预热一次、交替测量三次，off/flow/detailed 中位数分别为 2586.8/3488.5/3597.6 ms（本轮最大值分别 3114.8/3661.4/3800.4 ms，三次样本的 P95 即最大值，不能代表稳定分位数）。另一次详细现场的三条查询各保留 2539 条调用、1690 条等待/物理读取记录，独立摘要约 4268.2/4011.7/4293.4 ms，均正常结束且没有详情截断。最终事件覆盖 630 条；相比先前同规则三轮现场约 2.7 万条覆盖明显减少，但条件解释等事件仍可能覆盖。即使如此，查询耗时与结果仍可从独立摘要读取。对照包含诊断开销，不能据此宣称普通匹配性能同比提升；设备自动化、匹配和无障碍设置已恢复。
-
 诊断记录页不再包含采集开关、介绍卡片或重复的列表标题；空列表水平居中并留顶部间距，显示“暂无诊断记录”，采集中显示“正在采集，停止后生成记录”。通知点击仍跳转到诊断记录页。
-
-本轮记录管理验证位于 `.local/tests/desktop/b6fbbd58-4d67-404b-9c97-7f97eb2b2639/reports/`：隔离宿主实际操作开关、单条删除、长按多选、全选、批量删除及两种空提示。Desktop 系统分享仍返回平台不支持，单条/多条 ZIP 内容通过文件存储测试验证；本轮未执行真机安装或 Android 分享面板测试。
-
-真机记录管理验证：`.local/tests/diagnostic-page/record-management-device-retry/`。验证了设置开关、通知返回/停止、详情单条分享与删除、长按选择两条记录后分享与删除，导出 ZIP 中的会话 ID 与选择完全一致，测试前已有记录保持不变。采集超过 60 秒未自动停止，原自动化开关与模式已恢复。真机发现详情使用普通 GkDialog 铺满会重复顶部留白，已改用项目 GkFullscreenDialog。
-
-全屏组件修正后的安装复查位于 `.local/tests/diagnostic-page/fullscreen-device/`：真机截图确认系统栏背景与内容一致、顶部额外留白消失；分享面板、删除取消后返回详情、系统返回列表均通过，现有记录及原自动化设置保持不变。Android gkd Debug 构建与 JVM 编译通过。
 
 停止采集并成功保存后提示“已保存诊断记录”；开关停止与通知停止共用服务完成流程，每次采集仅提示一次，后续收尾补写不重复提示。
 

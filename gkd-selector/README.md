@@ -12,7 +12,7 @@ Node.js projects in this repository can depend on `@gkd-kit/selector` through `w
 pnpm fetch-selector-dist
 ```
 
-The command downloads the published npm package into a temporary directory, validates its name, version, JavaScript entry point, and type declaration, then replaces only the local ignored `dist` directory. It does not run automatically during dependency installation and does not modify Kotlin sources.
+The command downloads the published npm package into `.temp/selector-dist/download-*/` under the repository root, validates its name, version, JavaScript entry point, and type declaration, then replaces only the local ignored `dist` directory. It does not run automatically during dependency installation and does not modify Kotlin sources.
 
 When changing selector Kotlin code, run the regular build instead; it replaces `dist` with output from the local sources:
 

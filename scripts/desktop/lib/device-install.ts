@@ -4,7 +4,7 @@ import { setTimeout as pause } from 'node:timers/promises';
 import { randomUUID } from 'node:crypto';
 import type { Adb } from './device-automation.ts';
 import { readApkIdentity } from './android-apk.ts';
-import { localRoot } from './local-paths.ts';
+import { repositoryRoot } from './local-paths.ts';
 
 const installerPackage = 'com.miui.securitycenter';
 const installerActivity = `${installerPackage}/com.miui.permcenter.install.AdbInstallActivity`;
@@ -124,7 +124,7 @@ export function withInstallConfirmation(adb: Adb, signal?: AbortSignal): Adb {
     if (args[0] !== 'install') return adb(...args);
     if (args.length !== 6 || args[1] !== '-r' || args[2] !== '-t' || args[3] !== '--pkg') throw new Error('Expected an explicit target package for installation');
     const identity = await readApkIdentity(args[5]!, args[4]!);
-    const parent = join(localRoot, 'tmp', 'install-confirmation');
+    const parent = join(repositoryRoot, '.temp', 'install-confirmation');
     await mkdir(parent, { recursive: true });
     return installWithConfirmation(adb, args[5]!, identity, await mkdtemp(join(parent, 'attempt-')), signal);
   };

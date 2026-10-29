@@ -16,12 +16,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
+import li.gkd.app.testing.TestFiles
 import li.gkd.app.ui.image.ImageLoaders
 
 class ImageCacheTest {
     @Test
     fun networkImageSurvivesLoaderRestartInConfiguredCache() = runBlocking {
-        val directory = Files.createTempDirectory("gkd-coil-cache").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-coil-cache").toFile()
         val calls = AtomicInteger()
         val buffer = ByteArrayOutputStream()
         ImageIO.write(
