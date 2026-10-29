@@ -21,18 +21,21 @@ import li.gkd.app.DesktopRuntime
 import li.gkd.app.DesktopStorage
 import li.gkd.app.ServicePhase
 import li.gkd.app.SimulatedService
+import li.gkd.app.network.NetworkAddresses
 import li.gkd.app.settings.SettingsRepository
 
-/** Real listener stop/restart and port publication inside the single application test lifetime. */
+/**
+ * Loopback/LAN access, stop/restart and port publication in the single application test lifetime.
+ */
 suspend fun assertDesktopDebugServiceLifecycle(runtime: DesktopRuntime) {
     val original = SettingsRepository.settings.value
     val connection = DesktopStorage.sessionDirectory.resolve("debug-server.json")
     val client = HttpClient.newHttpClient()
     fun port() =
         Json.parseToJsonElement(connection.readText()).jsonObject.getValue("port").jsonPrimitive.int
-    fun get(port: Int, path: String) =
+    fun get(port: Int, path: String, host: String = "127.0.0.1") =
         client.send(
-            HttpRequest.newBuilder(URI("http://127.0.0.1:$port/$path")).GET().build(),
+            HttpRequest.newBuilder(URI("http://$host:$port/$path")).GET().build(),
             HttpResponse.BodyHandlers.ofString(),
         )
     try {
@@ -45,6 +48,11 @@ suspend fun assertDesktopDebugServiceLifecycle(runtime: DesktopRuntime) {
         }
         assertEquals(first, port())
         assertEquals("window-bound", get(first, "desktop/probe").body())
+        // A loopback-only listener fails these requests through the machine's LAN addresses.
+        for (host in NetworkAddresses.localIpv4Addresses()) {
+            assertEquals(200, get(first, "health", host).statusCode())
+            assertEquals("window-bound", get(first, "desktop/probe", host).body())
+        }
         withContext(Dispatchers.Main.immediate) { runtime.debugService.setEnabled(false) }
         assertFalse(connection.exists())
         assertEquals(
@@ -66,6 +74,9 @@ suspend fun assertDesktopDebugServiceLifecycle(runtime: DesktopRuntime) {
         assertEquals(second, port())
         assertEquals(200, get(second, "health").statusCode())
         assertEquals("window-bound", get(second, "desktop/probe").body())
+        for (host in NetworkAddresses.localIpv4Addresses()) {
+            assertEquals("window-bound", get(second, "desktop/probe", host).body())
+        }
         assertFailsWith<IOException> { get(first, "health") }
     } finally {
         withContext(Dispatchers.Main.immediate) {

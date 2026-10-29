@@ -42,7 +42,6 @@ import li.gkd.app.ui.component.GkWebViewErrorContent
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.page.WebViewScreen
 import li.gkd.app.ui.platform.SystemActionFeedback
-import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.scaffoldPadding
@@ -54,7 +53,6 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 actual fun WebViewPage(
     route: WebViewRoute,
-    host: UiHost,
 ) {
     val mainVm = MainViewModel.requireCurrent()
     val initUrl = route.initUrl

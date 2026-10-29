@@ -32,8 +32,8 @@ import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.component.GkWebViewErrorContent
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.page.WebViewScreen
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.SystemActionFeedback
-import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.util.copyText
 import li.songe.compose.webview2.JavascriptInterface
@@ -60,8 +60,8 @@ private data class WebViewFailure(val url: String, val message: String)
 @Suppress("DEPRECATION")
 actual fun WebViewPage(
     route: WebViewRoute,
-    host: UiHost,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val running = host.browsersRunning()
     val state = host.state

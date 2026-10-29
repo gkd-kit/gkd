@@ -37,7 +37,7 @@ import li.gkd.app.util.Constants
 import li.gkd.app.util.JsonUtils
 import li.gkd.db.SubscriptionIds
 
-/** One loopback listener for browser inspection, app diagnostics and JVM host controls. */
+/** One IPv4 listener for browser inspection, app diagnostics and JVM host controls. */
 class DesktopDebugService(
     private val store: SimulatorStore,
     private val scope: CoroutineScope,
@@ -101,7 +101,7 @@ class DesktopDebugService(
             scope.embeddedServer(
                 CIO,
                 port = port,
-                host = Constants.loopbackHost,
+                host = "0.0.0.0",
                 parentCoroutineContext = failureHandler,
             ) {
                 routing {

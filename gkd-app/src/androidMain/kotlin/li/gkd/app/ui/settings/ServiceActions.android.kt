@@ -111,4 +111,4 @@ actual fun eventMonitorRunning() = EventService.isRunning.collectAsStateWithLife
 actual fun trackServiceRunning() = TrackService.isRunning.collectAsStateWithLifecycle().value
 
 // The Android service already applies port changes in its lifecycle-owned collector.
-actual fun UiHost.httpServerPortChanged() = Unit
+actual fun httpServerPortChanged() = Unit

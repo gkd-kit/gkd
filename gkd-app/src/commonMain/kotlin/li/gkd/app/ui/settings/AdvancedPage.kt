@@ -1,48 +1,35 @@
 package li.gkd.app.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
+import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
@@ -51,44 +38,41 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSettingItem
-import li.gkd.app.ui.component.GkSettingsDialog
-import li.gkd.app.ui.component.GkSizedIconButton
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
-import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkSettingsFocus
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedSection
 import li.gkd.app.ui.navigation.AppNavEntry
 import li.gkd.app.ui.navigation.CrashReportRoute
+import li.gkd.app.ui.navigation.DebugSettingsRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotSettingsRoute
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.style.TABULAR_NUMBERS_FONT_FEATURE
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.itemVerticalPadding
 import li.gkd.app.ui.style.titleItemPadding
-import li.gkd.app.util.Constants
-import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AdvancedPage(
-    host: UiHost,
     entry: AppNavEntry,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AdvancedViewModel() }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val cookie by GithubCookieStore.value.collectAsStateWithLifecycle()
     val debugServiceRunning: Boolean = debugServiceRunning()
 
     val serverAddresses: List<String> = httpServerAddresses()
-
-    val buttonServiceRunning: Boolean = snapshotButtonRunning()
 
     val activityServiceRunning: Boolean = activityMonitorRunning()
 
@@ -118,91 +102,11 @@ fun AdvancedPage(
                 }
             },
         )
-    val showEditPortDialog by vm.showEditPortDialog.collectAsStateWithLifecycle()
-    val showDebugSettingsDialog by vm.showDebugSettingsDialog.collectAsStateWithLifecycle()
-
-    if (showDebugSettingsDialog) {
-        GkSettingsDialog(
-            title = stringResource(Res.string.debug_settings_title),
-            onDismissRequest = { vm.setShowDebugSettingsDialog(false) },
-        ) {
-            GkSettingItem(
-                title = stringResource(Res.string.debug_port),
-                subtitle = store.httpServerPort.toString(),
-                imageVector = GkIcons.Edit,
-                onClickLabel = stringResource(Res.string.debug_port_edit),
-                onClick = {
-                    vm.editPort(store.httpServerPort)
-                },
-            )
-            GkTextSwitch(
-                title = stringResource(Res.string.debug_clear_subscription),
-                subtitle = stringResource(Res.string.debug_clear_subscription_description),
-                checked = store.autoClearMemorySubs,
-                onCheckedChange = { enabled ->
-                    SettingsRepository.updateSettings { it.copy(autoClearMemorySubs = enabled) }
-                },
-            )
-        }
-    }
-
-    val portDraft by vm.portDraft.collectAsStateWithLifecycle()
-    if (showEditPortDialog) {
-        EditHttpPortDialog(
-            value = portDraft,
-            onValueChange = vm::setPortDraft,
-            onDismissRequest = { vm.closeEditPortDialog() },
-            onConfirm = { text ->
-                val oldPort = SettingsRepository.settings.value.httpServerPort
-                if (SettingsRepository.saveHttpServerPort(text)) {
-                    if (oldPort != text.toInt()) {
-                        host.httpServerPortChanged()
-                        ToastUtils.show(Res.string.update_success.getSync())
-                    }
-                    vm.closeEditPortDialog()
-                } else {
-                    ToastUtils.show(Res.string.debug_port_input_hint.getSync())
-                }
-            },
-        )
-    }
-
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val sectionRequesters = remember {
-        AdvancedSection.entries.associateWith { BringIntoViewRequester() }
-    }
-    var highlightRequest by remember { mutableStateOf<Pair<AdvancedSection, Any>?>(null) }
-    var highlightedSection by remember { mutableStateOf<AdvancedSection?>(null) }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val sectionRequest by entry.advancedSectionRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(sectionRequest) {
-        sectionRequest?.let { section ->
-            try {
-                sectionRequesters.getValue(section).bringIntoView()
-                highlightRequest = section to Any()
-            } finally {
-                entry.consumeAdvancedSection()
-            }
-        }
-    }
-    LaunchedEffect(highlightRequest, lifecycle) {
-        val section = highlightRequest?.first ?: return@LaunchedEffect
-        lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.RESUMED) }
-        try {
-            repeat(2) {
-                highlightedSection = section
-                delay(400)
-                highlightedSection = null
-                delay(400)
-            }
-        } finally {
-            highlightedSection = null
-        }
-    }
     @Composable
     fun sectionFocusModifier(section: AdvancedSection): Modifier =
-        Modifier.bringIntoViewRequester(sectionRequesters.getValue(section))
-            .focusHighlight(highlightedSection == section)
+        Modifier.gkSettingsFocus(sectionRequest == section, entry::consumeAdvancedSection)
 
     GkScaffold(
         modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
@@ -226,114 +130,95 @@ fun AdvancedPage(
                     .verticalScroll(rememberScrollState()),
         ) {
             AdvancedSectionTitle(
-                stringResource(Res.string.advanced_background_running),
+                stringResource(Res.string.advanced_snapshot_capture),
                 showTop = false,
             )
             GkTextSwitch(
-                title = stringResource(Res.string.status_overlay_keep_alive),
-                checked = store.enableStatusOverlay,
-                onCheckedChange = vm::requestStatusOverlayEnabled,
+                title = stringResource(Res.string.snapshot_button_label),
+                checked = snapshotButtonRunning(),
+                onCheckedChange = host::setSnapshotButtonEnabled,
             )
-
-            AdvancedSectionTitle(stringResource(Res.string.advanced_snapshot_capture))
             GkSettingItem(
                 title = stringResource(Res.string.snapshot_records),
                 onClick = { mainVm.navigator.navigate(SnapshotPageRoute) },
             )
-            GkTextSwitch(
-                modifier = sectionFocusModifier(AdvancedSection.SnapshotButton),
-                title = stringResource(Res.string.snapshot_button_label),
-                subtitle = stringResource(Res.string.snapshot_button_description),
-                checked = buttonServiceRunning,
-                onCheckedChange = host::setSnapshotButtonEnabled,
-            )
             GkSettingItem(
-                modifier = sectionFocusModifier(AdvancedSection.SnapshotSettings),
                 title = stringResource(Res.string.snapshot_settings),
+                modifier = sectionFocusModifier(AdvancedSection.SnapshotSettings),
                 onClick = { mainVm.navigator.navigate(SnapshotSettingsRoute) },
             )
-
             AdvancedSectionTitle(stringResource(Res.string.advanced_live_debug))
             DebugServiceItem(
                 modifier = sectionFocusModifier(AdvancedSection.Http),
                 running = debugServiceRunning,
-                settingsSelected = showDebugSettingsDialog,
                 port = store.httpServerPort,
                 serverAddresses = serverAddresses,
-                onSettingsClick = { vm.setShowDebugSettingsDialog(true) },
+                onSettingsClick = { mainVm.navigator.navigate(DebugSettingsRoute) },
                 onRunningChange = host::setDebugServiceEnabled,
                 onAddressClick = mainVm.textDialog::showUrl,
             )
+            AdvancedSectionTitle(stringResource(Res.string.advanced_interface_debug))
             GkTextSwitch(
                 modifier = sectionFocusModifier(AdvancedSection.Activity),
-                title = stringResource(Res.string.activity_service_label),
-                subtitle = stringResource(Res.string.activity_service_description),
+                title = stringResource(Res.string.activity_overlay_title),
                 checked = activityServiceRunning,
                 onCheckedChange = host::setActivityMonitorEnabled,
             )
-            GkTextSwitch(
-                modifier = sectionFocusModifier(AdvancedSection.Event),
-                title = stringResource(Res.string.event_service_label),
-                subtitle = stringResource(Res.string.event_service_description),
-                checked = eventServiceRunning,
-                onCheckedChange = host::setEventMonitorEnabled,
-            )
-            GkTextSwitch(
-                modifier = sectionFocusModifier(AdvancedSection.Track),
-                title = stringResource(Res.string.track_overlay),
-                subtitle = stringResource(Res.string.track_overlay_description),
-                checked = trackServiceRunning,
-                onCheckedChange = {
-                    if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false)
-                },
-            )
-            GkSettingItem(
-                title = stringResource(Res.string.external_calls_title),
-                onClick = { mainVm.navigator.navigate(ExternalCallsRoute) },
-            )
-            GkSettingItem(
-                title = stringResource(Res.string.quick_settings_tiles_title),
-                onClick = { mainVm.navigator.navigate(QuickSettingsTilesRoute) },
-            )
-
-            AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
-            Column(
-                Modifier.bringIntoViewRequester(
-                    sectionRequesters.getValue(AdvancedSection.Diagnostics),
-                ),
-            ) {
-                DiagnosticCapture(
-                    vm,
-                    modifier =
-                        Modifier.focusHighlight(highlightedSection == AdvancedSection.Diagnostics),
-                )
-                GkSettingItem(
-                    title = stringResource(Res.string.match_debug_records),
-                    onClick = { mainVm.navigator.navigate(MatchDebugRoute) },
-                )
-            }
             GkSettingItem(
                 title = stringResource(Res.string.activity_switch_logs),
                 onClick = { mainVm.navigator.navigate(ActivityLogRoute) },
+            )
+            GkTextSwitch(
+                modifier = sectionFocusModifier(AdvancedSection.Event),
+                title = stringResource(Res.string.event_overlay_title),
+                checked = eventServiceRunning,
+                onCheckedChange = host::setEventMonitorEnabled,
             )
             GkSettingItem(
                 title = stringResource(Res.string.a11y_event_logs),
                 onClick = { mainVm.navigator.navigate(A11yEventLogRoute) },
             )
+            GkTextSwitch(
+                modifier = sectionFocusModifier(AdvancedSection.Track),
+                title = stringResource(Res.string.track_overlay),
+                checked = trackServiceRunning,
+                onCheckedChange = {
+                    if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false)
+                },
+            )
+            AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
+            DiagnosticCapture(vm, sectionFocusModifier(AdvancedSection.Diagnostics))
+            GkSettingItem(
+                title = stringResource(Res.string.match_debug_records),
+                onClick = { mainVm.navigator.navigate(MatchDebugRoute) },
+            )
             GkSettingItem(
                 title = stringResource(Res.string.crash_reports),
                 onClick = { mainVm.navigator.navigate(CrashReportRoute) },
             )
-
+            AdvancedSectionTitle(stringResource(Res.string.integration_tools_title))
+            GkSettingItem(
+                title = stringResource(Res.string.quick_settings_tiles_title),
+                onClick = { mainVm.navigator.navigate(QuickSettingsTilesRoute) },
+            )
+            GkSettingItem(
+                title = stringResource(Res.string.external_calls_title),
+                onClick = { mainVm.navigator.navigate(ExternalCallsRoute) },
+            )
             AdvancedSectionTitle(stringResource(Res.string.advanced_upload_share))
             GkSettingItem(
                 title = stringResource(Res.string.github_cookie_label),
-                subtitle = stringResource(Res.string.upload_links_description),
-                suffix = stringResource(Res.string.tutorial_view),
-                suffixUnderline = true,
-                onSuffixClick = { mainVm.navigator.openWebPage(AppLinks.CookieHelp) },
+                subtitle =
+                    stringResource(
+                        if (cookie.isNotEmpty()) Res.string.upload_configured
+                        else Res.string.upload_not_configured,
+                    ),
                 imageVector = GkIcons.Edit,
                 onClick = mainVm.githubUpload::editCookie,
+            )
+            GkSettingItem(
+                title = stringResource(Res.string.tutorial_view),
+                onClick = { mainVm.navigator.openWebPage(AppLinks.CookieHelp) },
             )
             GkPageBottomSpace()
         }
@@ -344,7 +229,7 @@ expect fun UiHost.setSnapshotButtonEnabled(enabled: Boolean)
 
 expect fun UiHost.setDebugServiceEnabled(enabled: Boolean)
 
-expect fun UiHost.httpServerPortChanged()
+expect fun httpServerPortChanged()
 
 expect fun UiHost.setActivityMonitorEnabled(enabled: Boolean)
 
@@ -365,99 +250,30 @@ expect fun UiHost.setTrackServiceEnabled(enabled: Boolean)
 @Composable expect fun trackServiceRunning(): Boolean
 
 @Composable
-private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {
-    Text(
-        text = title,
-        modifier = Modifier.titleItemPadding(showTop = showTop),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-    )
-}
-
-@Composable
-private fun Modifier.focusHighlight(highlighted: Boolean): Modifier {
-    val color by
-        animateColorAsState(
-            targetValue =
-                if (highlighted) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.background,
-            animationSpec = tween(durationMillis = 300),
-            label = "Setting focus background",
-        )
-    return background(color)
-}
-
-@Composable
 private fun DebugServiceItem(
     modifier: Modifier,
     running: Boolean,
-    settingsSelected: Boolean,
     port: Int,
     serverAddresses: List<String>,
     onSettingsClick: () -> Unit,
     onRunningChange: (Boolean) -> Unit,
     onAddressClick: (String) -> Unit,
 ) {
-    val addressStyle =
-        MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = TABULAR_NUMBERS_FONT_FEATURE)
-    val addressItem: @Composable (String, String) -> Unit = { host, type ->
-        Text(
-            text = stringResource(Res.string.debug_address_description, host, port, type),
-            style = addressStyle,
-            color = MaterialTheme.colorScheme.primary,
-            modifier =
-                Modifier.fillMaxWidth()
-                    .clickable(
-                        onClickLabel = stringResource(Res.string.debug_view_addresses, type),
-                        onClick = { onAddressClick("http://${host}:${port}") },
-                    )
-                    .padding(vertical = 2.dp),
-        )
-    }
-
     Column(modifier = modifier.fillMaxWidth()) {
-        Box(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .clickable(
-                        onClickLabel = stringResource(Res.string.debug_toggle_service),
-                        onClick = { onRunningChange(!running) },
-                    )
-                    .padding(
-                        start = itemHorizontalPadding,
-                        top = itemVerticalPadding,
-                        end = itemHorizontalPadding,
-                        bottom = itemVerticalPadding,
-                    ),
-        ) {
-            GkTextSwitch(
-                modifier = Modifier.fillMaxWidth(),
-                paddingDisabled = true,
-                title = stringResource(Res.string.debug_service_label),
-                subtitle = stringResource(Res.string.debug_service_description),
-                suffixIcon = {
-                    GkSizedIconButton(
-                        size = 32.dp,
-                        iconSize = 20.dp,
-                        onClickLabel = stringResource(Res.string.debug_settings_open),
-                        onClick = onSettingsClick,
-                        imageVector = GkIcons.PageInfo,
-                        contentDescription = stringResource(Res.string.debug_settings_button),
-                        tint =
-                            if (settingsSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                LocalContentColor.current
-                            },
-                    )
-                },
-                checked = running,
-                onCheckedChange = onRunningChange,
-                onClick = null,
-            )
-        }
+        GkTextSwitch(
+            title = stringResource(Res.string.debug_service_compact_label),
+            checked = running,
+            onCheckedChange = onRunningChange,
+        )
+        GkSettingItem(
+            title = stringResource(Res.string.debug_settings_title),
+            onClick = onSettingsClick,
+        )
         AnimatedVisibility(visible = running) {
-            Column(
+            DebugServerAddresses(
+                hosts = serverAddresses,
+                port = port,
+                onAddressClick = onAddressClick,
                 modifier =
                     Modifier.padding(
                         start = itemHorizontalPadding,
@@ -465,62 +281,63 @@ private fun DebugServiceItem(
                         end = itemHorizontalPadding,
                         bottom = itemVerticalPadding,
                     ),
-            ) {
-                serverAddresses.forEach { host ->
-                    addressItem(
-                        host,
-                        stringResource(
-                            if (host == Constants.loopbackHost) Res.string.network_local_device
-                            else Res.string.network_lan,
-                        ),
-                    )
-                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DebugServerAddresses(
+    hosts: List<String>,
+    port: Int,
+    onAddressClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val addresses = hosts.map {
+        stringResource(Res.string.debug_address_description, it, port.toString())
+    }
+    val style =
+        MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = TABULAR_NUMBERS_FONT_FEATURE)
+    val textMeasurer = rememberTextMeasurer()
+    val widestText = addresses.maxOf {
+        textMeasurer.measure(text = it, style = style, softWrap = false).size.width
+    }
+    val horizontalPadding = 4.dp
+    val spacing = 12.dp
+    val minItemWidth = with(LocalDensity.current) { widestText.toDp() } + horizontalPadding * 2
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val columns = ((maxWidth + spacing) / (minItemWidth + spacing)).toInt().coerceAtLeast(1)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            maxItemsInEachRow = columns,
+        ) {
+            addresses.forEachIndexed { index, address ->
+                Text(
+                    text = address,
+                    style = style,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier =
+                        Modifier.weight(1f)
+                            .clickable(
+                                onClickLabel =
+                                    stringResource(Res.string.debug_view_addresses, address),
+                                onClick = { onAddressClick("http://${hosts[index]}:$port") },
+                            )
+                            .padding(horizontal = horizontalPadding, vertical = 6.dp),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun EditHttpPortDialog(
-    value: String,
-    onValueChange: (String) -> Unit,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    GkAlertDialog(
-        properties = DialogProperties(dismissOnClickOutside = false),
-        title = { Text(text = stringResource(Res.string.debug_port)) },
-        text = {
-            OutlinedTextField(
-                value = value,
-                placeholder = { Text(text = stringResource(Res.string.debug_port_input_hint)) },
-                onValueChange = onValueChange,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().autoFocus(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    Text(
-                        text = stringResource(Res.string.port_input_length, value.length),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                    )
-                },
-            )
-        },
-        onDismissRequest = onDismissRequest,
-        confirmButton = {
-            TextButton(
-                enabled = value.isNotEmpty(),
-                onClick = { onConfirm(value) },
-            ) {
-                Text(text = stringResource(Res.string.action_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(Res.string.action_cancel))
-            }
-        },
+private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {
+    Text(
+        text = title,
+        modifier = Modifier.titleItemPadding(showTop = showTop),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
     )
 }
 
@@ -533,15 +350,11 @@ private fun DiagnosticCapture(vm: AdvancedViewModel, modifier: Modifier) {
         }
     val current by
         control.collectAsStateWithLifecycle(
-            initialValue =
-                diagnostics.state.value.let {
-                    it?.id to (it?.active == true)
-                },
+            initialValue = diagnostics.state.value.let { it?.id to (it?.active == true) },
         )
     GkTextSwitch(
         modifier = modifier,
         title = stringResource(Res.string.match_debug_collect),
-        subtitle = stringResource(Res.string.match_debug_intro),
         checked = current.second,
         onCheckedChange = { enabled ->
             if (enabled) vm.requestDiagnosticCapture()

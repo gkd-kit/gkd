@@ -97,7 +97,7 @@ import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.image.appImageLoader
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
@@ -109,9 +109,8 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun SnapshotPage(
-    host: UiHost,
-) {
+fun SnapshotPage() {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val imageLoader = appImageLoader()
     fun uploadSnapshots(snapshots: List<Snapshot>, onFinished: () -> Unit) =

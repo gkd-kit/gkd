@@ -7,15 +7,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.resources.*
+import li.gkd.app.storage.createLogArchive
 import li.gkd.app.ui.component.GkPlatformWarningDialogs
 import li.gkd.app.ui.component.GkTermsAcceptDialog
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
+import li.gkd.app.ui.platform.LocalUiHost
+import li.gkd.app.ui.share.saveArchive
+import li.gkd.app.ui.share.shareArchive
 import li.gkd.app.util.copyText
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun DesktopOverlays(state: DesktopState, session: DesktopSession) {
-    session.state.mainVm.shareLog.Render(session)
+fun DesktopOverlays(state: DesktopState) {
+    val session = LocalUiHost.current
+    session.state.mainVm.shareLog.Render(
+        onShare = {
+            session.shareArchive(getString(Res.string.logs_share_file), ::createLogArchive)
+        },
+        onSave = { session.saveArchive(::createLogArchive) },
+    )
     session.state.mainVm.githubUpload.Render(onCopy = ::copyText)
     session.state.mainVm.updateStatus?.UpgradeDialog()
     val simulatorSettings by state.simulator.settings.collectAsStateWithLifecycle()

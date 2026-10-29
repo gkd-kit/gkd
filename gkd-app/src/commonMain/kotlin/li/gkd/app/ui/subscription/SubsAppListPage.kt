@@ -54,7 +54,7 @@ import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
@@ -66,9 +66,9 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsAppListPage(
-    host: UiHost,
     route: SubsAppListRoute,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val subsItemId = route.subsItemId
 

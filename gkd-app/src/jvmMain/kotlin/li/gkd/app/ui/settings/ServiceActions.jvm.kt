@@ -1,8 +1,10 @@
 package li.gkd.app.ui.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import li.gkd.app.DesktopRuntime
 import li.gkd.app.SimulatedService
+import li.gkd.app.network.NetworkAddresses
 import li.gkd.app.simulatedServiceRunning
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.util.Constants
@@ -24,7 +26,11 @@ actual fun UiHost.setTrackServiceEnabled(enabled: Boolean) =
 
 @Composable actual fun debugServiceRunning() = simulatedServiceRunning(SimulatedService.Debug)
 
-@Composable actual fun httpServerAddresses() = listOf(Constants.loopbackHost)
+@Composable
+actual fun httpServerAddresses(): List<String> =
+    remember(debugServiceRunning()) {
+        listOf(Constants.loopbackHost) + NetworkAddresses.localIpv4Addresses()
+    }
 
 @Composable actual fun snapshotButtonRunning() = simulatedServiceRunning(SimulatedService.Button)
 
@@ -34,5 +40,4 @@ actual fun UiHost.setTrackServiceEnabled(enabled: Boolean) =
 
 @Composable actual fun trackServiceRunning() = simulatedServiceRunning(SimulatedService.Track)
 
-actual fun UiHost.httpServerPortChanged() =
-    DesktopRuntime.requireCurrent().debugService.restartIfRunning()
+actual fun httpServerPortChanged() = DesktopRuntime.requireCurrent().debugService.restartIfRunning()

@@ -37,13 +37,14 @@ import li.gkd.app.storage.createLogArchive
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.*
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.share.shareArchive
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun MatchDebugPage(host: UiHost) {
+fun MatchDebugPage() {
+    val host = LocalUiHost.current
     val main = MainViewModel.requireCurrent()
     val vm = viewModel { MatchDebugViewModel() }
     val scope = rememberCoroutineScope()

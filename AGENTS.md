@@ -10,7 +10,7 @@
 - androidMain 普通工具、适配、UI 接入及基类按职责归入 `li.gkd.app.*`；已注册 Application、Activity、Service、磁贴、特权入口及紧密关联实现保留原身份。`com.google.android.accessibility.selecttospeak.SelectToSpeakService` 的包名、路径和注册不变。包名整理不得改变组件、路由序列化名称/参数、AIDL 或持久化兼容标识。
 - Android 权限、Activity Result、通知、悬浮窗、Service 和特权进程位于 gkd-app/src/androidMain，由真实组件管理生命周期。gkd-aidl 只编译 Binder 协议；gkd-hidden-api 只提供 stub。引用 stub 的模块必须独立完成对应字节码的 remap。
 - ViewModel、Repository、业务状态和流程在 commonMain 保持唯一实现，ViewModel 使用 `XxxViewModel` 命名。禁止同名宿主子类、空壳继承、旧路径 typealias 或纯转发包装；共享类默认不可继承，宿主在原 ViewModelStoreOwner 直接创建，复杂/复用构造可用明确工厂。
-- 平台差异优先使用对应功能包的函数级 `expect/actual`，实现文件为 `.android.kt` / `.jvm.kt`；禁止整份 ViewModel、Repository 或业务流程 actual 化。能力签名只用公共类型，不导航、弹 Toast 或读取 UI ViewModel；仅 UI 组装可用 Composable expect/actual，需平台 UI 能力时显式接收所属 UiHost。无生命周期工具只持有 Application Context，Activity/窗口引用限于生命周期绑定的 UI 会话。
+- 平台差异优先使用对应功能包的函数级 `expect/actual`，实现文件为 `.android.kt` / `.jvm.kt`；禁止整份 ViewModel、Repository 或业务流程 actual 化。能力签名只用公共类型，不导航、弹 Toast 或读取 UI ViewModel；仅 UI 组装可用 Composable expect/actual；页面及平台 UI 适配可从 LocalUiHost 获取所属宿主，非 Composable 平台 UI 操作仍显式接收 UiHost 或回调。无生命周期工具只持有 Application Context，Activity/窗口引用限于生命周期绑定的 UI 会话。
 - 不支持的平台动作统一返回 `PlatformResult<T>`，无数据成功为 `Unit`；不得另造 Unsupported 类型或用 Boolean/null 暗示不支持。契约明确成功含义，保留异常/取消传播，不替代业务结果、用户取消或权限状态。
 - 应用仓库由应用生命周期唯一持有，禁止重复创建、可替换全局实例和无意义转发。无独立会话需求时优先使用 object；需要独立生命周期或明确依赖时允许普通类及构造注入。平台依赖先于消费者初始化，所属生命周期结束时清理协程和资源，不为测试增加生产重置接口。
 
@@ -19,9 +19,9 @@
 - 两端共用 commonMain 的生产页面、组件、业务和事件链，模拟输入也经过生产 Repository/ViewModel；共享代码不得直接依赖 Android Application、平台专属 Store/Service 或伪造全局实例；共享 MainViewModel 的访问遵循下述单主界面规则。Desktop 默认四标签，组件目录仅显式诊断。新增入口同时覆盖双端及下游弹窗、面板、返回路径，不用整页 Toast/占位掩盖缺失；交付需业务、读写、生命周期和验证证据。
 - 两端共用 `GkAppNavigation` 注册及 `GkNavigation` 保存状态/条目生命周期；禁止 Desktop 字符串分支注册生产路由、复制平台路由或另写保存/导航规则。普通/编辑页面过渡统一声明，公共页面只注册一次；HTTP 标签等状态读取生产来源。
 - MainViewModel 属于主界面的 ViewModelStore，页面 ViewModel 属于具体导航条目；有需要保留的页面状态或事件流程时按需创建，不为纯展示或组件瞬时状态创建。根不持有其他 ViewModel 或子 ViewModelStore；子路由用条目标准 API 获取，多次入栈实例独立、出栈清理，不预建、缓存或跨路由借用。导航不重建仓库，宿主退出清理 ViewModel/协程；Desktop 场景重载只重置页面/草稿，不清空数据或模拟配置。
-- 路由及私有 Composable 可获取页面 ViewModel、处理平台 UI；主题、通用布局、可复用组件和工具仅接收状态/事件，不通过默认参数、工厂、CompositionLocal 或全局入口隐藏获取。Service、悬浮窗、后台任务使用自身作用域和应用仓库，不借用或补建页面 ViewModel。
+- 路由、页面及私有 Composable 可获取页面 ViewModel，并通过 LocalUiHost 处理平台 UI，无需经导航或中间页面传递宿主；主题、通用布局、可复用组件和工具仅接收状态/事件，不通过默认参数、工厂、CompositionLocal 或全局入口隐藏获取。Service、悬浮窗、后台任务使用自身作用域和应用仓库，不借用或补建页面 ViewModel。
 - Android/Desktop 均采用单主界面设计，同一应用运行实例只存在一个根 MainViewModel，其生命周期覆盖所有子页面 ViewModel。生产页面、其私有 Composable 及所属子页面 ViewModel（含 commonMain）可通过 `MainViewModel.requireCurrent()` 获取已注册的根实例，无需逐层传递。宿主完成初始化和必要绑定后注册，根实例清理时注销；静态入口只提供访问，不创建实例或延长其生命周期。主题、通用布局、可复用组件、工具、Repository、Service、悬浮窗和后台任务不得通过该入口获取，也不引入 LocalMainViewModel。
-- 页面 ViewModel 可组织校验、保存、确认弹窗及后续导航等事件流程，按需使用 MainViewModel 的页面能力；Compose 负责展示、收集状态、转发事件及 IME、焦点等组合/宿主相关操作。不为缩短调用增加纯转发方法，不把页面流程转移到根 ViewModel。平台 UI 操作显式接收所属 UiHost 或事件回调，宿主引用绑定所属生命周期，不由页面 ViewModel 长期持有。
+- 页面 ViewModel 可组织校验、保存、确认弹窗及后续导航等事件流程，按需使用 MainViewModel 的页面能力；Compose 负责展示、收集状态、转发事件及 IME、焦点等组合/宿主相关操作。不为缩短调用增加纯转发方法，不把页面流程转移到根 ViewModel。LocalUiHost 由 Android 主界面根部提供当前 LocalActivity 对应的 MainActivity、Desktop 主界面根部提供当前 DesktopSession，覆盖导航及所属弹窗；仅传递宿主，不承载业务状态。非 Composable 平台 UI 操作显式接收所属 UiHost 或事件回调，不依赖宿主的操作使用普通函数；宿主引用绑定所属生命周期，不存入 ViewModel 或单例。
 - 自定义页面业务状态，包括编辑草稿及基准、搜索/筛选条件、分页、保存冲突和页面切换后需要保留的状态，优先由所属页面 ViewModel 使用 `MutableStateFlow<T>` 管理，对外暴露只读 `StateFlow<T>` 和明确修改方法，默认不使用 `rememberSaveable` 或自定义 Saver。页面状态随所属导航条目清理，不为保留它而提升到 MainViewModel；StateFlow 本身不提供落盘或进程重启恢复。
 - 滚动、焦点、动画、拖拽及简单组件展开等纯 UI 工具状态留在 Compose，允许使用官方 `rememberXxxState`；确需恢复的简单工具/组件状态可使用 `rememberSaveable`，无需恢复的瞬时状态使用 `remember`。不为规避 rememberSaveable 将这些工具状态搬入 ViewModel，也不以工具状态名义承载页面业务对象。`rememberXxxState` 不访问 ViewModel、数据库、Store、Service 或导航。组合工作使用 rememberCoroutineScope，稳定且绑定同一组合的 scope 不作冗余 remember key。主题状态、时序及深色优先级双端共用，宿主只给系统主题/色板。
 - `XxxUiState/Actions` 仅用于确有需要的复用、预览或复杂契约；UiState 是不可变快照，不含 Flow、Paging 或高频状态；多个构造路径重复映射时才提取私有构建函数。业务状态不通过 CompositionLocal 传递。
@@ -68,7 +68,7 @@
 - 预览/控制窗口同进程，关闭控制窗口不退出 App 且可重新打开（F12）。模拟器为单一状态源，控件和 HTTP 同命令路径。系统栏由 jvmMain 窗口模拟层实时绘制，时间取当前时钟，系统栏/挖孔统一计算 Insets；不以静态或整页截图替代 UI，不把模拟网络/电量冒充真机。未实现内容如实标识，不宣称模拟成功。
 - 不支持仅针对具体动作，以非模态 Toast 显示“当前平台不支持”，不替代整页或伪造成功；编辑/列表/文件业务继续真实执行。用户明确要求的 priv-ui 模拟可修改 Desktop 授权/启动/停止状态，日志标记 simulation，不执行真实特权命令。
 - priv-ui 只用公开 PrivilegeScreen、状态/actions，禁用内部 renderer/模拟器或 INVISIBLE_MEMBER；页面及系统提示 Insets 分别注入，宿主模拟状态机与控制窗口特权可用状态同步。使用版本目录的远程稳定版，升级验证双端编译和实际页面。
-- Desktop 调试服务统一使用一个 HTTP 监听和端口，绑定 127.0.0.1；桌面控制路由位于 jvmMain，状态修改在 UI 线程。Android 的浏览器与诊断接口共用 DebugService 和配置端口，可通过局域网访问；诊断接入放 gkd-app/src/androidMain，由 DebugService 在 META.debuggable 为 true 时直接创建。服务统一导出，Release 启动校验 Intent 的外部调用 token，内部启动也携带，Debug 启动不校验；诊断 HTTP 使用短期凭据，工具支持 ADB 转发；Release 不装配诊断路由。语义树/操作/截图明确 app|controls，各窗口节点快照独立；操作执行真实控件，不用直接改状态冒充点击。模拟返回先收 IME，再处理弹窗/编辑/页面。
+- Desktop 调试服务统一使用一个 HTTP 监听和端口，绑定 0.0.0.0，支持本机及局域网 IPv4 访问；页面显示 127.0.0.1 与真实局域网 IPv4 地址，浏览器、诊断和桌面控制接口共用该监听。桌面控制路由位于 jvmMain，状态修改在 UI 线程。Android 的浏览器与诊断接口共用 DebugService 和配置端口，可通过局域网访问；诊断接入放 gkd-app/src/androidMain，由 DebugService 在 META.debuggable 为 true 时直接创建。服务统一导出，Release 启动校验 Intent 的外部调用 token，内部启动也携带，Debug 启动不校验；诊断 HTTP 使用短期凭据，工具支持 ADB 转发；Release 不装配诊断路由。语义树/操作/截图明确 app|controls，各窗口节点快照独立；操作执行真实控件，不用直接改状态冒充点击。模拟返回先收 IME，再处理弹窗/编辑/页面。
 - 截图区分实时捕获和重新组合渲染，后者不证明当前焦点/滚动/弹窗。Desktop 不替代 Android 像素验收；对照须同页面状态、dp、fontScale、Insets、字体和颜色。设备导出仅 UI 所需输入，设备资料/字体不提交。
 
 ## 验证与 Git

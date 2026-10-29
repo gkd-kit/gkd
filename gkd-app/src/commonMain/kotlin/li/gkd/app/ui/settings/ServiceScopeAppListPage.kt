@@ -59,7 +59,7 @@ import li.gkd.app.ui.icon.LockOpenRight
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUiAction
@@ -68,7 +68,8 @@ import li.gkd.app.ui.style.scaffoldPadding
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun ServiceScopeAppListPage(host: UiHost, kind: ServiceScopeKind) {
+fun ServiceScopeAppListPage(kind: ServiceScopeKind) {
+    val host = LocalUiHost.current
     val vm = viewModel { ServiceScopeAppListViewModel(kind) }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val followsMatch = kind == ServiceScopeKind.Disabled && store.blockA11yAppListFollowMatch

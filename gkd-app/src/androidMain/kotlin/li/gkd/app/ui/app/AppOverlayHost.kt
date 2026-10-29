@@ -11,15 +11,20 @@ import li.gkd.app.priv.uiAutomationOccupiedFlow
 import li.gkd.app.resources.*
 import li.gkd.app.service.A11yService
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.storage.createLogArchive
 import li.gkd.app.ui.component.GkPlatformWarningDialogs
 import li.gkd.app.ui.component.GkTermsAcceptDialog
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
+import li.gkd.app.ui.platform.LocalUiHost
+import li.gkd.app.ui.share.saveArchive
+import li.gkd.app.ui.share.shareArchive
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.copyText
+import org.jetbrains.compose.resources.getString
 
 @Composable
 fun AppOverlayHost() {
-    val activity = LocalActivity.current as MainActivity
+    val activity = LocalUiHost.current
     val mainVm = activity.mainVm
     if (!SettingsRepository.termsAccepted.collectAsStateWithLifecycle().value) {
         GkTermsAcceptDialog(
@@ -45,7 +50,12 @@ fun AppOverlayHost() {
         )
         mainVm.ruleControlDialog.Render()
         mainVm.textDialog.Render(onCopy = ::copyText)
-        mainVm.shareLog.Render(activity)
+        mainVm.shareLog.Render(
+            onShare = {
+                activity.shareArchive(getString(Res.string.logs_share_file), ::createLogArchive)
+            },
+            onSave = { activity.saveArchive(::createLogArchive) },
+        )
     }
 }
 

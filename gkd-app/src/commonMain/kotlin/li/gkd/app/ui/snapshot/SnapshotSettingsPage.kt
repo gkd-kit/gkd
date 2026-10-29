@@ -38,8 +38,14 @@ import li.gkd.app.ui.component.GkSizedIconButton
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkSettingsFocus
 import li.gkd.app.ui.component.gkTopAppBarScroll
+import li.gkd.app.ui.navigation.AdvancedSection
+import li.gkd.app.ui.navigation.AppNavEntry
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.settings.setSnapshotButtonEnabled
+import li.gkd.app.ui.settings.snapshotButtonRunning
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.util.ToastUtils
@@ -47,12 +53,15 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SnapshotSettingsPage(
-    host: UiHost,
+    entry: AppNavEntry,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { SnapshotSettingsViewModel() }
     val scope = rememberCoroutineScope()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val sectionRequest by entry.advancedSectionRequest.collectAsStateWithLifecycle()
+    val buttonRunning = snapshotButtonRunning()
     val screenshotServiceRunning: Boolean = screenshotServiceRunning()
 
     val nativeScreenshotAvailable: Boolean = nativeScreenshotAvailable()
@@ -107,8 +116,8 @@ fun SnapshotSettingsPage(
         Column(
             modifier =
                 Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(contentPadding),
+                    .padding(contentPadding)
+                    .verticalScroll(rememberScrollState()),
         ) {
             Text(
                 text = stringResource(Res.string.snapshot_capture_methods),
@@ -124,6 +133,17 @@ fun SnapshotSettingsPage(
                     onCheckedChange = host::setScreenshotServiceEnabled,
                 )
             }
+            GkTextSwitch(
+                modifier =
+                    Modifier.gkSettingsFocus(
+                        sectionRequest == AdvancedSection.SnapshotButton,
+                        entry::consumeAdvancedSection,
+                    ),
+                title = stringResource(Res.string.snapshot_button_label),
+                subtitle = stringResource(Res.string.snapshot_button_description),
+                checked = buttonRunning,
+                onCheckedChange = host::setSnapshotButtonEnabled,
+            )
             GkTextSwitch(
                 title = stringResource(Res.string.snapshot_volume_trigger),
                 subtitle = stringResource(Res.string.snapshot_volume_trigger_description),

@@ -49,15 +49,15 @@ import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CategoryEditorPage(
-    host: UiHost,
     route: CategoryEditorRoute,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { CategoryEditorViewModel(route) }
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { subscription ->

@@ -27,7 +27,7 @@ import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.page.EditorSession
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.platform.inputInsets
 import li.gkd.app.ui.share.LocalDarkTheme
@@ -37,9 +37,9 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun UpsertRuleGroupPage(
-    host: UiHost,
     route: UpsertRuleGroupRoute,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel {
         UpsertRuleGroupViewModel(route)

@@ -34,11 +34,13 @@ import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
+import li.gkd.app.ui.navigation.DebugSettingsRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.HomeRoute
 import li.gkd.app.ui.navigation.ImagePreviewRoute
+import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
@@ -286,6 +288,8 @@ private val desktopRoutes by lazy {
         "work-mode" to WorkModeRoute,
         "snapshot-settings" to SnapshotSettingsRoute,
         "advanced" to AdvancedPageRoute,
+        "debug-settings" to DebugSettingsRoute,
+        "keep-alive" to KeepAliveRoute,
         "matching-debug" to MatchDebugRoute,
         "crash-reports" to CrashReportRoute,
         "activity-log" to ActivityLogRoute,

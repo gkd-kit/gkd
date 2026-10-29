@@ -35,6 +35,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.settings.httpServerAddresses
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -361,7 +362,9 @@ fun DesktopControls(
                 "数据目录：${DesktopStorage.data}",
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text("调试服务：127.0.0.1:${store.httpServerPort}")
+            httpServerAddresses().forEach { host ->
+                Text("调试服务：$host:${store.httpServerPort}")
+            }
         }
     }
 }

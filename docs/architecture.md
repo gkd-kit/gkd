@@ -21,6 +21,8 @@
 
 平台差异通过函数级 `expect/actual`、事件回调或原生内容槽接入；业务与领域实现保留在共享层。Desktop 只替换平台输入和能力，不执行真实 Android 自动化；不支持的具体动作返回 `PlatformResult.Unsupported`，页面、编辑和可移植文件流程仍正常工作。
 
+共享页面通过 `LocalUiHost.current` 获取当前平台 UI 宿主：Android 的 `UiHost` 是 `MainActivity`，应用根部从 `LocalActivity` 读取并提供；Desktop 的 `UiHost` 是 `DesktopSession`，主窗口组合提供当前会话。Provider 覆盖生产导航和所属弹窗，导航及首页标签不再逐层传递宿主。页面读取宿主后调用平台扩展；通用组件接收状态和事件回调，非 Composable 平台操作仍显式接收所需宿主。宿主不会存入 ViewModel、Repository 或单例；与宿主无关的操作（如调试端口变更通知）使用普通函数。独立组合或页面预览需要提供实际使用的平台宿主，单纯的通用组件预览无需提供。
+
 ## 状态与生命周期
 
 当前应用仓库使用 `object`，平台启动先初始化真实依赖，再启动消费者；退出先提交待保存数据，再关闭应用协程、网络、数据库和日志。

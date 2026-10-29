@@ -81,7 +81,7 @@ import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.getUpDownTransform
@@ -111,9 +111,9 @@ data class AppListContentState(
 
 @Composable
 fun appListPage(
-    host: UiHost,
     vm: HomeViewModel,
 ): ScaffoldExt {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val appState by vm.appsState.collectAsStateWithLifecycle()

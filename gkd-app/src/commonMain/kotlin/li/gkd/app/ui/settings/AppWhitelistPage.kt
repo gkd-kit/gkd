@@ -11,7 +11,7 @@ import li.gkd.app.ui.component.GkMultiTextField
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.page.EditorSession
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.platform.inputInsets
 import li.gkd.app.ui.style.scaffoldPadding
@@ -19,9 +19,8 @@ import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun AppWhitelistPage(
-    host: UiHost,
-) {
+fun AppWhitelistPage() {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AppWhitelistViewModel() }
     val text by vm.text.collectAsStateWithLifecycle()

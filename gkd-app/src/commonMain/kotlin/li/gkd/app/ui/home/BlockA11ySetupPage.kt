@@ -47,7 +47,7 @@ import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.navigation.OnRouteRemoved
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.ignoresBatteryOptimizations
 import li.gkd.app.ui.platform.openAppDetails
 import li.gkd.app.ui.platform.openRecents
@@ -57,7 +57,8 @@ import li.gkd.app.ui.style.itemHorizontalPadding
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun BlockA11ySetupPage(host: UiHost) {
+fun BlockA11ySetupPage() {
+    val host = LocalUiHost.current
     val scope = rememberCoroutineScope()
     val mainVm = MainViewModel.requireCurrent()
     val entry = remember { mainVm.navigator.topEntry }

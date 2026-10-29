@@ -2,6 +2,7 @@ package li.gkd.app.ui
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,6 +14,7 @@ import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.HomeRoute
 import li.gkd.app.ui.navigation.MatchDebugRoute
+import li.gkd.app.ui.navigation.SnapshotSettingsRoute
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DiagnosticNavigationTest {
@@ -39,7 +41,7 @@ class DiagnosticNavigationTest {
     }
 
     @Test
-    fun differentShortcutsReuseThePageAndReplaceThePendingTarget() = runTest {
+    fun snapshotButtonNotificationTargetsItsSettingsAndOtherShortcutsReuseAdvanced() = runTest {
         val navigator = AppNavigator(this)
         navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.Http))
         runCurrent()
@@ -47,9 +49,21 @@ class DiagnosticNavigationTest {
 
         navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.SnapshotButton))
         runCurrent()
+        val snapshot = navigator.topEntry
+        assertNotSame(advanced, snapshot)
+        assertEquals(SnapshotSettingsRoute, snapshot.route)
+        assertEquals(AdvancedSection.SnapshotButton, snapshot.advancedSectionRequest.value)
+        snapshot.consumeAdvancedSection()
+
+        navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.SnapshotButton))
+        runCurrent()
+        assertSame(snapshot, navigator.topEntry)
+        assertEquals(AdvancedSection.SnapshotButton, snapshot.advancedSectionRequest.value)
+
+        navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.SnapshotSettings))
+        runCurrent()
         assertSame(advanced, navigator.topEntry)
-        assertEquals(AdvancedSection.SnapshotButton, advanced.advancedSectionRequest.value)
-        advanced.consumeAdvancedSection()
+        assertEquals(AdvancedSection.SnapshotSettings, advanced.advancedSectionRequest.value)
 
         navigator.openPage(GkdLink.Page(MatchDebugRoute))
         runCurrent()
@@ -61,7 +75,7 @@ class DiagnosticNavigationTest {
     }
 
     @Test
-    fun repeatedNotificationsReuseAdvancedEntryAndRequestPositioningAgain() = runTest {
+    fun repeatedLegacyNotificationsReuseAdvancedEntryAndRequestPositioningAgain() = runTest {
         val navigator = AppNavigator(this)
         val link = GkdLink.Page(AdvancedPageRoute, AdvancedSection.Diagnostics)
         navigator.openPage(link)

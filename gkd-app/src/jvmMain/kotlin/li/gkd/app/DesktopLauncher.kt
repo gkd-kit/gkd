@@ -362,6 +362,7 @@ fun runDesktop(args: Array<String>) {
                     onOpenControls = openControls,
                 ) {
                     CompositionLocalProvider(
+                        li.gkd.app.ui.platform.LocalUiHost provides session,
                         androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner provides
                             state,
                         LocalDensity provides
@@ -389,7 +390,7 @@ fun runDesktop(args: Array<String>) {
                                     onRecents = state::unsupported,
                                 ) {
                                     key(session.revision) {
-                                        DesktopContent(session)
+                                        DesktopContent(state)
                                         // Window content and application sessions recompose
                                         // independently.
                                         // Acknowledge the session actually rendered, not the latest
@@ -414,7 +415,7 @@ fun runDesktop(args: Array<String>) {
                                             onDisagree = requestExit,
                                         )
                                     } else {
-                                        DesktopOverlays(state, session)
+                                        DesktopOverlays(state)
                                         session.state.mainVm.dialogRequests.Render()
                                         session.state.mainVm.textDialog.Render(onCopy = ::copyText)
                                         session.state.mainVm.subsLinkDialog.Render()
@@ -452,8 +453,7 @@ fun runDesktop(args: Array<String>) {
 }
 
 @Composable
-private fun DesktopContent(session: DesktopSession) {
-    val state = session.state
+private fun DesktopContent(state: DesktopState) {
     GkDesktopBackHandler {
         if (state.showingComponentCatalog) state.closeComponentCatalog()
         else state.mainVm.navigator.pop()
@@ -462,7 +462,7 @@ private fun DesktopContent(session: DesktopSession) {
         ComponentCatalog(state)
         return
     }
-    GkAppNavigation(session)
+    GkAppNavigation()
 }
 
 @Composable

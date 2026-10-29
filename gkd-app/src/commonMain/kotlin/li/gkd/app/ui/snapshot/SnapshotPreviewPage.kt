@@ -42,14 +42,14 @@ import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
 import li.gkd.app.ui.page.GkImagePreviewContent
 import li.gkd.app.ui.platform.GkSystemBars
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SnapshotPreviewPage(
-    host: UiHost,
     route: SnapshotPreviewRoute,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val imageLoader = appImageLoader()
     val replaceRoute: (AppRoute) -> Unit = { mainVm.navigator.navigate(it, true) }

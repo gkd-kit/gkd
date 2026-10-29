@@ -395,7 +395,7 @@
     <string name="hide_from_recents_warning">隐藏卡片后可能导致部分设备无法给任务卡片加锁后台，建议先加锁后再隐藏，若已加锁或没有锁后台机制请继续</string>
     <string name="history_title">历史记录</string>
     <string name="home_title">首页</string>
-    <string name="debug_address_description">%1$s:%2$s · %3$s</string>
+    <string name="debug_address_description">%1$s:%2$s</string>
     <string name="debug_clear_subscription">清除订阅</string>
     <string name="debug_clear_subscription_description">关闭服务时删除内存订阅</string>
     <string name="debug_listening_port">监听端口：%1$s</string>
@@ -411,9 +411,9 @@
     <string name="debug_service_start_failed">调试服务启动失败:%1$s</string>
     <string name="debug_settings_button">调试服务设置</string>
     <string name="debug_settings_open">打开调试服务设置弹窗</string>
-    <string name="debug_settings_title">调试服务设置</string>
+    <string name="debug_settings_title">调试设置</string>
     <string name="debug_toggle_service">切换调试服务状态</string>
-    <string name="debug_view_addresses">查看%1$s访问地址</string>
+    <string name="debug_view_addresses">查看访问地址 %1$s</string>
     <string name="image_decoding">解码中</string>
     <string name="image_downloading">下载中</string>
     <string name="image_load_failed_retry">加载失败, 点击重试</string>
@@ -429,7 +429,7 @@
     <string name="keep_alive_setup_open_tiles">1. 下拉通知栏，进入快捷开关编辑界面。\n</string>
     <string name="keep_alive_setup_place_tile">3. 将其放在下拉通知栏即可看到的位置</string>
     <string name="keep_alive_tile_description">将 %1$s 快捷开关添加到通知栏后，即使应用被系统关闭，也可通过下拉通知栏重新启动。\n\n</string>
-    <string name="keep_alive_title">无感保活</string>
+    <string name="keep_alive_title">快捷开关唤起</string>
     <string name="label_with_detail">%1$s · %2$s</string>
     <string name="link_copy">复制链接</string>
     <string name="link_invalid">非法链接</string>
@@ -448,8 +448,6 @@
     <string name="more_actions">更多操作</string>
     <string name="more_label">更多</string>
     <string name="network_host_failed_prefix">获取HOST失败:</string>
-    <string name="network_lan">局域网</string>
-    <string name="network_local_device">本机</string>
     <string name="network_unavailable">网络不可用</string>
     <string name="none_available">暂无</string>
     <string name="not_configured">未设置</string>
@@ -903,15 +901,25 @@
     <string name="toast_text_input_hint">请输入提示内容</string>
     <string name="toast_use_system_style">使用系统样式</string>
     <string name="total_prefix">共</string>
-    <string name="advanced_background_running">后台运行</string>
-    <string name="status_overlay_keep_alive">透明悬浮窗保活</string>
+    <string name="keep_alive_strategy">保活策略</string>
+    <string name="keep_alive_app_measures">应用措施</string>
+    <string name="keep_alive_system_settings">系统设置</string>
+    <string name="keep_alive_ignore_battery_optimization">忽略电池优化</string>
+    <string name="keep_alive_recents_lock">锁定最近任务</string>
+    <string name="integration_tools_title">快捷操作</string>
+    <string name="upload_configured">已配置</string>
+    <string name="upload_not_configured">未配置</string>
+    <string name="activity_overlay_title">界面信息悬浮窗</string>
+    <string name="event_overlay_title">无障碍事件悬浮窗</string>
+    <string name="status_overlay_keep_alive">悬浮窗保活</string>
     <string name="status_overlay_enable_title">开启透明悬浮窗保活？</string>
     <string name="status_overlay_enable_description">开启后，使用透明悬浮窗减少系统对应用后台运行的限制，但可能触发系统“正在其它应用的上层显示内容”通知</string>
     <string name="status_overlay_disable_title">关闭透明悬浮窗保活？</string>
     <string name="status_overlay_disable_description">关闭后，应用后台运行可能受到系统限制，影响服务持续运行</string>
     <string name="advanced_snapshot_capture">快照采集</string>
-    <string name="advanced_live_debug">实时调试</string>
-    <string name="advanced_logs_diagnostics">日志排查</string>
+    <string name="advanced_live_debug">网络调试</string>
+    <string name="advanced_interface_debug">界面调试</string>
+    <string name="advanced_logs_diagnostics">诊断</string>
     <string name="advanced_upload_share">上传分享</string>
     <string name="track_overlay">轨迹提示</string>
     <string name="track_overlay_description">在屏幕上显示点击和滑动轨迹</string>
@@ -919,7 +927,7 @@
     <string name="track_overlay_usage_description">开启「轨迹提示」后点击或滑动后会在屏幕上使用悬浮窗绘制轨迹(一段时间后消失)，如果新触摸事件恰好在悬浮窗区域内，可能会被目标应用拒绝，从而导致点击或滑动无响应</string>
     <string name="turned_off">已关闭</string>
     <string name="turned_on">已开启</string>
-    <string name="tutorial_view">获取教程</string>
+    <string name="tutorial_view">配置教程</string>
     <string name="unchanged">未修改</string>
     <string name="unknown">未知</string>
     <string name="update_channel">更新渠道</string>
@@ -1126,5 +1134,6 @@
     <string name="match_debug_collecting_empty">正在采集，停止后生成记录</string>
     <string name="match_debug_saved">已保存诊断记录</string>
     <string name="match_debug_start_title">开启诊断采集</string>
-    <string name="match_debug_start_description">诊断会记录规则匹配、操作结果和调用耗时，可能包含页面文字等信息，用于排查问题。关闭后会保存一条诊断记录。\n\n开始前，请先启用需要排查的规则，确认相关服务已开启，并准备好复现步骤。\n\n点击继续后，前往目标应用复现问题，完成后及时关闭诊断。请勿长时间开启，也不要在采集期间输入密码、支付信息或浏览敏感内容。分享前请确认接收方可信。</string>
+    <string name="match_debug_start_description">记录规则匹配、操作结果和耗时，用于排查问题。\n开启后复现问题，完成后关闭采集，记录会自动保存。</string>
+    <string name="match_debug_start_confirm">开始采集</string>
 </resources>

@@ -51,12 +51,14 @@ class AppNavigator(private val scope: CoroutineScope) {
 
     fun openPage(link: GkdLink.Page) {
         val section = link.section.takeIf { link.route == AdvancedPageRoute }
+        val route =
+            if (section == AdvancedSection.SnapshotButton) SnapshotSettingsRoute else link.route
         if (link.route == MatchDebugRoute || section != null) {
             scope.launch {
-                val index = backStack.indexOfLast { it.route == link.route }
+                val index = backStack.indexOfLast { it.route == route }
                 val entry =
                     if (index < 0) {
-                        AppNavEntry(link.route).also { backStack.add(it) }
+                        AppNavEntry(route).also { backStack.add(it) }
                     } else {
                         backStack.subList(index + 1, backStack.size).clear()
                         backStack[index]

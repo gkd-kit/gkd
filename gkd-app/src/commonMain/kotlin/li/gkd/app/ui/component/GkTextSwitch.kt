@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,7 +19,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import li.gkd.app.resources.*
-import li.gkd.app.ui.style.itemPadding
+import li.gkd.app.ui.style.itemHorizontalPadding
+import li.gkd.app.ui.style.itemVerticalPadding
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -48,7 +50,13 @@ fun GkTextSwitch(
             modifier
         }
     Row(
-        modifier = if (paddingDisabled) topModifier else topModifier.itemPadding(),
+        modifier =
+            if (paddingDisabled) topModifier
+            else
+                topModifier.padding(
+                    horizontal = itemHorizontalPadding,
+                    vertical = if (subtitle == null) 4.dp else itemVerticalPadding,
+                ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

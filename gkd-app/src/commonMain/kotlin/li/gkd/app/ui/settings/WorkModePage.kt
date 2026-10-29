@@ -38,7 +38,6 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
-import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkAnimatedBooleanContent
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
@@ -50,9 +49,10 @@ import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.AutomationScopeAppListRoute
+import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.RefreshPermissions
-import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.changeAutomatorMode
 import li.gkd.app.ui.platform.openA11ySettings
 import li.gkd.app.ui.style.itemHorizontalPadding
@@ -60,7 +60,8 @@ import li.gkd.app.ui.style.surfaceCardColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun WorkModePage(host: UiHost) {
+fun WorkModePage() {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { WorkModeViewModel() }
     RefreshPermissions()
@@ -110,59 +111,6 @@ fun WorkModePage(host: UiHost) {
                 }
             },
         )
-    val showKeepAlive by vm.showKeepAlive.collectAsStateWithLifecycle()
-    if (showKeepAlive) {
-        val tutorial =
-            stringResource(Res.string.keep_alive_tile_description, appName) +
-                stringResource(Res.string.keep_alive_setup_heading) +
-                stringResource(Res.string.keep_alive_setup_open_tiles) +
-                stringResource(
-                    Res.string.keep_alive_setup_add_tile,
-                    appName,
-                ) +
-                stringResource(Res.string.keep_alive_setup_place_tile)
-        GkAlertDialog(
-            onDismissRequest = { vm.setShowKeepAlive(false) },
-            title = { Text(stringResource(Res.string.keep_alive_title)) },
-            text = {
-                Text(
-                    tutorial +
-                        if (platform.writeSecureSettings) ""
-                        else
-                            stringResource(Res.string.keep_alive_permission_missing) +
-                                stringResource(Res.string.keep_alive_permission_description),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        vm.setShowKeepAlive(false)
-                        if (!platform.writeSecureSettings) onPrivilege()
-                    },
-                ) {
-                    Text(
-                        stringResource(
-                            if (platform.writeSecureSettings) Res.string.action_understood
-                            else Res.string.settings_go_to,
-                        ),
-                    )
-                }
-            },
-            dismissButton =
-                if (platform.writeSecureSettings) null
-                else {
-                    {
-                        TextButton(
-                            onClick = {
-                                vm.setShowKeepAlive(false)
-                            },
-                        ) {
-                            Text(stringResource(Res.string.action_close))
-                        }
-                    }
-                },
-        )
-    }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     GkScaffold(
         modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
@@ -287,9 +235,9 @@ fun WorkModePage(host: UiHost) {
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
-                    TextButton(onClick = { vm.setShowKeepAlive(true) }) {
+                    TextButton(onClick = { mainVm.navigator.navigate(KeepAliveRoute) }) {
                         Text(
-                            text = stringResource(Res.string.keep_alive_title),
+                            text = stringResource(Res.string.keep_alive_strategy),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }

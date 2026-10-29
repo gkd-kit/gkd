@@ -14,11 +14,12 @@ import li.gkd.app.privilegeUiState
 import li.gkd.app.ui.component.LocalEditorWindowInsets
 import li.gkd.app.ui.page.GkPrivilegeTopBar
 import li.gkd.app.ui.page.PrivilegeServiceInfoDialog
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import priv.kit.ui.PrivilegeScreen
 
 @Composable
-actual fun PrivilegeServicePage(host: UiHost) {
+actual fun PrivilegeServicePage() {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val state = host.state
 

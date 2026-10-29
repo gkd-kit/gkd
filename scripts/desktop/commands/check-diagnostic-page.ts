@@ -100,7 +100,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         assert.notEqual((await request('debug/readiness')).session?.active, true, 'Cancelling notice must leave capture stopped');
         await tapText('诊断采集', 'before-confirm');
         await screenshot('start-notice');
-        await tapText('继续', 'notice-continue');
+        await tapText('开始采集', 'notice-start');
         const ready = await until(() => request('debug/readiness'), r => r.session?.active === true, 'UI starts capture');
         const id = ready.session.id;
         assert.match((await adb('shell', 'dumpsys', 'activity', 'services', service)).toString(), /isForeground=true/);

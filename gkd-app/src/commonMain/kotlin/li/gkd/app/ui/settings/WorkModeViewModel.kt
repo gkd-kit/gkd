@@ -16,11 +16,4 @@ class WorkModeViewModel : BaseViewModel() {
     fun setPrivilegeAction(value: WorkModePrivilegeAction?) {
         privilegeAction.value = value
     }
-
-    val showKeepAlive: StateFlow<Boolean>
-        field = MutableStateFlow(false)
-
-    fun setShowKeepAlive(value: Boolean) {
-        showKeepAlive.value = value
-    }
 }

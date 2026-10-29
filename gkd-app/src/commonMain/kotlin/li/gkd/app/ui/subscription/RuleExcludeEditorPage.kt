@@ -16,16 +16,16 @@ import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.page.EditorSession
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.style.scaffoldPadding
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RuleExcludeEditorPage(
-    host: UiHost,
     route: RuleExcludeEditorRoute,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { RuleExcludeEditorViewModel(route) }
     GkSubscriptionPageContent(vm.uiState, mainVm.navigator::pop) { state ->

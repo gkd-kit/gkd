@@ -52,6 +52,7 @@ import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.icon.GkAnimatedLogoIcon
 import li.gkd.app.ui.page.GkVersionInfoDialog
 import li.gkd.app.ui.page.feedbackNotice
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.style.itemPadding
@@ -61,9 +62,8 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun AboutPage(
-    host: UiHost,
-) {
+fun AboutPage() {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AboutViewModel() }
     val showVersionInfoDialog by vm.showVersionInfoDialog.collectAsStateWithLifecycle()

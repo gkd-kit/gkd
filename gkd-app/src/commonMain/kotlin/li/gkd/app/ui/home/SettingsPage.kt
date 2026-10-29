@@ -38,11 +38,12 @@ import li.gkd.app.ui.navigation.ActionToastRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
+import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.option.DarkThemeOption
 import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.page.GkBackupDialogs
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.dynamicColorAvailable
 import li.gkd.app.ui.platform.privilegeAvailable
 import li.gkd.app.ui.share.launchUi
@@ -52,9 +53,9 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun settingsPage(
-    host: UiHost,
     vm: HomeViewModel,
 ): ScaffoldExt {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val scope = rememberCoroutineScope()
     val appName = META.appName
@@ -174,6 +175,11 @@ fun settingsPage(
                     subtitle = stringResource(Res.string.hide_from_recents_description),
                     checked = store.excludeFromRecents,
                     onCheckedChange = ::setExcludeFromRecents,
+                )
+
+                GkSettingItem(
+                    title = stringResource(Res.string.keep_alive_strategy),
+                    onClick = { mainVm.navigator.navigate(KeepAliveRoute) },
                 )
 
                 AnimatedVisibility(visible = store.enableBlockA11yAppList) {

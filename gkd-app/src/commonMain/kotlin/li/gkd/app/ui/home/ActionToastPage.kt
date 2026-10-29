@@ -38,16 +38,15 @@ import li.gkd.app.ui.component.GkTemplateVariableRow
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.page.EditorSession
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.util.ActionToastTemplate
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun ActionToastPage(
-    host: UiHost,
-) {
+fun ActionToastPage() {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { ActionToastViewModel() }
 

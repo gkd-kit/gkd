@@ -67,7 +67,7 @@ import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.option.AppGroupOption
 import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.UiHost
+import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
@@ -78,9 +78,9 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubsGlobalGroupExcludePage(
-    host: UiHost,
     route: SubsGlobalGroupExcludeRoute,
 ) {
+    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { SubsGlobalGroupExcludeViewModel(route) }
     val environment = rememberRuleControlEnvironment()

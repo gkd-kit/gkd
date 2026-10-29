@@ -9,14 +9,10 @@ import li.gkd.app.resources.*
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
 import li.gkd.app.storage.createLogArchive
-import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.share.saveArchive
-import li.gkd.app.ui.share.shareArchive
 import li.gkd.app.ui.upload.GithubUploadItem
 import li.gkd.app.ui.upload.GithubUploadState
 import li.gkd.app.util.ToastUtils
-import org.jetbrains.compose.resources.getString
 
 class ShareLogState(
     private val scope: CoroutineScope,
@@ -32,18 +28,6 @@ class ShareLogState(
         visible = false
     }
 
-    private fun share(host: UiHost) {
-        dismiss()
-        scope.launchUi {
-            host.shareArchive(getString(Res.string.logs_share_file), ::createLogArchive)
-        }
-    }
-
-    private fun save(host: UiHost) {
-        dismiss()
-        scope.launchUi { host.saveArchive(::createLogArchive) }
-    }
-
     private fun upload() {
         dismiss()
         val item =
@@ -57,7 +41,20 @@ class ShareLogState(
     }
 
     @Composable
-    fun Render(host: UiHost) {
-        if (visible) GkShareLogDialog(::dismiss, { share(host) }, { save(host) }, ::upload)
+    fun Render(onShare: suspend () -> Unit, onSave: suspend () -> Unit) {
+        if (visible) {
+            GkShareLogDialog(
+                onDismiss = ::dismiss,
+                onShare = {
+                    dismiss()
+                    scope.launchUi { onShare() }
+                },
+                onSave = {
+                    dismiss()
+                    scope.launchUi { onSave() }
+                },
+                onUpload = ::upload,
+            )
+        }
     }
 }
