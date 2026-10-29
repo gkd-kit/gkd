@@ -31,10 +31,12 @@ fun GkSettingItem(
     onClickLabel: String? = null,
     subtitleMaxLines: Int = Int.MAX_VALUE,
     subtitleOverflow: TextOverflow = TextOverflow.Clip,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier =
-            Modifier.let {
+            modifier
+                .let {
                     if (onClick != null) {
                         it.clickable(
                             onClick = onClick,

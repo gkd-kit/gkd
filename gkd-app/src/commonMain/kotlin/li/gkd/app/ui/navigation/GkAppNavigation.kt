@@ -82,7 +82,7 @@ fun GkAppNavigation(
                 WorkModeRoute -> WorkModePage(host)
                 AboutRoute -> AboutPage(host)
                 BlockA11ySetupRoute -> BlockA11ySetupPage(host)
-                AdvancedPageRoute -> AdvancedPage(host)
+                AdvancedPageRoute -> AdvancedPage(host, entry)
                 MatchDebugRoute -> MatchDebugPage(host)
                 ExternalCallsRoute -> ExternalCallsPage()
                 QuickSettingsTilesRoute -> QuickSettingsTilesPage()

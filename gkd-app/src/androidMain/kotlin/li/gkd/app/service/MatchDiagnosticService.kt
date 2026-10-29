@@ -27,10 +27,12 @@ import li.gkd.app.util.ToastUtils
 class MatchDiagnosticService : LifecycleHookService() {
     private var sessionId: String? = null
     private var starting = false
+    private var stoppedFromNotification = false
 
     init {
         val receiver =
             StopServiceReceiver(this) {
+                stoppedFromNotification = true
                 sessionId?.let { MatchingRuntime.coordinator.stopDiagnostics(it) } ?: stopSelf()
             }
         onCreated { receiver.register() }
@@ -80,9 +82,13 @@ class MatchDiagnosticService : LifecycleHookService() {
                 NotificationCatalog.matchDiagnostic(saving = true).startForeground()
                 MatchDiagnosticFiles.state.first { it.containsKey(session.id) }
                 MatchDiagnosticFiles.flush()
-                ToastUtils.show(
-                    org.jetbrains.compose.resources.getString(Res.string.match_debug_saved),
-                )
+                if (stoppedFromNotification) {
+                    NotificationCatalog.matchDiagnosticSaved().post()
+                } else {
+                    ToastUtils.show(
+                        org.jetbrains.compose.resources.getString(Res.string.match_debug_saved),
+                    )
+                }
             } catch (error: Exception) {
                 if (sessionId == null)
                     reply?.send(

@@ -1,12 +1,17 @@
 package li.gkd.app.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -17,16 +22,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.network.AppLinks
@@ -47,6 +59,8 @@ import li.gkd.app.ui.component.autoFocus
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
+import li.gkd.app.ui.navigation.AdvancedSection
+import li.gkd.app.ui.navigation.AppNavEntry
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.MatchDebugRoute
@@ -65,6 +79,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun AdvancedPage(
     host: UiHost,
+    entry: AppNavEntry,
 ) {
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AdvancedViewModel() }
@@ -153,6 +168,42 @@ fun AdvancedPage(
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val sectionRequesters = remember {
+        AdvancedSection.entries.associateWith { BringIntoViewRequester() }
+    }
+    var highlightRequest by remember { mutableStateOf<Pair<AdvancedSection, Any>?>(null) }
+    var highlightedSection by remember { mutableStateOf<AdvancedSection?>(null) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val sectionRequest by entry.advancedSectionRequest.collectAsStateWithLifecycle()
+    LaunchedEffect(sectionRequest) {
+        sectionRequest?.let { section ->
+            try {
+                sectionRequesters.getValue(section).bringIntoView()
+                highlightRequest = section to Any()
+            } finally {
+                entry.consumeAdvancedSection()
+            }
+        }
+    }
+    LaunchedEffect(highlightRequest, lifecycle) {
+        val section = highlightRequest?.first ?: return@LaunchedEffect
+        lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.RESUMED) }
+        try {
+            repeat(2) {
+                highlightedSection = section
+                delay(400)
+                highlightedSection = null
+                delay(400)
+            }
+        } finally {
+            highlightedSection = null
+        }
+    }
+    @Composable
+    fun sectionFocusModifier(section: AdvancedSection): Modifier =
+        Modifier.bringIntoViewRequester(sectionRequesters.getValue(section))
+            .focusHighlight(highlightedSection == section)
+
     GkScaffold(
         modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
         topBar = {
@@ -171,8 +222,8 @@ fun AdvancedPage(
         Column(
             modifier =
                 Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(contentPadding),
+                    .padding(contentPadding)
+                    .verticalScroll(rememberScrollState()),
         ) {
             AdvancedSectionTitle(
                 stringResource(Res.string.advanced_background_running),
@@ -190,18 +241,21 @@ fun AdvancedPage(
                 onClick = { mainVm.navigator.navigate(SnapshotPageRoute) },
             )
             GkTextSwitch(
+                modifier = sectionFocusModifier(AdvancedSection.SnapshotButton),
                 title = stringResource(Res.string.snapshot_button_label),
                 subtitle = stringResource(Res.string.snapshot_button_description),
                 checked = buttonServiceRunning,
                 onCheckedChange = host::setSnapshotButtonEnabled,
             )
             GkSettingItem(
+                modifier = sectionFocusModifier(AdvancedSection.SnapshotSettings),
                 title = stringResource(Res.string.snapshot_settings),
                 onClick = { mainVm.navigator.navigate(SnapshotSettingsRoute) },
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_live_debug))
             DebugServiceItem(
+                modifier = sectionFocusModifier(AdvancedSection.Http),
                 running = debugServiceRunning,
                 settingsSelected = showDebugSettingsDialog,
                 port = store.httpServerPort,
@@ -211,18 +265,21 @@ fun AdvancedPage(
                 onAddressClick = mainVm.textDialog::showUrl,
             )
             GkTextSwitch(
+                modifier = sectionFocusModifier(AdvancedSection.Activity),
                 title = stringResource(Res.string.activity_service_label),
                 subtitle = stringResource(Res.string.activity_service_description),
                 checked = activityServiceRunning,
                 onCheckedChange = host::setActivityMonitorEnabled,
             )
             GkTextSwitch(
+                modifier = sectionFocusModifier(AdvancedSection.Event),
                 title = stringResource(Res.string.event_service_label),
                 subtitle = stringResource(Res.string.event_service_description),
                 checked = eventServiceRunning,
                 onCheckedChange = host::setEventMonitorEnabled,
             )
             GkTextSwitch(
+                modifier = sectionFocusModifier(AdvancedSection.Track),
                 title = stringResource(Res.string.track_overlay),
                 subtitle = stringResource(Res.string.track_overlay_description),
                 checked = trackServiceRunning,
@@ -240,7 +297,21 @@ fun AdvancedPage(
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
-            DiagnosticSettings(vm)
+            Column(
+                Modifier.bringIntoViewRequester(
+                    sectionRequesters.getValue(AdvancedSection.Diagnostics),
+                ),
+            ) {
+                DiagnosticCapture(
+                    vm,
+                    modifier =
+                        Modifier.focusHighlight(highlightedSection == AdvancedSection.Diagnostics),
+                )
+                GkSettingItem(
+                    title = stringResource(Res.string.match_debug_records),
+                    onClick = { mainVm.navigator.navigate(MatchDebugRoute) },
+                )
+            }
             GkSettingItem(
                 title = stringResource(Res.string.activity_switch_logs),
                 onClick = { mainVm.navigator.navigate(ActivityLogRoute) },
@@ -304,7 +375,21 @@ private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {
 }
 
 @Composable
+private fun Modifier.focusHighlight(highlighted: Boolean): Modifier {
+    val color by
+        animateColorAsState(
+            targetValue =
+                if (highlighted) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.background,
+            animationSpec = tween(durationMillis = 300),
+            label = "Setting focus background",
+        )
+    return background(color)
+}
+
+@Composable
 private fun DebugServiceItem(
+    modifier: Modifier,
     running: Boolean,
     settingsSelected: Boolean,
     port: Int,
@@ -330,7 +415,7 @@ private fun DebugServiceItem(
         )
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
@@ -440,8 +525,7 @@ private fun EditHttpPortDialog(
 }
 
 @Composable
-private fun DiagnosticSettings(vm: AdvancedViewModel) {
-    val main = MainViewModel.requireCurrent()
+private fun DiagnosticCapture(vm: AdvancedViewModel, modifier: Modifier) {
     val diagnostics = MatchingRuntime.coordinator.diagnostics
     val control =
         remember(diagnostics) {
@@ -455,6 +539,7 @@ private fun DiagnosticSettings(vm: AdvancedViewModel) {
                 },
         )
     GkTextSwitch(
+        modifier = modifier,
         title = stringResource(Res.string.match_debug_collect),
         subtitle = stringResource(Res.string.match_debug_intro),
         checked = current.second,
@@ -462,9 +547,5 @@ private fun DiagnosticSettings(vm: AdvancedViewModel) {
             if (enabled) vm.requestDiagnosticCapture()
             else current.first?.let { MatchingRuntime.coordinator.stopDiagnostics(it) }
         },
-    )
-    GkSettingItem(
-        title = stringResource(Res.string.match_debug_records),
-        onClick = { main.navigator.navigate(MatchDebugRoute) },
     )
 }

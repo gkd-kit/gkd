@@ -25,7 +25,6 @@ import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.ui.home.BottomNavItem
 import li.gkd.app.ui.navigation.GkdLink
-import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.importBackup as importBackupArchive
@@ -81,9 +80,7 @@ class AndroidMainState(
                     mainVm.navigator.popToHome()
                 }
 
-            is GkdLink.Page ->
-                if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage()
-                else mainVm.navigator.navigate(link.route)
+            is GkdLink.Page -> mainVm.navigator.openPage(link)
             GkdLink.WeChatScanner -> IntentUtils.openWeChatScanner()
             null -> notFoundToast()
         }

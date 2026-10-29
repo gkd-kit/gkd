@@ -20,8 +20,16 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
   const service = `${pkg}/li.gkd.app.service.MatchDiagnosticService`;
   const signal = AbortSignal.timeout(420_000);
   const dump = async (name: string) => {
-    await adb('shell', 'uiautomator', 'dump', '/sdcard/gkd-diagnostic-ui.xml');
-    const xml = (await adb('shell', 'cat', '/sdcard/gkd-diagnostic-ui.xml')).toString();
+    const remote = `/sdcard/gkd-diagnostic-${name}.xml`;
+    let result = '';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      result = (await adb('shell', 'uiautomator', 'dump', remote, '2>&1')).toString();
+      if (result.includes(remote)) break;
+      await pause(500);
+    }
+    assert.ok(result.includes(remote), `UI dump failed: ${result}`);
+    const xml = (await adb('shell', 'cat', remote)).toString();
+    await adb('shell', 'rm', remote);
     await writeFile(`${folder}/${name}.xml`, xml);
     return xml;
   };
@@ -37,6 +45,18 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
     await pause(300);
   };
   const screenshot = async (name: string) => writeFile(`${folder}/${name}.png`, await adb('exec-out', 'screencap', '-p'));
+  const openNotification = async (title: string, targetText: string, name: string) => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await tapText(title, `${name}-${attempt}`);
+      // MIUI can return the previous notification tree while the shade is closing.
+      // Let that transition finish before another tap could hit the underlying page.
+      await pause(1200);
+      const xml = await dump(`${name}-result-${attempt}`);
+      if (xml.includes(`package="${pkg}"`) && xml.includes(`text="${targetText}"`)) return;
+      assert.ok(xml.includes('package="com.android.systemui"') && xml.includes(`text="${title}"`), 'Notification opened an unexpected page');
+    }
+    throw new Error(`Notification did not open ${targetText}`);
+  };
   await withAutomationPaused(adb, folder, async original => {
     await writeFile(`${folder}/original.json`, JSON.stringify({ enableAutomator: original.enableAutomator, automatorMode: original.automatorMode }));
     await installGkdDebug(adb);
@@ -110,10 +130,13 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         await adb('shell', 'cmd', 'statusbar', 'expand-notifications');
         await pause(500);
         await screenshot('notification');
-        await tapText('正在采集', 'notification-open');
-        // A collapsed vendor notification group consumes the first tap to expand.
-        if (!(await dump('after-notification-tap')).includes('text="诊断记录"')) await tapText('正在采集', 'notification-open-expanded');
-        assert.match(await dump('returned'), /诊断记录/);
+        await openNotification('正在采集', '诊断采集', 'notification-open');
+        await screenshot('notification-advanced');
+        // Re-enter the existing Advanced entry from its records child.
+        await tapText('诊断记录', 'open-records-while-capturing');
+        await adb('shell', 'cmd', 'statusbar', 'expand-notifications');
+        await pause(500);
+        await openNotification('正在采集', '诊断采集', 'notification-from-records');
         assert.equal((await request(`debug/sessions/${id}`)).active, true);
         await adb('shell', 'cmd', 'statusbar', 'expand-notifications');
         await pause(500);
@@ -143,7 +166,10 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         // MIUI keeps its notification long-press modal after the action has stopped the service.
         await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
         await adb('shell', 'cmd', 'statusbar', 'collapse');
-        await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/matching-diagnostics', '-n', `${pkg}/li.gkd.app.MainActivity`);
+        await adb('shell', 'cmd', 'statusbar', 'expand-notifications');
+        await pause(500);
+        await screenshot('saved-notification');
+        await openNotification('已保存诊断记录', '诊断记录', 'saved-notification-open');
         await pause(700);
         const savedUi = await dump('saved-ui');
         assert.ok(savedUi.includes('诊断记录') && !savedUi.includes('text="诊断采集"'), 'Record page must contain records without the collection switch');
@@ -170,8 +196,12 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         const timed = await request('debug/sessions', { recordSystem: true });
         await pause(61_000);
         assert.equal((await request(`debug/sessions/${timed.id}`)).active, true, 'Capture must remain active after 60 seconds');
-        await request(`debug/sessions/${timed.id}/stop`, {});
+        await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/1?section=diagnostics', '-n', `${pkg}/li.gkd.app.MainActivity`);
+        await tapText('诊断采集', 'page-stop');
         await until(async () => (await adb('shell', 'dumpsys', 'activity', 'services', service)).toString(), s => !s.includes('isForeground=true'), 'manual stop removes notification');
+        const notifications = (await adb('shell', 'dumpsys', 'notification', '--noredact')).toString().split('Historical notifications')[0]!;
+        assert.ok(!notifications.includes('android.title=String (已保存诊断记录)'), 'Page stop must not post a completion notification');
+        await tapText('诊断记录', 'records-after-page-stop');
         const extra = await request('debug/sessions', { recordSystem: true });
         await request(`debug/sessions/${extra.id}/stop`, {});
         await until(() => request('debug/readiness'), r => r.session?.active === false, 'second stopped record');
@@ -199,7 +229,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         const invalid = await client.response('debug/sessions', { detailed: true }, { headers: { Authorization: `Bearer ${token}` } });
         assert.equal(invalid.status, 400, 'Service startup must preserve invalid-argument HTTP status');
         await until(async () => (await adb('shell', 'dumpsys', 'activity', 'services', service)).toString(), s => !s.includes('isForeground=true'), 'failed startup removes notification');
-        await writeFile(`${folder}/report.json`, JSON.stringify({ id, timedId: timed.id, notificationStop: true, notificationReturn: true, saved: true, singleShare: true, singleDelete: true, batchShare: true, batchDelete: true, existingRecordsPreserved: true, noAutomaticStop: true }, null, 2));
+        await writeFile(`${folder}/report.json`, JSON.stringify({ id, timedId: timed.id, notificationStop: true, notificationReturn: true, existingAdvancedEntryReturn: true, savedNotificationOpen: true, pageStopWithoutNotification: true, saved: true, singleShare: true, singleDelete: true, batchShare: true, batchDelete: true, existingRecordsPreserved: true, noAutomaticStop: true }, null, 2));
       });
     } catch (error) {
       console.error('Diagnostic page verification failed:', error);

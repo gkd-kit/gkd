@@ -252,7 +252,7 @@
                 android:value="true" />
             <meta-data
                 android:name="QS_TILE_URI"
-                android:value="gkd://page/1" />
+                android:value="gkd://page/1?section=http" />
 
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -269,7 +269,7 @@
                 android:value="true" />
             <meta-data
                 android:name="QS_TILE_URI"
-                android:value="gkd://page/1" />
+                android:value="gkd://page/1?section=snapshot-button" />
 
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -303,7 +303,7 @@
                 android:value="true" />
             <meta-data
                 android:name="QS_TILE_URI"
-                android:value="gkd://page/1" />
+                android:value="gkd://page/1?section=activity" />
 
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -320,7 +320,7 @@
                 android:value="true" />
             <meta-data
                 android:name="QS_TILE_URI"
-                android:value="gkd://page/1" />
+                android:value="gkd://page/1?section=event" />
 
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />

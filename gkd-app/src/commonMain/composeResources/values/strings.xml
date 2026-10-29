@@ -1114,7 +1114,8 @@
     <string name="match_debug_service_busy">诊断正在采集或保存，请等待完成</string>
     <string name="match_debug_service_failed">诊断服务未能启动，采集未开启</string>
     <string name="match_debug_notification_required">请先允许通知，以便在通知栏停止诊断采集</string>
-    <string name="match_debug_notification_help">点击返回诊断页面，可在通知中停止采集</string>
+    <string name="match_debug_notification_help">点击查看诊断设置，可在通知中停止采集</string>
+    <string name="match_debug_saved_notification_help">点击查看诊断记录</string>
     <string name="match_debug_saving">正在保存诊断…</string>
     <string name="match_debug_collect">诊断采集</string>
     <string name="match_debug_intro">记录运行过程，帮助排查问题</string>

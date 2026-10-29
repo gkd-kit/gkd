@@ -49,11 +49,22 @@ class AppNavigator(private val scope: CoroutineScope) {
 
     fun openWebPage(url: String) = navigate(WebViewRoute(url))
 
-    fun openDiagnosticPage() {
-        scope.launch {
-            val index = backStack.indexOfLast { it.route == MatchDebugRoute }
-            if (index < 0) backStack.add(AppNavEntry(MatchDebugRoute))
-            else backStack.subList(index + 1, backStack.size).clear()
+    fun openPage(link: GkdLink.Page) {
+        val section = link.section.takeIf { link.route == AdvancedPageRoute }
+        if (link.route == MatchDebugRoute || section != null) {
+            scope.launch {
+                val index = backStack.indexOfLast { it.route == link.route }
+                val entry =
+                    if (index < 0) {
+                        AppNavEntry(link.route).also { backStack.add(it) }
+                    } else {
+                        backStack.subList(index + 1, backStack.size).clear()
+                        backStack[index]
+                    }
+                section?.let(entry::requestAdvancedSection)
+            }
+        } else {
+            navigate(link.route)
         }
     }
 

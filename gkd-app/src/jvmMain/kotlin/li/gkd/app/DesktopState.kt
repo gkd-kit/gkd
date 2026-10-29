@@ -207,9 +207,7 @@ class DesktopState(
                 mainVm.navigator.popToHome()
             }
 
-            is GkdLink.Page ->
-                if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage()
-                else mainVm.navigator.navigate(link.route)
+            is GkdLink.Page -> mainVm.navigator.openPage(link)
             GkdLink.WeChatScanner -> unsupported()
             null -> toast.show(Res.string.uri_unknown.getSync(uri))
         }

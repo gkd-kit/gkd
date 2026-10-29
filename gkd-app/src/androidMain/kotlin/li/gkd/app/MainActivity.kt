@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
         addOnNewIntentListener {
             if (!DesktopProfileExport.handle(this@MainActivity, it))
                 mainVm.androidState.handleIntent(it)
-            intent = null
+            MainActivityIntents.consume(this)
         }
         StatusService.autoStart()
         if (settings.value.enableBlockA11yAppList) {
@@ -140,11 +140,11 @@ class MainActivity : ComponentActivity() {
             ) {
                 AppRoot()
             }
-            LaunchedEffect(null) {
-                intent?.let {
+            LaunchedEffect(Unit) {
+                MainActivityIntents.pending(intent)?.let {
                     if (!DesktopProfileExport.handle(this@MainActivity, it))
                         mainVm.androidState.handleIntent(it)
-                    intent = null
+                    MainActivityIntents.consume(this@MainActivity)
                 }
             }
         }
@@ -158,5 +158,15 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             window.navigationBarColor = Color.TRANSPARENT
         }
+    }
+}
+
+private object MainActivityIntents {
+    private val consumed = Intent()
+
+    fun pending(intent: Intent?): Intent? = intent?.takeUnless { it === consumed }
+
+    fun consume(activity: MainActivity) {
+        activity.intent = consumed
     }
 }
