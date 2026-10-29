@@ -38,7 +38,6 @@ import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.componentName
-import li.gkd.app.util.monotonicTimeMillis
 
 @SuppressLint("AccessibilityPolicy")
 abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
@@ -91,15 +90,6 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     override fun onInterrupt() {}
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = matchHost.onA11yEvent(event)
-
-    private val startTime = monotonicTimeMillis()
-    override var justStarted: Boolean = true
-        get() {
-            if (field) {
-                field = monotonicTimeMillis() - startTime < 3_000
-            }
-            return field
-        }
 
     private var tempShutdownFlag = false
 

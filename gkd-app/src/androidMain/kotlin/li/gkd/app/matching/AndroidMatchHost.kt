@@ -100,8 +100,6 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     private val effective
         get() = AndroidAutomationSessions.isEffective(service)
 
-    private val hasOthersService = AndroidAutomationSessions.hasOtherService(service)
-
     fun onRulesChanged() = startQueryJob()
 
     fun onA11yConnected() {
@@ -451,10 +449,6 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         if (activityRule.currentRules.isEmpty()) {
             coordinator.diagnostics.entry("query_request", activityRule.emptyReason)
             return
-        }
-        if (byEvent == null && service.justStarted && !hasOthersService) {
-            coordinator.diagnostics.entry("query_request", "service_start_settling")
-            return checkFutureStartJob()
         }
         coordinator.request(service) {
             try {

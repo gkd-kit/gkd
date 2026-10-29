@@ -29,7 +29,6 @@ import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
-import li.gkd.app.util.monotonicTimeMillis
 
 class AutomationService
 private constructor(
@@ -66,15 +65,6 @@ private constructor(
 
     override val windowInfos: List<AccessibilityWindowInfo>
         get() = uiAutomation.windows
-
-    private val startTime = monotonicTimeMillis()
-    override var justStarted: Boolean = true
-        get() {
-            if (field) {
-                field = monotonicTimeMillis() - startTime < 3_000
-            }
-            return field
-        }
 
     private var connected = false
 

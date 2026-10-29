@@ -225,14 +225,16 @@ fun updateTopTaskAppId(value: String) {
 fun initA11yWhiteAppList() {
     val actualFlow = topAppIdFlow.drop(1)
     appScope.launch(Dispatchers.Main) {
-        actualFlow.collect {
+        actualFlow.collect { appId ->
             lastAppIdChangeTime = System.currentTimeMillis()
             if (!currentAppBlocked) {
                 if (
-                    currentTopActivity.sameAs(
-                        systemRecentCn.packageName,
-                        systemRecentCn.className,
-                    ) && currentAppUseA11y
+                    appId == systemRecentCn.packageName &&
+                        currentTopActivity.sameAs(
+                            systemRecentCn.packageName,
+                            systemRecentCn.className,
+                        ) &&
+                        currentAppUseA11y
                 ) {
                     // 切换无障碍会造成卡顿，在最近任务界面时，延迟这个卡顿
                     val tempTime = lastAppIdChangeTime

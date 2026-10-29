@@ -21,14 +21,7 @@ object AndroidAutomationSessions {
     fun isEffective(service: AndroidAutomationSession): Boolean =
         latestServiceMode.value == service.mode.value
 
-    fun hasOtherService(service: AndroidAutomationSession): Boolean =
-        when (service.mode) {
-            AutomatorMode.A11y -> uiAutomationFlow.value != null
-            AutomatorMode.Automation -> A11yService.instance != null
-        }
-
     fun onA11yConnected(service: AndroidAutomationSession) {
-        // Preserve the engine's initial view of the other service before switching modes.
         val engine = service.matchHost
         val generation = connectionGeneration.incrementAndGet()
         latestServiceMode.value = service.mode.value
