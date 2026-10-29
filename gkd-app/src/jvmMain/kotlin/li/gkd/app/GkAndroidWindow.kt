@@ -84,7 +84,9 @@ fun GkAndroidWindow(
 ) {
     val system = environment.android
     CompositionLocalProvider(
-        LocalTopBarWindowInsets provides WindowInsets(top = system.topInset.dp),
+        // Keep page geometry stable while preview status bars hide/show and routes transition.
+        LocalTopBarWindowInsets provides
+            WindowInsets(top = maxOf(system.statusBarHeight, system.cutoutHeight).dp),
         LocalHomeNavigationInsets provides WindowInsets(bottom = system.bottomInset.dp),
         LocalEditorWindowInsets provides WindowInsets(bottom = system.bottomInset.dp),
     ) {
