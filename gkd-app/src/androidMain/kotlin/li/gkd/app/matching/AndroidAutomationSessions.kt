@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
+import li.gkd.app.matching.diagnostics.MatchServiceConnection
+import li.gkd.app.matching.diagnostics.MatchServiceEvent
+import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.input.MatchInput
 import li.gkd.app.matching.query.readA11yWindow
 import li.gkd.app.priv.uiAutomationFlow
@@ -30,9 +33,31 @@ object AndroidAutomationSessions {
             MatchInput.ServiceChanged,
             MatchingRuntime.coordinator.policy.value,
         )
+        MatchingRuntime.coordinator.diagnostics.record(
+            0,
+            MatchStage.Idle,
+            MatchServiceEvent.Connected.name,
+            serviceConnection =
+                MatchServiceConnection(
+                    MatchServiceEvent.Connected,
+                    service.mode,
+                    engine.connectionId,
+                ),
+        )
         engine.onA11yConnected()
         ThreadUtils.runMainOrPost(MatchingRuntime.coordinator.policy.value.serviceHandoffMillis) {
             if (connectionGeneration.value == generation) {
+                MatchingRuntime.coordinator.diagnostics.record(
+                    0,
+                    MatchStage.Idle,
+                    MatchServiceEvent.HandoffShutdownRequested.name,
+                    serviceConnection =
+                        MatchServiceConnection(
+                            MatchServiceEvent.HandoffShutdownRequested,
+                            service.mode,
+                            engine.connectionId,
+                        ),
+                )
                 when (service.mode) {
                     AutomatorMode.A11y -> uiAutomationFlow.value?.shutdown(true)
                     AutomatorMode.Automation -> A11yService.instance?.shutdown(true)

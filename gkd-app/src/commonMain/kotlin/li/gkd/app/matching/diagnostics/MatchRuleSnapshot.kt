@@ -134,4 +134,6 @@ data class MatchDiagnosticCapture(
     val appId: String,
     val appVersion: String,
     val platform: String,
+    val keyEvents: List<MatchTrace> = emptyList(),
+    val droppedKeyEvents: Long = 0,
 )

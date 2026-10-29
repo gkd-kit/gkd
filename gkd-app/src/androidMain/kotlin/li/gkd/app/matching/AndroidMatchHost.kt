@@ -5,6 +5,7 @@ import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +17,11 @@ import kotlinx.coroutines.launch
 import li.gkd.app.META
 import li.gkd.app.matching.action.ActionPerformer
 import li.gkd.app.matching.diagnostics.MatchEventDrop
+import li.gkd.app.matching.diagnostics.MatchNodeProvenance
+import li.gkd.app.matching.diagnostics.MatchNodeReadReason
+import li.gkd.app.matching.diagnostics.MatchNodeRole
+import li.gkd.app.matching.diagnostics.MatchNodeSource
+import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.input.A11yEvent
 import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.AndroidForegroundState
@@ -57,21 +63,41 @@ import li.gkd.app.util.AndroidToastUtils
 import li.gkd.app.util.monotonicTimeMillis
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+private val diagnosticConnectionIds = AtomicLong()
+private val diagnosticReadIds = AtomicLong()
 
 class AndroidMatchHost(private val service: AndroidAutomationSession) {
+    val connectionId = diagnosticConnectionIds.incrementAndGet()
+    private var querySource: PageNode? = null
+    private var queryRoot: PageNode? = null
     private val a11yContext =
         A11yQueryContext(
-            getRoot = { availableRoot() },
+            getRoot = { queryRootNode() },
+            onNodeUsed = ::observeQueryNode,
             diagnostics = MatchingRuntime.coordinator.diagnostics,
             nodeReader = MatchingRuntime.nodeReader,
         )
     private val queryNodes =
         object : RuleQueryNodes<AccessibilityNodeInfo> {
-            override suspend fun root() = availableRoot().also { if (it == null) requestRoot() }
+            override suspend fun root() =
+                queryRootNode().also {
+                    if (it == null) requestRoot(MatchNodeReadReason.MissingOrExpired)
+                }
 
             override fun appId(node: AccessibilityNodeInfo) = node.packageName?.toString()
 
-            override suspend fun refresh(node: AccessibilityNodeInfo) = a11yContext.refresh(node)
+            override suspend fun refresh(node: AccessibilityNodeInfo) =
+                a11yContext.refresh(node).also {
+                    querySource = it?.let { refreshed ->
+                        observedPageNode(
+                            AndroidForegroundState.currentPage,
+                            refreshed,
+                            MatchNodeSource.Refresh,
+                            MatchNodeReadReason.SourceReused,
+                            querySource?.provenance?.readId,
+                        )
+                    }
+                }
 
             override suspend fun match(rule: ResolvedRule, node: AccessibilityNodeInfo) =
                 MatchingRuntime.nodeReader.query {
@@ -248,7 +274,68 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         job.start()
     }
 
-    private data class PageNode(val page: Any, val node: AccessibilityNodeInfo)
+    private data class PageNode(
+        val page: Any,
+        val node: AccessibilityNodeInfo,
+        val provenance: MatchNodeProvenance? = null,
+    )
+
+    private fun observedPageNode(
+        page: Any,
+        node: AccessibilityNodeInfo,
+        source: MatchNodeSource,
+        reason: MatchNodeReadReason,
+        parentReadId: Long? = null,
+    ): PageNode {
+        val provenance =
+            if (coordinator.diagnostics.enabled)
+                MatchNodeProvenance(
+                    readId = diagnosticReadIds.incrementAndGet(),
+                    connectionId = connectionId,
+                    service = service.mode,
+                    source = source,
+                    reason = reason,
+                    page = System.identityHashCode(page),
+                    appId = node.packageName?.toString().orEmpty(),
+                    activityId = currentTopActivity.activityId,
+                    windowId = node.windowId,
+                    acquiredAtMillis = monotonicTimeMillis(),
+                    parentReadId = parentReadId,
+                )
+            else null
+        if (provenance != null)
+            coordinator.diagnostics.record(
+                0,
+                MatchStage.Root,
+                "node_acquired",
+                node = provenance,
+            )
+        return PageNode(page, node, provenance)
+    }
+
+    private fun queryRootNode(): AccessibilityNodeInfo? {
+        val root = availablePageRoot()
+        queryRoot = root
+        return root?.node
+    }
+
+    private fun observeQueryNode(node: AccessibilityNodeInfo, role: MatchNodeRole) {
+        if (!coordinator.diagnostics.enabled) return
+        val origin =
+            when {
+                querySource?.node === node -> querySource?.provenance
+                queryRoot?.node === node -> queryRoot?.provenance
+                else -> null
+            }
+        coordinator.diagnostics.record(
+            a11yContext.queryRunId,
+            MatchStage.Root,
+            "node_used",
+            rule = a11yContext.currentRule?.matchIdentity(),
+            node = origin?.copy(ageMillis = monotonicTimeMillis() - origin.acquiredAtMillis),
+            nodeRole = role,
+        )
+    }
 
     private val sourceLock = Any()
     private var pendingSource: PageNode? = null
@@ -274,7 +361,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             }
             val page = AndroidForegroundState.currentPage
             // Root and source Binder reads run independently, outside the matching lane.
-            requestRoot()
+            requestRoot(MatchNodeReadReason.Event)
             coordinator.diagnostics.entry("source_read", "source_read_started")
             val node =
                 try {
@@ -328,7 +415,13 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 if (activityRule.skipConsumeEvent || !SettingsRepository.settings.value.enableMatch)
                     return@withTopActivityLock false
                 synchronized(sourceLock) {
-                    pendingSource = PageNode(AndroidForegroundState.currentPage, node)
+                    pendingSource =
+                        observedPageNode(
+                            AndroidForegroundState.currentPage,
+                            node,
+                            MatchNodeSource.Event,
+                            MatchNodeReadReason.Event,
+                        )
                 }
                 true
             }
@@ -342,17 +435,14 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         }
     }
 
-    private fun availableRoot(): AccessibilityNodeInfo? =
-        rootNode
-            ?.takeIf {
-                it.page === AndroidForegroundState.currentPage && !it.node.isExpired(1000)
-            }
-            ?.node
+    private fun availablePageRoot(): PageNode? = rootNode?.takeIf {
+        it.page === AndroidForegroundState.currentPage && !it.node.isExpired(1000)
+    }
 
     private var rootRequest: Job? = null
     private var rootRequestPage: Any? = null
 
-    private fun requestRoot() {
+    private fun requestRoot(reason: MatchNodeReadReason) {
         val page = AndroidForegroundState.currentPage
         val job =
             synchronized(this) {
@@ -385,7 +475,13 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                                     currentTopActivity.appId != appId
                             )
                                 return@withTopActivityLock false
-                            rootNode = PageNode(AndroidForegroundState.currentPage, node)
+                            rootNode =
+                                observedPageNode(
+                                    AndroidForegroundState.currentPage,
+                                    node,
+                                    MatchNodeSource.Root,
+                                    reason,
+                                )
                             true
                         }
                         if (accepted) {
@@ -422,7 +518,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 val policy = timing
                 val deadline = monotonicTimeMillis() + policy.foregroundWaitMillis
                 do {
-                    requestRoot()
+                    requestRoot(MatchNodeReadReason.ForegroundConfirmation)
                     if (!AndroidForegroundState.foregroundPending) {
                         startQueryJob()
                         return@launch
@@ -532,10 +628,11 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         val activityRule = AndroidForegroundState.currentRule
         val page = AndroidForegroundState.currentPage
         work.trackRules(activityRule)
-        val lastNode =
+        querySource =
             synchronized(sourceLock) {
-                pendingSource.also { pendingSource = null }?.takeIf { it.page === page }?.node
+                pendingSource.also { pendingSource = null }?.takeIf { it.page === page }
             }
+        val lastNode = querySource?.node
 
         if (!a11yContext.clearOldAppNodeCache()) {
             if (byEvent != null || lastNode != null) {
@@ -545,7 +642,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         }
         // Only the serial matcher updates selector caches. A page transition must
         // not leave a previous page's root reachable through parent/root selectors.
-        a11yContext.rootCache.value = availableRoot()
+        a11yContext.rootCache.value = queryRootNode()
         a11yContext.queryJob = currentCoroutineContext()[Job]
         a11yContext.queryRunId = work.id
         a11yContext.queryPage = page
@@ -592,6 +689,8 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         } finally {
             a11yContext.queryJob = null
             a11yContext.queryPage = null
+            querySource = null
+            queryRoot = null
         }
     }
 

@@ -2,7 +2,6 @@ package li.gkd.app.matching.diagnostics
 
 import java.util.IdentityHashMap
 import kotlinx.serialization.Serializable
-import li.gkd.app.matching.query.matchRuleSelectors
 import li.gkd.app.matching.query.querySingleSelector
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.selector.FastQuery
@@ -394,12 +393,13 @@ fun <N : Any> recordRuleQuery(
             rootOnlySelectors,
         )
     val observer =
-        if (
-            session.detailed &&
-                (session.ruleFilter == null || session.ruleFilter == rule.matchIdentity())
+        RuleSelectorDiagnostics<N>(
+            diagnostics,
+            session.id,
+            runId,
+            rule.matchIdentity(),
+            captureConditions = session.detailed,
         )
-            RuleSelectorDiagnostics<N>(diagnostics, session.id, runId, rule.matchIdentity())
-        else null
     recording.begin(runId, rule.matchIdentity(), plan, source)
     diagnostics.registerQuery(session.id, recording.evidence)
     var result: N? = null
@@ -422,15 +422,13 @@ fun <N : Any> recordRuleQuery(
                 operation,
                 recording::value,
                 {
-                    if (observer != null)
-                        matchRuleSelectorsExplained(
-                            rule,
-                            node,
-                            { recording.root(root) },
-                            query,
-                            observer,
-                        )
-                    else matchRuleSelectors(rule, node, { recording.root(root) }, query)
+                    matchRuleSelectorsExplained(
+                        rule,
+                        node,
+                        { recording.root(root) },
+                        query,
+                        observer,
+                    )
                 },
                 sessionId = session.id,
             )

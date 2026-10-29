@@ -7,10 +7,14 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
 import li.gkd.app.META
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
+import li.gkd.app.matching.diagnostics.MatchFastQueryKind
+import li.gkd.app.matching.diagnostics.MatchFastQueryResult
 import li.gkd.app.matching.diagnostics.MatchNodeMetrics
 import li.gkd.app.matching.diagnostics.MatchNodeObservation
+import li.gkd.app.matching.diagnostics.MatchNodeRole
 import li.gkd.app.matching.diagnostics.MatchRecordedValue
 import li.gkd.app.matching.diagnostics.MatchRecordedValueType
+import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.diagnostics.NodeCacheKind
 import li.gkd.app.matching.diagnostics.NodeReadOperation
 import li.gkd.app.matching.diagnostics.RuleSelectorDiagnostics
@@ -54,6 +58,7 @@ class A11yQueryContext(
     private val metrics: MatchNodeMetrics? = null,
     private val diagnostics: MatchDiagnostics? = null,
     private val nodeReader: MatchNodeReader? = null,
+    private val onNodeUsed: ((AccessibilityNodeInfo, MatchNodeRole) -> Unit)? = null,
 ) {
     private class RuleMatchInterrupted : CancellationException()
 
@@ -202,11 +207,32 @@ class A11yQueryContext(
         node: AccessibilityNodeInfo,
         fastQuery: FastQuery,
     ): List<AccessibilityNodeInfo> {
-        return when (fastQuery) {
-            is FastQuery.Id -> getA11ById(node, fastQuery.value)
-            is FastQuery.Text -> getA11ByText(node, fastQuery.value)
-            is FastQuery.Vid -> getA11ById(node, "${node.packageName}:id/${fastQuery.value}")
+        val nodes =
+            when (fastQuery) {
+                is FastQuery.Id -> getA11ById(node, fastQuery.value)
+                is FastQuery.Text -> getA11ByText(node, fastQuery.value)
+                is FastQuery.Vid -> getA11ById(node, "${node.packageName}:id/${fastQuery.value}")
+            }
+        if (diagnostics?.enabled == true) {
+            diagnostics.record(
+                queryRunId,
+                MatchStage.Selector,
+                "fast_query_result",
+                currentRule?.matchIdentity(),
+                fastQuery =
+                    MatchFastQueryResult(
+                        kind =
+                            when (fastQuery) {
+                                is FastQuery.Text -> MatchFastQueryKind.Text
+                                is FastQuery.Id -> MatchFastQueryKind.Id
+                                is FastQuery.Vid -> MatchFastQueryKind.Vid
+                            },
+                        value = fastQuery.value,
+                        count = nodes.size,
+                    ),
+            )
         }
+        return nodes
     }
 
     private fun getCacheRoot(node: AccessibilityNodeInfo? = null): AccessibilityNodeInfo? {
@@ -238,7 +264,10 @@ class A11yQueryContext(
     }
 
     private fun requireQueryRoot(): AccessibilityNodeInfo =
-        getCacheRoot() ?: throw MatchQueryIncomplete(MatchQueryIncompleteReason.RootUnavailable)
+        (getCacheRoot() ?: throw MatchQueryIncomplete(MatchQueryIncompleteReason.RootUnavailable))
+            .also {
+                if (diagnostics?.enabled == true) onNodeUsed?.invoke(it, MatchNodeRole.Root)
+            }
 
     private fun getCacheChild(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
         if (index !in 0 until node.childCount) {
@@ -649,6 +678,7 @@ class A11yQueryContext(
     ): AccessibilityNodeInfo? {
         currentRule = rule
         try {
+            if (diagnostics.enabled) onNodeUsed?.invoke(node, MatchNodeRole.Source)
             val session = if (diagnostics.enabled) diagnostics.state.value else null
             if (
                 session?.recordQueries == true &&
@@ -667,7 +697,7 @@ class A11yQueryContext(
                 )
             }
             if (
-                session?.detailed == true &&
+                session != null &&
                     (session.ruleFilter == null || session.ruleFilter == rule.matchIdentity())
             ) {
                 val observer =
@@ -676,6 +706,7 @@ class A11yQueryContext(
                         session.id,
                         queryRunId,
                         rule.matchIdentity(),
+                        captureConditions = session.detailed,
                     )
                 return matchRuleSelectorsExplained(
                     rule,

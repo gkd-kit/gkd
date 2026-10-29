@@ -317,7 +317,10 @@ test('offline summary distinguishes incomplete traces, cancellation cleanup and 
     assert.ok(conditions.warnings.some(warning => warning.includes('记录上限')));
     assert.equal(conditions.counts.failed, 0, 'A false predicate is not proof that its enclosing rule/run failed');
     await writeFile(input, JSON.stringify({ session: { id: 'empty', active: false }, events: [] }));
-    assert.equal((await summarizeMatching(input)).warnings.length, 1);
+    const empty = await summarizeMatching(input);
+    assert.ok(empty.warnings.some(warning => warning.includes('没有采集到事件')));
+    assert.equal(empty.evidenceCoverage.key.available, false);
+    assert.deepEqual(empty.pageLatency, []);
     await writeFile(input, JSON.stringify({ session: { id: 'disconnected', active: false },
       events: [event(1, 1, 0, 'Action', 'action_started'), event(2, 1, 20, 'Cancelling', 'service_disconnected')],
       runtime: { engine: { attached: false, activeRunId: 1, cancelling: true } },
@@ -350,7 +353,8 @@ test('offline summary distinguishes incomplete traces, cancellation cleanup and 
     assert.equal(pressure.eventDrops[0]?.eventDrop?.ageMillis, 700);
     assert.equal(pressure.nodePressure[0]?.nodePressure?.activeReads, 4);
     assert.equal(pressure.incompleteQueries.length, 1);
-    assert.equal(pressure.warnings.length, 3);
+    assert.equal(pressure.warnings.length, 4);
+    assert.ok(pressure.warnings.some(warning => warning.includes('没有独立关键时间线')));
     assert.equal(pressure.actionResults.length, 0);
     await writeFile(input, JSON.stringify({ samples: [] }));
     await assert.rejects(summarizeMatching(input), /diagnostic/);

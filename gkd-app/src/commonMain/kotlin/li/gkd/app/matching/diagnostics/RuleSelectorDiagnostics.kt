@@ -67,6 +67,7 @@ class RuleSelectorDiagnostics<N : Any>(
     private val sessionId: String,
     private val runId: Long,
     private val rule: String,
+    private val captureConditions: Boolean = true,
 ) : SelectorObserver<N> {
     private var remaining = 200
     private var selector = ""
@@ -74,7 +75,11 @@ class RuleSelectorDiagnostics<N : Any>(
     private val nodes = IdentityHashMap<N, Int>()
 
     override val enabled: Boolean
-        get() = remaining > 0 && diagnostics.enabled && diagnostics.state.value?.id == sessionId
+        get() =
+            captureConditions &&
+                remaining > 0 &&
+                diagnostics.enabled &&
+                diagnostics.state.value?.id == sessionId
 
     fun begin(selector: Selector, part: String) {
         selectorPart = part

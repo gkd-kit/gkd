@@ -78,6 +78,11 @@ data class MatchTrace(
     val blockingRunId: Long? = null,
     val eventDrop: MatchEventDrop? = null,
     val nodePressure: MatchNodePressure? = null,
+    val node: MatchNodeProvenance? = null,
+    val fastQuery: MatchFastQueryResult? = null,
+    val pageObservation: MatchPageObservation? = null,
+    val nodeRole: MatchNodeRole? = null,
+    val serviceConnection: MatchServiceConnection? = null,
 )
 
 @Serializable
@@ -124,6 +129,8 @@ class MatchDiagnostics(
 ) {
     private val lock = Any()
     private val events = ArrayDeque<MatchTrace>()
+    private val keyEvents = ArrayDeque<MatchTrace>()
+    private var droppedKeyEvents = 0L
     private var sequence = 0L
     private var operationSequence = 0L
     private var operationStatistics = MatchOperationStatisticsRecorder()
@@ -196,6 +203,8 @@ class MatchDiagnostics(
             systemRecorder = null
             operationStatistics = MatchOperationStatisticsRecorder()
             events.clear()
+            keyEvents.clear()
+            droppedKeyEvents = 0
             ruleSnapshots.clear()
             ruleDefinitions.clear()
             definitionSequence = 0L
@@ -473,6 +482,18 @@ class MatchDiagnostics(
                                 dropped = capture.session.dropped + if (dropped) 1 else 0,
                             ),
                         events = (if (dropped) capture.events.drop(1) else capture.events) + event,
+                        keyEvents =
+                            if (event.isKeyTrace())
+                                (capture.keyEvents + event).takeLast(previous.capacity)
+                            else capture.keyEvents,
+                        droppedKeyEvents =
+                            capture.droppedKeyEvents +
+                                if (
+                                    event.isKeyTrace() &&
+                                        capture.keyEvents.size == previous.capacity
+                                )
+                                    1
+                                else 0,
                     )
                 onStoppedCapture(export(operation.sessionId))
                 pruneStoppedSessions(operation.sessionId)
@@ -509,7 +530,7 @@ class MatchDiagnostics(
                     events.removeFirst()
                     state.value = checkNotNull(state.value).copy(dropped = current.dropped + 1)
                 }
-                events.addLast(
+                val event =
                     MatchTrace(
                         ++sequence,
                         wallTime(),
@@ -520,8 +541,9 @@ class MatchDiagnostics(
                         operation.rule,
                         entrySource = "operation",
                         operation = finished,
-                    ),
-                )
+                    )
+                events.addLast(event)
+                retainKeyEvent(event)
                 onStoppedCapture(export(current.id))
             }
         }
@@ -590,6 +612,11 @@ class MatchDiagnostics(
         blockingRunId: Long? = null,
         eventDrop: MatchEventDrop? = null,
         nodePressure: MatchNodePressure? = null,
+        node: MatchNodeProvenance? = null,
+        fastQuery: MatchFastQueryResult? = null,
+        pageObservation: MatchPageObservation? = null,
+        nodeRole: MatchNodeRole? = null,
+        serviceConnection: MatchServiceConnection? = null,
     ) {
         if (!enabled) return
         synchronized(lock) {
@@ -620,7 +647,13 @@ class MatchDiagnostics(
                     blockingRunId,
                     eventDrop,
                     nodePressure,
+                    node,
+                    fastQuery,
+                    pageObservation,
+                    nodeRole,
+                    serviceConnection,
                 )
+            retainKeyEvent(event)
             val dropped =
                 if (events.size == capacity) {
                     events.removeFirst()
@@ -630,6 +663,7 @@ class MatchDiagnostics(
             state.value =
                 if (
                     entrySource != null ||
+                        serviceConnection != null ||
                         operation != null ||
                         (runId == 0L && (policy != null || input != null || ruleSnapshotId != null))
                 )
@@ -644,6 +678,15 @@ class MatchDiagnostics(
                         dropped = dropped,
                     )
         }
+    }
+
+    private fun retainKeyEvent(event: MatchTrace) {
+        if (!event.isKeyTrace()) return
+        if (keyEvents.size == capacity) {
+            keyEvents.removeFirst()
+            droppedKeyEvents++
+        }
+        keyEvents.addLast(event)
     }
 
     fun read(id: String, after: Long = 0, limit: Int = 200): MatchTracePage =
@@ -695,6 +738,8 @@ class MatchDiagnostics(
                     appId = META.appId,
                     appVersion = META.versionName,
                     platform = System.getProperty("os.name", "unknown") ?: "unknown",
+                    keyEvents = keyEvents.toList(),
+                    droppedKeyEvents = droppedKeyEvents,
                 ),
             )
         }

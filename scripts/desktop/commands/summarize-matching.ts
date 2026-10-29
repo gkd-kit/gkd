@@ -1,13 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
+import { matchingLatency, type LatencyTrace } from '../lib/matching-latency.ts';
 
-type Trace = {
-  sequence: number; elapsedNanos: number; runId: number;
-  stage: string; reason: string; rule?: string | null;
+type Trace = LatencyTrace & {
+  stage: string;
   condition?: { kind: string; matched: boolean | null };
   action?: { action: string; result: boolean; shell?: boolean; position?: unknown };
   operation?: { id: number; name: string; runId: number; startedNanos: number; durationNanos?: number | null; outcome?: string | null };
   taskId?: number | null; generation?: number | null; blockingRunId?: number | null;
-  entrySource?: string | null;
   eventDrop?: { key: unknown; capacity: number; ageMillis: number } | null;
   nodePressure?: { activeReads: number; capacity: number; observedReads: number; oldestObservedReadNanos: number | null } | null;
   input?: unknown; inputDecision?: unknown;
@@ -25,7 +24,7 @@ export async function summarizeMatching(input: string, output?: string) {
   if (typeof session.id !== 'string' || typeof session.active !== 'boolean' || !Array.isArray(capture.events)) {
     throw new Error('Expected a matching diagnostic export with session and events');
   }
-  const events: Trace[] = capture.events.map(value => {
+  const decodeTraces = (values: unknown[]): Trace[] => values.map(value => {
     const event = object(value);
     for (const key of ['sequence', 'elapsedNanos', 'runId']) {
       if (typeof event[key] !== 'number' || !Number.isFinite(event[key]) || event[key] < 0) throw new Error(`Invalid event ${key}`);
@@ -34,11 +33,17 @@ export async function summarizeMatching(input: string, output?: string) {
         (event.rule != null && typeof event.rule !== 'string')) throw new Error('Invalid event stage, reason or rule');
     return event as Trace;
   });
+  const detailEvents = decodeTraces(capture.events);
+  const keyEvents = decodeTraces(Array.isArray(capture.keyEvents) ? capture.keyEvents : []);
+  const events = [...new Map([...detailEvents, ...keyEvents].map(event => [event.sequence, event])).values()]
+    .sort((a, b) => a.sequence - b.sequence);
   const warnings: string[] = [];
   const gaps = events.filter((event, index) => event.sequence !== (events[index - 1]?.sequence ?? 0) + 1).length;
   if (session.active) warnings.push('采集仍在进行，导出不是最终结果。');
   if (session.dropped || gaps) warnings.push('事件不完整：存在覆盖或序号缺口，不能据此断言某个阶段从未发生。');
   if (capture.droppedRuleSnapshots) warnings.push('部分规则快照已被覆盖。');
+  if (!Array.isArray(capture.keyEvents)) warnings.push('此记录没有独立关键时间线或节点来源，缺失的延迟边界保持未知。');
+  if (capture.droppedKeyEvents) warnings.push('关键时间线也达到容量上限；摘要中的首次时间仅指保留下来的首次观测。');
   const recordings = (Array.isArray(capture.queryRecordings) ? capture.queryRecordings : []).map(value => {
     const recording = object(value);
     const calls = (Array.isArray(recording.calls) ? recording.calls : []).map((value, index) => {
@@ -230,6 +235,12 @@ export async function summarizeMatching(input: string, output?: string) {
       ruleSnapshots: Array.isArray(capture.ruleSnapshots) ? capture.ruleSnapshots.length : 0,
       droppedRuleSnapshots: capture.droppedRuleSnapshots ?? 0 },
     timingNote: 'durationMillis 是 query_started 到终态的运行总耗时，包含等待与动作；cancellationMillis 仅在存在 Cancelling 和终态记录时计算，不代表触点抬起延迟。缺失边界为 null。Completed 不表示匹配成功；Finished 仅表示调度收尾，未推断执行结果。请求终态可补齐状态，但不补造阶段时间戳。',
+    evidenceCoverage: {
+      detail: { count: detailEvents.length, dropped: session.dropped ?? 0, firstMillis: detailEvents[0]?.elapsedNanos == null ? null : detailEvents[0].elapsedNanos / 1e6, lastMillis: detailEvents.at(-1)?.elapsedNanos == null ? null : detailEvents.at(-1)!.elapsedNanos / 1e6 },
+      key: { available: Array.isArray(capture.keyEvents), count: keyEvents.length, dropped: capture.droppedKeyEvents ?? null, firstMillis: keyEvents[0]?.elapsedNanos == null ? null : keyEvents[0].elapsedNanos / 1e6, lastMillis: keyEvents.at(-1)?.elapsedNanos == null ? null : keyEvents.at(-1)!.elapsedNanos / 1e6 },
+    },
+    pageLatency: matchingLatency(events),
+    pageLatencyNote: '时间相对诊断开始。首次节点观测不是页面绘制时间；服务连接缺失为 null。queryToMatchMillis 包含未命中后的间隔，queryExecutionMillis 仅累加 Query 执行耗时，两者不能相加。节点年龄和读取 ID 只证明使用来源，不能单独归因于微信或系统缓存。缺少节点来源的旧记录不生成页面推断。',
     slowestQueries: recordings.filter(recording => recording.durationMillis !== null)
       .map(({ calls, operations, ...summary }) => summary).sort((a, b) => b.durationMillis! - a.durationMillis!).slice(0, 20),
     slowestRuns: runs.filter(run => run.durationMillis !== null).sort((a, b) => b.durationMillis! - a.durationMillis!).slice(0, 20),

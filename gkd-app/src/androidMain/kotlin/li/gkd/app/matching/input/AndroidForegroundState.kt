@@ -13,6 +13,8 @@ import li.gkd.app.matching.MatchInvalidationReason
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.matching.RuleAvailability
 import li.gkd.app.matching.RuleExecutionHost
+import li.gkd.app.matching.diagnostics.MatchPageObservation
+import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.retainUnaffectedExecution
 import li.gkd.app.record.AppVisitInput
 import li.gkd.app.record.RuntimeRecordRepository
@@ -265,6 +267,19 @@ object AndroidForegroundState {
                 }
             }
             foregroundRulesFlow.value = newActivityRule
+            if (MatchingRuntime.coordinator.diagnostics.enabled) {
+                MatchingRuntime.coordinator.diagnostics.record(
+                    0,
+                    MatchStage.Root,
+                    "page_confirmed",
+                    pageObservation =
+                        MatchPageObservation(
+                            System.identityHashCode(page),
+                            topActivity.appId,
+                            topActivity.activityId,
+                        ),
+                )
+            }
             MatchingRuntime.coordinator.updateRules(newActivityRule)
             LogUtils.i(
                 "${oldActivity.format()} -> ${topActivity.format()} " +
