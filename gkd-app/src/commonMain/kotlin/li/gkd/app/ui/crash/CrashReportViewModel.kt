@@ -15,11 +15,15 @@ import org.jetbrains.compose.resources.getString
 class CrashReportViewModel(
     initialCrashDataList: List<CrashData>,
 ) : BaseViewModel() {
-    val expandedCrashId: StateFlow<Long?>
-        field = MutableStateFlow<Long?>(initialCrashDataList.firstOrNull()?.id)
+    val selected: StateFlow<Long?>
+        field = MutableStateFlow<Long?>(null)
 
-    fun setExpandedCrashId(value: Long?) {
-        expandedCrashId.value = value
+    fun show(record: CrashData) {
+        selected.value = record.id
+    }
+
+    fun dismiss() {
+        selected.value = null
     }
 
     val crashDataState: StateFlow<Loadable<List<CrashData>>>
@@ -44,6 +48,7 @@ class CrashReportViewModel(
                 FileCrashStorage.delete(crashData)
             }
         if (deleted) {
+            if (selected.value == crashData.id) dismiss()
             crashDataState.value =
                 Loadable.Ready(
                     crashDataState.value.value.orEmpty().filterNot { it.id == crashData.id },
@@ -67,6 +72,7 @@ class CrashReportViewModel(
         if (!deleted) {
             error(getString(Res.string.crash_reports_delete_partially_failed))
         }
+        dismiss()
     }
 
     private suspend fun reloadAfterDeleteFailure() {
