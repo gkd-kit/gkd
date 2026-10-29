@@ -33,21 +33,15 @@ import kotlinx.coroutines.flow.map
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
-import li.gkd.app.storage.createLogArchive
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.*
 import li.gkd.app.ui.platform.GkBackHandler
-import li.gkd.app.ui.platform.LocalUiHost
-import li.gkd.app.ui.share.launchUi
-import li.gkd.app.ui.share.shareArchive
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MatchDebugPage() {
-    val host = LocalUiHost.current
     val main = MainViewModel.requireCurrent()
     val vm = viewModel { MatchDebugViewModel() }
-    val scope = rememberCoroutineScope()
     val diagnostics = MatchingRuntime.coordinator.diagnostics
     val control =
         remember(diagnostics) {
@@ -73,7 +67,6 @@ fun MatchDebugPage() {
     val selectedKeys = selection.selectedKeys intersect keys
     val targets = allRecords.filter { it.file.name in selectedKeys }
     GkBackHandler(selection.active) { vm.selection.clear() }
-    val exportTitle = stringResource(Res.string.logs_share_file)
     GkScaffold(
         topBar = {
             GkMultiSelectionTopAppBar(
@@ -94,9 +87,7 @@ fun MatchDebugPage() {
                                 stringResource(Res.string.action_share),
                                 dismiss,
                                 onClick = {
-                                    scope.launchUi {
-                                        host.shareArchive(exportTitle) { createLogArchive(targets) }
-                                    }
+                                    main.shareLog.show(targets)
                                 },
                             )
                             GkBatchActionMenuItem(
@@ -201,9 +192,7 @@ fun MatchDebugPage() {
                 }
                 DiagnosticActionRow(GkIcons.Share, stringResource(Res.string.action_share)) {
                     dismiss()
-                    scope.launchUi {
-                        host.shareArchive(exportTitle) { createLogArchive(listOf(record)) }
-                    }
+                    main.shareLog.show(listOf(record))
                 }
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 DiagnosticActionRow(GkIcons.Delete, stringResource(Res.string.action_delete)) {
