@@ -261,14 +261,28 @@ class SubscriptionEditor(
         newGroups: List<RawSubscription.RawAppGroup>,
     ): List<RawSubscription.RawAppGroup> {
         val usedKeys = existingGroups.mapTo(mutableSetOf()) { it.key }
-        return newGroups.map { group ->
-            if (usedKeys.add(group.key)) {
-                group
-            } else {
-                val newKey = requireNotNull(usedKeys.maxOrNull()) + 1
-                usedKeys.add(newKey)
-                group.copy(key = newKey)
-            }
+        val assignedGroups = newGroups.map { group ->
+            val newKey =
+                if (usedKeys.add(group.key)) {
+                    group.key
+                } else {
+                    (requireNotNull(usedKeys.maxOrNull()) + 1).also(usedKeys::add)
+                }
+            group to newKey
+        }
+
+        return assignedGroups.map { (group, newKey) ->
+            group.copy(
+                key = newKey,
+                scopeKeys =
+                    group.scopeKeys?.map { scopeKey ->
+                        assignedGroups
+                            .find { (candidate, _) ->
+                                candidate !== group && candidate.key == scopeKey
+                            }
+                            ?.second ?: scopeKey
+                    },
+            )
         }
     }
 
