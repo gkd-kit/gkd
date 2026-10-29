@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,6 +32,7 @@ import li.gkd.app.ui.component.GkLogTimeline
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkLogTimelineRail
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.home.appLabel
 import li.gkd.app.ui.image.GkAppIcon
@@ -96,7 +96,7 @@ fun ActivityLogPage() {
                             log.activityId,
                             log.ctime.format("yyyy-MM-dd HH:mm:ss.SSS"),
                         )
-                        .joinToString("\n")
+                        .joinToString("\n"),
                 )
             }
         }

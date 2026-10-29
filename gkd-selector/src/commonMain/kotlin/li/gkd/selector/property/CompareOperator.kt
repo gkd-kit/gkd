@@ -162,22 +162,24 @@ public sealed class CompareOperator(
             left is Int && right is Int && left >= right
     }
 
-    public data object Matches : RegexOperator(
-        "~=",
-        "variable and regular expression string literal",
-        true,
-    ) {
+    public data object Matches :
+        RegexOperator(
+            "~=",
+            "variable and regular expression string literal",
+            true,
+        ) {
         override fun allowType(
             left: ValueExpression,
             right: ValueExpression,
         ): Boolean = left is ValueExpression.Variable && right is ValueExpression.StringLiteral
     }
 
-    public data object NotMatches : RegexOperator(
-        "!~=",
-        "variable and regular expression string literal",
-        false,
-    ) {
+    public data object NotMatches :
+        RegexOperator(
+            "!~=",
+            "variable and regular expression string literal",
+            false,
+        ) {
         override fun allowType(
             left: ValueExpression,
             right: ValueExpression,
@@ -187,21 +189,22 @@ public sealed class CompareOperator(
     public companion object {
         internal val parseOrder: List<CompareOperator> by lazy {
             listOf(
-                Equal,
-                NotEqual,
-                Start,
-                NotStart,
-                Include,
-                NotInclude,
-                End,
-                NotEnd,
-                Less,
-                LessEqual,
-                More,
-                MoreEqual,
-                Matches,
-                NotMatches,
-            ).sortedByDescending { it.key.length }
+                    Equal,
+                    NotEqual,
+                    Start,
+                    NotStart,
+                    Include,
+                    NotInclude,
+                    End,
+                    NotEnd,
+                    Less,
+                    LessEqual,
+                    More,
+                    MoreEqual,
+                    Matches,
+                    NotMatches,
+                )
+                .sortedByDescending { it.key.length }
         }
     }
 }

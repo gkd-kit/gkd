@@ -16,11 +16,12 @@ internal object SelectorTokenizer {
         var relationExpressionActive = false
         var relationParenthesisDepth = 0
 
-        fun currentScope(): SelectorTokenScope = when {
-            bracketDepth > 0 -> SelectorTokenScope.Property
-            relationExpressionActive -> SelectorTokenScope.Relation
-            else -> SelectorTokenScope.Selector
-        }
+        fun currentScope(): SelectorTokenScope =
+            when {
+                bracketDepth > 0 -> SelectorTokenScope.Property
+                relationExpressionActive -> SelectorTokenScope.Relation
+                else -> SelectorTokenScope.Selector
+            }
 
         fun add(
             kind: SelectorTokenKind,
@@ -34,16 +35,18 @@ internal object SelectorTokenizer {
         while (index < source.length) {
             val start = index
             val char = source[index]
-            val logicalOperator = LogicalOperator.parseOrder.firstOrNull {
-                source.startsWith(it.key, index)
-            }
+            val logicalOperator =
+                LogicalOperator.parseOrder.firstOrNull {
+                    source.startsWith(it.key, index)
+                }
             when {
                 char in WHITESPACE_CHARS -> {
-                    val scope = when {
-                        bracketDepth > 0 -> SelectorTokenScope.Property
-                        relationParenthesisDepth > 0 -> SelectorTokenScope.Relation
-                        else -> SelectorTokenScope.Selector
-                    }
+                    val scope =
+                        when {
+                            bracketDepth > 0 -> SelectorTokenScope.Property
+                            relationParenthesisDepth > 0 -> SelectorTokenScope.Relation
+                            else -> SelectorTokenScope.Selector
+                        }
                     index++
                     while (source.getOrNull(index).isOneOf(WHITESPACE_CHARS)) index++
                     add(SelectorTokenKind.Whitespace, start, index, scope)
@@ -54,7 +57,8 @@ internal object SelectorTokenizer {
                     val scan = scanString(source, index, decode = false)
                     index = scan.end
                     add(
-                        if (scan.error == null) SelectorTokenKind.String else SelectorTokenKind.Invalid,
+                        if (scan.error == null) SelectorTokenKind.String
+                        else SelectorTokenKind.Invalid,
                         start,
                         index,
                     )
@@ -64,23 +68,25 @@ internal object SelectorTokenizer {
                     index++
                     while (source.getOrNull(index).isOneOf(IDENTIFIER_PART_CHARS)) index++
                     val text = source.substring(start, index)
-                    val kind = if (bracketDepth > 0) {
-                        if (text == "null" || text == "true" || text == "false") {
-                            SelectorTokenKind.Keyword
+                    val kind =
+                        if (bracketDepth > 0) {
+                            if (text == "null" || text == "true" || text == "false") {
+                                SelectorTokenKind.Keyword
+                            } else {
+                                SelectorTokenKind.Identifier
+                            }
+                        } else if (relationExpressionActive && text == "n") {
+                            SelectorTokenKind.PolynomialVariable
                         } else {
-                            SelectorTokenKind.Identifier
+                            SelectorTokenKind.Selector
                         }
-                    } else if (relationExpressionActive && text == "n") {
-                        SelectorTokenKind.PolynomialVariable
-                    } else {
-                        SelectorTokenKind.Selector
-                    }
                     add(kind, start, index)
                 }
 
                 char.isOneOf(DIGIT_CHARS) ||
-                        (char == '-' && source.getOrNull(index + 1)
-                            .isOneOf(DIGIT_CHARS) && bracketDepth > 0) -> {
+                    (char == '-' &&
+                        source.getOrNull(index + 1).isOneOf(DIGIT_CHARS) &&
+                        bracketDepth > 0) -> {
                     index++
                     while (source.getOrNull(index).isOneOf(DIGIT_CHARS)) index++
                     add(SelectorTokenKind.Integer, start, index)
@@ -135,31 +141,34 @@ internal object SelectorTokenizer {
                 else -> {
                     if (
                         bracketDepth == 0 &&
-                        relationExpressionActive &&
-                        relationParenthesisDepth > 0 &&
-                        (char == '+' || char == '-')
+                            relationExpressionActive &&
+                            relationParenthesisDepth > 0 &&
+                            (char == '+' || char == '-')
                     ) {
                         index++
                         add(SelectorTokenKind.ArithmeticOperator, start, index)
                         continue
                     }
-                    val operator = if (bracketDepth > 0) {
-                        CompareOperator.parseOrder.firstOrNull {
-                            source.startsWith(
-                                it.key,
-                                index
-                            )
-                        }?.key
-                            ?: "!".takeIf { source.startsWith(it, index) }
-                    } else {
-                        RelationOperator.parseOrder.firstOrNull {
-                            source.startsWith(
-                                it.key,
-                                index
-                            )
-                        }?.key
-                            ?: "!".takeIf { source.startsWith(it, index) }
-                    }
+                    val operator =
+                        if (bracketDepth > 0) {
+                            CompareOperator.parseOrder
+                                .firstOrNull {
+                                    source.startsWith(
+                                        it.key,
+                                        index,
+                                    )
+                                }
+                                ?.key ?: "!".takeIf { source.startsWith(it, index) }
+                        } else {
+                            RelationOperator.parseOrder
+                                .firstOrNull {
+                                    source.startsWith(
+                                        it.key,
+                                        index,
+                                    )
+                                }
+                                ?.key ?: "!".takeIf { source.startsWith(it, index) }
+                        }
                     if (operator == null) {
                         index++
                         add(SelectorTokenKind.Invalid, start, index)

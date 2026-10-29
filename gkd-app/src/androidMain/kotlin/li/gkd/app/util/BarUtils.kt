@@ -6,8 +6,8 @@ import android.graphics.Rect
 import android.view.WindowInsets
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.annotation.WorkerThread
-import li.gkd.app.a11y.A11yRuntime
 import li.gkd.app.app
+import li.gkd.app.matching.AndroidAutomationSessions
 
 @SuppressLint("DiscouragedApi", "InternalInsetResource")
 object BarUtils {
@@ -29,22 +29,28 @@ object BarUtils {
 
     @WorkerThread
     fun isStatusVisible(): Boolean? {
-        val r = if (AndroidTarget.R) {
-            // 后台/小窗模式下依然可判断
-            app.windowManager.currentWindowMetrics.windowInsets.getInsets(WindowInsets.Type.statusBars()).top > 0
-        } else {
-            null
-        }
+        val r =
+            if (AndroidTarget.R) {
+                // 后台/小窗模式下依然可判断
+                app.windowManager.currentWindowMetrics.windowInsets
+                    .getInsets(WindowInsets.Type.statusBars())
+                    .top > 0
+            } else {
+                null
+            }
         if (r == false) return r
-        val windows = A11yRuntime.compatWindows()
+        val windows = AndroidAutomationSessions.compatWindows()
         val rect = Rect() // Rect(0, 0 - 1280, 152)
         if (windows.isNotEmpty()) {
             return windows.any { w ->
                 w.getBoundsInScreen(rect)
-                w.type == AccessibilityWindowInfo.TYPE_SYSTEM
-                        && !w.isFocused && !w.isActive
-                        && rect.top == 0 && rect.left == 0 && rect.right == ScreenUtils.getWidth()
-                        && rect.bottom <= getStatusHeight() * 2
+                w.type == AccessibilityWindowInfo.TYPE_SYSTEM &&
+                    !w.isFocused &&
+                    !w.isActive &&
+                    rect.top == 0 &&
+                    rect.left == 0 &&
+                    rect.right == ScreenUtils.getSize().width &&
+                    rect.bottom <= getStatusHeight() * 2
             }
         }
         return r

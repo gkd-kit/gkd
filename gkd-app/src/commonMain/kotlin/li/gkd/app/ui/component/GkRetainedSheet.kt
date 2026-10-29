@@ -30,9 +30,10 @@ fun <K : Any, T : Any> GkRetainedSheet(
     content: @Composable (SheetRequest<K>, T, SheetState, () -> Unit) -> Unit,
 ) {
     var retained by remember { mutableStateOf<SheetPresentation<K, T>?>(null) }
-    val live = if (request != null && snapshot != null && !missing && !retainContent) {
-        SheetPresentation(request, snapshot)
-    } else null
+    val live =
+        if (request != null && snapshot != null && !missing && !retainContent) {
+            SheetPresentation(request, snapshot)
+        } else null
     if (live != null) {
         SideEffect { retained = live }
     }
@@ -53,7 +54,9 @@ fun <K : Any, T : Any> GkRetainedSheet(
                 }
             }
             val backHandler = LocalOverlayBackHandler.current
-            CompositionLocalProvider(LocalOverlayBackHandler provides if (closing) ({ _ -> }) else backHandler) {
+            CompositionLocalProvider(
+                LocalOverlayBackHandler provides if (closing) ({ _ -> }) else backHandler,
+            ) {
                 content(presentation.request, presentation.snapshot, sheetState) {
                     onDismissRequest(presentation.request)
                 }

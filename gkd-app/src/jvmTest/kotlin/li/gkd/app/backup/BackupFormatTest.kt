@@ -3,7 +3,8 @@ package li.gkd.app.backup
 import kotlinx.serialization.json.Json
 import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleGroupSummaryBuilder
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.storage.StorageException
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsAppConfig
 import li.gkd.db.SubsAppGroupConfig
@@ -20,8 +21,10 @@ import org.junit.Test
 
 class BackupFormatTest {
 
-    // Frozen V1 archive payload: identity, discriminator and omitted nulls are a compatibility contract.
-    private val legacy = """
+    // Frozen V1 archive payload: identity, discriminator and omitted nulls are a compatibility
+    // contract.
+    private val legacy =
+        """
         {
           "subsItems": [{"id":7,"ctime":1,"mtime":2,"enable":true,"enableUpdate":true,"order":0}],
           "appConfigs": [
@@ -39,7 +42,8 @@ class BackupFormatTest {
             {"id":50,"type":3,"subsId":7,"groupKey":4,"enable":false,"exclude":"old-global"}
           ]
         }
-    """.trimIndent()
+        """
+            .trimIndent()
 
     @Test
     fun legacyBackupSplitsAndDeduplicatesWholeRowsUsingTheSmallestId() {
@@ -49,38 +53,42 @@ class BackupFormatTest {
         assertEquals(listOf(SubsAppGroupConfig(7, "app.one", 4, null, "old")), data.appGroupConfigs)
         assertEquals(
             listOf(SubsGlobalGroupConfig(7, 4, false, "old-global")),
-            data.globalGroupConfigs
+            data.globalGroupConfigs,
         )
     }
 
     @Test
     fun importedConfigurationGivesUiAndRuntimeTheSameEffectiveSwitchState() {
         val data = BackupFormat.decode(legacy).toSnapshot()
-        val subscription = RawSubscription.parse(
-            """
-            {
-              id: 7, name: 'Sample', version: 1,
-              categories: [{key: 3, name: 'Batch', enable: false}],
-              apps: [{id: 'app.one', groups: [{key: 4, name: 'Batch', enable: true, rules: []}]}],
-              globalGroups: [{key: 4, name: 'Global', enable: true, rules: []}],
-            }
-            """.trimIndent(),
-        )
+        val subscription =
+            RawSubscriptionParser.parse(
+                """
+                {
+                  id: 7, name: 'Sample', version: 1,
+                  categories: [{key: 3, name: 'Batch', enable: false}],
+                  apps: [{id: 'app.one', groups: [{key: 4, name: 'Batch', enable: true, rules: []}]}],
+                  globalGroups: [{key: 4, name: 'Global', enable: true, rules: []}],
+                }
+                """
+                    .trimIndent(),
+            )
         val group = subscription.apps.single().groups.single()
         val category = subscription.categories.single()
-        val uiEnabled = RuleGroupPolicy.getGroupEnabled(
-            group,
-            data.appGroupConfigs.find { it.groupKey == group.key },
-            category,
-            data.categoryConfigs.find { it.categoryKey == category.key },
-        )
-        val summary = RuleGroupSummaryBuilder.build(
-            subscriptions = listOf(UsedSubsEntry(data.subsItems.single(), subscription)),
-            appInfoById = emptyMap(),
-            appConfigs = data.appConfigs,
-            groupConfigs = data.appGroupConfigs + data.globalGroupConfigs,
-            categoryConfigs = data.categoryConfigs,
-        )
+        val uiEnabled =
+            RuleGroupPolicy.getGroupEnabled(
+                group,
+                data.appGroupConfigs.find { it.groupKey == group.key },
+                category,
+                data.categoryConfigs.find { it.categoryKey == category.key },
+            )
+        val summary =
+            RuleGroupSummaryBuilder.build(
+                subscriptions = listOf(UsedSubsEntry(data.subsItems.single(), subscription)),
+                appInfoById = emptyMap(),
+                appConfigs = data.appConfigs,
+                groupConfigs = data.appGroupConfigs + data.globalGroupConfigs,
+                categoryConfigs = data.categoryConfigs,
+            )
         assertTrue(uiEnabled)
         assertEquals(uiEnabled, summary.appIdToAllGroups.getValue("app.one").single().enable)
         assertTrue(summary.globalGroups.isEmpty())
@@ -99,9 +107,13 @@ class BackupFormatTest {
     @Test
     fun defaultAppScopeRoundTripsAllThreeValuesWithoutChangingOtherOverrides() {
         listOf(null, false, true).forEach { value ->
-            val original = BackupFormat.decode(legacy).toSnapshot().copy(
-                globalGroupConfigs = listOf(SubsGlobalGroupConfig(7, 4, false, "!app.one", value)),
-            )
+            val original =
+                BackupFormat.decode(legacy)
+                    .toSnapshot()
+                    .copy(
+                        globalGroupConfigs =
+                            listOf(SubsGlobalGroupConfig(7, 4, false, "!app.one", value)),
+                    )
             val encoded = BackupFormat.encode(BackupDatabaseData.fromSnapshot(original))
             assertEquals(original, BackupFormat.decode(encoded).toSnapshot())
         }
@@ -110,7 +122,8 @@ class BackupFormatTest {
     @Test
     fun version2BackupBeforeTableRenamingKeepsItsFieldNamesAndValues() {
         // Frozen database-v15 export: Room names must not change the V2 archive contract.
-        val exportedBeforeRename = """
+        val exportedBeforeRename =
+            """
             {
               "formatVersion":2,
               "subsItems":[{"id":7,"ctime":1,"mtime":2,"enable":true,"enableUpdate":true,"order":0}],
@@ -119,37 +132,41 @@ class BackupFormatTest {
               "appGroupConfigs":[{"subsId":7,"appId":"app.one","groupKey":4,"exclude":"app-exclude"}],
               "globalGroupConfigs":[{"subsId":7,"groupKey":4,"enable":true,"exclude":"global-exclude"}]
             }
-        """.trimIndent()
-        val expected = SubscriptionConfigSnapshot(
-            subsItems = listOf(SubsItem(7, ctime = 1, mtime = 2, enable = true, order = 0)),
-            appConfigs = listOf(SubsAppConfig(false, 7, "app.one")),
-            categoryConfigs = listOf(SubsCategoryConfig(null, 7, 3)),
-            appGroupConfigs = listOf(SubsAppGroupConfig(7, "app.one", 4, null, "app-exclude")),
-            globalGroupConfigs = listOf(SubsGlobalGroupConfig(7, 4, true, "global-exclude")),
-        )
+            """
+                .trimIndent()
+        val expected =
+            SubscriptionConfigSnapshot(
+                subsItems = listOf(SubsItem(7, ctime = 1, mtime = 2, enable = true, order = 0)),
+                appConfigs = listOf(SubsAppConfig(false, 7, "app.one")),
+                categoryConfigs = listOf(SubsCategoryConfig(null, 7, 3)),
+                appGroupConfigs = listOf(SubsAppGroupConfig(7, "app.one", 4, null, "app-exclude")),
+                globalGroupConfigs = listOf(SubsGlobalGroupConfig(7, 4, true, "global-exclude")),
+            )
         assertEquals(expected, BackupFormat.decode(exportedBeforeRename).toSnapshot())
         val reexported = BackupFormat.encode(BackupDatabaseData.fromSnapshot(expected))
         assertEquals(
             Json.parseToJsonElement(exportedBeforeRename),
-            Json.parseToJsonElement(reexported)
+            Json.parseToJsonElement(reexported),
         )
     }
 
     @Test
     fun legacyMissingCollectionsAndOptionalGroupFieldsUseOriginalDefaults() {
-        val data = BackupFormat.decode(
-            """{"subsConfigs":[{"id":1,"type":3,"subsId":7,"groupKey":4}]}""",
-        ).toSnapshot()
+        val data =
+            BackupFormat.decode(
+                    """{"subsConfigs":[{"id":1,"type":3,"subsId":7,"groupKey":4}]}""",
+                )
+                .toSnapshot()
         assertTrue(data.categoryConfigs.isEmpty())
         assertEquals(listOf(SubsGlobalGroupConfig(7, 4)), data.globalGroupConfigs)
     }
 
     @Test
     fun unsupportedVersionsAndTypesFailBeforeImportCanStart() {
-        assertThrows(li.gkd.app.storage.StorageException::class.java) {
+        assertThrows(StorageException::class.java) {
             BackupFormat.decode("""{"formatVersion":99}""")
         }
-        assertThrows(li.gkd.app.storage.StorageException::class.java) {
+        assertThrows(StorageException::class.java) {
             BackupFormat.decode("""{"subsConfigs":[{"id":1,"type":99,"subsId":7}]}""")
         }
     }

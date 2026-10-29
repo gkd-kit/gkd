@@ -14,7 +14,9 @@ internal class SelectorParser(
     positionRecorder: PositionRecorder? = null,
 ) {
     private val context = ParserContext(source, positionRecorder)
-    private val cursor get() = context.cursor
+    private val cursor
+        get() = context.cursor
+
     private val propertyParser = PropertySyntaxParser(context)
     private val relationParser = RelationSyntaxParser(context)
 
@@ -100,17 +102,18 @@ internal class SelectorParser(
                 val term = finish(frame)
                 cursor.readChar(')')
                 frames.removeAt(frames.lastIndex)
-                val groupedTerm = if (frame.negated) {
-                    val value = NotSelectorExpression(term.value)
-                    context.record(
-                        value,
-                        SelectorPositionKind.NegatedSelector,
-                        frame.start,
-                    )
-                    SelectorTerm(value, grouped = true, frame.start, cursor.index)
-                } else {
-                    SelectorTerm(term.value, grouped = true, frame.start, cursor.index)
-                }
+                val groupedTerm =
+                    if (frame.negated) {
+                        val value = NotSelectorExpression(term.value)
+                        context.record(
+                            value,
+                            SelectorPositionKind.NegatedSelector,
+                            frame.start,
+                        )
+                        SelectorTerm(value, grouped = true, frame.start, cursor.index)
+                    } else {
+                        SelectorTerm(term.value, grouped = true, frame.start, cursor.index)
+                    }
                 frames.last().values.add(groupedTerm)
                 continue
             }
@@ -142,8 +145,7 @@ internal class SelectorParser(
         incoming: LogicalOperator,
     ) {
         while (
-            frame.operators.isNotEmpty() &&
-            frame.operators.last().precedence >= incoming.precedence
+            frame.operators.isNotEmpty() && frame.operators.last().precedence >= incoming.precedence
         ) {
             reduceLastOperator(frame)
         }

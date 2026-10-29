@@ -17,18 +17,27 @@ import android.view.MotionEventHidden
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeInfoHidden
 
-inline val UiAutomationHidden.toPublic get() = this as UiAutomation
-inline val UiAutomation.toHidden get() = this as UiAutomationHidden
+inline val UiAutomationHidden.toPublic
+    get() = this as UiAutomation
+inline val UiAutomation.toHidden
+    get() = this as UiAutomationHidden
 
-inline val AccessibilityNodeInfo.toHidden get() = this as AccessibilityNodeInfoHidden
+inline val AccessibilityNodeInfo.toHidden
+    get() = this as AccessibilityNodeInfoHidden
 
-inline val AccessibilityServiceInfoHidden.toPublic get() = this as AccessibilityServiceInfo
-inline val AccessibilityServiceInfo.toHidden get() = this as AccessibilityServiceInfoHidden
+inline val AccessibilityServiceInfoHidden.toPublic
+    get() = this as AccessibilityServiceInfo
+inline val AccessibilityServiceInfo.toHidden
+    get() = this as AccessibilityServiceInfoHidden
 
-inline val KeyEvent.toHidden get() = this as KeyEventHidden
+inline val KeyEvent.toHidden
+    get() = this as KeyEventHidden
 
-inline val MotionEvent.toHidden get() = this as MotionEventHidden
+inline val MotionEvent.toHidden
+    get() = this as MotionEventHidden
 
-inline val PackageInfo.toHidden get() = this as PackageInfoHidden
+inline val PackageInfo.toHidden
+    get() = this as PackageInfoHidden
 
-inline val ActivityManager.RunningTaskInfo.toHidden get() = this as TaskInfoHidden
+inline val ActivityManager.RunningTaskInfo.toHidden
+    get() = this as TaskInfoHidden

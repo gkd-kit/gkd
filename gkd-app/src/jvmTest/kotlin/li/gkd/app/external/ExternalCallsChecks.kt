@@ -1,16 +1,16 @@
 package li.gkd.app.external
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import li.gkd.app.storage.appStorage
 import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import li.gkd.app.storage.appStorage
 
 /** Runs once inside the isolated application's lifecycle, using its real private storage. */
 suspend fun assertExternalCalls() = coroutineScope {

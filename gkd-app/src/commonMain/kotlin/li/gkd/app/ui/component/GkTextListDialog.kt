@@ -13,26 +13,25 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun GkTextListDialog(
     onDismiss: () -> Unit,
-    textList: List<Pair<String, () -> Unit>>
+    textList: List<Pair<String, () -> Unit>>,
 ) {
-    val textModifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)
+    val textModifier = Modifier.fillMaxWidth().padding(16.dp)
     GkDialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
             textList.forEach { (text, onClickItem) ->
                 Text(
-                    text = text, modifier = Modifier
-                        .clickable(onClick = {
-                            onDismiss()
-                            onClickItem()
-                        })
-                        .then(textModifier)
+                    text = text,
+                    modifier =
+                        Modifier.clickable(
+                                onClick = {
+                                    onDismiss()
+                                    onClickItem()
+                                },
+                            )
+                            .then(textModifier),
                 )
             }
         }

@@ -24,6 +24,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,6 +45,7 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.navigation.OnRouteRemoved
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.ignoresBatteryOptimizations
@@ -54,7 +58,13 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun BlockA11ySetupPage(host: UiHost) {
+    val scope = rememberCoroutineScope()
     val mainVm = MainViewModel.requireCurrent()
+    val entry = remember { mainVm.navigator.topEntry }
+    val enableOnRemoval = remember { mutableStateOf(false) }
+    OnRouteRemoved {
+        if (enableOnRemoval.value) SettingsRepository.setBlockA11yAppListEnabled(true)
+    }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val platform = dashboardPlatformState()
     val ignoreBatteryOptimizations: Boolean = ignoresBatteryOptimizations()
@@ -74,7 +84,7 @@ fun BlockA11ySetupPage(host: UiHost) {
                     GkIconButton(
                         imageVector = GkIcons.Close,
                         onClickLabel = stringResource(Res.string.action_close),
-                        onClick = mainVm.navigator::pop,
+                        onClick = { mainVm.navigator.pop(entry = entry) },
                     )
                 },
                 title = {
@@ -85,7 +95,7 @@ fun BlockA11ySetupPage(host: UiHost) {
         bottomBar = {
             BottomAppBar(
                 windowInsets =
-                    LocalHomeNavigationInsets.current ?: BottomAppBarDefaults.windowInsets
+                    LocalHomeNavigationInsets.current ?: BottomAppBarDefaults.windowInsets,
             ) {
                 Text(
                     text =
@@ -103,14 +113,14 @@ fun BlockA11ySetupPage(host: UiHost) {
                 Button(
                     enabled = store.enableBlockA11yAppList || remainingRequirements == 0,
                     onClick = {
-                        SettingsRepository.updateSettings { it.copy(enableBlockA11yAppList = true) }
-                        mainVm.navigator.pop()
+                        enableOnRemoval.value = !store.enableBlockA11yAppList
+                        mainVm.navigator.pop(entry = entry)
                     },
                 ) {
                     Text(
                         text =
                             if (store.enableBlockA11yAppList) stringResource(Res.string.action_back)
-                            else stringResource(Res.string.action_enable)
+                            else stringResource(Res.string.action_enable),
                     )
                 }
                 Spacer(modifier = Modifier.width(itemHorizontalPadding))
@@ -122,7 +132,7 @@ fun BlockA11ySetupPage(host: UiHost) {
                 Modifier.fillMaxSize()
                     .padding(contentPadding)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = itemHorizontalPadding)
+                    .padding(horizontal = itemHorizontalPadding),
         ) {
             Text(
                 text = stringResource(Res.string.partial_disable_intro),
@@ -161,9 +171,12 @@ fun BlockA11ySetupPage(host: UiHost) {
                     imageVector =
                         if (ignoreBatteryOptimizations) GkIcons.Check else GkIcons.OpenInNew,
                     onClickLabel = stringResource(Res.string.battery_optimization_settings_open),
-                    onClick = mainVm.scope.launchUiAction {
-                        mainVm.permissions.ensurePermissions(AppPermission.IgnoreBatteryOptimizations)
-                    },
+                    onClick =
+                        mainVm.scope.launchUiAction {
+                            mainVm.permissions.ensurePermissions(
+                                AppPermission.IgnoreBatteryOptimizations,
+                            )
+                        },
                 )
             }
             BlockA11ySectionTitle(
@@ -184,7 +197,7 @@ fun BlockA11ySetupPage(host: UiHost) {
                     onClickLabel =
                         if (platform.privilegeAvailable) stringResource(Res.string.recents_open)
                         else stringResource(Res.string.recents_lock_manual_hint),
-                    onClick = ::openRecents,
+                    onClick = scope.launchUiAction { openRecents() },
                 )
             }
             BlockA11ySectionTitle(text = stringResource(Res.string.usage_notice))

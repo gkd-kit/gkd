@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.gkd.app.error.displayMessage
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.network.AppLinks
 import li.gkd.app.network.GithubCookieException
 import li.gkd.app.network.GithubPoliciesAsset
@@ -24,7 +25,6 @@ import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.ui.component.GithubUploadStatus
 import li.gkd.app.ui.component.GkGithubUploadDialogs
 import li.gkd.app.ui.navigation.AppNavigator
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
 
@@ -67,9 +67,14 @@ class GithubUploadState(
         batch: Boolean,
         onFinished: (() -> Unit)? = null,
     ): Boolean {
-        if (items.isEmpty() || activeRequest != null || uploadJob != null ||
-            statusFlow.value != null || cookieEditorVisibleFlow.value
-        ) return false
+        if (
+            items.isEmpty() ||
+                activeRequest != null ||
+                uploadJob != null ||
+                statusFlow.value != null ||
+                cookieEditorVisibleFlow.value
+        )
+            return false
         val request = GithubUploadRequest(items, batch, onFinished)
         activeRequest = request
         val cookie = GithubCookieStore.value.value
@@ -94,73 +99,79 @@ class GithubUploadState(
     }
 
     private fun executeRequest(request: GithubUploadRequest, cookie: String) {
-        statusFlow.value = GithubUploadStatus.Loading(
-            batch = request.batch,
-            index = 1,
-            total = request.pendingItems.size,
-            label = request.pendingItems.first().label,
-            progress = 0f,
-        )
-        uploadJob = scope.launch(start = CoroutineStart.LAZY) {
-            val items = request.pendingItems
-            var pendingFromCookie = emptyList<GithubUploadItem>()
-            var cookieFailure: Pair<String, String>? = null
-            var skippedCount = 0
-            var cancelled = false
-            for ((index, item) in items.withIndex()) {
-                statusFlow.value = GithubUploadStatus.Loading(
-                    batch = request.batch,
-                    index = index + 1,
-                    total = items.size,
-                    label = item.label,
-                    progress = 0f,
-                )
-                try {
-                    val link = uploadItem(item, cookie) { progress ->
-                        statusFlow.value = GithubUploadStatus.Loading(
+        statusFlow.value =
+            GithubUploadStatus.Loading(
+                batch = request.batch,
+                index = 1,
+                total = request.pendingItems.size,
+                label = request.pendingItems.first().label,
+                progress = 0f,
+            )
+        uploadJob =
+            scope.launch(start = CoroutineStart.LAZY) {
+                val items = request.pendingItems
+                var pendingFromCookie = emptyList<GithubUploadItem>()
+                var cookieFailure: Pair<String, String>? = null
+                var skippedCount = 0
+                var cancelled = false
+                for ((index, item) in items.withIndex()) {
+                    statusFlow.value =
+                        GithubUploadStatus.Loading(
                             batch = request.batch,
                             index = index + 1,
                             total = items.size,
                             label = item.label,
-                            progress = progress,
+                            progress = 0f,
                         )
+                    try {
+                        val link =
+                            uploadItem(item, cookie) { progress ->
+                                statusFlow.value =
+                                    GithubUploadStatus.Loading(
+                                        batch = request.batch,
+                                        index = index + 1,
+                                        total = items.size,
+                                        label = item.label,
+                                        progress = progress,
+                                    )
+                            }
+                        request.links.add(link)
+                    } catch (e: CancellationException) {
+                        cancelled = true
+                        skippedCount = items.size - index
+                        break
+                    } catch (e: GithubCookieException) {
+                        LogUtils.e(e)
+                        cookieFailure = item.label to getString(Res.string.github_cookie_expired)
+                        pendingFromCookie = items.drop(index)
+                        break
+                    } catch (e: Exception) {
+                        LogUtils.e(e)
+                        request.failures.add(item.label to (e.displayMessage()))
                     }
-                    request.links.add(link)
-                } catch (e: CancellationException) {
-                    cancelled = true
-                    skippedCount = items.size - index
-                    break
-                } catch (e: GithubCookieException) {
-                    LogUtils.d(e)
-                    cookieFailure = item.label to getString(Res.string.github_cookie_expired)
-                    pendingFromCookie = items.drop(index)
-                    break
-                } catch (e: Exception) {
-                    LogUtils.d(e)
-                    request.failures.add(item.label to (e.displayMessage()))
+                }
+                request.pendingItems = pendingFromCookie
+                uploadJob = null
+                val remainingCount = request.failures.size + pendingFromCookie.size + skippedCount
+                if (request.batch && remainingCount == 0) {
+                    activeRequest = null
+                    statusFlow.value = null
+                    request.onFinished?.invoke()
+                } else if (!request.batch && cancelled) {
+                    activeRequest = null
+                    statusFlow.value = null
+                } else {
+                    statusFlow.value =
+                        GithubUploadStatus.Finished(
+                            batch = request.batch,
+                            links = request.links.toList(),
+                            failures = request.failures + listOfNotNull(cookieFailure),
+                            remainingCount = remainingCount,
+                            cancelled = cancelled,
+                            cookieExpired = pendingFromCookie.isNotEmpty(),
+                        )
                 }
             }
-            request.pendingItems = pendingFromCookie
-            uploadJob = null
-            val remainingCount = request.failures.size + pendingFromCookie.size + skippedCount
-            if (request.batch && remainingCount == 0) {
-                activeRequest = null
-                statusFlow.value = null
-                request.onFinished?.invoke()
-            } else if (!request.batch && cancelled) {
-                activeRequest = null
-                statusFlow.value = null
-            } else {
-                statusFlow.value = GithubUploadStatus.Finished(
-                    batch = request.batch,
-                    links = request.links.toList(),
-                    failures = request.failures + listOfNotNull(cookieFailure),
-                    remainingCount = remainingCount,
-                    cancelled = cancelled,
-                    cookieExpired = pendingFromCookie.isNotEmpty(),
-                )
-            }
-        }
         uploadJob?.start()
     }
 
@@ -168,18 +179,19 @@ class GithubUploadState(
         item: GithubUploadItem,
         cookie: String,
         onProgress: (Float) -> Unit,
-    ): String = withContext(Dispatchers.IO) {
-        val file = item.getFile()
-        try {
-            val asset = GithubUploader.uploadFileToGithub(cookie, file, onProgress)
-            item.onSuccessResult(asset)
-            item.showHref(asset)
-        } finally {
-            withContext(NonCancellable) {
-                runCatching { item.releaseFile(file) }.onFailure { LogUtils.d(it) }
+    ): String =
+        withContext(Dispatchers.IO) {
+            val file = item.getFile()
+            try {
+                val asset = GithubUploader.uploadFileToGithub(cookie, file, onProgress)
+                item.onSuccessResult(asset)
+                item.showHref(asset)
+            } finally {
+                withContext(NonCancellable) {
+                    runCatching { item.releaseFile(file) }.onFailure { LogUtils.e(it) }
+                }
             }
         }
-    }
 
     private fun showCookieEditor() {
         cookieDraftFlow.value = GithubCookieStore.value.value
@@ -202,7 +214,8 @@ class GithubUploadState(
                 GithubCookieStore.save(cookie)
                 hideCookieEditor()
                 ToastUtils.show(getString(Res.string.update_success))
-                activeRequest?.takeIf { it.pendingItems.isNotEmpty() && uploadJob == null }
+                activeRequest
+                    ?.takeIf { it.pendingItems.isNotEmpty() && uploadJob == null }
                     ?.let { executeRequest(it, cookie) }
             } catch (e: CancellationException) {
                 throw e

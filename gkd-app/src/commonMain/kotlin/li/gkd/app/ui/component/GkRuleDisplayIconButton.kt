@@ -11,10 +11,11 @@ fun GkRuleDisplayIconButton(
 ) {
     GkIconButton(
         imageVector = if (byCategory) GkIcons.Category else GkIcons.ViewStream,
-        contentDescription = stringResource(
-            if (byCategory) Res.string.rule_display_switch_to_flat
-            else Res.string.rule_display_switch_to_category,
-        ),
+        contentDescription =
+            stringResource(
+                if (byCategory) Res.string.rule_display_switch_to_flat
+                else Res.string.rule_display_switch_to_category,
+            ),
         onClick = onClick,
         animateMorph = true,
     )

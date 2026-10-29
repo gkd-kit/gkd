@@ -26,7 +26,10 @@ fun GkRuleSortButton(sort: RuleSort, onChange: (RuleSort) -> Unit) {
                 GkMenuItemRadioButton(
                     text = stringResource(option.labelResource),
                     selected = sort == option,
-                    onClick = { onChange(option); expanded = false },
+                    onClick = {
+                        onChange(option)
+                        expanded = false
+                    },
                 )
             }
         }

@@ -30,22 +30,25 @@ data class BackupDatabaseData(
     val appGroupConfigs: List<BackupAppGroupConfig> = emptyList(),
     val globalGroupConfigs: List<BackupGlobalGroupConfig> = emptyList(),
 ) {
-    fun toSnapshot() = SubscriptionConfigSnapshot(
-        subsItems = subsItems.map { it.toEntity() },
-        appConfigs = appConfigs.map { it.toEntity() },
-        categoryConfigs = categoryConfigs.map { it.toEntity() },
-        appGroupConfigs = appGroupConfigs.map { it.toEntity() },
-        globalGroupConfigs = globalGroupConfigs.map { it.toEntity() },
-    )
+    fun toSnapshot() =
+        SubscriptionConfigSnapshot(
+            subsItems = subsItems.map { it.toEntity() },
+            appConfigs = appConfigs.map { it.toEntity() },
+            categoryConfigs = categoryConfigs.map { it.toEntity() },
+            appGroupConfigs = appGroupConfigs.map { it.toEntity() },
+            globalGroupConfigs = globalGroupConfigs.map { it.toEntity() },
+        )
 
     companion object {
-        fun fromSnapshot(snapshot: SubscriptionConfigSnapshot) = BackupDatabaseData(
-            subsItems = snapshot.subsItems.map(BackupSubsItem::fromEntity),
-            appConfigs = snapshot.appConfigs.map(BackupAppConfig::fromEntity),
-            categoryConfigs = snapshot.categoryConfigs.map(BackupCategoryConfig::fromEntity),
-            appGroupConfigs = snapshot.appGroupConfigs.map(BackupAppGroupConfig::fromEntity),
-            globalGroupConfigs = snapshot.globalGroupConfigs.map(BackupGlobalGroupConfig::fromEntity),
-        )
+        fun fromSnapshot(snapshot: SubscriptionConfigSnapshot) =
+            BackupDatabaseData(
+                subsItems = snapshot.subsItems.map(BackupSubsItem::fromEntity),
+                appConfigs = snapshot.appConfigs.map(BackupAppConfig::fromEntity),
+                categoryConfigs = snapshot.categoryConfigs.map(BackupCategoryConfig::fromEntity),
+                appGroupConfigs = snapshot.appGroupConfigs.map(BackupAppGroupConfig::fromEntity),
+                globalGroupConfigs =
+                    snapshot.globalGroupConfigs.map(BackupGlobalGroupConfig::fromEntity),
+            )
     }
 }
 
@@ -59,26 +62,28 @@ data class BackupSubsItem(
     val order: Int,
     val updateUrl: String? = null,
 ) {
-    fun toEntity() = SubsItem(
-        id = id,
-        ctime = ctime,
-        mtime = mtime,
-        enable = enable,
-        enableUpdate = enableUpdate,
-        order = order,
-        updateUrl = updateUrl,
-    )
+    fun toEntity() =
+        SubsItem(
+            id = id,
+            ctime = ctime,
+            mtime = mtime,
+            enable = enable,
+            enableUpdate = enableUpdate,
+            order = order,
+            updateUrl = updateUrl,
+        )
 
     companion object {
-        fun fromEntity(entity: SubsItem) = BackupSubsItem(
-            id = entity.id,
-            ctime = entity.ctime,
-            mtime = entity.mtime,
-            enable = entity.enable,
-            enableUpdate = entity.enableUpdate,
-            order = entity.order,
-            updateUrl = entity.updateUrl,
-        )
+        fun fromEntity(entity: SubsItem) =
+            BackupSubsItem(
+                id = entity.id,
+                ctime = entity.ctime,
+                mtime = entity.mtime,
+                enable = entity.enable,
+                enableUpdate = entity.enableUpdate,
+                order = entity.order,
+                updateUrl = entity.updateUrl,
+            )
     }
 }
 
@@ -88,18 +93,20 @@ data class BackupAppConfig(
     val appId: String,
     val enable: Boolean,
 ) {
-    fun toEntity() = SubsAppConfig(
-        subsId = subsId,
-        appId = appId,
-        enable = enable,
-    )
+    fun toEntity() =
+        SubsAppConfig(
+            subsId = subsId,
+            appId = appId,
+            enable = enable,
+        )
 
     companion object {
-        fun fromEntity(entity: SubsAppConfig) = BackupAppConfig(
-            subsId = entity.subsId,
-            appId = entity.appId,
-            enable = entity.enable,
-        )
+        fun fromEntity(entity: SubsAppConfig) =
+            BackupAppConfig(
+                subsId = entity.subsId,
+                appId = entity.appId,
+                enable = entity.enable,
+            )
     }
 }
 
@@ -109,18 +116,20 @@ data class BackupCategoryConfig(
     val categoryKey: Int,
     val enable: Boolean? = null,
 ) {
-    fun toEntity() = SubsCategoryConfig(
-        subsId = subsId,
-        categoryKey = categoryKey,
-        enable = enable,
-    )
+    fun toEntity() =
+        SubsCategoryConfig(
+            subsId = subsId,
+            categoryKey = categoryKey,
+            enable = enable,
+        )
 
     companion object {
-        fun fromEntity(entity: SubsCategoryConfig) = BackupCategoryConfig(
-            subsId = entity.subsId,
-            categoryKey = entity.categoryKey,
-            enable = entity.enable,
-        )
+        fun fromEntity(entity: SubsCategoryConfig) =
+            BackupCategoryConfig(
+                subsId = entity.subsId,
+                categoryKey = entity.categoryKey,
+                enable = entity.enable,
+            )
     }
 }
 
@@ -132,22 +141,24 @@ data class BackupAppGroupConfig(
     val enable: Boolean? = null,
     val exclude: String = "",
 ) {
-    fun toEntity() = SubsAppGroupConfig(
-        subsId = subsId,
-        appId = appId,
-        groupKey = groupKey,
-        enable = enable,
-        exclude = exclude,
-    )
+    fun toEntity() =
+        SubsAppGroupConfig(
+            subsId = subsId,
+            appId = appId,
+            groupKey = groupKey,
+            enable = enable,
+            exclude = exclude,
+        )
 
     companion object {
-        fun fromEntity(entity: SubsAppGroupConfig) = BackupAppGroupConfig(
-            subsId = entity.subsId,
-            appId = entity.appId,
-            groupKey = entity.groupKey,
-            enable = entity.enable,
-            exclude = entity.exclude,
-        )
+        fun fromEntity(entity: SubsAppGroupConfig) =
+            BackupAppGroupConfig(
+                subsId = entity.subsId,
+                appId = entity.appId,
+                groupKey = entity.groupKey,
+                enable = entity.enable,
+                exclude = entity.exclude,
+            )
     }
 }
 
@@ -159,22 +170,24 @@ data class BackupGlobalGroupConfig(
     val exclude: String = "",
     val matchAnyApp: Boolean? = null,
 ) {
-    fun toEntity() = SubsGlobalGroupConfig(
-        subsId = subsId,
-        groupKey = groupKey,
-        enable = enable,
-        exclude = exclude,
-        matchAnyApp = matchAnyApp,
-    )
+    fun toEntity() =
+        SubsGlobalGroupConfig(
+            subsId = subsId,
+            groupKey = groupKey,
+            enable = enable,
+            exclude = exclude,
+            matchAnyApp = matchAnyApp,
+        )
 
     companion object {
-        fun fromEntity(entity: SubsGlobalGroupConfig) = BackupGlobalGroupConfig(
-            subsId = entity.subsId,
-            groupKey = entity.groupKey,
-            enable = entity.enable,
-            exclude = entity.exclude,
-            matchAnyApp = entity.matchAnyApp,
-        )
+        fun fromEntity(entity: SubsGlobalGroupConfig) =
+            BackupGlobalGroupConfig(
+                subsId = entity.subsId,
+                groupKey = entity.groupKey,
+                enable = entity.enable,
+                exclude = entity.exclude,
+                matchAnyApp = entity.matchAnyApp,
+            )
     }
 }
 
@@ -191,15 +204,17 @@ object BackupFormat {
         text: String,
     ): BackupDatabaseData {
         val root = json.parseToJsonElement(text).jsonObject
-        return when (val version =
-            root["formatVersion"]?.jsonPrimitive?.int ?: BackupVersion.Legacy) {
-            BackupVersion.Legacy -> json.decodeFromJsonElement(LegacyBackupV1.serializer(), root)
-                .convert()
+        return when (
+            val version = root["formatVersion"]?.jsonPrimitive?.int ?: BackupVersion.Legacy
+        ) {
+            BackupVersion.Legacy ->
+                json.decodeFromJsonElement(LegacyBackupV1.serializer(), root).convert()
 
-            BackupVersion.Current -> json.decodeFromJsonElement(
-                BackupDatabaseData.serializer(),
-                root
-            )
+            BackupVersion.Current ->
+                json.decodeFromJsonElement(
+                    BackupDatabaseData.serializer(),
+                    root,
+                )
 
             else -> throw StorageException(BackupIssue.VersionUnsupported, version)
         }
@@ -220,26 +235,36 @@ private data class LegacyBackupV1(
         }
         return BackupDatabaseData(
             subsItems = subsItems.orEmpty(),
-            appGroupConfigs = groups.filter { it.type == RuleGroupType.App }
-                .distinctBy { Triple(it.subsId, it.appId, it.groupKey) }
-                .map {
-                    BackupAppGroupConfig(
-                        it.subsId,
-                        it.appId,
-                        it.groupKey,
-                        it.enable,
-                        it.exclude
-                    )
-                },
-            globalGroupConfigs = groups.filter { it.type == RuleGroupType.Global }
-                .distinctBy { it.subsId to it.groupKey }
-                .map { BackupGlobalGroupConfig(it.subsId, it.groupKey, it.enable, it.exclude) },
-            appConfigs = appConfigs.orEmpty().sortedBy { it.id }
-                .distinctBy { it.subsId to it.appId }
-                .map { BackupAppConfig(it.subsId, it.appId, it.enable) },
-            categoryConfigs = categoryConfigs.orEmpty().sortedBy { it.id }
-                .distinctBy { it.subsId to it.categoryKey }
-                .map { BackupCategoryConfig(it.subsId, it.categoryKey, it.enable) },
+            appGroupConfigs =
+                groups
+                    .filter { it.type == RuleGroupType.App }
+                    .distinctBy { Triple(it.subsId, it.appId, it.groupKey) }
+                    .map {
+                        BackupAppGroupConfig(
+                            it.subsId,
+                            it.appId,
+                            it.groupKey,
+                            it.enable,
+                            it.exclude,
+                        )
+                    },
+            globalGroupConfigs =
+                groups
+                    .filter { it.type == RuleGroupType.Global }
+                    .distinctBy { it.subsId to it.groupKey }
+                    .map { BackupGlobalGroupConfig(it.subsId, it.groupKey, it.enable, it.exclude) },
+            appConfigs =
+                appConfigs
+                    .orEmpty()
+                    .sortedBy { it.id }
+                    .distinctBy { it.subsId to it.appId }
+                    .map { BackupAppConfig(it.subsId, it.appId, it.enable) },
+            categoryConfigs =
+                categoryConfigs
+                    .orEmpty()
+                    .sortedBy { it.id }
+                    .distinctBy { it.subsId to it.categoryKey }
+                    .map { BackupCategoryConfig(it.subsId, it.categoryKey, it.enable) },
         )
     }
 }

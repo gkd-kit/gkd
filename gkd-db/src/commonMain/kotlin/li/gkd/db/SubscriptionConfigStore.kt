@@ -58,13 +58,17 @@ object SubscriptionConfigStore {
         next
     }
 
-    fun observe(): Flow<SubscriptionConfigSnapshot> = database.invalidationTracker.createFlow(
-        "subs_item",
-        "subs_app_config",
-        "subs_category_config",
-        "subs_app_group_config",
-        "subs_global_group_config",
-    ).map { capture() }.distinctUntilChanged()
+    fun observe(): Flow<SubscriptionConfigSnapshot> =
+        database.invalidationTracker
+            .createFlow(
+                "subs_item",
+                "subs_app_config",
+                "subs_category_config",
+                "subs_app_group_config",
+                "subs_global_group_config",
+            )
+            .map { capture() }
+            .distinctUntilChanged()
 
     suspend fun capture(): SubscriptionConfigSnapshot = database.withReadTransaction {
         SubscriptionConfigSnapshot(
@@ -98,35 +102,43 @@ object SubscriptionConfigStore {
 
     suspend fun restore(snapshot: SubscriptionConfigSnapshot) = database.withWriteTransaction {
         val appConfigKeys = snapshot.appConfigs.mapTo(mutableSetOf()) { it.subsId to it.appId }
-        val removedAppConfigs = database.subsAppConfigDao().queryAll().filter {
-            (it.subsId to it.appId) !in appConfigKeys
-        }
+        val removedAppConfigs =
+            database.subsAppConfigDao().queryAll().filter {
+                (it.subsId to it.appId) !in appConfigKeys
+            }
         database.subsAppConfigDao().delete(*removedAppConfigs.toTypedArray())
-        val categoryConfigKeys = snapshot.categoryConfigs.mapTo(mutableSetOf()) {
-            it.subsId to it.categoryKey
-        }
-        val removedCategoryConfigs = database.subsCategoryConfigDao().queryAll().filter {
-            (it.subsId to it.categoryKey) !in categoryConfigKeys
-        }
+        val categoryConfigKeys =
+            snapshot.categoryConfigs.mapTo(mutableSetOf()) {
+                it.subsId to it.categoryKey
+            }
+        val removedCategoryConfigs =
+            database.subsCategoryConfigDao().queryAll().filter {
+                (it.subsId to it.categoryKey) !in categoryConfigKeys
+            }
         database.subsCategoryConfigDao().delete(*removedCategoryConfigs.toTypedArray())
-        val appGroupConfigKeys = snapshot.appGroupConfigs.mapTo(mutableSetOf()) {
-            Triple(it.subsId, it.appId, it.groupKey)
-        }
-        val removedAppGroupConfigs = database.subsAppGroupConfigDao().queryAll().filter {
-            Triple(it.subsId, it.appId, it.groupKey) !in appGroupConfigKeys
-        }
+        val appGroupConfigKeys =
+            snapshot.appGroupConfigs.mapTo(mutableSetOf()) {
+                Triple(it.subsId, it.appId, it.groupKey)
+            }
+        val removedAppGroupConfigs =
+            database.subsAppGroupConfigDao().queryAll().filter {
+                Triple(it.subsId, it.appId, it.groupKey) !in appGroupConfigKeys
+            }
         database.subsAppGroupConfigDao().delete(*removedAppGroupConfigs.toTypedArray())
-        val globalGroupConfigKeys = snapshot.globalGroupConfigs.mapTo(mutableSetOf()) {
-            it.subsId to it.groupKey
-        }
-        val removedGlobalGroupConfigs = database.subsGlobalGroupConfigDao().queryAll().filter {
-            (it.subsId to it.groupKey) !in globalGroupConfigKeys
-        }
+        val globalGroupConfigKeys =
+            snapshot.globalGroupConfigs.mapTo(mutableSetOf()) {
+                it.subsId to it.groupKey
+            }
+        val removedGlobalGroupConfigs =
+            database.subsGlobalGroupConfigDao().queryAll().filter {
+                (it.subsId to it.groupKey) !in globalGroupConfigKeys
+            }
         database.subsGlobalGroupConfigDao().delete(*removedGlobalGroupConfigs.toTypedArray())
         val subsItemIds = snapshot.subsItems.mapTo(mutableSetOf()) { it.id }
-        val removedSubsItems = database.subsItemDao().queryAll().filter {
-            it.id !in subsItemIds
-        }
+        val removedSubsItems =
+            database.subsItemDao().queryAll().filter {
+                it.id !in subsItemIds
+            }
         database.subsItemDao().delete(*removedSubsItems.toTypedArray())
         database.subsItemDao().upsert(*snapshot.subsItems.toTypedArray())
         database.subsAppConfigDao().upsert(*snapshot.appConfigs.toTypedArray())

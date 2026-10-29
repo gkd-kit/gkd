@@ -17,6 +17,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.snapshot.platform.prepareSnapshotReplacement
 import li.gkd.app.storage.ExportFileNames
@@ -24,7 +25,6 @@ import li.gkd.app.storage.SnapshotIssue
 import li.gkd.app.storage.StorageException
 import li.gkd.app.storage.ZipArchive
 import li.gkd.app.storage.appStorage
-import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
 
@@ -34,26 +34,34 @@ data class SnapshotUploadArchive(
 )
 
 object SnapshotStore {
-    private val sharedDirectory get() = appStorage().sharedCache
+    private val sharedDirectory
+        get() = appStorage().sharedCache
 
     private val json = Json {
-        ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true
+        ignoreUnknownKeys = true
+        explicitNulls = false
+        encodeDefaults = true
     }
     private val keepNullJson = Json(json) { explicitNulls = true }
     private val mutationMutex = Mutex()
     private val fileLayout by lazy { SnapshotFileLayout(appStorage().snapshot) }
 
     suspend fun save(snapshot: ComplexSnapshot, screenshot: ByteArray) =
-        save(snapshot.id, write = { files ->
-            files.webpFile.writeBytes(screenshot)
-            files.snapshotFile.writeText(keepNullJson.encodeToString(snapshot))
-            files.minSnapshotFile.writeText(keepNullJson.encodeToString(snapshot.copy(nodes = emptyList())))
-        }, publish = { Db.snapshotDao.insert(snapshot.toSnapshot()) })
+        save(
+            snapshot.id,
+            write = { files ->
+                files.webpFile.writeBytes(screenshot)
+                files.snapshotFile.writeText(keepNullJson.encodeToString(snapshot))
+                files.minSnapshotFile.writeText(
+                    keepNullJson.encodeToString(snapshot.copy(nodes = emptyList())),
+                )
+            },
+            publish = { Db.snapshotDao.insert(snapshot.toSnapshot()) },
+        )
 
     fun snapshotFile(id: Long): File = fileLayout.committed(id).snapshotFile
 
     fun screenshotFile(id: Long): File = fileLayout.committed(id).screenshotFile
-
 
     suspend fun markUploaded(
         snapshotId: Long,
@@ -71,27 +79,33 @@ object SnapshotStore {
 
     suspend fun getMinSnapshot(id: Long): JsonObject = mutationMutex.withLock {
         val files = fileLayout.committed(id)
-        val cachedText = withContext(Dispatchers.IO) {
-            files.minSnapshotFile.takeIf { it.isFile && it.length() > 0 }?.readText()
-        }
-        if (cachedText != null) {
-            val cachedSnapshot = withContext(Dispatchers.Default) {
-                try {
-                    json.decodeFromString<JsonObject>(cachedText)
-                } catch (_: SerializationException) {
-                    null
-                }
+        val cachedText =
+            withContext(Dispatchers.IO) {
+                files.minSnapshotFile.takeIf { it.isFile && it.length() > 0 }?.readText()
             }
+        if (cachedText != null) {
+            val cachedSnapshot =
+                withContext(Dispatchers.Default) {
+                    try {
+                        json.decodeFromString<JsonObject>(cachedText)
+                    } catch (_: SerializationException) {
+                        null
+                    }
+                }
             if (cachedSnapshot != null) return@withLock cachedSnapshot
         }
         val text = withContext(Dispatchers.IO) { files.snapshotFile.readText() }
-        val snapshotJson = withContext(Dispatchers.Default) {
-            // #1185
-            json.decodeFromString<JsonObject>(text)
-        }
-        val minSnapshot = JsonObject(snapshotJson.toMutableMap().apply {
-            this["nodes"] = JsonArray(emptyList())
-        })
+        val snapshotJson =
+            withContext(Dispatchers.Default) {
+                // #1185
+                json.decodeFromString<JsonObject>(text)
+            }
+        val minSnapshot =
+            JsonObject(
+                snapshotJson.toMutableMap().apply {
+                    this["nodes"] = JsonArray(emptyList())
+                },
+            )
         withContext(Dispatchers.IO) {
             files.minSnapshotFile.writeText(keepNullJson.encodeToString(minSnapshot))
         }
@@ -120,15 +134,16 @@ object SnapshotStore {
             withContext(Dispatchers.IO) {
                 val files = fileLayout.committed(snapshot.id)
                 val temporary =
-                    Files.createTempFile(files.directory.toPath(), "replace-", ".tmp")
-                        .toFile()
+                    Files.createTempFile(files.directory.toPath(), "replace-", ".tmp").toFile()
                 try {
-                    if (!prepareSnapshotReplacement(
+                    if (
+                        !prepareSnapshotReplacement(
                             files.screenshotFile,
                             newBytes,
-                            temporary
+                            temporary,
                         )
-                    ) return@withContext false
+                    )
+                        return@withContext false
                     currentCoroutineContext().ensureActive()
                     withContext(NonCancellable) {
                         val previous = stageReplacement(files.webpFile)
@@ -136,7 +151,7 @@ object SnapshotStore {
                             Files.move(
                                 temporary.toPath(),
                                 files.webpFile.toPath(),
-                                StandardCopyOption.REPLACE_EXISTING
+                                StandardCopyOption.REPLACE_EXISTING,
                             )
                             Db.snapshotDao.deleteGithubAssetId(snapshot.id)
                         } catch (e: Throwable) {
@@ -145,10 +160,11 @@ object SnapshotStore {
                             throw e
                         }
                         finishReplacement(previous)
-                        if (files.legacyPngFile.exists() && !files.legacyPngFile.delete()) LogUtils.d(
-                            "Cannot delete legacy screenshot",
-                            files.legacyPngFile.absolutePath
-                        )
+                        if (files.legacyPngFile.exists() && !files.legacyPngFile.delete())
+                            LogUtils.w(
+                                "Cannot delete legacy screenshot",
+                                files.legacyPngFile.absolutePath,
+                            )
                     }
                     true
                 } finally {
@@ -159,9 +175,10 @@ object SnapshotStore {
 
     suspend fun createUploadArchive(snapshotId: Long): SnapshotUploadArchive =
         mutationMutex.withLock {
-            val screenshotModifiedAt = withContext(Dispatchers.IO) {
-                fileLayout.committed(snapshotId).screenshotFile.lastModified()
-            }
+            val screenshotModifiedAt =
+                withContext(Dispatchers.IO) {
+                    fileLayout.committed(snapshotId).screenshotFile.lastModified()
+                }
             SnapshotUploadArchive(
                 file = createArchiveLocked(snapshotId),
                 screenshotModifiedAt = screenshotModifiedAt,
@@ -172,10 +189,9 @@ object SnapshotStore {
         snapshotId: Long,
         appId: String? = null,
         activityId: String? = null,
-    ): File =
-        mutationMutex.withLock {
-            createArchiveLocked(snapshotId, appId, activityId)
-        }
+    ): File = mutationMutex.withLock {
+        createArchiveLocked(snapshotId, appId, activityId)
+    }
 
     private suspend fun createArchiveLocked(
         snapshotId: Long,
@@ -183,26 +199,30 @@ object SnapshotStore {
         activityId: String? = null,
     ): File =
         withContext(Dispatchers.IO) {
-            val filename = (if (appId != null) {
-                val appName = AppInfoRepository.snapshot?.apps?.get(appId)?.name
-                val stem = if (activityId != null) {
-                    "${(appName ?: appId).take(20)}_${
+            val filename =
+                (if (appId != null) {
+                        val appName = AppInfoRepository.snapshot?.apps?.get(appId)?.name
+                        val stem =
+                            if (activityId != null) {
+                                "${(appName ?: appId).take(20)}_${
                         activityId.split('.').last().take(40)
                     }-${ExportFileNames.timestamp(snapshotId)}"
-                } else {
-                    "${(appName ?: appId).take(20)}-${
+                            } else {
+                                "${(appName ?: appId).take(20)}-${
                         ExportFileNames.timestamp(
-                            snapshotId
+                            snapshotId,
                         )
                     }"
-                }
-                "$stem.zip"
-            } else {
-                "${snapshotId}.zip"
-            }).filterNot { char -> char in "\\/:*?\"<>|" || char <= ' ' }
-            val outputDirectory = sharedDirectory.resolve(
-                "snapshot-$snapshotId-${UUID.randomUUID()}"
-            )
+                            }
+                        "$stem.zip"
+                    } else {
+                        "${snapshotId}.zip"
+                    })
+                    .filterNot { char -> char in "\\/:*?\"<>|" || char <= ' ' }
+            val outputDirectory =
+                sharedDirectory.resolve(
+                    "snapshot-$snapshotId-${UUID.randomUUID()}",
+                )
             Files.createDirectory(outputDirectory.toPath())
             val outputFile = outputDirectory.resolve(filename)
             try {
@@ -210,7 +230,7 @@ object SnapshotStore {
                 if (!files.hasCompleteFiles) {
                     throw StorageException(
                         SnapshotIssue.FilesIncomplete,
-                        snapshotId
+                        snapshotId,
                     )
                 }
                 ZipArchive.zipFiles(
@@ -220,41 +240,46 @@ object SnapshotStore {
                 outputFile
             } catch (e: Throwable) {
                 if (!outputDirectory.deleteRecursively()) {
-                    e.addSuppressed(IOException("Cannot delete archive directory: $outputDirectory"))
+                    e.addSuppressed(
+                        IOException("Cannot delete archive directory: $outputDirectory"),
+                    )
                 }
                 throw e
             }
         }
 
-    suspend fun deleteArchive(file: File) = withContext(NonCancellable + Dispatchers.IO) {
-        val directory = file.parentFile ?: return@withContext
-        if (directory.parentFile != sharedDirectory || !directory.name.startsWith("snapshot-")) {
-            return@withContext
+    suspend fun deleteArchive(file: File) =
+        withContext(NonCancellable + Dispatchers.IO) {
+            val directory = file.parentFile ?: return@withContext
+            if (
+                directory.parentFile != sharedDirectory || !directory.name.startsWith("snapshot-")
+            ) {
+                return@withContext
+            }
+            if (directory.exists() && !directory.deleteRecursively()) {
+                LogUtils.w("无法清理快照压缩目录", directory.absolutePath)
+            }
         }
-        if (directory.exists() && !directory.deleteRecursively()) {
-            LogUtils.d("无法清理快照压缩目录", directory.absolutePath)
-        }
-    }
 
     suspend fun save(
         id: Long,
         write: (SnapshotFileLayout.Files) -> Unit,
-        publish: suspend () -> Unit
+        publish: suspend () -> Unit,
     ): Unit = mutationMutex.withLock {
         withContext(Dispatchers.IO) {
             commitSnapshotDirectory(
                 fileLayout,
                 id,
                 write,
-                publish
+                publish,
             )
         }
     }
 
     private fun stageDeletion(target: File): File? {
         if (!target.exists()) return null
-        val staged = requireNotNull(target.parentFile)
-            .resolve(".${target.name}.delete-${UUID.randomUUID()}")
+        val staged =
+            requireNotNull(target.parentFile).resolve(".${target.name}.delete-${UUID.randomUUID()}")
         Files.move(target.toPath(), staged.toPath())
         return staged
     }
@@ -274,14 +299,15 @@ object SnapshotStore {
 
     private fun finishDeletion(staged: File?) {
         if (staged != null && staged.exists() && !staged.deleteRecursively()) {
-            LogUtils.d("无法清理已删除快照目录", staged.absolutePath)
+            LogUtils.w("无法清理已删除快照目录", staged.absolutePath)
         }
     }
 
     private fun stageReplacement(target: File): File? {
         if (!target.exists()) return null
-        val staged = requireNotNull(target.parentFile)
-            .resolve(".${target.name}.replace-${UUID.randomUUID()}")
+        val staged =
+            requireNotNull(target.parentFile)
+                .resolve(".${target.name}.replace-${UUID.randomUUID()}")
         Files.move(target.toPath(), staged.toPath())
         return staged
     }
@@ -297,8 +323,7 @@ object SnapshotStore {
 
     private fun finishReplacement(staged: File?) {
         if (staged != null && staged.exists() && !staged.delete()) {
-            LogUtils.d("无法清理旧快照截图", staged.absolutePath)
+            LogUtils.w("无法清理旧快照截图", staged.absolutePath)
         }
     }
-
 }

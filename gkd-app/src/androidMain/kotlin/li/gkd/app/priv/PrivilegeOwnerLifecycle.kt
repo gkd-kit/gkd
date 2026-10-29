@@ -1,6 +1,6 @@
 package li.gkd.app.priv
 
-import li.gkd.app.util.LogUtils
+import li.gkd.app.logging.LogUtils
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeConfig
 
@@ -18,8 +18,9 @@ object PrivilegeOwnerLifecycle {
     fun prepareAppRestart() {
         runCatching {
             Privilege.prepareOwnerRestart(APP_RESTART_PASSIVE_TIMEOUT_MILLIS)
-        }.onFailure { error ->
-            LogUtils.d("prepare owner restart failed", error)
         }
+            .onFailure { error ->
+                LogUtils.e("prepare owner restart failed", error)
+            }
     }
 }

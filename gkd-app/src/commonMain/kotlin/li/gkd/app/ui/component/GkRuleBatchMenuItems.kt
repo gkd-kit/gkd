@@ -7,7 +7,6 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun GkRuleBatchMenuItems(
-    enabled: Boolean,
     onDismiss: () -> Unit,
     onUpdate: (RuleSetting) -> Unit,
 ) {
@@ -15,18 +14,15 @@ fun GkRuleBatchMenuItems(
         stringResource(Res.string.action_turn_on),
         onDismiss,
         { onUpdate(RuleSetting.Enabled) },
-        enabled
     )
     GkBatchActionMenuItem(
         stringResource(Res.string.action_close),
         onDismiss,
         { onUpdate(RuleSetting.Disabled) },
-        enabled
     )
     GkBatchActionMenuItem(
         stringResource(Res.string.settings_reset_default),
         onDismiss,
         { onUpdate(RuleSetting.FollowDefault) },
-        enabled
     )
 }

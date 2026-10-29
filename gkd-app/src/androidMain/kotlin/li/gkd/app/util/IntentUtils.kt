@@ -4,19 +4,21 @@ import android.app.Service
 import android.content.Intent
 import android.provider.Settings
 import androidx.core.net.toUri
+import kotlin.reflect.KClass
 import li.gkd.app.META
 import li.gkd.app.app
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.resources.*
 import li.songe.codeorigin.CallSite
-import kotlin.reflect.KClass
 
 object IntentUtils {
     fun openWeChatScanner() {
-        val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")?.apply {
-            putExtra("LauncherUI.From.Scaner.Shortcut", true)
-        }
+        val intent =
+            app.packageManager.getLaunchIntentForPackage("com.tencent.mm")?.apply {
+                putExtra("LauncherUI.From.Scaner.Shortcut", true)
+            }
         if (intent == null) {
             ToastUtils.show(Res.string.wechat_unavailable.getSync())
             return
@@ -31,10 +33,11 @@ object IntentUtils {
     }
 
     fun openAppDetailsSettings() {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = "package:${app.packageName}".toUri()
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        val intent =
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = "package:${app.packageName}".toUri()
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
         app.tryStartActivity(intent)
     }
 
@@ -46,19 +49,20 @@ object IntentUtils {
     fun <T : Service> startForegroundService(
         clazz: KClass<T>,
         @CallSite loc: String = "",
+        configure: Intent.() -> Unit = {},
     ) {
         if (!PermissionStates.notification.checkOrToast(loc = loc)) return
         if (!PermissionStates.foregroundServiceSpecialUse.checkOrToast(loc = loc)) return
-        val intent = Intent(app, clazz.java)
+        val intent = Intent(app, clazz.java).apply(configure)
         try {
             app.startForegroundService(intent)
         } catch (e: Throwable) {
-            LogUtils.d(e, loc = loc)
+            LogUtils.e(e, loc = loc)
             val prefix = if (MainActivityVisibility.isVisible) "" else "${META.appName}: "
             ToastUtils.show(
                 Res.string.service_launch_failed.getSync(prefix, e.message),
                 forced = true,
-                loc = loc
+                loc = loc,
             )
         }
     }

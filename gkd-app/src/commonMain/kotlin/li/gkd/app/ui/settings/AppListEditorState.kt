@@ -10,7 +10,8 @@ data class AppListEditorUiState(
     val editing: Boolean = false,
     val draft: String = "",
 ) {
-    val indicatorSize get() = SettingsAppIds.decode(draft).size
+    val indicatorSize
+        get() = SettingsAppIds.decode(draft).size
 }
 
 class AppListEditorState {
@@ -19,8 +20,7 @@ class AppListEditorState {
 
     fun toggleSearch(query: String, updateQuery: (String) -> Unit) {
         if (!state.value.searchOpen) state.update { it.copy(searchOpen = true) }
-        else if (query.isEmpty()) state.update { it.copy(searchOpen = false) }
-        else updateQuery("")
+        else if (query.isEmpty()) state.update { it.copy(searchOpen = false) } else updateQuery("")
     }
 
     fun closeSearch(updateQuery: (String) -> Unit) {

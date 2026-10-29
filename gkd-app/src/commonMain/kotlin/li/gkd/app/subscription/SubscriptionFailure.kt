@@ -10,22 +10,37 @@ class SubscriptionException(
     val reason: SubscriptionFailureReason,
     val arguments: List<String> = emptyList(),
     cause: Throwable? = null,
-) : IllegalStateException(
-    reason.name + if (arguments.isEmpty()) "" else arguments.joinToString(prefix = ": "),
-    cause,
-), BusinessError {
+) :
+    IllegalStateException(
+        reason.name + if (arguments.isEmpty()) "" else arguments.joinToString(prefix = ": "),
+        cause,
+    ),
+    BusinessError {
     private val inputParseError: SubscriptionParseException?
-        get() = if (reason == SubscriptionFailureReason.RuleInvalidDetail) cause as? SubscriptionParseException else null
+        get() =
+            if (reason == SubscriptionFailureReason.RuleInvalidDetail)
+                cause as? SubscriptionParseException
+            else null
 
     override val errorCode: String
-        get() = when {
-            inputParseError != null || reason == SubscriptionFailureReason.FormatInvalidDetail -> "INVALID_SUBSCRIPTION"
-            reason == SubscriptionFailureReason.SelectorInvalidDetail -> "INVALID_SELECTOR"
-            else -> reason.name
-        }
+        get() =
+            when {
+                inputParseError != null ||
+                    reason == SubscriptionFailureReason.FormatInvalidDetail ->
+                    "INVALID_SUBSCRIPTION"
+                reason == SubscriptionFailureReason.SelectorInvalidDetail -> "INVALID_SELECTOR"
+                else -> reason.name
+            }
 
     override val errorPath: String?
-        get() = inputParseError?.path ?: if (reason == SubscriptionFailureReason.FormatInvalidDetail) "$" else null
+        get() =
+            inputParseError?.path
+                ?: (cause as? PositionCalculationException)?.errorPath
+                ?: when (reason) {
+                    SubscriptionFailureReason.FormatInvalidDetail -> "$"
+                    SubscriptionFailureReason.RuleInvalidVersionPattern -> arguments.firstOrNull()
+                    else -> null
+                }
 
     override val errorMessage: ErrorMessage
         get() {
@@ -37,13 +52,30 @@ class SubscriptionException(
                     else -> ErrorMessage.Text(it.message ?: it.toString())
                 }
             }
-            val embedsCause = reason == SubscriptionFailureReason.RuleInvalidDetail ||
-                reason == SubscriptionFailureReason.FormatInvalidDetail
-            val parameters = arguments.map { ErrorMessage.Text(it) } +
-                if (embedsCause) listOf(detail ?: ErrorMessage.Text("")) else emptyList()
-            val text = ErrorMessage.Resource(reason.messageResource, parameters)
-            return if (embedsCause || detail == null) text else ErrorMessage.WithDetail(text, detail)
+            return if (detail == null) {
+                ErrorMessage.Resource(
+                    reason.messageResource,
+                    arguments.map { ErrorMessage.Text(it) },
+                )
+            } else {
+                subscriptionFailureMessage(reason, arguments, detail)
+            }
         }
+}
+
+fun subscriptionFailureMessage(
+    reason: SubscriptionFailureReason,
+    arguments: List<String>,
+    detail: ErrorMessage,
+): ErrorMessage {
+    if (reason == SubscriptionFailureReason.RuleInvalidPosition) return detail
+    val embedsDetail =
+        reason == SubscriptionFailureReason.RuleInvalidDetail ||
+            reason == SubscriptionFailureReason.FormatInvalidDetail
+    val parameters =
+        arguments.map { ErrorMessage.Text(it) } + if (embedsDetail) listOf(detail) else emptyList()
+    val text = ErrorMessage.Resource(reason.messageResource, parameters)
+    return if (embedsDetail) text else ErrorMessage.WithDetail(text, detail)
 }
 
 enum class SubscriptionFailureReason(val messageResource: StringResource) {
@@ -64,6 +96,7 @@ enum class SubscriptionFailureReason(val messageResource: StringResource) {
     RuleInputRequired(Res.string.rule_input_required),
     RuleInvalidDetail(Res.string.rule_invalid_detail),
     RuleInvalidPosition(Res.string.rule_invalid_position),
+    RuleInvalidVersionPattern(Res.string.rule_invalid_version_pattern),
     RuleKeyMismatch(Res.string.rule_key_mismatch),
     RuleMissing(Res.string.rule_missing),
     RuleMissingKey(Res.string.subscription_rule_missing_detail),

@@ -37,33 +37,37 @@ fun GkGroupNameText(
     hideCategoryPrefix: Boolean = false,
 ) {
     if (isGlobal) {
-        val text = remember(preText, text) {
-            buildAnnotatedString {
-                if (preText != null) {
-                    append(preText)
+        val text =
+            remember(preText, text) {
+                buildAnnotatedString {
+                    if (preText != null) {
+                        append(preText)
+                    }
+                    appendInlineContent("icon")
+                    append(text)
                 }
-                appendInlineContent("icon")
-                append(text)
             }
-        }
         val textColor = color.takeOrElse { style.color.takeOrElse { LocalContentColor.current } }
-        val inlineContent = remember(style, textColor) {
-            mapOf(
-                "icon" to InlineTextContent(
-                    placeholder = Placeholder(
-                        width = style.fontSize,
-                        height = style.lineHeight,
-                        placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-                    )
-                ) {
-                    GkIcon(
-                        imageVector = SportsBasketball,
-                        modifier = Modifier.fillMaxSize(),
-                        tint = textColor
-                    )
-                }
-            )
-        }
+        val inlineContent =
+            remember(style, textColor) {
+                mapOf(
+                    "icon" to
+                        InlineTextContent(
+                            placeholder =
+                                Placeholder(
+                                    width = style.fontSize,
+                                    height = style.lineHeight,
+                                    placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
+                                ),
+                        ) {
+                            GkIcon(
+                                imageVector = SportsBasketball,
+                                modifier = Modifier.fillMaxSize(),
+                                tint = textColor,
+                            )
+                        },
+                )
+            }
         Text(
             modifier = modifier,
             text = text,
@@ -76,27 +80,31 @@ fun GkGroupNameText(
         )
     } else {
         val categoryColor = MaterialTheme.colorScheme.primary
-        val displayText = remember(preText, text, categoryName, categoryColor, hideCategoryPrefix) {
-            buildAnnotatedString {
-                append(preText.orEmpty())
-                val category = categoryName?.takeIf { it.isNotBlank() && text.startsWith(it) }
-                if (category == null) {
-                    append(text)
-                } else if (hideCategoryPrefix) {
-                    append(text.removeRuleCategoryPrefix(category).ifEmpty { text })
-                } else {
-                    withStyle(SpanStyle(color = categoryColor, fontWeight = FontWeight.Medium)) {
-                        append(category)
-                    }
-                    // Normalize only the separator after the matched prefix, never the stored name.
-                    val remainder = text.removeRuleCategoryPrefix(category)
-                    if (remainder.isNotEmpty()) {
-                        append(' ')
-                        append(remainder)
+        val displayText =
+            remember(preText, text, categoryName, categoryColor, hideCategoryPrefix) {
+                buildAnnotatedString {
+                    append(preText.orEmpty())
+                    val category = categoryName?.takeIf { it.isNotBlank() && text.startsWith(it) }
+                    if (category == null) {
+                        append(text)
+                    } else if (hideCategoryPrefix) {
+                        append(text.removeRuleCategoryPrefix(category).ifEmpty { text })
+                    } else {
+                        withStyle(
+                            SpanStyle(color = categoryColor, fontWeight = FontWeight.Medium),
+                        ) {
+                            append(category)
+                        }
+                        // Normalize only the separator after the matched prefix, never the stored
+                        // name.
+                        val remainder = text.removeRuleCategoryPrefix(category)
+                        if (remainder.isNotEmpty()) {
+                            append(' ')
+                            append(remainder)
+                        }
                     }
                 }
             }
-        }
         Text(
             modifier = modifier,
             text = displayText,

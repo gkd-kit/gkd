@@ -15,9 +15,11 @@ actual fun UiHost.GkShareAppDialog(
     onOpenUrl: (String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    if (visible) GkShareAppDialog(
-        onDismissRequest,
-        state::unsupported,
-        state::unsupported,
-        { onOpenUrl(AppLinks.PlayStore) })
+    if (visible)
+        GkShareAppDialog(
+            onDismissRequest,
+            state::unsupported,
+            state::unsupported,
+            { onOpenUrl(AppLinks.PlayStore) },
+        )
 }

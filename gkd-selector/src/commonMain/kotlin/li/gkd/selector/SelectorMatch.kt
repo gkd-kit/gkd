@@ -14,14 +14,16 @@ public enum class SelectorRelationKind {
 
 @JsExport
 /** A successful selector match. Only the branch that produced the match is retained. */
-public class SelectorMatch<T : Any> internal constructor(
+public class SelectorMatch<T : Any>
+internal constructor(
     public val target: T,
     public val units: Array<SelectorMatchUnit<T>>,
 )
 
 @JsExport
 /** The successful path of one unit selector. */
-public class SelectorMatchUnit<T : Any> internal constructor(
+public class SelectorMatchUnit<T : Any>
+internal constructor(
     public val target: T,
     /** Starting candidate, which may differ from the target selected by @. */
     public val queryNode: T,
@@ -36,7 +38,8 @@ public class SelectorMatchUnit<T : Any> internal constructor(
 
 @JsExport
 /** One relation followed from [source] to [target] in a successful unit path. */
-public class SelectorMatchStep<T : Any> internal constructor(
+public class SelectorMatchStep<T : Any>
+internal constructor(
     public val source: T,
     public val target: T,
     public val kind: SelectorRelationKind,

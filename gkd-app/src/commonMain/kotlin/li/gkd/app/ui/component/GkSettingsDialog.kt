@@ -36,9 +36,9 @@ fun GkSettingsDialog(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(start = 24.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -50,18 +50,19 @@ fun GkSettingsDialog(
                     )
                     GkIconButton(
                         imageVector = GkIcons.Close,
-                        contentDescription = stringResource(
-                            Res.string.dialog_close_description,
-                            title
-                        ),
+                        contentDescription =
+                            stringResource(
+                                Res.string.dialog_close_description,
+                                title,
+                            ),
                         onClick = onDismissRequest,
                     )
                 }
                 Column(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .verticalScroll(scrollState)
-                        .padding(bottom = SettingsDialogCornerSize),
+                    modifier =
+                        Modifier.weight(1f, fill = false)
+                            .verticalScroll(scrollState)
+                            .padding(bottom = SettingsDialogCornerSize),
                     content = content,
                 )
             }

@@ -10,9 +10,18 @@ sealed interface RuleGroupTarget {
     val pageAppId: String?
 
     val groupType: Int
-        get() = when (this) {
-            is App -> RuleGroupType.App
-            is Global -> RuleGroupType.Global
+        get() =
+            when (this) {
+                is App -> RuleGroupType.App
+                is Global -> RuleGroupType.Global
+            }
+
+    fun toSwitchTarget(): RuleSwitchTarget =
+        when (this) {
+            is RuleGroupTarget.App -> RuleSwitchTarget.AppGroup(subsId, appId, groupKey)
+            is RuleGroupTarget.Global ->
+                pageAppId?.let { RuleSwitchTarget.GlobalApp(subsId, groupKey, it) }
+                    ?: RuleSwitchTarget.GlobalGroup(subsId, groupKey)
         }
 
     data class App(
@@ -35,16 +44,19 @@ sealed interface RuleGroupTarget {
 fun RawSubscription.RawGroupProps.toRuleGroupTarget(
     subsId: Long,
     appId: String? = null,
-): RuleGroupTarget = when (this) {
-    is RawSubscription.RawAppGroup -> RuleGroupTarget.App(
-        subsId = subsId,
-        appId = appId ?: error("require appId"),
-        groupKey = key,
-    )
+): RuleGroupTarget =
+    when (this) {
+        is RawSubscription.RawAppGroup ->
+            RuleGroupTarget.App(
+                subsId = subsId,
+                appId = appId ?: error("require appId"),
+                groupKey = key,
+            )
 
-    is RawSubscription.RawGlobalGroup -> RuleGroupTarget.Global(
-        subsId = subsId,
-        groupKey = key,
-        pageAppId = appId,
-    )
-}
+        is RawSubscription.RawGlobalGroup ->
+            RuleGroupTarget.Global(
+                subsId = subsId,
+                groupKey = key,
+                pageAppId = appId,
+            )
+    }

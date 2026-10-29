@@ -18,7 +18,7 @@ fun GkTwoLineText(
     appFallbackName: String? = null,
     appContent: @Composable (String, String?) -> Unit = { id, name ->
         GkAppNameText(
-            appName = name ?: id
+            appName = name ?: id,
         )
     },
 ) {

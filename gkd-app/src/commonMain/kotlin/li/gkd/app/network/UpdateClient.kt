@@ -1,8 +1,8 @@
 package li.gkd.app.network
 
 import io.ktor.client.call.body
-import io.ktor.client.plugins.onDownload
 import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.plugins.onDownload
 import io.ktor.client.request.get
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
@@ -11,13 +11,17 @@ import io.ktor.utils.io.copyAndClose
 import java.io.File
 
 object UpdateClient {
-    suspend fun fetch(url: String): NewVersion = NetworkClients.client.get(url).body()
+    suspend fun fetch(url: String): NewVersion =
+        NetworkClients.client.get(url) { expectSuccess = true }.body()
+
     suspend fun download(url: String, file: File, size: Long, progress: (Float) -> Unit) {
-        NetworkClients.client.prepareGet(url) {
-            expectSuccess = true
-            onDownload { received, _ -> if (size > 0) progress(received.toFloat() / size) }
-        }.execute { response ->
-            response.bodyAsChannel().copyAndClose(file.writeChannel())
-        }
+        NetworkClients.client
+            .prepareGet(url) {
+                expectSuccess = true
+                onDownload { received, _ -> if (size > 0) progress(received.toFloat() / size) }
+            }
+            .execute { response ->
+                response.bodyAsChannel().copyAndClose(file.writeChannel())
+            }
     }
 }

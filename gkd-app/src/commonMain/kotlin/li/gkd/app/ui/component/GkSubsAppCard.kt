@@ -2,14 +2,15 @@ package li.gkd.app.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.AppInfo
+import li.gkd.app.record.TriggerSummary
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
@@ -22,7 +23,7 @@ fun GkSubsAppCard(
     appInfo: AppInfo?,
     control: RuleControlState,
     enabledGroupCount: Int,
-    triggerSummary: li.gkd.app.record.TriggerSummary? = null,
+    triggerSummary: TriggerSummary? = null,
     onClick: (() -> Unit),
     onSettingChange: (RuleSetting) -> Unit,
     selectedMode: Boolean = false,
@@ -34,20 +35,31 @@ fun GkSubsAppCard(
     appName: @Composable () -> Unit,
 ) {
     GkRuleListItem(
-        onClick = onClick, selectedMode = selectedMode, selected = selected,
+        onClick = onClick,
+        selectedMode = selectedMode,
+        selected = selected,
         selectable = control.canEnable,
         selectionEnabled = selectionEnabled,
-        onLongClick = onLongClick, onSelect = onSelect,
+        onLongClick = onLongClick,
+        onSelect = onSelect,
         leading = appIcon,
         trailingInfo = {
-            triggerSummary?.takeIf { it.count > 0 }?.let {
-                GkTriggerCount(it.count, Modifier.padding(horizontal = 8.dp), lastTriggerTime = it.lastTime)
-            }
+            triggerSummary
+                ?.takeIf { it.count > 0 }
+                ?.let {
+                    GkTriggerCount(
+                        it.count,
+                        Modifier.padding(horizontal = 8.dp),
+                        lastTriggerTime = it.lastTime,
+                    )
+                }
         },
         trailing = {
             GkRuleEnableControl(
-                control, onSettingChange, modifier = it,
-                identity = RuleSwitchTarget.App(subsId, rawApp.id)
+                control,
+                onSettingChange,
+                modifier = it,
+                identity = RuleSwitchTarget.App(subsId, rawApp.id),
             )
         },
     ) {
@@ -60,9 +72,10 @@ fun GkSubsAppCard(
             GkRuleStats(
                 GkRuleStatsData(
                     appGroups = rawApp.groups.size,
-                    enabledAppGroups = enabledGroupCount
-                ), Modifier.weight(1f),
-                emptyText = rawApp.id
+                    enabledAppGroups = enabledGroupCount,
+                ),
+                Modifier.weight(1f),
+                emptyText = rawApp.id,
             )
             GkRulePropertyIndicators(control)
         }

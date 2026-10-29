@@ -9,18 +9,19 @@ enum class RouteTransition {
     Editor,
 }
 
-fun RouteTransition.toMetadata(): Map<String, Any> = when (this) {
-    RouteTransition.Standard -> emptyMap()
-    RouteTransition.Editor -> GkNavigationTransitions.editor
-}
+fun RouteTransition.toMetadata(): Map<String, Any> =
+    when (this) {
+        RouteTransition.Standard -> emptyMap()
+        RouteTransition.Editor -> GkNavigationTransitions.editor
+    }
 
 @Serializable
 sealed interface AppRoute : NavKey {
-    val transition: RouteTransition get() = RouteTransition.Standard
+    val transition: RouteTransition
+        get() = RouteTransition.Standard
 }
 
-@Serializable
-data object A11YScopeAppListRoute : AppRoute
+@Serializable data object A11YScopeAppListRoute : AppRoute
 
 @Serializable
 data class AppConfigRoute(
@@ -28,15 +29,14 @@ data class AppConfigRoute(
     val focusLog: ActionLog? = null,
 ) : AppRoute
 
-@Serializable
-data object BlockA11yAppListRoute : AppRoute
+@Serializable data object BlockA11yAppListRoute : AppRoute
 
-@Serializable
-data object CrashReportRoute : AppRoute
+@Serializable data object CrashReportRoute : AppRoute
 
 @Serializable
 data object EditBlockAppListRoute : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
 @Serializable
@@ -45,32 +45,31 @@ data class ImagePreviewRoute(
     val items: List<ImagePreviewItem> = emptyList(),
 ) : AppRoute
 
-@Serializable
-data object PrivilegeServiceRoute : AppRoute
+@Serializable data object PrivilegeServiceRoute : AppRoute
 
-@Serializable
-data class WebViewRoute(val initUrl: String) : AppRoute
+@Serializable data class WebViewRoute(val initUrl: String) : AppRoute
 
 @Serializable
 data object ActionToastRoute : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
 @Serializable
 data object BlockA11ySetupRoute : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
-@Serializable
-data object HomeRoute : AppRoute
+@Serializable data object HomeRoute : AppRoute
 
 @Serializable
 data object NotificationTextRoute : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
-@Serializable
-data object A11yEventLogRoute : AppRoute
+@Serializable data object A11yEventLogRoute : AppRoute
 
 @Serializable
 data class ActionLogRoute(
@@ -78,26 +77,21 @@ data class ActionLogRoute(
     val appId: String? = null,
 ) : AppRoute
 
-@Serializable
-data object ActivityLogRoute : AppRoute
+@Serializable data object ActivityLogRoute : AppRoute
 
-@Serializable
-data object AboutRoute : AppRoute
+@Serializable data object AboutRoute : AppRoute
 
-@Serializable
-data object AdvancedPageRoute : AppRoute
+@Serializable data object AdvancedPageRoute : AppRoute
 
-@Serializable
-data object ExternalCallsRoute : AppRoute
+@Serializable data object MatchDebugRoute : AppRoute
 
-@Serializable
-data object QuickSettingsTilesRoute : AppRoute
+@Serializable data object ExternalCallsRoute : AppRoute
 
-@Serializable
-data object WorkModeRoute : AppRoute
+@Serializable data object QuickSettingsTilesRoute : AppRoute
 
-@Serializable
-data object SnapshotPageRoute : AppRoute
+@Serializable data object WorkModeRoute : AppRoute
+
+@Serializable data object SnapshotPageRoute : AppRoute
 
 @Serializable
 data class SnapshotPreviewRoute(
@@ -105,12 +99,12 @@ data class SnapshotPreviewRoute(
     val snapshotIds: List<Long>,
 ) : AppRoute
 
-@Serializable
-data object SnapshotSettingsRoute : AppRoute
+@Serializable data object SnapshotSettingsRoute : AppRoute
 
 @Serializable
 data class CategoryEditorRoute(val subsId: Long, val categoryKey: Int? = null) : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
 @Serializable
@@ -119,7 +113,8 @@ data class RuleExcludeEditorRoute(
     val groupKey: Int,
     val appId: String? = null,
 ) : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
 @Serializable
@@ -129,14 +124,11 @@ data class SubsAppGroupListRoute(
     val focusGroupKey: Int? = null,
 ) : AppRoute
 
-@Serializable
-data class SubsAppListRoute(val subsItemId: Long) : AppRoute
+@Serializable data class SubsAppListRoute(val subsItemId: Long) : AppRoute
 
-@Serializable
-data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int?) : AppRoute
+@Serializable data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int?) : AppRoute
 
-@Serializable
-data class SubsCategoryRoute(val subsItemId: Long) : AppRoute
+@Serializable data class SubsCategoryRoute(val subsItemId: Long) : AppRoute
 
 @Serializable
 data class SubsGlobalGroupExcludeRoute(val subsItemId: Long, val groupKey: Int) : AppRoute
@@ -151,7 +143,8 @@ data class UpsertRuleGroupRoute(
     val appId: String? = null,
     val forward: Boolean = false,
 ) : AppRoute {
-    override val transition get() = RouteTransition.Editor
+    override val transition
+        get() = RouteTransition.Editor
 }
 
 @Serializable

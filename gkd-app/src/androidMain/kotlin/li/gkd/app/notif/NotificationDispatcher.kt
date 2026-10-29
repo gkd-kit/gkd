@@ -14,42 +14,46 @@ import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
 import li.gkd.app.MainActivity
 import li.gkd.app.app
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.componentName
 
 object NotificationDispatcher {
-    private val pendingIntentFlags get() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    private val pendingIntentFlags
+        get() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
     private fun build(spec: AppNotificationSpec): Notification {
-        val contentIntent = PendingIntent.getActivity(
-            app,
-            spec.id,
-            Intent().apply {
-                component = MainActivity::class.componentName
-                // MainActivity 使用 singleTask，由 onNewIntent 接收跳转；不能清空已有任务栈。
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                data = spec.uri?.toUri()
-            },
-            pendingIntentFlags,
-        )
-        val builder = NotificationCompat.Builder(app, spec.channel.id)
-            .setSmallIcon(app.notificationSmallIcon)
-            .setContentTitle(spec.title)
-            .setContentText(spec.text)
-            .setContentIntent(contentIntent)
-            .setOngoing(spec.ongoing)
-            .setAutoCancel(spec.autoCancel)
-
-        spec.stopService?.let { serviceClass ->
-            val stopIntent = PendingIntent.getBroadcast(
+        val contentIntent =
+            PendingIntent.getActivity(
                 app,
                 spec.id,
-                StopServiceReceiver.getIntent(serviceClass),
+                Intent().apply {
+                    component = MainActivity::class.componentName
+                    // MainActivity 使用 singleTask，由 onNewIntent 接收跳转；不能清空已有任务栈。
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    data = spec.uri?.toUri()
+                },
                 pendingIntentFlags,
             )
+        val builder =
+            NotificationCompat.Builder(app, spec.channel.id)
+                .setSmallIcon(app.notificationSmallIcon)
+                .setContentTitle(spec.title)
+                .setContentText(spec.text)
+                .setContentIntent(contentIntent)
+                .setOngoing(spec.ongoing)
+                .setAutoCancel(spec.autoCancel)
+
+        spec.stopService?.let { serviceClass ->
+            val stopIntent =
+                PendingIntent.getBroadcast(
+                    app,
+                    spec.id,
+                    StopServiceReceiver.getIntent(serviceClass),
+                    pendingIntentFlags,
+                )
             builder
                 .setDeleteIntent(stopIntent)
                 .addAction(0, Res.string.action_stop.getSync(), stopIntent)
@@ -65,15 +69,15 @@ object NotificationDispatcher {
 
     private fun Service.canStartForeground(): Boolean {
         if (!AndroidTarget.UPSIDE_DOWN_CAKE) return true
-        val serviceInfo = packageManager.getServiceInfo(
-            ComponentName(this, javaClass),
-            PackageManager.ComponentInfoFlags.of(0),
-        )
+        val serviceInfo =
+            packageManager.getServiceInfo(
+                ComponentName(this, javaClass),
+                PackageManager.ComponentInfoFlags.of(0),
+            )
         val usesSpecialUse =
-            serviceInfo.foregroundServiceType and
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE != 0
-        return !usesSpecialUse ||
-                PermissionStates.foregroundServiceSpecialUse.updateAndGet()
+            serviceInfo.foregroundServiceType and ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE !=
+                0
+        return !usesSpecialUse || PermissionStates.foregroundServiceSpecialUse.updateAndGet()
     }
 
     fun startForeground(service: Service, notification: ForegroundNotification): Boolean {
@@ -93,7 +97,7 @@ object NotificationDispatcher {
             true
         } catch (e: SecurityException) {
             service.canStartForeground()
-            LogUtils.d("前台服务启动失败", service.javaClass.name, e)
+            LogUtils.e("前台服务启动失败", service.javaClass.name, e)
             service.stopSelf()
             false
         }

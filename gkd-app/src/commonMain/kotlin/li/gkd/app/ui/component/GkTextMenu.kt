@@ -30,26 +30,27 @@ fun <T> GkTextMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier
-            .clickable {
-                expanded = true
-            }
-            .fillMaxWidth().let {
-                if (modifier == Modifier) {
-                    it.itemPadding()
-                } else {
-                    it.then(modifier)
+        modifier =
+            Modifier.clickable {
+                    expanded = true
                 }
-            },
+                .fillMaxWidth()
+                .let {
+                    if (modifier == Modifier) {
+                        it.itemPadding()
+                    } else {
+                        it.then(modifier)
+                    }
+                },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
         )
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(option.labelResource),
@@ -60,17 +61,22 @@ fun <T> GkTextMenu(
             )
             DropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
             ) {
                 option.options.forEach { otherOption ->
                     val selected = otherOption.value == option.value
                     DropdownMenuItem(
-                        modifier = if (selected) Modifier.background(MaterialTheme.colorScheme.onSecondary) else Modifier,
-                        leadingIcon = if (otherOption is OptionIcon) ({
-                            GkIcon(
-                                imageVector = otherOption.icon,
-                            )
-                        }) else null,
+                        modifier =
+                            if (selected) Modifier.background(MaterialTheme.colorScheme.onSecondary)
+                            else Modifier,
+                        leadingIcon =
+                            if (otherOption is OptionIcon)
+                                ({
+                                    GkIcon(
+                                        imageVector = otherOption.icon,
+                                    )
+                                })
+                            else null,
                         text = {
                             Text(text = stringResource(otherOption.labelResource))
                         },

@@ -30,18 +30,20 @@ class TextDialogState {
     private val requestFlow = MutableStateFlow<TextDialogRequest?>(null)
 
     fun showText(text: String) {
-        requestFlow.value = TextDialogRequest(
-            text = text,
-            openable = false,
-        )
+        requestFlow.value =
+            TextDialogRequest(
+                text = text,
+                openable = false,
+            )
     }
 
     fun showUrl(url: String) {
         if ((url.startsWith("http://", true) || url.startsWith("https://", true))) {
-            requestFlow.value = TextDialogRequest(
-                text = url,
-                openable = true,
-            )
+            requestFlow.value =
+                TextDialogRequest(
+                    text = url,
+                    openable = true,
+                )
         } else {
             SystemActionFeedback.openExternal(url)
         }
@@ -66,16 +68,17 @@ class TextDialogState {
                 onDismissRequest = ::dismiss,
                 title = {
                     Text(
-                        text = if (currentRequest.openable) stringResource(Res.string.link_view) else stringResource(
-                            Res.string.text_view
-                        )
+                        text =
+                            if (currentRequest.openable) stringResource(Res.string.link_view)
+                            else
+                                stringResource(
+                                    Res.string.text_view,
+                                ),
                     )
                 },
                 text = {
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 320.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
                         shape = MaterialTheme.shapes.small,
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {

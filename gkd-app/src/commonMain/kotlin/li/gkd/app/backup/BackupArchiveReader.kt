@@ -19,11 +19,12 @@ object BackupArchiveReader {
     }
 
     private fun copyArchive(open: () -> InputStream, archiveFile: File) {
-        val input = try {
-            open()
-        } catch (e: SecurityException) {
-            throw StorageException(BackupIssue.SourceAccessDenied, cause = e)
-        }
+        val input =
+            try {
+                open()
+            } catch (e: SecurityException) {
+                throw StorageException(BackupIssue.SourceAccessDenied, cause = e)
+            }
         input.use {
             archiveFile.outputStream().use { output ->
                 BoundedStreams.copy(input, output, MAX_ARCHIVE_BYTES) {

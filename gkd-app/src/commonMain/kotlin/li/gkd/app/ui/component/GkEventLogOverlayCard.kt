@@ -29,20 +29,20 @@ import li.gkd.db.A11yEventLog
 @Composable
 fun GkEventLogOverlayCard(
     eventLog: A11yEventLog,
+    text: List<String>,
     modifier: Modifier = Modifier,
-    appName: @Composable (String) -> Unit = { GkAppNameText(appId = it) }
+    appName: @Composable (String) -> Unit = { GkAppNameText(appId = it) },
 ) {
     val railColor = MaterialTheme.colorScheme.secondary
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .drawBehind {
+        modifier =
+            modifier.fillMaxWidth().drawBehind {
                 drawRect(color = railColor, size = Size(2.dp.toPx(), size.height))
-            }
+            },
     ) {
         Spacer(modifier = Modifier.width(6.dp))
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -52,16 +52,18 @@ fun GkEventLogOverlayCard(
                     text = eventLog.ctime.format("HH:mm:ss SSS"),
                 )
                 Spacer(
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .background(MaterialTheme.colorScheme.tertiary)
-                        .size(height = 8.dp, width = 1.dp)
+                    modifier =
+                        Modifier.padding(horizontal = 8.dp)
+                            .background(MaterialTheme.colorScheme.tertiary)
+                            .size(height = 8.dp, width = 1.dp),
                 )
                 appName(eventLog.appId)
             }
             Text(
                 text = eventLog.fixedName,
-                color = if (eventLog.isStateChanged) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                color =
+                    if (eventLog.isStateChanged) MaterialTheme.colorScheme.primary
+                    else Color.Unspecified,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.MiddleEllipsis,
@@ -70,35 +72,37 @@ fun GkEventLogOverlayCard(
             if (desc != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     GkIcon(
                         imageVector = GkIcons.Title,
-                        modifier = Modifier.iconTextSize(
-                            square = false
-                        ),
+                        modifier =
+                            Modifier.iconTextSize(
+                                square = false,
+                            ),
                     )
                     Text(
                         text = desc,
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = MaterialTheme.shapes.extraSmall,
-                            )
-                            .padding(horizontal = 2.dp),
+                        modifier =
+                            Modifier.background(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    shape = MaterialTheme.shapes.extraSmall,
+                                )
+                                .padding(horizontal = 2.dp),
                     )
                 }
             }
-            if (eventLog.text.isNotEmpty()) {
+            if (text.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     GkIcon(
                         imageVector = GkIcons.TextFields,
-                        modifier = Modifier.iconTextSize(
-                            square = false
-                        ),
+                        modifier =
+                            Modifier.iconTextSize(
+                                square = false,
+                            ),
                     )
                     // 如果祖先容器有设置了 height(IntrinsicSize.Min) 会导致 FlowRow 不会自动换行
                     FlowRow(
@@ -106,15 +110,15 @@ fun GkEventLogOverlayCard(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        eventLog.text.forEach { subText ->
+                        text.forEach { subText ->
                             Text(
                                 text = subText,
-                                modifier = Modifier
-                                    .background(
-                                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                                        shape = MaterialTheme.shapes.extraSmall,
-                                    )
-                                    .padding(horizontal = 2.dp),
+                                modifier =
+                                    Modifier.background(
+                                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                                            shape = MaterialTheme.shapes.extraSmall,
+                                        )
+                                        .padding(horizontal = 2.dp),
                             )
                         }
                     }

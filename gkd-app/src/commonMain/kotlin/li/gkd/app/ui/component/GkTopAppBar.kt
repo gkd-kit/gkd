@@ -27,17 +27,18 @@ fun GkTopAppBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     canScroll: Boolean = true,
 ) {
-    val actualScrollBehavior = if (canScroll || scrollBehavior == null) {
-        scrollBehavior
-    } else {
-        remember(scrollBehavior) {
-            object : TopAppBarScrollBehavior by scrollBehavior {
-                // disable inner scroll effect
-                override val isPinned: Boolean
-                    get() = true
+    val actualScrollBehavior =
+        if (canScroll || scrollBehavior == null) {
+            scrollBehavior
+        } else {
+            remember(scrollBehavior) {
+                object : TopAppBarScrollBehavior by scrollBehavior {
+                    // disable inner scroll effect
+                    override val isPinned: Boolean
+                        get() = true
+                }
             }
         }
-    }
     // SingleRowTopAppBar 内部 containerColor+scrolledContainerColor 合成了一个动画
     // 应用主题颜色更新时形成叠加动画，导致和周围正常组件视觉变换效果表现割裂
     key(MaterialTheme.colorScheme.primary) {

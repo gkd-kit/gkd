@@ -76,15 +76,15 @@ fun GkBatchActionMenuItem(
     DropdownMenuItem(
         text = { Text(text) },
         enabled = enabled,
-        colors = if (destructive) {
-            MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error)
-        } else {
-            MenuDefaults.itemColors()
-        },
+        colors =
+            if (destructive) {
+                MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error)
+            } else {
+                MenuDefaults.itemColors()
+            },
         onClick = {
             onDismiss()
             onClick()
         },
     )
 }
-

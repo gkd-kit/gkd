@@ -33,57 +33,64 @@ fun GkTermsAcceptDialog(
     val scope = rememberCoroutineScope()
     val onAgree: () -> Unit = {
         if (step == 0) step = 1
-        else scope.launch {
-            try {
-                onAccept()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                onError(e)
+        else
+            scope.launch {
+                try {
+                    onAccept()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    onError(e)
+                }
             }
-        }
     }
     val modifier = Modifier.fillMaxWidth()
-    val stepDataList = arrayOf(
-        stringResource(Res.string.terms_notice) to @Composable {
-            val linkStyles = TextLinkStyles(
-                style = SpanStyle(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            )
-            Text(
-                modifier = modifier,
-                text = buildAnnotatedString {
-                    append(stringResource(Res.string.terms_accept_prefix))
-                    withLink(
-                        LinkAnnotation.Url(
-                            AppLinks.TermsOfService,
-                            linkStyles
+    val stepDataList =
+        arrayOf(
+            stringResource(Res.string.terms_notice) to
+                @Composable {
+                    val linkStyles =
+                        TextLinkStyles(
+                            style =
+                                SpanStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                ),
                         )
-                    ) {
-                        append(stringResource(Res.string.user_agreement))
-                    }
-                    append(stringResource(Res.string.terms_accept_conjunction))
-                    withLink(
-                        LinkAnnotation.Url(
-                            AppLinks.PrivacyPolicy,
-                            linkStyles
-                        )
-                    ) {
-                        append(stringResource(Res.string.privacy_policy))
-                    }
-                    append(stringResource(Res.string.terms_accept_suffix))
+                    Text(
+                        modifier = modifier,
+                        text =
+                            buildAnnotatedString {
+                                append(stringResource(Res.string.terms_accept_prefix))
+                                withLink(
+                                    LinkAnnotation.Url(
+                                        AppLinks.TermsOfService,
+                                        linkStyles,
+                                    ),
+                                ) {
+                                    append(stringResource(Res.string.user_agreement))
+                                }
+                                append(stringResource(Res.string.terms_accept_conjunction))
+                                withLink(
+                                    LinkAnnotation.Url(
+                                        AppLinks.PrivacyPolicy,
+                                        linkStyles,
+                                    ),
+                                ) {
+                                    append(stringResource(Res.string.privacy_policy))
+                                }
+                                append(stringResource(Res.string.terms_accept_suffix))
+                            },
+                    )
                 },
-            )
-        },
-        stringResource(Res.string.a11y_about) to @Composable {
-            Text(
-                modifier = modifier,
-                text = stringResource(Res.string.a11y_usage_description),
-            )
-        }
-    )
+            stringResource(Res.string.a11y_about) to
+                @Composable {
+                    Text(
+                        modifier = modifier,
+                        text = stringResource(Res.string.a11y_usage_description),
+                    )
+                },
+        )
 
     GkAlertDialog(
         onDismissRequest = {},
@@ -100,6 +107,6 @@ fun GkTermsAcceptDialog(
             TextButton(onClick = onDisagree) {
                 Text(text = stringResource(Res.string.action_disagree))
             }
-        }
+        },
     )
 }

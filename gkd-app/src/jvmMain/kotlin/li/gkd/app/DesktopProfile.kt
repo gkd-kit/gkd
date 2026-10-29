@@ -13,7 +13,6 @@ import androidx.compose.ui.text.platform.Font
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.float
 import kotlinx.serialization.json.int
@@ -25,44 +24,64 @@ import org.jetbrains.skia.Image
 
 /** Local development imports are intentionally kept outside source control. */
 object DesktopProfile {
-    val directory get() = DesktopStorage.profile
+    val directory
+        get() = DesktopStorage.profile
+
     private val json = Json { ignoreUnknownKeys = true }
-    private fun read(name: String) = directory.resolve(name).takeIf { it.isFile }?.readText()
-        ?.let { json.parseToJsonElement(it).jsonObject } ?: JsonObject(emptyMap())
+
+    private fun read(name: String) =
+        directory
+            .resolve(name)
+            .takeIf { it.isFile }
+            ?.readText()
+            ?.let { json.parseToJsonElement(it).jsonObject } ?: JsonObject(emptyMap())
 
     private val profile = read("profile.json")
     val settings = read("settings.json")
     private val seed = read("seed.json")
     val blocked = seed["blocked"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty()
-    val subscriptionEnabled = seed["subscriptions"]?.jsonObject
-        ?.mapKeys { it.key.toLong() }?.mapValues { it.value.jsonPrimitive.boolean }.orEmpty()
+    val subscriptionEnabled =
+        seed["subscriptions"]
+            ?.jsonObject
+            ?.mapKeys { it.key.toLong() }
+            ?.mapValues { it.value.jsonPrimitive.boolean }
+            .orEmpty()
 
     val launcherAppId = profile["launcherAppId"]?.jsonPrimitive?.contentOrNull.orEmpty()
     val webViewEnvironmentJson by lazy {
         WebViewEnvironment(
-            platform = "desktop",
-            appId = META.appId,
-            appName = META.appName,
-            versionCode = META.versionCode,
-            versionName = META.versionName,
-            channel = META.channel,
-            debuggable = META.debuggable,
-        ).toJson()
+                platform = "desktop",
+                appId = META.appId,
+                appName = META.appName,
+                versionCode = META.versionCode,
+                versionName = META.versionName,
+                channel = META.channel,
+                debuggable = META.debuggable,
+            )
+            .toJson()
     }
-    val statusBar = profile["statusBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.statusBarHeight
-    val navigationBar = profile["navigationBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.navigationBarHeight
-    val environment = DesktopEnvironment(
-        width = profile["width"]?.jsonPrimitive?.int ?: defaultSimulatedDevice.width,
-        height = profile["height"]?.jsonPrimitive?.int ?: defaultSimulatedDevice.height,
-        fontScale = profile["fontScale"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.fontScale,
-        dark = profile["dark"]?.jsonPrimitive?.boolean ?: false,
-        android = AndroidWindow(statusBarHeight = statusBar, navigationBarHeight = navigationBar),
-    )
+    val statusBar =
+        profile["statusBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.statusBarHeight
+    val navigationBar =
+        profile["navigationBar"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.navigationBarHeight
+    val environment =
+        DesktopEnvironment(
+            width = profile["width"]?.jsonPrimitive?.int ?: defaultSimulatedDevice.width,
+            height = profile["height"]?.jsonPrimitive?.int ?: defaultSimulatedDevice.height,
+            fontScale =
+                profile["fontScale"]?.jsonPrimitive?.float ?: defaultSimulatedDevice.fontScale,
+            dark = profile["dark"]?.jsonPrimitive?.boolean ?: false,
+            android =
+                AndroidWindow(statusBarHeight = statusBar, navigationBarHeight = navigationBar),
+        )
 
     fun readIcon(id: String): BitmapPainter? =
-        directory.resolve("icons/$id.png").takeIf { it.isFile }?.let {
-            BitmapPainter(Image.makeFromEncoded(it.readBytes()).toComposeImageBitmap())
-        }
+        directory
+            .resolve("icons/$id.png")
+            .takeIf { it.isFile }
+            ?.let {
+                BitmapPainter(Image.makeFromEncoded(it.readBytes()).toComposeImageBitmap())
+            }
 
     fun colors(dark: Boolean, dynamic: Boolean): ColorScheme {
         val base = if (dark) darkColorScheme() else lightColorScheme()
@@ -105,24 +124,27 @@ object DesktopProfile {
             surfaceDim = color("surfaceDim", base.surfaceDim),
             surfaceContainer = color("surfaceContainer", base.surfaceContainer),
             surfaceContainerHigh = color("surfaceContainerHigh", base.surfaceContainerHigh),
-            surfaceContainerHighest = color(
-                "surfaceContainerHighest",
-                base.surfaceContainerHighest
-            ),
+            surfaceContainerHighest =
+                color(
+                    "surfaceContainerHighest",
+                    base.surfaceContainerHighest,
+                ),
             surfaceContainerLow = color("surfaceContainerLow", base.surfaceContainerLow),
-            surfaceContainerLowest = color("surfaceContainerLowest", base.surfaceContainerLowest)
+            surfaceContainerLowest = color("surfaceContainerLowest", base.surfaceContainerLowest),
         )
     }
 
     val typography: Typography by lazy {
         val base = Typography()
-        val file = directory.resolve("DeviceSans.ttf").takeIf { it.isFile }
-            ?: directory.resolve("MiSansVF.ttf")
-        val family = if (file.isFile) FontFamily(
-            Font(file, weight = FontWeight.Normal),
-            Font(file, weight = FontWeight.Medium),
-            Font(file, weight = FontWeight.Bold),
-        ) else FontFamily.Default
+        val file = directory.resolve("DeviceSans.ttf")
+        val family =
+            if (file.isFile)
+                FontFamily(
+                    Font(file, weight = FontWeight.Normal),
+                    Font(file, weight = FontWeight.Medium),
+                    Font(file, weight = FontWeight.Bold),
+                )
+            else FontFamily.Default
         base.copy(
             displayLarge = base.displayLarge.copy(fontFamily = family),
             displayMedium = base.displayMedium.copy(fontFamily = family),
@@ -138,13 +160,7 @@ object DesktopProfile {
             bodySmall = base.bodySmall.copy(fontFamily = family),
             labelLarge = base.labelLarge.copy(fontFamily = family),
             labelMedium = base.labelMedium.copy(fontFamily = family),
-            labelSmall = base.labelSmall.copy(fontFamily = family)
+            labelSmall = base.labelSmall.copy(fontFamily = family),
         )
     }
-
-    fun boolean(key: String, fallback: Boolean) =
-        settings[key]?.jsonPrimitive?.booleanOrNull ?: fallback
-
-    fun text(key: String, fallback: String) =
-        settings[key]?.jsonPrimitive?.contentOrNull ?: fallback
 }

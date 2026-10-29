@@ -12,31 +12,36 @@ sealed class BottomNavItem(
     val labelResource: StringResource,
     val icon: ImageVector,
 ) {
-    val label: String @Composable get() = stringResource(labelResource)
+    val label: String
+        @Composable get() = stringResource(labelResource)
 
-    object Dashboard : BottomNavItem(
-        key = 0,
-        labelResource = Res.string.home_title,
-        icon = GkIcons.Home,
-    )
+    object Dashboard :
+        BottomNavItem(
+            key = 0,
+            labelResource = Res.string.home_title,
+            icon = GkIcons.Home,
+        )
 
-    object SubsManage : BottomNavItem(
-        key = 1,
-        labelResource = Res.string.subscription_title,
-        icon = GkIcons.StackedDocuments,
-    )
+    object SubsManage :
+        BottomNavItem(
+            key = 1,
+            labelResource = Res.string.subscription_title,
+            icon = GkIcons.StackedDocuments,
+        )
 
-    object AppList : BottomNavItem(
-        key = 2,
-        labelResource = Res.string.apps_title,
-        icon = GkIcons.Android,
-    )
+    object AppList :
+        BottomNavItem(
+            key = 2,
+            labelResource = Res.string.apps_title,
+            icon = GkIcons.Android,
+        )
 
-    object Settings : BottomNavItem(
-        key = 3,
-        labelResource = Res.string.settings_title,
-        icon = GkIcons.Settings,
-    )
+    object Settings :
+        BottomNavItem(
+            key = 3,
+            labelResource = Res.string.settings_title,
+            icon = GkIcons.Settings,
+        )
 
     companion object {
         val allSubObjects by lazy { arrayOf(Dashboard, SubsManage, AppList, Settings) }

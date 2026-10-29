@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import li.gkd.app.META
@@ -31,6 +30,7 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -59,32 +59,39 @@ fun QuickSettingsTilesPage() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             TileDescription(
-                GkIcons.TileStatus, META.appName,
+                GkIcons.TileStatus,
+                META.appName,
                 stringResource(Res.string.quick_settings_tile_status_description),
             )
             TileDescription(
-                GkIcons.TileCapture, stringResource(Res.string.quick_settings_tile_capture_title),
+                GkIcons.TileCapture,
+                stringResource(Res.string.quick_settings_tile_capture_title),
                 stringResource(Res.string.quick_settings_tile_capture_description),
                 singleAction = true,
             )
             TileDescription(
-                GkIcons.TileHttp, stringResource(Res.string.http_service_compact_label),
-                stringResource(Res.string.quick_settings_tile_http_description),
+                GkIcons.TileDebug,
+                stringResource(Res.string.debug_service_compact_label),
+                stringResource(Res.string.quick_settings_tile_debug_description),
             )
             TileDescription(
-                GkIcons.TileButton, stringResource(Res.string.snapshot_button_label),
+                GkIcons.TileButton,
+                stringResource(Res.string.snapshot_button_label),
                 stringResource(Res.string.quick_settings_tile_button_description),
             )
             TileDescription(
-                GkIcons.FlashOn, stringResource(Res.string.rule_matching_label),
+                GkIcons.FlashOn,
+                stringResource(Res.string.rule_matching_label),
                 stringResource(Res.string.quick_settings_tile_match_description),
             )
             TileDescription(
-                GkIcons.TileActivity, stringResource(Res.string.activity_service_label),
+                GkIcons.TileActivity,
+                stringResource(Res.string.activity_service_label),
                 stringResource(Res.string.quick_settings_tile_activity_description),
             )
             TileDescription(
-                GkIcons.TileEvent, stringResource(Res.string.event_service_label),
+                GkIcons.TileEvent,
+                stringResource(Res.string.event_service_label),
                 stringResource(Res.string.quick_settings_tile_event_description),
             )
             GkPageBottomSpace()
@@ -100,15 +107,19 @@ private fun TileDescription(
     singleAction: Boolean = false,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .semantics(mergeDescendants = true) {}
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Box(
-            modifier = Modifier.size(48.dp).background(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(16.dp),
-            ),
+            modifier =
+                Modifier.size(48.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = RoundedCornerShape(16.dp),
+                    ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

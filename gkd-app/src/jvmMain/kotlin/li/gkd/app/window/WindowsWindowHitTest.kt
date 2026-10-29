@@ -3,7 +3,9 @@ package li.gkd.app.window
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 
-/** All coordinates are physical client pixels, including on monitors left of the primary display. */
+/**
+ * All coordinates are physical client pixels, including on monitors left of the primary display.
+ */
 data class WindowsWindowHitTest(
     val title: Rect = Rect.Zero,
     val minimize: Rect = Rect.Zero,
@@ -30,9 +32,12 @@ data class WindowsWindowHitTest(
         }
         val point = Offset(x, y)
         return when {
-            maximize.contains(point) -> WindowsConstants.HTMAXBUTTON // HTMAXBUTTON enables Windows 11 Snap Layouts.
-            minimize.contains(point) || close.contains(point) || settings.contains(point) -> WindowsConstants.HTCLIENT // Compose handles these buttons.
-            title.contains(point) -> WindowsConstants.HTCAPTION // HTCAPTION: native drag, double click and system menu.
+            maximize.contains(point) ->
+                WindowsConstants.HTMAXBUTTON // HTMAXBUTTON enables Windows 11 Snap Layouts.
+            minimize.contains(point) || close.contains(point) || settings.contains(point) ->
+                WindowsConstants.HTCLIENT // Compose handles these buttons.
+            title.contains(point) ->
+                WindowsConstants.HTCAPTION // HTCAPTION: native drag, double click and system menu.
             else -> WindowsConstants.HTCLIENT
         }
     }

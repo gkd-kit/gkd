@@ -1,8 +1,8 @@
 package li.gkd.app.priv
 
-import li.gkd.app.util.LogUtils
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
+import li.gkd.app.logging.LogUtils
 
 object HiddenApiDetect {
     fun detectHiddenClass(className: String): Boolean {
@@ -34,7 +34,7 @@ fun KClass<*>.detectHiddenMethod(
     if (namedMethods.isEmpty()) {
         throw NoSuchMethodException("${targetClass.name}::$methodName not found")
     }
-    LogUtils.d("detectHiddenMethod", *namedMethods.map { it.simpleString() }.toTypedArray())
+    LogUtils.w("detectHiddenMethod", *namedMethods.map { it.simpleString() }.toTypedArray())
     throw NoSuchMethodException("${targetClass.name}::${methodName} not match")
 }
 

@@ -46,10 +46,11 @@ fun GkWebViewErrorContent(
         ) {
             SelectionContainer {
                 Text(
-                    url, modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
+                    url,
+                    modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
             Spacer(Modifier.height(16.dp))
@@ -57,15 +58,18 @@ fun GkWebViewErrorContent(
                 stringResource(Res.string.webview_load_failed_description),
                 modifier = Modifier.widthIn(max = 360.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(16.dp))
             SelectionContainer {
                 Text(
-                    errorText, modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
+                    errorText,
+                    modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center,
                 )
             }
             Spacer(Modifier.height(28.dp))
@@ -74,7 +78,9 @@ fun GkWebViewErrorContent(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(Res.string.webview_retry))
             }
-            TextButton(onClick = onOpenExternal) { Text(stringResource(Res.string.link_open_external)) }
+            TextButton(onClick = onOpenExternal) {
+                Text(stringResource(Res.string.link_open_external))
+            }
             extraContent()
             GkPageBottomSpace()
         }

@@ -10,6 +10,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,8 +21,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class ActivityResultRequests {
     private val activityRequest = SuspendedActivityResultRequest<Intent, ActivityResult>()
@@ -46,21 +46,24 @@ class ActivityResultRequests {
     class Host(
         private val activity: ComponentActivity,
     ) : DefaultLifecycleObserver {
-        private val activityLauncher = registerLauncher(
-            ActivityResultContracts.StartActivityForResult(),
-        ) { requests, result ->
-            requests.activityRequest.resume(result)
-        }
-        private val documentLauncher = registerLauncher(
-            ActivityResultContracts.OpenDocument(),
-        ) { requests, result ->
-            requests.documentRequest.resume(result)
-        }
-        private val imageLauncher = registerLauncher(
-            ActivityResultContracts.PickVisualMedia(),
-        ) { requests, result ->
-            requests.imageRequest.resume(result)
-        }
+        private val activityLauncher =
+            registerLauncher(
+                ActivityResultContracts.StartActivityForResult(),
+            ) { requests, result ->
+                requests.activityRequest.resume(result)
+            }
+        private val documentLauncher =
+            registerLauncher(
+                ActivityResultContracts.OpenDocument(),
+            ) { requests, result ->
+                requests.documentRequest.resume(result)
+            }
+        private val imageLauncher =
+            registerLauncher(
+                ActivityResultContracts.PickVisualMedia(),
+            ) { requests, result ->
+                requests.imageRequest.resume(result)
+            }
 
         private var requests: ActivityResultRequests? = null
         private val bindingJobs = mutableListOf<Job>()
@@ -74,15 +77,18 @@ class ActivityResultRequests {
             bindingJobs.forEach { it.cancel() }
             bindingJobs.clear()
             this.requests = requests
-            bindingJobs += bindRequest(requests.activityRequest) { input ->
-                activityLauncher.launch(input)
-            }
-            bindingJobs += bindRequest(requests.documentRequest) { input ->
-                documentLauncher.launch(input)
-            }
-            bindingJobs += bindRequest(requests.imageRequest) { input ->
-                imageLauncher.launch(input)
-            }
+            bindingJobs +=
+                bindRequest(requests.activityRequest) { input ->
+                    activityLauncher.launch(input)
+                }
+            bindingJobs +=
+                bindRequest(requests.documentRequest) { input ->
+                    documentLauncher.launch(input)
+                }
+            bindingJobs +=
+                bindRequest(requests.imageRequest) { input ->
+                    imageLauncher.launch(input)
+                }
         }
 
         override fun onDestroy(owner: LifecycleOwner) {
@@ -97,21 +103,22 @@ class ActivityResultRequests {
         private fun <I, O> registerLauncher(
             contract: ActivityResultContract<I, O>,
             onResult: (ActivityResultRequests, O) -> Unit,
-        ) = activity.registerForActivityResult(contract) { result ->
-            requests?.let { onResult(it, result) }
-        }
+        ) =
+            activity.registerForActivityResult(contract) { result ->
+                requests?.let { onResult(it, result) }
+            }
 
         private fun <I, O> bindRequest(
             request: SuspendedActivityResultRequest<I, O>,
             launch: (I) -> Unit,
-        ) = activity.lifecycleScope.launch {
-            request.pendingFlow.collect {
-                request.takeInputToLaunch()?.let { input ->
-                    runCatching { launch(input) }
-                        .onFailure(request::fail)
+        ) =
+            activity.lifecycleScope.launch {
+                request.pendingFlow.collect {
+                    request.takeInputToLaunch()?.let { input ->
+                        runCatching { launch(input) }.onFailure(request::fail)
+                    }
                 }
             }
-        }
     }
 
     private class SuspendedActivityResultRequest<I, O> {
@@ -129,73 +136,78 @@ class ActivityResultRequests {
         val pendingFlow: StateFlow<PendingRequest<I>?>
             field = MutableStateFlow(null)
 
-        suspend fun launchForResult(input: I): O = withContext(Dispatchers.Main.immediate) {
-            requestMutex.lock(mutexOwner)
-            ownsMutex = true
-            suspendCancellableCoroutine { continuation ->
-                if (!continuation.isActive) {
-                    releaseMutex()
-                    return@suspendCancellableCoroutine
-                }
-                synchronized(stateLock) {
-                    this@SuspendedActivityResultRequest.continuation = continuation
-                    pendingFlow.value = PendingRequest(input = input, launched = false)
-                }
-                continuation.invokeOnCancellation {
+        suspend fun launchForResult(input: I): O =
+            withContext(Dispatchers.Main.immediate) {
+                requestMutex.lock(mutexOwner)
+                ownsMutex = true
+                suspendCancellableCoroutine { continuation ->
+                    if (!continuation.isActive) {
+                        releaseMutex()
+                        return@suspendCancellableCoroutine
+                    }
                     synchronized(stateLock) {
-                        if (this@SuspendedActivityResultRequest.continuation === continuation) {
-                            this@SuspendedActivityResultRequest.continuation = null
-                            if (pendingFlow.value?.launched == false) {
-                                pendingFlow.value = null
-                                releaseMutex()
+                        this@SuspendedActivityResultRequest.continuation = continuation
+                        pendingFlow.value = PendingRequest(input = input, launched = false)
+                    }
+                    continuation.invokeOnCancellation {
+                        synchronized(stateLock) {
+                            if (this@SuspendedActivityResultRequest.continuation === continuation) {
+                                this@SuspendedActivityResultRequest.continuation = null
+                                if (pendingFlow.value?.launched == false) {
+                                    pendingFlow.value = null
+                                    releaseMutex()
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        fun takeInputToLaunch(): I? = synchronized(stateLock) {
-            val pending = pendingFlow.value ?: return@synchronized null
-            if (pending.launched) return@synchronized null
-            pendingFlow.value = pending.copy(launched = true)
-            pending.input
-        }
+        fun takeInputToLaunch(): I? =
+            synchronized(stateLock) {
+                val pending = pendingFlow.value ?: return@synchronized null
+                if (pending.launched) return@synchronized null
+                pendingFlow.value = pending.copy(launched = true)
+                pending.input
+            }
 
         fun resume(result: O) {
-            val currentContinuation = synchronized(stateLock) {
-                val current = continuation
-                continuation = null
-                pendingFlow.value = null
-                releaseMutex()
-                current
-            }
+            val currentContinuation =
+                synchronized(stateLock) {
+                    val current = continuation
+                    continuation = null
+                    pendingFlow.value = null
+                    releaseMutex()
+                    current
+                }
             if (currentContinuation?.isActive == true) {
                 currentContinuation.resume(result)
             }
         }
 
         fun fail(error: Throwable) {
-            val currentContinuation = synchronized(stateLock) {
-                val current = continuation
-                continuation = null
-                pendingFlow.value = null
-                releaseMutex()
-                current
-            }
+            val currentContinuation =
+                synchronized(stateLock) {
+                    val current = continuation
+                    continuation = null
+                    pendingFlow.value = null
+                    releaseMutex()
+                    current
+                }
             if (currentContinuation?.isActive == true) {
                 currentContinuation.resumeWithException(error)
             }
         }
 
         fun dispose() {
-            val currentContinuation = synchronized(stateLock) {
-                val current = continuation
-                continuation = null
-                pendingFlow.value = null
-                releaseMutex()
-                current
-            }
+            val currentContinuation =
+                synchronized(stateLock) {
+                    val current = continuation
+                    continuation = null
+                    pendingFlow.value = null
+                    releaseMutex()
+                    current
+                }
             currentContinuation?.cancel()
         }
 

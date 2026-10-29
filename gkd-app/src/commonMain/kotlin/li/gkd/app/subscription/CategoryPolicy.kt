@@ -5,26 +5,27 @@ object CategoryPolicy {
         subscription: RawSubscription,
         categoryKey: Int?,
         name: String,
-    ) {
-        require(subscription.isLocal) {
-            throw SubscriptionException(SubscriptionFailureReason.RemoteCategoryEditUnsupported)
+    ): SubscriptionFailureReason? {
+        if (!subscription.isLocal) {
+            return SubscriptionFailureReason.RemoteCategoryEditUnsupported
         }
         val trimmedName = name.trim()
-        require(trimmedName.isNotEmpty()) {
-            throw SubscriptionException(SubscriptionFailureReason.CategoryNameRequired)
+        if (trimmedName.isEmpty()) {
+            return SubscriptionFailureReason.CategoryNameRequired
         }
-        require(subscription.categories.none { it.key != categoryKey && it.name == trimmedName }) {
-            throw SubscriptionException(SubscriptionFailureReason.CategoryNameDuplicate)
+        if (subscription.categories.any { it.key != categoryKey && it.name == trimmedName }) {
+            return SubscriptionFailureReason.CategoryNameDuplicate
         }
         if (categoryKey == null) {
-            require((subscription.categories.maxOfOrNull { it.key } ?: -1) < Int.MAX_VALUE) {
-                throw SubscriptionException(SubscriptionFailureReason.CategoryKeyExhausted)
+            if ((subscription.categories.maxOfOrNull { it.key } ?: -1) == Int.MAX_VALUE) {
+                return SubscriptionFailureReason.CategoryKeyExhausted
             }
         } else {
-            check(subscription.categories.any { it.key == categoryKey }) {
-                throw SubscriptionException(SubscriptionFailureReason.CategoryMissing)
+            if (subscription.categories.none { it.key == categoryKey }) {
+                return SubscriptionFailureReason.CategoryMissing
             }
         }
+        return null
     }
 
     fun previewEdit(
@@ -32,21 +33,27 @@ object CategoryPolicy {
         categoryKey: Int?,
         name: String,
         description: String,
-    ): RawSubscription {
-        validateEdit(subscription, categoryKey, name)
+    ): SubscriptionEditResult<RawSubscription> {
+        validateEdit(subscription, categoryKey, name)?.let {
+            return SubscriptionEditResult.Rejected(it)
+        }
         val trimmedName = name.trim()
-        val category = if (categoryKey == null) {
-            val maxKey = subscription.categories.maxOfOrNull { it.key } ?: -1
-            RawSubscription.RawCategory(maxKey + 1, trimmedName, null, null)
-        } else {
-            subscription.categories.find { it.key == categoryKey } ?: throw SubscriptionException(SubscriptionFailureReason.CategoryMissing)
-        }
-        return subscription.edit {
-            putCategory(
-                category.copy(
-                    name = trimmedName,
-                    desc = description.trim().ifEmpty { null })
-            )
-        }
+        val category =
+            if (categoryKey == null) {
+                val maxKey = subscription.categories.maxOfOrNull { it.key } ?: -1
+                RawSubscription.RawCategory(maxKey + 1, trimmedName, null, null)
+            } else {
+                subscription.categories.first { it.key == categoryKey }
+            }
+        return SubscriptionEditResult.Success(
+            subscription.edit {
+                putCategory(
+                    category.copy(
+                        name = trimmedName,
+                        desc = description.trim().ifEmpty { null },
+                    ),
+                )
+            },
+        )
     }
 }

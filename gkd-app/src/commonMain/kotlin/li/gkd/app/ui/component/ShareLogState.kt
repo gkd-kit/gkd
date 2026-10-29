@@ -24,8 +24,13 @@ class ShareLogState(
 ) {
     private var visible by mutableStateOf(false)
 
-    fun show() { visible = true }
-    private fun dismiss() { visible = false }
+    fun show() {
+        visible = true
+    }
+
+    private fun dismiss() {
+        visible = false
+    }
 
     private fun share(host: UiHost) {
         dismiss()
@@ -41,12 +46,13 @@ class ShareLogState(
 
     private fun upload() {
         dismiss()
-        val item = GithubUploadItem(
-            label = Res.string.logs_title.getSync(),
-            getFile = ::createLogArchive,
-            showHref = { "http://i.gkd.li/log/${it.id}" },
-            releaseFile = { StorageMaintenance.deleteSharedFile(appStorage(), it) },
-        )
+        val item =
+            GithubUploadItem(
+                label = Res.string.logs_title.getSync(),
+                getFile = ::createLogArchive,
+                showHref = { "http://i.gkd.li/log/${it.id}" },
+                releaseFile = { StorageMaintenance.deleteSharedFile(appStorage(), it) },
+            )
         if (!githubUpload.startTask(item)) ToastUtils.show(Res.string.upload_busy.getSync())
     }
 

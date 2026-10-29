@@ -17,12 +17,15 @@ import kotlinx.serialization.Serializable
 @Entity(
     tableName = "subs_category_config",
     primaryKeys = ["subs_id", "category_key"],
-    foreignKeys = [ForeignKey(
-        entity = SubsItem::class,
-        parentColumns = ["id"],
-        childColumns = ["subs_id"],
-        onDelete = ForeignKey.CASCADE,
-    )],
+    foreignKeys =
+        [
+            ForeignKey(
+                entity = SubsItem::class,
+                parentColumns = ["id"],
+                childColumns = ["subs_id"],
+                onDelete = ForeignKey.CASCADE,
+            ),
+        ],
 )
 data class SubsCategoryConfig(
     @ColumnInfo(name = "enable") val enable: Boolean? = null,
@@ -35,25 +38,26 @@ data class SubsCategoryConfig(
         @Query("SELECT * FROM subs_category_config")
         suspend fun queryAll(): List<SubsCategoryConfig>
 
-        @Update
-        suspend fun update(vararg objects: SubsCategoryConfig): Int
+        @Update suspend fun update(vararg objects: SubsCategoryConfig): Int
 
-        @Upsert
-        suspend fun upsert(vararg objects: SubsCategoryConfig)
+        @Upsert suspend fun upsert(vararg objects: SubsCategoryConfig)
 
         @Insert(onConflict = OnConflictStrategy.IGNORE)
         suspend fun insertOrIgnore(vararg objects: SubsCategoryConfig): List<Long>
 
-        @Delete
-        suspend fun delete(vararg objects: SubsCategoryConfig): Int
+        @Delete suspend fun delete(vararg objects: SubsCategoryConfig): Int
 
         @Query("DELETE FROM subs_category_config WHERE subs_id IN (:subsIds)")
         suspend fun deleteBySubsId(vararg subsIds: Long): Int
 
-        @Query("DELETE FROM subs_category_config WHERE subs_id=:subsItemId AND category_key=:categoryKey")
+        @Query(
+            "DELETE FROM subs_category_config WHERE subs_id=:subsItemId AND category_key=:categoryKey",
+        )
         suspend fun deleteByCategoryKey(subsItemId: Long, categoryKey: Int): Int
 
-        @Query("SELECT * FROM subs_category_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
+        @Query(
+            "SELECT * FROM subs_category_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)",
+        )
         fun queryUsedList(): Flow<List<SubsCategoryConfig>>
 
         @Query("SELECT * FROM subs_category_config WHERE subs_id=:subsItemId")
@@ -64,6 +68,5 @@ data class SubsCategoryConfig(
 
         @Query("SELECT * FROM subs_category_config WHERE subs_id IN (:subsItemIds)")
         fun queryBySubsIds(subsItemIds: List<Long>): Flow<List<SubsCategoryConfig>>
-
     }
 }

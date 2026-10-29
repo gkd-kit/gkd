@@ -10,16 +10,12 @@ import priv.kit.core.Privilege
 class ProxyUiAutomationConnection(
     private val privilegeContext: PrivilegeContext,
 ) : IUiAutomationConnection.Stub() {
-    companion object {
-        private const val INITIAL_FROZEN_ROTATION_UNSPECIFIED = -1
-    }
-
     private val mLock = Any()
     private var mClient: IAccessibilityServiceClient? = null
-    private var mInitialFrozenRotation = INITIAL_FROZEN_ROTATION_UNSPECIFIED
     private var mIsShutdown = false
     private var mOwningUid = 0
-    private val serverInfo get() = privilegeContext.serverInfo
+    private val serverInfo
+        get() = privilegeContext.serverInfo
 
     override fun connect(
         client: IAccessibilityServiceClient?,
@@ -35,7 +31,6 @@ class ProxyUiAutomationConnection(
             }
             mOwningUid = serverInfo.uid
             registerUiTestAutomationServiceLocked(client, currentUserId, flags)
-            storeRotationStateLocked()
         }
     }
 
@@ -49,7 +44,6 @@ class ProxyUiAutomationConnection(
                 if (Privilege.pingServer()) {
                     throwIfCalledByNotTrustedUidLocked()
                     unregisterUiTestAutomationServiceLocked()
-                    restoreRotationStateLocked()
                 }
             } finally {
                 mOwningUid = -1
@@ -79,40 +73,23 @@ class ProxyUiAutomationConnection(
         val info = createUiAutomationServiceInfo()
         try {
             privilegeContext.registerUiTestAutomationService(
-                privilegeContext.serverLifecycleBinder, client, info, userId, flags,
+                privilegeContext.serverLifecycleBinder,
+                client,
+                info,
+                userId,
+                flags,
             )
             mClient = client
         } catch (re: RemoteException) {
             throw IllegalStateException(
-                "Error while registering UiTestAutomationService for "
-                        + "user " + userId + ".", re
+                "Error while registering UiTestAutomationService for " + "user " + userId + ".",
+                re,
             )
         }
     }
 
     private fun unregisterUiTestAutomationServiceLocked() {
         privilegeContext.unregisterUiTestAutomationService(requireNotNull(mClient))
-    }
-
-    private fun storeRotationStateLocked() {
-        try {
-            if (privilegeContext.isRotationFrozen()) {
-                mInitialFrozenRotation = privilegeContext.getDefaultDisplayRotation()
-            }
-        } catch (_: RemoteException) {
-        }
-    }
-
-    private fun restoreRotationStateLocked() {
-        try {
-            val caller = "UiAutomationConnection#restoreRotationStateLocked"
-            if (mInitialFrozenRotation != INITIAL_FROZEN_ROTATION_UNSPECIFIED) {
-                privilegeContext.freezeRotation(mInitialFrozenRotation, caller)
-            } else {
-                privilegeContext.thawRotation(caller)
-            }
-        } catch (_: RemoteException) {
-        }
     }
 
     private fun throwIfShutdownLocked() {

@@ -8,7 +8,6 @@ data class EditorSession(
     val title: String,
     val hasChanges: suspend () -> Boolean,
     val saveEnabled: Boolean = true,
-    val onSave: suspend () -> Unit,
+    val onSave: suspend () -> EditorSaveResult,
     val titleContent: @Composable () -> Unit = { Text(title) },
 )
-

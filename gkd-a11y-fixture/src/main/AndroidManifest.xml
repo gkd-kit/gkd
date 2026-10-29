@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application
+    android:label="GKD accessibility fixture"
+    android:debuggable="true"
+    android:theme="@android:style/Theme.Material.Light.NoActionBar"
+    android:allowBackup="false"
+  >
+    <activity
+      android:name=".FixtureActivity"
+      android:exported="true"
+      android:launchMode="singleTop"
+    />
+  </application>
+</manifest>

@@ -27,15 +27,22 @@ fun GkAppRuleRestrictionCard(
     if (whitelisted || partialDisabled) {
         Card(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                ),
         ) {
             if (whitelisted) {
                 RestrictionRow(
                     stringResource(Res.string.whitelist_member),
-                    if (partialFollowsWhitelist) stringResource(Res.string.app_rule_whitelist_follow_notice) else stringResource(
-                        Res.string.app_rule_whitelist_notice
-                    ),
-                    stringResource(Res.string.whitelist_remove), onRemoveWhitelist
+                    if (partialFollowsWhitelist)
+                        stringResource(Res.string.app_rule_whitelist_follow_notice)
+                    else
+                        stringResource(
+                            Res.string.app_rule_whitelist_notice,
+                        ),
+                    stringResource(Res.string.whitelist_remove),
+                    onRemoveWhitelist,
                 )
             }
             if (partialDisabled) {
@@ -43,7 +50,7 @@ fun GkAppRuleRestrictionCard(
                     stringResource(Res.string.app_rule_partial_disable_title),
                     stringResource(Res.string.app_rule_partial_disable_notice),
                     stringResource(Res.string.app_rule_partial_disable_remove),
-                    onRemovePartialDisable
+                    onRemovePartialDisable,
                 )
             }
         }
@@ -55,11 +62,11 @@ private fun RestrictionRow(
     title: String,
     description: String,
     action: String,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         GkIcon(GkIcons.Info, Modifier.size(24.dp), contentDescription = null)
         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {

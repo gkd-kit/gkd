@@ -44,7 +44,8 @@ data class DashboardPlatformState(
             when {
                 automationRunning -> Res.string.automation_running
                 !privilegeAvailable -> Res.string.automation_unauthorized
-                store.enableAutomator && partiallyDisabled -> Res.string.automation_partially_disabled
+                store.enableAutomator && partiallyDisabled ->
+                    Res.string.automation_partially_disabled
                 else -> Res.string.automation_stopped
             }
         }
@@ -52,11 +53,12 @@ data class DashboardPlatformState(
     fun authorizationRoute(enable: Boolean, store: SettingsStore, scope: Set<String>): AppRoute? =
         when {
             enable && usesA11y(store, scope) && !writeSecureSettings -> WorkModeRoute
-            enable && !usesA11y(store, scope) &&
-                    (!privilegeAvailable || privilegeCapabilities?.restricted == true) -> PrivilegeServiceRoute
+            enable &&
+                !usesA11y(store, scope) &&
+                (!privilegeAvailable || privilegeCapabilities?.restricted == true) ->
+                PrivilegeServiceRoute
             else -> null
         }
 }
 
-@androidx.compose.runtime.Composable
-expect fun dashboardPlatformState(): DashboardPlatformState
+@androidx.compose.runtime.Composable expect fun dashboardPlatformState(): DashboardPlatformState

@@ -17,6 +17,8 @@ kotlin-js-store
 *.keystore
 *.apk
 *.zip
+*.cache
 local.properties
 libs.versions.updates.toml
 /.local/
+/.temp/

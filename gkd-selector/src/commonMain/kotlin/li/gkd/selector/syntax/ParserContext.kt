@@ -1,6 +1,7 @@
 package li.gkd.selector.syntax
 
 import li.gkd.selector.SelectorPositionKind
+import li.gkd.selector.SourceMapped
 
 internal class ParserContext(
     source: String,
@@ -8,7 +9,7 @@ internal class ParserContext(
 ) {
     val cursor = ParserCursor(source)
 
-    inline fun <T : Any> positioned(
+    inline fun <T : SourceMapped> positioned(
         kind: SelectorPositionKind,
         block: () -> T,
     ): T {
@@ -19,7 +20,7 @@ internal class ParserContext(
     }
 
     fun record(
-        value: Any,
+        value: SourceMapped,
         kind: SelectorPositionKind,
         start: Int,
         end: Int = cursor.index,

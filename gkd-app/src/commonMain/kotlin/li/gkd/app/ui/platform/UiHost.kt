@@ -18,9 +18,8 @@ expect fun GkFullscreenDialog(
     content: @Composable () -> Unit,
 )
 
-@Composable
-expect fun inputInsets(): Modifier
+@Composable expect fun inputInsets(): Modifier
+
 expect fun UiHost.hideIme(): Boolean
 
-@Composable
-expect fun UiHost.GkSystemBars(visible: Boolean)
+@Composable expect fun UiHost.GkSystemBars(visible: Boolean)

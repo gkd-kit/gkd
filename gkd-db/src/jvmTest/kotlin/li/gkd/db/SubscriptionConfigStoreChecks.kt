@@ -16,26 +16,29 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 
 class SubscriptionConfigStoreChecks {
-    fun defaultAppScopeSurvivesOtherUpdatesAndResetsWithoutLosingOverrides() = withDatabase { db, store ->
-        db.subsItemDao().upsert(SubsItem(7, order = 0))
-        store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = false) }
-        assertEquals(false, db.subsGlobalGroupConfigDao().getConfig(7, 4)?.matchAnyApp)
-        coroutineScope {
-            awaitAll(
-                async { store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = true) } },
-                async { store.updateGlobalGroupConfig(7, 4) { it.copy(exclude = "!app.one") } },
+    fun defaultAppScopeSurvivesOtherUpdatesAndResetsWithoutLosingOverrides() =
+        withDatabase { db, store ->
+            db.subsItemDao().upsert(SubsItem(7, order = 0))
+            store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = false) }
+            assertEquals(false, db.subsGlobalGroupConfigDao().getConfig(7, 4)?.matchAnyApp)
+            coroutineScope {
+                awaitAll(
+                    async { store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = true) } },
+                    async { store.updateGlobalGroupConfig(7, 4) { it.copy(exclude = "!app.one") } },
+                )
+            }
+            assertEquals(
+                SubsGlobalGroupConfig(7, 4, exclude = "!app.one", matchAnyApp = true),
+                db.subsGlobalGroupConfigDao().getConfig(7, 4),
             )
+            val checkpoint = store.capture()
+            store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = null) }
+            assertEquals("!app.one", db.subsGlobalGroupConfigDao().getConfig(7, 4)?.exclude)
+            store.updateGlobalGroupConfig(7, 4) { it.copy(exclude = "") }
+            assertEquals(null, db.subsGlobalGroupConfigDao().getConfig(7, 4))
+            store.restore(checkpoint)
+            assertEquals(checkpoint, store.capture())
         }
-        assertEquals(SubsGlobalGroupConfig(7, 4, exclude = "!app.one", matchAnyApp = true),
-            db.subsGlobalGroupConfigDao().getConfig(7, 4))
-        val checkpoint = store.capture()
-        store.updateGlobalGroupConfig(7, 4) { it.copy(matchAnyApp = null) }
-        assertEquals("!app.one", db.subsGlobalGroupConfigDao().getConfig(7, 4)?.exclude)
-        store.updateGlobalGroupConfig(7, 4) { it.copy(exclude = "") }
-        assertEquals(null, db.subsGlobalGroupConfigDao().getConfig(7, 4))
-        store.restore(checkpoint)
-        assertEquals(checkpoint, store.capture())
-    }
 
     fun explicitAppAndGroupSettingsSurviveChangesToTheirDefaults() = withDatabase { db, store ->
         db.subsItemDao().upsert(SubsItem(7, order = 0))
@@ -57,7 +60,7 @@ class SubscriptionConfigStoreChecks {
             assertEquals(emptyList(), store.capture().appConfigs)
             assertEquals(
                 SubsAppGroupConfig(7, "app.one", 4, null, "app.Activity"),
-                db.subsAppGroupConfigDao().getConfig(7, "app.one", 4)
+                db.subsAppGroupConfigDao().getConfig(7, "app.one", 4),
             )
             assertEquals(sample().categoryConfigs, store.capture().categoryConfigs)
             assertEquals(sample().globalGroupConfigs, store.capture().globalGroupConfigs)
@@ -82,45 +85,54 @@ class SubscriptionConfigStoreChecks {
             assertEquals(before, store.capture())
         }
 
-    private fun withDatabase(block: suspend (AppDb, SubscriptionConfigStore) -> Unit) = runBlocking {
-        DatabaseStoreTestSession.clear()
-        block(Db.database, SubscriptionConfigStore)
-    }
+    private fun withDatabase(block: suspend (AppDb, SubscriptionConfigStore) -> Unit) =
+        runBlocking {
+            DatabaseStoreTestSession.clear()
+            block(Db.database, SubscriptionConfigStore)
+        }
 
-    private fun sample(subsId: Long = 7) = SubscriptionConfigSnapshot(
-        subsItems = listOf(SubsItem(subsId, ctime = 1, mtime = 2, enable = true, order = 0)),
-        appConfigs = listOf(SubsAppConfig(false, subsId, "app.one")),
-        categoryConfigs = listOf(SubsCategoryConfig(null, subsId, 3)),
-        appGroupConfigs = listOf(SubsAppGroupConfig(subsId, "app.one", 4, false, "app.Activity")),
-        globalGroupConfigs = listOf(SubsGlobalGroupConfig(subsId, 4, true, "app.two")),
-    )
+    private fun sample(subsId: Long = 7) =
+        SubscriptionConfigSnapshot(
+            subsItems = listOf(SubsItem(subsId, ctime = 1, mtime = 2, enable = true, order = 0)),
+            appConfigs = listOf(SubsAppConfig(false, subsId, "app.one")),
+            categoryConfigs = listOf(SubsCategoryConfig(null, subsId, 3)),
+            appGroupConfigs =
+                listOf(SubsAppGroupConfig(subsId, "app.one", 4, false, "app.Activity")),
+            globalGroupConfigs = listOf(SubsGlobalGroupConfig(subsId, 4, true, "app.two")),
+        )
 
     fun importingTwiceKeepsLocalBusinessKeysAndAddsOnlyMissingOverrides() =
         withDatabase { _, store ->
             val local = sample()
             store.merge(local)
-            val imported = local.copy(
-                appConfigs = listOf(
-                    SubsAppConfig(true, 7, "app.one"),
-                    SubsAppConfig(true, 99, "orphan")
-                ),
-                categoryConfigs = listOf(SubsCategoryConfig(false, 7, 3)),
-                appGroupConfigs = listOf(SubsAppGroupConfig(7, "app.one", 4, true, "changed")),
-                globalGroupConfigs = listOf(
-                    SubsGlobalGroupConfig(7, 4, false),
-                    SubsGlobalGroupConfig(7, 5, false)
-                ),
-            )
+            val imported =
+                local.copy(
+                    appConfigs =
+                        listOf(
+                            SubsAppConfig(true, 7, "app.one"),
+                            SubsAppConfig(true, 99, "orphan"),
+                        ),
+                    categoryConfigs = listOf(SubsCategoryConfig(false, 7, 3)),
+                    appGroupConfigs = listOf(SubsAppGroupConfig(7, "app.one", 4, true, "changed")),
+                    globalGroupConfigs =
+                        listOf(
+                            SubsGlobalGroupConfig(7, 4, false),
+                            SubsGlobalGroupConfig(7, 5, false),
+                        ),
+                )
             assertEquals(1, store.merge(imported))
             assertEquals(1, store.merge(imported))
             assertEquals(
                 local.copy(
-                    globalGroupConfigs = local.globalGroupConfigs + SubsGlobalGroupConfig(
-                        7,
-                        5,
-                        false
-                    )
-                ), store.capture()
+                    globalGroupConfigs =
+                        local.globalGroupConfigs +
+                            SubsGlobalGroupConfig(
+                                7,
+                                5,
+                                false,
+                            ),
+                ),
+                store.capture(),
             )
         }
 
@@ -172,7 +184,7 @@ class SubscriptionConfigStoreChecks {
                         assertEquals(
                             original.copy(
                                 appGroupConfigs = listOf(app),
-                                globalGroupConfigs = listOf(global)
+                                globalGroupConfigs = listOf(global),
                             ),
                             snapshots.receive(),
                         )
@@ -201,15 +213,22 @@ class SubscriptionConfigStoreChecks {
             db.subsItemDao().upsert(SubsItem(7, order = 0))
             coroutineScope {
                 List(40) { index ->
-                    async(Dispatchers.Default) {
-                        store.updateGlobalGroupConfig(7, 4) { current ->
-                            current.copy(exclude = current.exclude + "$index\n")
+                        async(Dispatchers.Default) {
+                            store.updateGlobalGroupConfig(7, 4) { current ->
+                                current.copy(exclude = current.exclude + "$index\n")
+                            }
                         }
                     }
-                }.awaitAll()
+                    .awaitAll()
             }
-            val actual = db.subsGlobalGroupConfigDao().getConfig(7, 4)!!.exclude
-                .lineSequence().filter { it.isNotEmpty() }.map { it.toInt() }.toSet()
+            val actual =
+                db.subsGlobalGroupConfigDao()
+                    .getConfig(7, 4)!!
+                    .exclude
+                    .lineSequence()
+                    .filter { it.isNotEmpty() }
+                    .map { it.toInt() }
+                    .toSet()
             assertEquals((0 until 40).toSet(), actual)
         }
 
@@ -236,11 +255,12 @@ class SubscriptionConfigStoreChecks {
             coroutineScope {
                 val importing = CompletableDeferred<Unit>()
                 val normalWriteStarted = CompletableDeferred<Unit>()
-                val normalWrite = async(Dispatchers.Default) {
-                    importing.await()
-                    normalWriteStarted.complete(Unit)
-                    db.subsItemDao().updateEnable(7, false)
-                }
+                val normalWrite =
+                    async(Dispatchers.Default) {
+                        importing.await()
+                        normalWriteStarted.complete(Unit)
+                        db.subsItemDao().updateEnable(7, false)
+                    }
                 assertFailsWith<IllegalStateException> {
                     db.withWriteTransaction {
                         store.merge(sample(8))
@@ -250,11 +270,13 @@ class SubscriptionConfigStoreChecks {
                     }
                 }
                 withTimeout(5_000) { normalWrite.await() }
-                val expected = sample().let { original ->
-                    original.copy(subsItems = original.subsItems.map { it.copy(enable = false) })
-                }
+                val expected =
+                    sample().let { original ->
+                        original.copy(
+                            subsItems = original.subsItems.map { it.copy(enable = false) },
+                        )
+                    }
                 assertEquals(expected, store.capture())
             }
         }
-
 }

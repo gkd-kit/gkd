@@ -1,10 +1,10 @@
 package li.gkd.app.ui.snapshot
 
-import li.gkd.app.snapshot.SnapshotDisplayMode
-import li.gkd.db.Snapshot
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import li.gkd.app.snapshot.SnapshotDisplayMode
+import li.gkd.db.Snapshot
 
 data class SnapshotGroup(
     val key: String,
@@ -21,22 +21,24 @@ fun buildSnapshotGroups(
 ): List<SnapshotGroup> {
     val sorted = snapshots.sortedByDescending { it.id }
     return when (displayMode) {
-        SnapshotDisplayMode.ByTime -> sorted
-            .groupBy { Instant.ofEpochMilli(it.id).atZone(zoneId).toLocalDate() }
-            .map { (date, items) ->
-                val title = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                SnapshotGroup(key = "date:$title", title = title, snapshots = items)
-            }
+        SnapshotDisplayMode.ByTime ->
+            sorted
+                .groupBy { Instant.ofEpochMilli(it.id).atZone(zoneId).toLocalDate() }
+                .map { (date, items) ->
+                    val title = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    SnapshotGroup(key = "date:$title", title = title, snapshots = items)
+                }
 
-        SnapshotDisplayMode.ByApp -> sorted
-            .groupBy { it.appId }
-            .map { (appId, items) ->
-                SnapshotGroup(
-                    key = "app:$appId",
-                    title = appNames[appId] ?: appId,
-                    snapshots = items,
-                    appId = appId,
-                )
-            }
+        SnapshotDisplayMode.ByApp ->
+            sorted
+                .groupBy { it.appId }
+                .map { (appId, items) ->
+                    SnapshotGroup(
+                        key = "app:$appId",
+                        title = appNames[appId] ?: appId,
+                        snapshots = items,
+                        appId = appId,
+                    )
+                }
     }
 }

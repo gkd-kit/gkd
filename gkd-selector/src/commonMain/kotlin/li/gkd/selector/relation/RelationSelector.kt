@@ -2,12 +2,13 @@ package li.gkd.selector.relation
 
 import li.gkd.selector.MatchContext
 import li.gkd.selector.NodeAdapter
+import li.gkd.selector.SourceMapped
 import li.gkd.selector.TraversalCandidate
 
 internal class RelationSelector(
     val operator: RelationOperator = RelationOperator.Ancestor,
     val relationExpression: RelationExpression = PolynomialExpression(),
-) {
+) : SourceMapped {
     fun <T : Any> traversal(
         context: MatchContext<T>,
         adapter: NodeAdapter<T>,

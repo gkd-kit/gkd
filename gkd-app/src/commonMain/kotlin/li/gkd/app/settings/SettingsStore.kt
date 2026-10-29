@@ -3,8 +3,8 @@ package li.gkd.app.settings
 import kotlinx.serialization.Serializable
 import li.gkd.app.app.AppGroupFlags
 import li.gkd.app.app.AppSort
-import li.gkd.app.rule.RuleSort
 import li.gkd.app.rule.RuleDisplayMode
+import li.gkd.app.rule.RuleSort
 import li.gkd.app.snapshot.SnapshotDisplayMode
 
 @Serializable
@@ -60,6 +60,9 @@ data class SettingsStore(
     val showDisabledRule: Boolean = true,
     val snapshotDisplayMode: Int = SnapshotDisplayMode.ByTime.value,
 ) {
-    val useA11y get() = automatorMode == AutomatorMode.A11y.value
-    val useAutomation get() = automatorMode == AutomatorMode.Automation.value
+    val useA11y
+        get() = automatorMode == AutomatorMode.A11y.value
+
+    val useAutomation
+        get() = automatorMode == AutomatorMode.Automation.value
 }

@@ -26,81 +26,99 @@ fun GkSwitch(
     enabled: Boolean = true,
     colors: SwitchColors = SwitchDefaults.colors(),
     interactionSource: MutableInteractionSource? = null,
-) = key(key, MaterialTheme.colorScheme.primary) {
-    // Theme colors already animate in GkTheme. Reset internal animation state as they
-    // change so Switch does not add a second color transition on top of that animation.
-    // The shared theme projection defers theme updates until after the ordinary toggle transition.
-    val thumbColor by animateColorAsState(
-        targetValue = with(colors) {
-            if (enabled) {
-                if (checked) checkedThumbColor else uncheckedThumbColor
-            } else {
-                if (checked) disabledCheckedThumbColor else disabledUncheckedThumbColor
-            }
-        },
-        animationSpec = tween(180), label = "switchThumbColor",
-    )
-    val trackColor by animateColorAsState(
-        targetValue = with(colors) {
-            if (enabled) {
-                if (checked) checkedTrackColor else uncheckedTrackColor
-            } else {
-                if (checked) disabledCheckedTrackColor else disabledUncheckedTrackColor
-            }
-        },
-        animationSpec = tween(180), label = "switchTrackColor",
-    )
-    val borderColor by animateColorAsState(
-        targetValue = with(colors) {
-            if (enabled) {
-                if (checked) checkedBorderColor else uncheckedBorderColor
-            } else {
-                if (checked) disabledCheckedBorderColor else disabledUncheckedBorderColor
-            }
-        },
-        animationSpec = tween(180), label = "switchBorderColor",
-    )
-    val iconColor by animateColorAsState(
-        targetValue = with(colors) {
-            if (enabled) {
-                if (checked) checkedIconColor else uncheckedIconColor
-            } else {
-                if (checked) disabledCheckedIconColor else disabledUncheckedIconColor
-            }
-        },
-        animationSpec = tween(180), label = "switchIconColor",
-    )
-    // Feed every state slot the animated value so an enabled/checked change cannot
-    // switch Material's color lookup to an unanimated slot mid-transition.
-    val animatedColors = SwitchColors(
-        checkedThumbColor = thumbColor,
-        checkedTrackColor = trackColor,
-        checkedBorderColor = borderColor,
-        checkedIconColor = iconColor,
-        uncheckedThumbColor = thumbColor,
-        uncheckedTrackColor = trackColor,
-        uncheckedBorderColor = borderColor,
-        uncheckedIconColor = iconColor,
-        disabledCheckedThumbColor = thumbColor,
-        disabledCheckedTrackColor = trackColor,
-        disabledCheckedBorderColor = borderColor,
-        disabledCheckedIconColor = iconColor,
-        disabledUncheckedThumbColor = thumbColor,
-        disabledUncheckedTrackColor = trackColor,
-        disabledUncheckedBorderColor = borderColor,
-        disabledUncheckedIconColor = iconColor,
-    )
-    val description =
-        if (checked) stringResource(Res.string.turned_on) else stringResource(Res.string.turned_off)
-    Switch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = modifier.semantics {
-            stateDescription = description
-        },
-        thumbContent = thumbContent,
-        enabled = enabled,
-        colors = animatedColors,
-        interactionSource = interactionSource,
-    )
-}
+) =
+    key(key, MaterialTheme.colorScheme.primary) {
+        // Theme colors already animate in GkTheme. Reset internal animation state as they
+        // change so Switch does not add a second color transition on top of that animation.
+        // The shared theme projection defers theme updates until after the ordinary toggle
+        // transition.
+        val thumbColor by
+            animateColorAsState(
+                targetValue =
+                    with(colors) {
+                        if (enabled) {
+                            if (checked) checkedThumbColor else uncheckedThumbColor
+                        } else {
+                            if (checked) disabledCheckedThumbColor else disabledUncheckedThumbColor
+                        }
+                    },
+                animationSpec = tween(180),
+                label = "switchThumbColor",
+            )
+        val trackColor by
+            animateColorAsState(
+                targetValue =
+                    with(colors) {
+                        if (enabled) {
+                            if (checked) checkedTrackColor else uncheckedTrackColor
+                        } else {
+                            if (checked) disabledCheckedTrackColor else disabledUncheckedTrackColor
+                        }
+                    },
+                animationSpec = tween(180),
+                label = "switchTrackColor",
+            )
+        val borderColor by
+            animateColorAsState(
+                targetValue =
+                    with(colors) {
+                        if (enabled) {
+                            if (checked) checkedBorderColor else uncheckedBorderColor
+                        } else {
+                            if (checked) disabledCheckedBorderColor
+                            else disabledUncheckedBorderColor
+                        }
+                    },
+                animationSpec = tween(180),
+                label = "switchBorderColor",
+            )
+        val iconColor by
+            animateColorAsState(
+                targetValue =
+                    with(colors) {
+                        if (enabled) {
+                            if (checked) checkedIconColor else uncheckedIconColor
+                        } else {
+                            if (checked) disabledCheckedIconColor else disabledUncheckedIconColor
+                        }
+                    },
+                animationSpec = tween(180),
+                label = "switchIconColor",
+            )
+        // Feed every state slot the animated value so an enabled/checked change cannot
+        // switch Material's color lookup to an unanimated slot mid-transition.
+        val animatedColors =
+            SwitchColors(
+                checkedThumbColor = thumbColor,
+                checkedTrackColor = trackColor,
+                checkedBorderColor = borderColor,
+                checkedIconColor = iconColor,
+                uncheckedThumbColor = thumbColor,
+                uncheckedTrackColor = trackColor,
+                uncheckedBorderColor = borderColor,
+                uncheckedIconColor = iconColor,
+                disabledCheckedThumbColor = thumbColor,
+                disabledCheckedTrackColor = trackColor,
+                disabledCheckedBorderColor = borderColor,
+                disabledCheckedIconColor = iconColor,
+                disabledUncheckedThumbColor = thumbColor,
+                disabledUncheckedTrackColor = trackColor,
+                disabledUncheckedBorderColor = borderColor,
+                disabledUncheckedIconColor = iconColor,
+            )
+        val description =
+            if (checked) stringResource(Res.string.turned_on)
+            else stringResource(Res.string.turned_off)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier =
+                modifier.semantics {
+                    stateDescription = description
+                },
+            thumbContent = thumbContent,
+            enabled = enabled,
+            colors = animatedColors,
+            interactionSource = interactionSource,
+        )
+    }

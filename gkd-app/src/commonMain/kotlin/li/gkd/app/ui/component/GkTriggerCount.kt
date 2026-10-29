@@ -27,12 +27,16 @@ fun GkTriggerCount(
     val timeDescription = lastTriggerTime?.let {
         stringResource(Res.string.trigger_last_time, formatTimeAgo(it))
     }
-    val description = listOfNotNull(
-        stringResource(Res.string.trigger_count_value, text),
-        timeDescription,
-    ).joinToString("，")
+    val description =
+        listOfNotNull(
+                stringResource(Res.string.trigger_count_value, text),
+                timeDescription,
+            )
+            .joinToString("，")
     GkTooltipIconButtonBox(
-        if (showTooltip) timeDescription ?: stringResource(Res.string.notification_variable_triggers) else null
+        if (showTooltip)
+            timeDescription ?: stringResource(Res.string.notification_variable_triggers)
+        else null,
     ) {
         Row(
             modifier.clearAndSetSemantics { contentDescription = description },

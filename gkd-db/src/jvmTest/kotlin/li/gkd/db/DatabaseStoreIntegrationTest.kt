@@ -45,10 +45,14 @@ class DatabaseStoreIntegrationTest {
 }
 
 object DatabaseStoreTestSession {
-    private val root = generateSequence(File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
-        .first { it.resolve("settings.gradle.kts").isFile }
-    val path = root.resolve(".local/tests/desktop/database-${UUID.randomUUID()}/gkd.db")
-        .apply { parentFile.mkdirs() }.absolutePath
+    private val root =
+        generateSequence(File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
+            .first { it.resolve("settings.gradle.kts").isFile }
+    val path =
+        root
+            .resolve(".local/tests/desktop/database-${UUID.randomUUID()}/gkd.db")
+            .apply { parentFile.mkdirs() }
+            .absolutePath
 
     fun execute(sql: String) = BundledSQLiteDriver().open(path).use { it.execSQL(sql) }
 
@@ -57,8 +61,17 @@ object DatabaseStoreTestSession {
         BundledSQLiteDriver().open(path).use { connection ->
             connection.execSQL("DROP TRIGGER IF EXISTS fail_visit")
             connection.execSQL("DROP TRIGGER IF EXISTS fail_trim")
-            listOf("subs_app_config", "subs_category_config", "subs_app_group_config",
-                "subs_global_group_config", "subs_item", "app_last_visit", "action_log", "activity_log", "rule_trigger_stats")
+            listOf(
+                    "subs_app_config",
+                    "subs_category_config",
+                    "subs_app_group_config",
+                    "subs_global_group_config",
+                    "subs_item",
+                    "app_last_visit",
+                    "action_log",
+                    "activity_log",
+                    "rule_trigger_stats",
+                )
                 .forEach { connection.execSQL("DELETE FROM $it") }
         }
     }

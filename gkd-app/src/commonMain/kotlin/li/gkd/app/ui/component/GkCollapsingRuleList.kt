@@ -24,22 +24,25 @@ fun GkCollapsingRuleList(
     tabs: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        state = headerState,
-        snapAnimationSpec = null,
-    )
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+            state = headerState,
+            snapAnimationSpec = null,
+        )
     Column(modifier.fillMaxSize().gkTopAppBarScroll(scrollBehavior)) {
         Column(
-            Modifier.clipToBounds().layout { measurable, constraints ->
-                val placeable = measurable.measure(constraints.copy(minHeight = 0))
-                headerState.heightOffsetLimit = -placeable.height.toFloat()
-                // Reapply the offset so its setter clamps it to the new header height.
-                headerState.heightOffset = headerState.heightOffset
-                val offset = headerState.heightOffset.roundToInt()
-                layout(placeable.width, placeable.height + offset) {
-                    placeable.placeRelative(0, offset)
+            Modifier.clipToBounds()
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints.copy(minHeight = 0))
+                    headerState.heightOffsetLimit = -placeable.height.toFloat()
+                    // Reapply the offset so its setter clamps it to the new header height.
+                    headerState.heightOffset = headerState.heightOffset
+                    val offset = headerState.heightOffset.roundToInt()
+                    layout(placeable.width, placeable.height + offset) {
+                        placeable.placeRelative(0, offset)
+                    }
                 }
-            }.animateContentSize()
+                .animateContentSize()
                 .scrollable(rememberScrollableState { 0f }, Orientation.Vertical),
         ) {
             header()

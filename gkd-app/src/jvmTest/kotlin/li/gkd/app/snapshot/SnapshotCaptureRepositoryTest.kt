@@ -1,5 +1,13 @@
 package li.gkd.app.snapshot
 
+import java.io.IOException
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -10,31 +18,30 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.DeviceInfo
+import li.gkd.app.model.ScreenSize
 import li.gkd.app.platform.PlatformResult
+import li.gkd.app.storage.AppStorageLayout
 import li.gkd.db.Db
-import java.io.IOException
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
-class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppStorageLayout) {
+class SnapshotCaptureRepositoryTest(private val layout: AppStorageLayout) {
     fun missingScreenshotStillCommitsCompatibleFilesAndMetadata() = runBlocking {
         fixture { f ->
-            val result = f.capture(false) { input(SnapshotScreenshotStatus.Unavailable) }
+            val result =
+                assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(
+                        f.capture(false) { input(SnapshotScreenshotStatus.Unavailable) },
+                    )
+                    .value
             assertEquals(SnapshotScreenshotStatus.Unavailable, result.screenshotStatus)
             assertIs<SnapshotAutoExportResult.Disabled>(result.autoExport)
-            val saved = Json.decodeFromString<ComplexSnapshot>(
-                SnapshotStore.snapshotFile(result.snapshot.id).readText()
-            )
+            val saved =
+                Json.decodeFromString<ComplexSnapshot>(
+                    SnapshotStore.snapshotFile(result.snapshot.id).readText(),
+                )
             assertEquals(result.snapshot, saved)
             assertEquals(listOf(saved.toSnapshot()), Db.snapshotDao.query().first())
             assertContentEquals(
                 input().screenshot,
-                SnapshotStore.screenshotFile(saved.id).readBytes()
+                SnapshotStore.screenshotFile(saved.id).readBytes(),
             )
         }
     }
@@ -43,13 +50,17 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
         fixture { f ->
             val entered = CompletableDeferred<Unit>()
             val job = launch {
-                f.capture(false) { entered.complete(Unit); awaitCancellation() }
+                f.capture(false) {
+                    entered.complete(Unit)
+                    awaitCancellation()
+                }
             }
             withTimeout(10_000) { entered.await() }
             assertTrue(f.isCapturing)
-            assertFailsWith<SnapshotCaptureBusyException> {
-                f.capture(false) { error("Duplicate collector must not run") }
-            }
+            assertEquals(
+                SnapshotCaptureOutcome.Busy,
+                f.capture(false) { error("Duplicate collector must not run") },
+            )
             job.cancelAndJoin()
             assertFalse(f.isCapturing)
             assertTrue(Db.snapshotDao.query().first().isEmpty())
@@ -82,7 +93,11 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
 
     fun disabledExportCommitsSnapshotWithoutCreatingAnArchive() = runBlocking {
         fixture { repository ->
-            val result = repository.capture(false) { input() }
+            val result =
+                assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(
+                        repository.capture(false) { input() },
+                    )
+                    .value
             assertIs<SnapshotAutoExportResult.Disabled>(result.autoExport)
             assertTrue(layout.sharedCache.listFiles().orEmpty().isEmpty())
             assertEquals(1, Db.snapshotDao.query().first().size)
@@ -92,10 +107,15 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
     fun unsupportedExportPreservesSnapshotAndCleansArchive() = runBlocking {
         fixture { repository ->
             val result =
-                repository.capture(true) { input(SnapshotScreenshotStatus.LikelyProtected) }
+                assertIs<SnapshotCaptureOutcome.Captured<SnapshotCaptureResult>>(
+                        repository.capture(true) {
+                            input(SnapshotScreenshotStatus.LikelyProtected)
+                        },
+                    )
+                    .value
             assertEquals(
                 PlatformResult.Unsupported,
-                assertIs<SnapshotAutoExportResult.Completed>(result.autoExport).result
+                assertIs<SnapshotAutoExportResult.Completed>(result.autoExport).result,
             )
             assertEquals(SnapshotScreenshotStatus.LikelyProtected, result.screenshotStatus)
             assertTrue(layout.sharedCache.listFiles().orEmpty().isEmpty())
@@ -116,8 +136,7 @@ class SnapshotCaptureRepositoryTest(private val layout: li.gkd.app.storage.AppSt
         SnapshotCaptureInput(
             "dev.capture",
             "dev.capture.Main",
-            2,
-            2,
+            ScreenSize(2, 2),
             false,
             emptyList(),
             null,

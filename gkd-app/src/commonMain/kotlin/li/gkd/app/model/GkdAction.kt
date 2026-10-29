@@ -1,6 +1,7 @@
 package li.gkd.app.model
 
 import kotlinx.serialization.Serializable
+import li.gkd.app.subscription.PositionError
 import li.gkd.app.subscription.RawSubscription
 
 @Serializable
@@ -18,5 +19,13 @@ data class ActionResult(
     val result: Boolean,
     val shell: Boolean = false,
     val position: Pair<Float, Float>? = null,
-)
-
+    val coordinateError: PositionError? = null,
+) {
+    val outcomeReason: String
+        get() =
+            when {
+                result -> "action_succeeded"
+                coordinateError != null -> "coordinate_calculation_failed"
+                else -> "action_failed"
+            }
+}

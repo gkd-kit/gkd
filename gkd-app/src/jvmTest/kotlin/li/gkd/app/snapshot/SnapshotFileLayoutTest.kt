@@ -1,15 +1,13 @@
 package li.gkd.app.snapshot
 
 import li.gkd.app.testing.TestFiles
-
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 class SnapshotFileLayoutTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder(TestFiles.root)
+    @get:Rule val temporaryFolder = TemporaryFolder(TestFiles.root)
 
     @Test
     fun committedEntryUsesCompatibleSnapshotPaths() {
@@ -33,8 +31,15 @@ class SnapshotFileLayoutTest {
         files.directory.mkdirs()
         files.legacyPngFile.writeBytes(
             byteArrayOf(
-                0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-            )
+                0x89.toByte(),
+                0x50,
+                0x4e,
+                0x47,
+                0x0d,
+                0x0a,
+                0x1a,
+                0x0a,
+            ),
         )
         files.webpFile.writeText("invalid")
 
@@ -42,8 +47,19 @@ class SnapshotFileLayoutTest {
 
         files.webpFile.writeBytes(
             byteArrayOf(
-                0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50,
-            )
+                0x52,
+                0x49,
+                0x46,
+                0x46,
+                0,
+                0,
+                0,
+                0,
+                0x57,
+                0x45,
+                0x42,
+                0x50,
+            ),
         )
 
         assertEquals(files.webpFile, files.screenshotFile)

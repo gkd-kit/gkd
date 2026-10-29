@@ -21,13 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import li.gkd.app.app.AppQuery
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
@@ -49,6 +50,7 @@ import li.gkd.app.ui.component.GkPageBottomSpaceDefaults
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.isFullVisible
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.icon.GkBackCloseIcon
@@ -56,8 +58,6 @@ import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.icon.LockOpenRight
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.option.AppGroupOption
-import li.gkd.app.app.AppSort
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -73,20 +73,30 @@ fun BlockA11yAppListPage(host: UiHost) {
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val searchStr by vm.searchStr.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf(searchStr) }
-    LaunchedEffect(searchStr) { delay(200); query = searchStr }
-    val source by vm.uiState.collectAsStateWithLifecycle()
-    val result = when (val loaded = source) {
-        is Loadable.Ready -> Loadable.Ready(
-            AppQuery.select(
-                loaded.value.apps, query, store.a11yAppGroupType, store.a11yAppSort,
-                actionOrder = loaded.value.actionOrder, visitOrder = loaded.value.visitOrder,
-                triggerCounts = loaded.value.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
-            )
-        )
-
-        is Loadable.Failure -> loaded
-        Loadable.Loading -> Loadable.Loading
+    LaunchedEffect(searchStr) {
+        delay(200)
+        query = searchStr
     }
+    val source by vm.uiState.collectAsStateWithLifecycle()
+    val result =
+        when (val loaded = source) {
+            is Loadable.Ready ->
+                Loadable.Ready(
+                    AppQuery.select(
+                        loaded.value.apps,
+                        query,
+                        store.a11yAppGroupType,
+                        store.a11yAppSort,
+                        actionOrder = loaded.value.actionOrder,
+                        visitOrder = loaded.value.visitOrder,
+                        triggerCounts =
+                            loaded.value.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
+                    ),
+                )
+
+            is Loadable.Failure -> loaded
+            Loadable.Loading -> Loadable.Loading
+        }
     val appInfos = result.value?.apps.orEmpty()
     val showAllApps = result.value?.showAllApps == true
     val editorState = vm.editorState
@@ -98,10 +108,13 @@ fun BlockA11yAppListPage(host: UiHost) {
     val scrollBehavior = pageScrollState.scrollBehavior
     val listState = pageScrollState.listState
     pageScrollState.ResetOnListChange(appInfos, key = { it.id })
-    GkBackHandler(editable, vm.scope.launchUiAction {
-        host.hideIme()
-        vm.closeEditor()
-    })
+    GkBackHandler(
+        editable,
+        vm.scope.launchUiAction {
+            host.hideIme()
+            vm.closeEditor()
+        },
+    )
     GkScaffold(
         modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
         topBar = {
@@ -110,10 +123,11 @@ fun BlockA11yAppListPage(host: UiHost) {
                 canScroll = !editable && !store.blockA11yAppListFollowMatch,
                 navigationIcon = {
                     IconButton(
-                        onClick = vm.scope.launchUiAction {
-                            host.hideIme()
-                            vm.onBack()
-                        }
+                        onClick =
+                            vm.scope.launchUiAction {
+                                host.hideIme()
+                                vm.onBack()
+                            },
                     ) {
                         GkBackCloseIcon(backOrClose = !editable)
                     }
@@ -133,11 +147,11 @@ fun BlockA11yAppListPage(host: UiHost) {
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
                     } else {
-                        val titleModifier = Modifier
-                            .noRippleClickable(
+                        val titleModifier =
+                            Modifier.noRippleClickable(
                                 onClick = {
                                     pageScrollState.resetScroll()
-                                }
+                                },
                             )
                         Text(
                             modifier = titleModifier,
@@ -153,10 +167,11 @@ fun BlockA11yAppListPage(host: UiHost) {
                             GkIconButton(
                                 imageVector = GkIcons.Check,
                                 contentDescription = stringResource(Res.string.action_save),
-                                onClick = vm.scope.launchUiAction {
-                                    host.hideIme()
-                                    vm.saveEditor()
-                                },
+                                onClick =
+                                    vm.scope.launchUiAction {
+                                        host.hideIme()
+                                        vm.saveEditor()
+                                    },
                             )
                         },
                         contentFalse = {
@@ -168,48 +183,52 @@ fun BlockA11yAppListPage(host: UiHost) {
                                             onClick = {
                                                 editorState.toggleSearch(
                                                     searchStr,
-                                                    { vm.setSearchStr(it.trim()) }
+                                                    { vm.setSearchStr(it.trim()) },
                                                 )
                                             },
                                             isSearchOpen = showSearchBar,
                                         )
-                                        GkFilterIconButton(filtered = !showAllApps, onClick = {
-                                            expanded = true
-                                        })
+                                        GkFilterIconButton(
+                                            filtered = !showAllApps,
+                                            onClick = {
+                                                expanded = true
+                                            },
+                                        )
                                     }
                                 }
                                 Box(
-                                    modifier = Modifier
-                                        .wrapContentSize(Alignment.TopStart)
+                                    modifier = Modifier.wrapContentSize(Alignment.TopStart),
                                 ) {
                                     DropdownMenu(
                                         expanded = expanded,
-                                        onDismissRequest = { expanded = false }
+                                        onDismissRequest = { expanded = false },
                                     ) {
                                         GkMenuGroupCard(
                                             inTop = true,
-                                            title = stringResource(Res.string.sort_title)
+                                            title = stringResource(Res.string.sort_title),
                                         ) {
                                             AppSort.options.forEach { option ->
                                                 GkMenuItemRadioButton(
                                                     text = stringResource(option.labelResource),
-                                                    selected = AppSort.options.findOption(
-                                                        store.a11yAppSort
-                                                    ) == option,
+                                                    selected =
+                                                        AppSort.options.findOption(
+                                                            store.a11yAppSort,
+                                                        ) == option,
                                                     onClick = { vm.setSortType(option) },
                                                 )
                                             }
                                         }
                                         GkMenuGroupCard(
                                             inTop = true,
-                                            title = stringResource(Res.string.display_title)
+                                            title = stringResource(Res.string.display_title),
                                         ) {
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(store.a11yAppGroupType)
                                                 GkMenuItemCheckbox(
                                                     enabled = newValue != 0,
                                                     text = stringResource(option.labelResource),
-                                                    checked = option.include(store.a11yAppGroupType),
+                                                    checked =
+                                                        option.include(store.a11yAppGroupType),
                                                     onClick = { vm.setAppGroupType(newValue) },
                                                 )
                                             }
@@ -217,29 +236,36 @@ fun BlockA11yAppListPage(host: UiHost) {
                                     }
                                 }
                                 GkIconButton(
-                                    imageVector = if (store.blockA11yAppListFollowMatch) GkIcons.Lock else LockOpenRight,
+                                    imageVector =
+                                        if (store.blockA11yAppListFollowMatch) GkIcons.Lock
+                                        else LockOpenRight,
                                     animateMorph = true,
-                                    contentDescription = if (store.blockA11yAppListFollowMatch) stringResource(
-                                        Res.string.a11y_whitelist_follow_apps
-                                    ) else stringResource(Res.string.a11y_whitelist_independent),
+                                    contentDescription =
+                                        if (store.blockA11yAppListFollowMatch)
+                                            stringResource(
+                                                Res.string.a11y_whitelist_follow_apps,
+                                            )
+                                        else stringResource(Res.string.a11y_whitelist_independent),
                                     onClickLabel = stringResource(Res.string.mode_switch),
                                     onClick = {
                                         editorState.closeSearch({ vm.setSearchStr(it.trim()) })
                                         vm.toggleFollowMatchList()
-                                    }
+                                    },
                                 )
                             }
                         },
                     )
-                })
+                },
+            )
         },
         floatingActionButton = {
             GkAnimatedFloatingActionButton(
-                visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
+                visible =
+                    !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
                 onClickLabel = stringResource(Res.string.whitelist_text_edit_mode_enter),
                 onClick = vm::startEditing,
                 imageVector = GkIcons.Edit,
-                contentDescription = stringResource(Res.string.whitelist_text_edit)
+                contentDescription = stringResource(Res.string.whitelist_text_edit),
             )
         },
     ) { contentPadding ->
@@ -265,7 +291,8 @@ fun BlockA11yAppListPage(host: UiHost) {
                 indicatorSize = editorUiState.indicatorSize,
             )
         } else {
-            val blockA11yAppList by SettingsRepository.blockA11yAppList.collectAsStateWithLifecycle()
+            val blockA11yAppList by
+                SettingsRepository.blockA11yAppList.collectAsStateWithLifecycle()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,
@@ -276,7 +303,7 @@ fun BlockA11yAppListPage(host: UiHost) {
                         appName = { GkAppNameText(appInfo.id, appInfo.name) },
                         appInfo = appInfo,
                         checked = blockA11yAppList.contains(appInfo.id),
-                        onCheckedChange = { vm.toggleApp(appInfo.id) },
+                        onCheckedChange = vm.scope.launchUiAction { vm.toggleApp(appInfo.id) },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {

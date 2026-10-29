@@ -1,11 +1,5 @@
 package li.gkd.app
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
@@ -14,12 +8,20 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SimulatorPersistenceTest {
     private fun directory(): File {
-        val root = File(System.getProperty("gkd.projectRoot", "..")).resolve(".local/tests/desktop")
-            .apply { mkdirs() }
+        val root =
+            File(System.getProperty("gkd.projectRoot", ".."))
+                .resolve(".local/tests/desktop")
+                .apply { mkdirs() }
         return Files.createTempDirectory(root.toPath(), "simulator-persistence-").toFile()
     }
 
@@ -44,11 +46,12 @@ class SimulatorPersistenceTest {
             runCurrent()
             assertEquals(
                 store.settings.value.persistent(),
-                DesktopSimulatorStorage(file).load(DesktopEnvironment())
+                DesktopSimulatorStorage(file).load(DesktopEnvironment()),
             )
             assertFalse(persistence.status.value.pending)
         } finally {
-            persistence.close(); directory.deleteRecursively()
+            persistence.close()
+            directory.deleteRecursively()
         }
     }
 
@@ -65,11 +68,12 @@ class SimulatorPersistenceTest {
             assertTrue(flushed.await())
             assertEquals(
                 900,
-                DesktopSimulatorStorage(file).load(DesktopEnvironment()).device.height
+                DesktopSimulatorStorage(file).load(DesktopEnvironment()).device.height,
             )
             assertEquals(0, testScheduler.currentTime)
         } finally {
-            persistence.close(); directory.deleteRecursively()
+            persistence.close()
+            directory.deleteRecursively()
         }
     }
 
@@ -102,34 +106,42 @@ class SimulatorPersistenceTest {
             assertEquals(501, DesktopSimulatorStorage(file).load(DesktopEnvironment()).device.width)
             assertNull(persistence.status.value.error)
         } finally {
-            persistence.close(); directory.deleteRecursively()
+            persistence.close()
+            directory.deleteRecursively()
         }
     }
 
     @Test
-    fun concurrentUpdatesAndFlushPersistLatestCompleteSnapshot() = kotlinx.coroutines.runBlocking {
-        val directory = directory()
-        val file = directory.resolve("simulator.json")
-        val persistence = SimulatorPersistence(this, file = file)
-        try {
-            val width = async(kotlinx.coroutines.Dispatchers.Default) {
-                repeat(100) { n -> persistence.store.updateEnvironment { it.copy(width = 400 + n) } }
+    fun concurrentUpdatesAndFlushPersistLatestCompleteSnapshot() =
+        kotlinx.coroutines.runBlocking {
+            val directory = directory()
+            val file = directory.resolve("simulator.json")
+            val persistence = SimulatorPersistence(this, file = file)
+            try {
+                val width =
+                    async(kotlinx.coroutines.Dispatchers.Default) {
+                        repeat(100) { n ->
+                            persistence.store.updateEnvironment { it.copy(width = 400 + n) }
+                        }
+                    }
+                val height =
+                    async(kotlinx.coroutines.Dispatchers.Default) {
+                        repeat(100) { n ->
+                            persistence.store.updateEnvironment { it.copy(height = 800 + n) }
+                        }
+                    }
+                repeat(10) { assertTrue(persistence.flush()) }
+                width.await()
+                height.await()
+                assertTrue(persistence.flush())
+                val saved = DesktopSimulatorStorage(file).load(DesktopEnvironment())
+                assertEquals(499, saved.device.width)
+                assertEquals(899, saved.device.height)
+                assertEquals(persistence.store.settings.value.persistent(), saved)
+                assertFalse(persistence.status.value.pending)
+            } finally {
+                persistence.close()
+                directory.deleteRecursively()
             }
-            val height = async(kotlinx.coroutines.Dispatchers.Default) {
-                repeat(100) { n -> persistence.store.updateEnvironment { it.copy(height = 800 + n) } }
-            }
-            repeat(10) { assertTrue(persistence.flush()) }
-            width.await()
-            height.await()
-            assertTrue(persistence.flush())
-            val saved = DesktopSimulatorStorage(file).load(DesktopEnvironment())
-            assertEquals(499, saved.device.width)
-            assertEquals(899, saved.device.height)
-            assertEquals(persistence.store.settings.value.persistent(), saved)
-            assertFalse(persistence.status.value.pending)
-        } finally {
-            persistence.close(); directory.deleteRecursively()
         }
-    }
-
 }

@@ -15,8 +15,8 @@ object GkPageBottomSpaceDefaults {
 
 /**
  * Extra scrollable breathing room after page content, in addition to the host's system insets.
- * Place last inside a scrolling Column, or inside an existing lazy footer item.
- * Do not put it outside the scroll container or use it instead of system-bar/IME insets.
+ * Place last inside a scrolling Column, or inside an existing lazy footer item. Do not put it
+ * outside the scroll container or use it instead of system-bar/IME insets.
  */
 @Composable
 fun GkPageBottomSpace(height: Dp = GkPageBottomSpaceDefaults.Height) {

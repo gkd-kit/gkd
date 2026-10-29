@@ -10,7 +10,7 @@ object BoundedStreams {
         input: InputStream,
         output: OutputStream,
         maxBytes: Long,
-        tooLarge: () -> IOException
+        tooLarge: () -> IOException,
     ): Long {
         require(maxBytes > 0)
         val buffer = ByteArray(8192)

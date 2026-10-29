@@ -1,7 +1,5 @@
 package li.gkd.app.ui.settings
 
-import li.gkd.app.META
-import li.gkd.app.time.format
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -25,18 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import li.gkd.app.META
 import li.gkd.app.error.displayMessage
+import li.gkd.app.model.findOption
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.settings
+import li.gkd.app.settings.UpdateChannel
+import li.gkd.app.time.format
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.GkIconButton
@@ -47,9 +48,8 @@ import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSettingItem
 import li.gkd.app.ui.component.GkTextMenu
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.icon.GkAnimatedLogoIcon
-import li.gkd.app.settings.UpdateChannel
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.page.GkVersionInfoDialog
 import li.gkd.app.ui.page.feedbackNotice
 import li.gkd.app.ui.platform.UiHost
@@ -82,7 +82,10 @@ fun AboutPage(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                mainVm.dialogRequests.showMessage(getString(Res.string.notice_title), e.displayMessage())
+                mainVm.dialogRequests.showMessage(
+                    getString(Res.string.notice_title),
+                    e.displayMessage(),
+                )
             }
         }
     }
@@ -115,7 +118,7 @@ fun AboutPage(
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(contentPadding)
+                    .padding(contentPadding),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -127,7 +130,9 @@ fun AboutPage(
                         Modifier.clickable(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
-                                onClick = { ToastUtils.show(Res.string.about_easter_egg.getSync()) },
+                                onClick = {
+                                    ToastUtils.show(Res.string.about_easter_egg.getSync())
+                                },
                             )
                             .fillMaxWidth(0.33f)
                             .aspectRatio(1f),
@@ -218,7 +223,9 @@ fun AboutPage(
                                         text = getString(Res.string.beta_channel_warning),
                                     )
                             )
-                                SettingsRepository.updateSettings { it.copy(updateChannel = option.value) }
+                                SettingsRepository.updateSettings {
+                                    it.copy(updateChannel = option.value)
+                                }
                         }
                     },
                 )
@@ -257,10 +264,13 @@ fun AboutPage(
         dialogs = mainVm.dialogRequests,
         scope = mainVm.scope,
         onOpenUrl = mainVm.textDialog::showUrl,
-    ) { vm.setShowShareAppDialog(false) }
+    ) {
+        vm.setShowShareAppDialog(false)
+    }
 }
 
-@Composable expect fun UiHost.GkShareAppDialog(
+@Composable
+expect fun UiHost.GkShareAppDialog(
     visible: Boolean,
     dialogs: DialogRequests,
     scope: CoroutineScope,

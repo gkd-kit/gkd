@@ -65,11 +65,13 @@ fun <T> GkResetOnItemKeysChange(
     // Immutable list snapshots let us skip the key comparison on unrelated recompositions.
     val previous = remember { ListChangeMarker(list, leadingItemKey) }
     SideEffect {
-        val changed = previous.leadingItemKey != leadingItemKey ||
-                (previous.list !== list && (
-                        previous.list.size != list.size ||
-                                list.indices.any { index -> key(previous.list[index]) != key(list[index]) }
-                        ))
+        val changed =
+            previous.leadingItemKey != leadingItemKey ||
+                (previous.list !== list &&
+                    (previous.list.size != list.size ||
+                        list.indices.any { index ->
+                            key(previous.list[index]) != key(list[index])
+                        }))
         previous.list = list
         previous.leadingItemKey = leadingItemKey
         if (changed) onChange()
@@ -171,10 +173,11 @@ fun rememberListScrollState(
     val coroutineScope = rememberCoroutineScope()
     val currentCanScroll = rememberUpdatedState(canScroll)
     val stableCanScroll = remember { { currentCanScroll.value() } }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        state = rememberTopAppBarState(),
-        canScroll = stableCanScroll,
-    )
+    val scrollBehavior =
+        TopAppBarDefaults.enterAlwaysScrollBehavior(
+            state = rememberTopAppBarState(),
+            canScroll = stableCanScroll,
+        )
     val listState = rememberLazyListState()
     return remember(scrollBehavior, listState, coroutineScope) {
         ListScrollState(scrollBehavior, listState, coroutineScope)
@@ -184,9 +187,10 @@ fun rememberListScrollState(
 @Composable
 fun rememberPinnedListScrollState(): ListScrollState {
     val coroutineScope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
-        state = rememberTopAppBarState(),
-    )
+    val scrollBehavior =
+        TopAppBarDefaults.pinnedScrollBehavior(
+            state = rememberTopAppBarState(),
+        )
     val listState = rememberLazyListState()
     return remember(scrollBehavior, listState, coroutineScope) {
         ListScrollState(scrollBehavior, listState, coroutineScope)
@@ -196,9 +200,10 @@ fun rememberPinnedListScrollState(): ListScrollState {
 @Composable
 fun rememberColumnScrollState(): ColumnScrollState {
     val coroutineScope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        state = rememberTopAppBarState(),
-    )
+    val scrollBehavior =
+        TopAppBarDefaults.enterAlwaysScrollBehavior(
+            state = rememberTopAppBarState(),
+        )
     val scrollState = rememberScrollState()
     return remember(scrollBehavior, scrollState, coroutineScope) {
         ColumnScrollState(scrollBehavior, scrollState, coroutineScope)
@@ -206,9 +211,7 @@ fun rememberColumnScrollState(): ColumnScrollState {
 }
 
 val TopAppBarScrollBehavior.isFullVisible: Boolean
-    @Composable
-    @ReadOnlyComposable
-    get() = state.collapsedFraction == 0f
+    @Composable @ReadOnlyComposable get() = state.collapsedFraction == 0f
 
 @Composable
 @ReadOnlyComposable

@@ -1,20 +1,21 @@
 package li.gkd.selector
 
-import li.gkd.selector.syntax.SelectorTokenizer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import li.gkd.selector.syntax.SelectorTokenizer
 
 class SelectorTokenizerTest {
     @Test
     fun tolerantTokenizerCoversEverySourcePosition() {
-        val sources = listOf(
-            "  @TextView[text=`a\\n` || index>=2] > Button  ",
-            "TextView[text='unfinished",
-            """TextView[text='\'""",
-            "A ??? B",
-            "😀[text='值']",
-        )
+        val sources =
+            listOf(
+                "  @TextView[text=`a\\n` || index>=2] > Button  ",
+                "TextView[text='unfinished",
+                """TextView[text='\'""",
+                "A ??? B",
+                "😀[text='值']",
+            )
 
         sources.forEach { source ->
             val tokens = SelectorTokenizer.tokenize(source)
@@ -32,9 +33,10 @@ class SelectorTokenizerTest {
     @Test
     fun completeSelectorUsesStableTokenKinds() {
         val source = "@TextView[text~='a'&&index>=2] +(3n-1) *"
-        val actual = SelectorTokenizer.tokenize(source).map {
-            source.substring(it.start, it.end) to it.kind
-        }
+        val actual =
+            SelectorTokenizer.tokenize(source).map {
+                source.substring(it.start, it.end) to it.kind
+            }
 
         assertEquals(
             listOf(
@@ -71,190 +73,202 @@ class SelectorTokenizerTest {
 
     @Test
     fun operatorTokensUseLongestMatchAndCorrectScope() {
-        val cases = listOf(
-            OperatorTokenCase(
-                "[a=1]",
-                "=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a!=1]",
-                "!=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a>1]",
-                ">",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a<1]",
-                "<",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a>=1]",
-                ">=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a<=1]",
-                "<=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a^='x']",
-                "^=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a!^='x']",
-                "!^=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a*='x']",
-                "*=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a!*='x']",
-                "!*=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a$='x']",
-                "$=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a!$='x']",
-                "!$=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a~='x']",
-                "~=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a!~='x']",
-                "!~=",
-                SelectorTokenKind.CompareOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "A + B",
-                "+",
-                SelectorTokenKind.RelationOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "A - B",
-                "-",
-                SelectorTokenKind.RelationOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "A > B",
-                ">",
-                SelectorTokenKind.RelationOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "A < B",
-                "<",
-                SelectorTokenKind.RelationOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "A << B",
-                "<<",
-                SelectorTokenKind.RelationOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "A -> B",
-                "->",
-                SelectorTokenKind.RelationOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "(A) && (B)",
-                "&&",
-                SelectorTokenKind.LogicalOperator,
-                SelectorTokenScope.Selector
-            ),
-            OperatorTokenCase(
-                "(A) || (B)",
-                "||",
-                SelectorTokenKind.LogicalOperator,
-                SelectorTokenScope.Selector
-            ),
-            OperatorTokenCase(
-                "!(A)",
-                "!",
-                SelectorTokenKind.LogicalOperator,
-                SelectorTokenScope.Selector
-            ),
-            OperatorTokenCase(
-                "[a=1&&b=2]",
-                "&&",
-                SelectorTokenKind.LogicalOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[a=1||b=2]",
-                "||",
-                SelectorTokenKind.LogicalOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "[!(a=1)]",
-                "!",
-                SelectorTokenKind.LogicalOperator,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase(
-                "A +(2n+1) B",
-                "+",
-                SelectorTokenKind.ArithmeticOperator,
-                SelectorTokenScope.Relation,
-                1
-            ),
-            OperatorTokenCase(
-                "A +(2n-1) B",
-                "-",
-                SelectorTokenKind.ArithmeticOperator,
-                SelectorTokenScope.Relation
-            ),
-            OperatorTokenCase(
-                "[a=-1]",
-                "-1",
-                SelectorTokenKind.Integer,
-                SelectorTokenScope.Property
-            ),
-            OperatorTokenCase("[a~1]", "~", SelectorTokenKind.Invalid, SelectorTokenScope.Property),
-            OperatorTokenCase("A ? B", "?", SelectorTokenKind.Invalid, SelectorTokenScope.Selector),
-        )
+        val cases =
+            listOf(
+                OperatorTokenCase(
+                    "[a=1]",
+                    "=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a!=1]",
+                    "!=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a>1]",
+                    ">",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a<1]",
+                    "<",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a>=1]",
+                    ">=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a<=1]",
+                    "<=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a^='x']",
+                    "^=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a!^='x']",
+                    "!^=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a*='x']",
+                    "*=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a!*='x']",
+                    "!*=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a$='x']",
+                    "$=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a!$='x']",
+                    "!$=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a~='x']",
+                    "~=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a!~='x']",
+                    "!~=",
+                    SelectorTokenKind.CompareOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "A + B",
+                    "+",
+                    SelectorTokenKind.RelationOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "A - B",
+                    "-",
+                    SelectorTokenKind.RelationOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "A > B",
+                    ">",
+                    SelectorTokenKind.RelationOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "A < B",
+                    "<",
+                    SelectorTokenKind.RelationOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "A << B",
+                    "<<",
+                    SelectorTokenKind.RelationOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "A -> B",
+                    "->",
+                    SelectorTokenKind.RelationOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "(A) && (B)",
+                    "&&",
+                    SelectorTokenKind.LogicalOperator,
+                    SelectorTokenScope.Selector,
+                ),
+                OperatorTokenCase(
+                    "(A) || (B)",
+                    "||",
+                    SelectorTokenKind.LogicalOperator,
+                    SelectorTokenScope.Selector,
+                ),
+                OperatorTokenCase(
+                    "!(A)",
+                    "!",
+                    SelectorTokenKind.LogicalOperator,
+                    SelectorTokenScope.Selector,
+                ),
+                OperatorTokenCase(
+                    "[a=1&&b=2]",
+                    "&&",
+                    SelectorTokenKind.LogicalOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a=1||b=2]",
+                    "||",
+                    SelectorTokenKind.LogicalOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[!(a=1)]",
+                    "!",
+                    SelectorTokenKind.LogicalOperator,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "A +(2n+1) B",
+                    "+",
+                    SelectorTokenKind.ArithmeticOperator,
+                    SelectorTokenScope.Relation,
+                    1,
+                ),
+                OperatorTokenCase(
+                    "A +(2n-1) B",
+                    "-",
+                    SelectorTokenKind.ArithmeticOperator,
+                    SelectorTokenScope.Relation,
+                ),
+                OperatorTokenCase(
+                    "[a=-1]",
+                    "-1",
+                    SelectorTokenKind.Integer,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "[a~1]",
+                    "~",
+                    SelectorTokenKind.Invalid,
+                    SelectorTokenScope.Property,
+                ),
+                OperatorTokenCase(
+                    "A ? B",
+                    "?",
+                    SelectorTokenKind.Invalid,
+                    SelectorTokenScope.Selector,
+                ),
+            )
 
         cases.forEach { case ->
-            val tokens = SelectorTokenizer.tokenize(case.source).filter {
-                case.source.substring(it.start, it.end) == case.text
-            }
+            val tokens =
+                SelectorTokenizer.tokenize(case.source).filter {
+                    case.source.substring(it.start, it.end) == case.text
+                }
             val token = tokens[case.occurrence]
             assertEquals(case.kind, token.kind, case.source)
             assertEquals(case.scope, token.scope, case.source)
@@ -267,9 +281,8 @@ class SelectorTokenizerTest {
         val source = "A[index=2 || count=3] +( 4n - 1 ) B || C"
         val tokens = SelectorTokenizer.tokenize(source)
 
-        fun scopes(text: String): List<SelectorTokenScope> = tokens
-            .filter { source.substring(it.start, it.end) == text }
-            .map { it.scope }
+        fun scopes(text: String): List<SelectorTokenScope> =
+            tokens.filter { source.substring(it.start, it.end) == text }.map { it.scope }
 
         assertEquals(listOf(SelectorTokenScope.Selector), scopes("A"))
         assertEquals(listOf(SelectorTokenScope.Property), scopes("index"))
@@ -284,8 +297,7 @@ class SelectorTokenizerTest {
         assertEquals(listOf(SelectorTokenScope.Relation), scopes("-"))
         assertTrue(
             tokens.any {
-                it.kind == SelectorTokenKind.Whitespace &&
-                        it.scope == SelectorTokenScope.Relation
+                it.kind == SelectorTokenKind.Whitespace && it.scope == SelectorTokenScope.Relation
             },
         )
         assertEquals(

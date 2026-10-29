@@ -1,98 +1,30 @@
-import { spawn } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile, unlink, rename } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile, unlink, rename } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { unzipSync } from 'fflate';
-import { localRoot } from '../lib/local-paths.ts';
 import { dirname, join } from 'node:path';
 import { delay } from '../lib/desktop-client.ts';
 
-type Store = Record<string, unknown>;
-export type Adb = (...args: string[]) => Promise<Buffer>;
+import { readStore, withAutomationPaused } from '../lib/device-automation.ts';
+import { installGkdDebug } from '../lib/device-test-apps.ts';
+import { withInstallConfirmation } from '../lib/device-install.ts';
+import { createAdb } from '../lib/device-adb.ts';
 export interface CaptureOptions {
   serial?: string; apps?: string; font: string; install: boolean; screens: boolean; output: string;
 }
 const packageName = 'li.songe.gkd.debug';
 const remote = `/sdcard/Android/data/${packageName}/files`;
-const storePath = `${remote}/store/store.json`;
+
 // Persisted Android settings protocol; must match AutomatorMode.A11y.value.
 const a11yAutomatorMode = 1;
-const automationKeys = ['enableAutomator', 'automatorMode'] as const;
+
 const mainActivity = `${packageName}/li.gkd.app.MainActivity`;
-
-function command(args: string[], timeout = 45_000, signal?: AbortSignal) {
-  const child = spawn('adb', args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], signal });
-  const done = new Promise<Buffer>((resolve, reject) => {
-    const stdout: Buffer[] = [], stderr: Buffer[] = [];
-    let timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; child.kill(); }, timeout);
-    child.stdout.on('data', b => stdout.push(Buffer.from(b)));
-    child.stderr.on('data', b => stderr.push(Buffer.from(b)));
-    child.once('error', error => { clearTimeout(timer); reject(error); });
-    child.once('close', code => {
-      clearTimeout(timer);
-      if (code !== 0 || timedOut) reject(new Error(`adb ${timedOut ? 'timed out' : `exit ${code}`}: ${Buffer.concat(stderr)}${Buffer.concat(stdout)}`));
-      else resolve(Buffer.concat(stdout));
-    });
-  });
-  return { child, done };
-}
-async function readStore(adb: Adb): Promise<Store> {
-  return JSON.parse((await adb('shell', 'cat', storePath)).toString()) as Store;
-}
-async function writeStore(adb: Adb, value: Store) {
-  const temporary = join(localRoot, 'tmp', 'capture-profile');
-  await mkdir(temporary, { recursive: true });
-  const folder = await mkdtemp(join(temporary, 'store-'));
-  try {
-    const path = join(folder, 'store.json');
-    await writeFile(path, JSON.stringify(value));
-    await adb('push', path, storePath);
-  } finally { await rm(folder, { recursive: true, force: true }); }
-}
-
-/** Only the two temporarily changed fields are restored into the latest device store. */
-export async function withAutomationPaused<T>(adb: Adb, output: string, work: (original: Store) => Promise<T>): Promise<T> {
-  const original = await readStore(adb);
-  const saved = Object.fromEntries(automationKeys.filter(k => Object.hasOwn(original, k)).map(k => [k, original[k]]));
-  const recovery = join(output, 'automation-recovery.json');
-  // Exclusive creation prevents overwriting an unfinished previous recovery record.
-  await writeFile(recovery, JSON.stringify(saved), { flag: 'wx' });
-  let workError: unknown;
-  try {
-    await adb('shell', 'am', 'force-stop', packageName);
-    await writeStore(adb, { ...await readStore(adb), enableAutomator: false, automatorMode: a11yAutomatorMode });
-    const paused = await readStore(adb);
-    if (paused.enableAutomator !== false || paused.automatorMode !== a11yAutomatorMode) throw new Error('Automation preflight did not take effect');
-    return await work(original);
-  } catch (error) { workError = error; throw error; }
-  finally {
-    try {
-      await adb('shell', 'am', 'force-stop', packageName);
-      const latest = await readStore(adb);
-      for (const key of automationKeys) {
-        if (Object.hasOwn(saved, key)) latest[key] = saved[key]; else delete latest[key];
-      }
-      await writeStore(adb, latest);
-      const restored = await readStore(adb);
-      for (const key of automationKeys) {
-        if (Object.hasOwn(saved, key) !== Object.hasOwn(restored, key) || saved[key] !== restored[key]) throw new Error(`Restore mismatch: ${key}`);
-      }
-      await adb('shell', 'am', 'start', '-n', mainActivity);
-      await unlink(recovery);
-      console.log('Restored and verified original automation switch and mode.');
-    } catch (error) {
-      throw new AggregateError([...(workError === undefined ? [] : [workError]), error], `Automation recovery required: ${recovery}`);
-    }
-  }
-}
 
 export async function captureProfile(options: CaptureOptions, repo: string) {
   await mkdir(options.output, { recursive: true });
   const staging = await mkdtemp(join(dirname(options.output), '.profile-staging-'));
-  const prefix = options.serial ? ['-s', options.serial] : [];
   // Cleanup deliberately uses an uncancelled transport.
-  const adb: Adb = (...args) => command([...prefix, ...args]).done;
   const cancellation = new AbortController();
+  const adb = withInstallConfirmation(createAdb(options.serial), cancellation.signal);
   const interrupt = () => cancellation.abort(new Error('Capture interrupted'));
   process.on('SIGINT', interrupt); process.on('SIGTERM', interrupt);
   const check = () => cancellation.signal.throwIfAborted();
@@ -101,10 +33,7 @@ export async function captureProfile(options: CaptureOptions, repo: string) {
     await withAutomationPaused(adb, options.output, async () => {
       check();
       if (options.install) {
-        const folder = join(repo, 'gkd-android/build/outputs/apk/gkd/debug');
-        const apks = (await readdir(folder)).filter(n => n.endsWith('.apk'));
-        if (apks.length !== 1) throw new Error(`Build gkdDebug first: expected one APK in ${folder}`);
-        await adb('install', '-r', '-t', join(folder, apks[0]!)); check();
+        console.log('GKD APK:', await installGkdDebug(adb, repo)); check();
       }
       const current = await readStore(adb);
       if (current.enableAutomator !== false || current.automatorMode !== a11yAutomatorMode) throw new Error('Automation must remain disabled before export');

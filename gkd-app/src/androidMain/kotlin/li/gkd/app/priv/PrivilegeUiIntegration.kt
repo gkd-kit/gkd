@@ -26,19 +26,21 @@ val privilegeServiceStatusFlow by lazy {
         }
     }
     combine(serverState, desiredEnabled) { serverInfo, desired ->
-        resolve(serverInfo != null, desired)
-    }.stateIn(
-        appScope,
-        SharingStarted.Eagerly,
-        resolve(serverState.value != null, desiredEnabled.value),
-    )
+            resolve(serverInfo != null, desired)
+        }
+        .stateIn(
+            appScope,
+            SharingStarted.Eagerly,
+            resolve(serverState.value != null, desiredEnabled.value),
+        )
 }
 
 val gkdPrivilegeUiConfig: PrivilegeUiConfig by lazy {
     PrivilegeUiConfig(
         manualShellScriptPath = "priv.sh",
-        externalStartProviders = listOf(
-            GkdShizukuExternalStartProvider,
-        ),
+        externalStartProviders =
+            listOf(
+                GkdShizukuExternalStartProvider,
+            ),
     )
 }

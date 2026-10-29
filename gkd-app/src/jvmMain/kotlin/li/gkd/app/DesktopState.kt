@@ -14,9 +14,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.serialization.Serializable
 import li.gkd.app.network.AppLinks
+import li.gkd.app.permission.SimulatorPermissionRequester
 import li.gkd.app.platform.writeClipboardText
 import li.gkd.app.resources.*
-import li.gkd.app.permission.SimulatorPermissionRequester
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.ToastState
 import li.gkd.app.ui.home.BottomNavItem
@@ -27,7 +27,6 @@ import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.ActionToastRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
-import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
@@ -35,12 +34,14 @@ import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
+import li.gkd.app.ui.navigation.ExternalCallsRoute
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.HomeRoute
 import li.gkd.app.ui.navigation.ImagePreviewRoute
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
-import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
+import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.RuleExcludeEditorRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
@@ -79,7 +80,7 @@ data class ScenarioRequest(
     val page: String = "dashboard",
     val variant: String = "normal",
     val route: AppRoute? = null,
-    val overlay: String? = null
+    val overlay: String? = null,
 )
 
 @Serializable
@@ -97,47 +98,64 @@ class DesktopState(
     val toast: ToastState,
     initialEnvironment: DesktopEnvironment = DesktopEnvironment(),
     private val isolated: Boolean = false,
-    val simulator: SimulatorStore = SimulatorStore(
-        SimulatorSettings().withEnvironment(
-            initialEnvironment
-        )
-    ),
+    val simulator: SimulatorStore =
+        SimulatorStore(
+            SimulatorSettings()
+                .withEnvironment(
+                    initialEnvironment,
+                ),
+        ),
 ) : ViewModelStoreOwner {
     var overlay by mutableStateOf<String?>(null)
+
     fun unsupported() {
         toast.show("当前平台不支持")
     }
 
-    val environment: DesktopEnvironment get() = simulator.settings.value.environment()
-    private val privilegeScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    val privilege = DesktopPrivilegeSimulation(
-        scope = privilegeScope,
-        store = simulator,
-        copyText = {
-            writeClipboardText(it)
-        },
-        onFailure = { toast.show("模拟设置保存失败：${it.message ?: it}") },
-    )
+    val environment: DesktopEnvironment
+        get() = simulator.settings.value.environment()
+
+    private val privilegeScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    val privilege =
+        DesktopPrivilegeSimulation(
+            scope = privilegeScope,
+            store = simulator,
+            copyText = {
+                writeClipboardText(it)
+            },
+            onFailure = { toast.show("模拟设置保存失败：${it.message ?: it}") },
+        )
     private var requestedScenario by mutableStateOf(ScenarioRequest())
     override val viewModelStore = ViewModelStore()
-    val mainVm = ViewModelProvider.create(this, viewModelFactory {
-        initializer {
-            MainViewModel(SimulatorPermissionRequester(simulator))
-        }
-    })[MainViewModel::class]
+    val mainVm =
+        ViewModelProvider.create(
+                this,
+                viewModelFactory {
+                    initializer {
+                        MainViewModel(SimulatorPermissionRequester(simulator))
+                    }
+                },
+            )[MainViewModel::class]
 
     var showingComponentCatalog by mutableStateOf(false)
         private set
 
-    fun closeComponentCatalog() { showingComponentCatalog = false }
+    fun closeComponentCatalog() {
+        showingComponentCatalog = false
+    }
 
     val scenario: ScenarioRequest
-        get() = if (showingComponentCatalog) requestedScenario.copy(page = "components") else if (mainVm.navigator.topRoute == HomeRoute) {
-            requestedScenario.copy(page = homePages.getValue(mainVm.homeNavigation.selectedTab.key))
-        } else requestedScenario.copy(page = routeName(mainVm.navigator.topRoute))
+        get() =
+            if (showingComponentCatalog) requestedScenario.copy(page = "components")
+            else if (mainVm.navigator.topRoute == HomeRoute) {
+                requestedScenario.copy(
+                    page = homePages.getValue(mainVm.homeNavigation.selectedTab.key),
+                )
+            } else requestedScenario.copy(page = routeName(mainVm.navigator.topRoute))
+
     var revision by mutableStateOf(0)
         private set
+
     var lastEvent by mutableStateOf<String?>(null)
         private set
 
@@ -148,11 +166,15 @@ class DesktopState(
         requestedScenario = request
         showingComponentCatalog = request.route == null && request.page == "components"
         mainVm.navigator.reset(
-            request.route ?: if (!showingComponentCatalog && request.page !in homePages.values) {
-                routeFor(request.page)
-            } else null,
+            request.route
+                ?: if (!showingComponentCatalog && request.page !in homePages.values) {
+                    routeFor(request.page)
+                } else null,
         )
-        selectHomeTab(if (request.page == "edit-whitelist") "apps" else if (request.page in homePages.values) request.page else "settings")
+        selectHomeTab(
+            if (request.page == "edit-whitelist") "apps"
+            else if (request.page in homePages.values) request.page else "settings",
+        )
         lastEvent = null
         revision++
     }
@@ -178,25 +200,34 @@ class DesktopState(
     fun handleGkdUri(uri: String) {
         when (val link = GkdLink.parse(uri)) {
             is GkdLink.Home -> {
-                BottomNavItem.allSubObjects.firstOrNull { it.key == link.tab }
+                BottomNavItem.allSubObjects
+                    .firstOrNull { it.key == link.tab }
                     ?.let(mainVm.homeNavigation::selectTab)
                 mainVm.navigator.popToHome()
             }
 
-            is GkdLink.Page -> mainVm.navigator.navigate(link.route)
+            is GkdLink.Page ->
+                if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage()
+                else mainVm.navigator.navigate(link.route)
             GkdLink.WeChatScanner -> unsupported()
             null -> toast.show(Res.string.uri_unknown.getSync(uri))
         }
     }
 
     private fun selectHomeTab(page: String) {
-        homePages.entries.firstOrNull { it.value == page }?.let { entry ->
-            mainVm.homeNavigation.selectTab(BottomNavItem.allSubObjects.first { it.key == entry.key })
-        }
+        homePages.entries
+            .firstOrNull { it.value == page }
+            ?.let { entry ->
+                mainVm.homeNavigation.selectTab(
+                    BottomNavItem.allSubObjects.first { it.key == entry.key },
+                )
+            }
     }
 
     fun close() {
-        viewModelStore.clear(); privilege.close(); privilegeScope.cancel()
+        viewModelStore.clear()
+        privilege.close()
+        privilegeScope.cancel()
     }
 
     fun simulatorCommand(action: () -> Unit) {
@@ -222,7 +253,7 @@ class DesktopState(
             settings.environment(),
             lastEvent,
             isolated,
-            settings
+            settings,
         )
     }
 
@@ -256,6 +287,7 @@ private val desktopRoutes by lazy {
         "work-mode" to WorkModeRoute,
         "snapshot-settings" to SnapshotSettingsRoute,
         "advanced" to AdvancedPageRoute,
+        "matching-debug" to MatchDebugRoute,
         "crash-reports" to CrashReportRoute,
         "activity-log" to ActivityLogRoute,
         "event-log" to A11yEventLogRoute,
@@ -281,21 +313,23 @@ private val desktopRoutes by lazy {
 }
 
 fun routeFor(page: String): AppRoute = desktopRoutes.getValue(page)
-fun routeName(route: AppRoute): String = when (route) {
-    ExternalCallsRoute -> "external-calls"
-    is SubsGlobalGroupListRoute -> "subs-global-groups"
-    is SubsAppListRoute -> "subs-apps"
-    is SubsAppGroupListRoute -> "subs-app-groups"
-    is SubsCategoryRoute -> "subs-categories"
-    is SubsCategoryGroupRoute -> "subs-category-groups"
-    is SubsGlobalGroupExcludeRoute -> "subs-global-exclude"
-    is RuleExcludeEditorRoute -> "rule-exclude-editor"
-    is WebViewRoute -> "web-view"
-    is SnapshotPreviewRoute -> "snapshot-preview"
-    is ImagePreviewRoute -> "image-preview"
-    is AppConfigRoute -> "app-config"
-    is ActionLogRoute -> "action-log"
-    is UpsertRuleGroupRoute -> "rule-editor"
-    is CategoryEditorRoute -> "category-editor"
-    else -> desktopRoutes.entries.first { it.value == route }.key
-}
+
+fun routeName(route: AppRoute): String =
+    when (route) {
+        ExternalCallsRoute -> "external-calls"
+        is SubsGlobalGroupListRoute -> "subs-global-groups"
+        is SubsAppListRoute -> "subs-apps"
+        is SubsAppGroupListRoute -> "subs-app-groups"
+        is SubsCategoryRoute -> "subs-categories"
+        is SubsCategoryGroupRoute -> "subs-category-groups"
+        is SubsGlobalGroupExcludeRoute -> "subs-global-exclude"
+        is RuleExcludeEditorRoute -> "rule-exclude-editor"
+        is WebViewRoute -> "web-view"
+        is SnapshotPreviewRoute -> "snapshot-preview"
+        is ImagePreviewRoute -> "image-preview"
+        is AppConfigRoute -> "app-config"
+        is ActionLogRoute -> "action-log"
+        is UpsertRuleGroupRoute -> "rule-editor"
+        is CategoryEditorRoute -> "category-editor"
+        else -> desktopRoutes.entries.first { it.value == route }.key
+    }

@@ -9,17 +9,19 @@ import li.gkd.app.util.AndroidTarget
 import priv.kit.core.binder.PrivilegeBinderWrapper
 
 class CompatActivityManager {
-    val value: IActivityManager = IActivityManager.Stub.asInterface(
-        requireNotNull(
-            PrivilegeBinderWrapper.fromSystemService(Context.ACTIVITY_SERVICE),
-        ),
-    )
+    val value: IActivityManager =
+        IActivityManager.Stub.asInterface(
+            requireNotNull(
+                PrivilegeBinderWrapper.fromSystemService(Context.ACTIVITY_SERVICE),
+            ),
+        )
 
-    fun getTasks(maxNum: Int = 1): List<ActivityManager.RunningTaskInfo> = if (AndroidTarget.P) {
-        value.getTasks(maxNum)
-    } else {
-        value.getTasks(maxNum, 0)
-    }
+    fun getTasks(maxNum: Int = 1): List<ActivityManager.RunningTaskInfo> =
+        if (AndroidTarget.P) {
+            value.getTasks(maxNum)
+        } else {
+            value.getTasks(maxNum, 0)
+        }
 
     fun startService(
         intent: Intent,
@@ -27,24 +29,25 @@ class CompatActivityManager {
         callingPackage: String,
         callingFeatureId: String?,
         userId: Int = currentUserId,
-    ): ComponentName = if (AndroidTarget.R) {
-        value.startService(
-            null,
-            intent,
-            intent.type,
-            requireForeground,
-            callingPackage,
-            callingFeatureId,
-            userId,
-        )
-    } else {
-        value.startService(
-            null,
-            intent,
-            intent.type,
-            requireForeground,
-            callingPackage,
-            userId,
-        )
-    }
+    ): ComponentName =
+        if (AndroidTarget.R) {
+            value.startService(
+                null,
+                intent,
+                intent.type,
+                requireForeground,
+                callingPackage,
+                callingFeatureId,
+                userId,
+            )
+        } else {
+            value.startService(
+                null,
+                intent,
+                intent.type,
+                requireForeground,
+                callingPackage,
+                userId,
+            )
+        }
 }

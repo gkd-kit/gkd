@@ -2,8 +2,8 @@ package li.gkd.app.rule
 
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.subscription.RawSubscription
-import li.gkd.db.SubsGroupConfig
 import li.gkd.db.SubsGlobalGroupConfig
+import li.gkd.db.SubsGroupConfig
 import li.gkd.db.SubsItem
 
 sealed class ResolvedGroup(

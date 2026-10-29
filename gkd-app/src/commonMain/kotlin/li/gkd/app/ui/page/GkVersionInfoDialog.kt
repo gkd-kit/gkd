@@ -52,7 +52,10 @@ fun GkVersionInfoDialog(
                             modifier = Modifier.clickable(onClick = onCommit),
                             text = commitLabel,
                             color = MaterialTheme.colorScheme.primary,
-                            style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                            style =
+                                LocalTextStyle.current.copy(
+                                    textDecoration = TextDecoration.Underline,
+                                ),
                         )
                     }
                     Column {
@@ -69,4 +72,3 @@ fun GkVersionInfoDialog(
         )
     }
 }
-

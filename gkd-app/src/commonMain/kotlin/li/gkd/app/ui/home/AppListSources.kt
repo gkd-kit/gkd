@@ -1,6 +1,5 @@
 package li.gkd.app.ui.home
 
-import li.gkd.app.record.TriggerStats
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -8,9 +7,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import li.gkd.app.app.AppCatalogState
 import li.gkd.app.model.AppInfo
+import li.gkd.app.record.TriggerStats
 import li.gkd.app.rule.ResolvedAppGroup
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.component.GkRuleStatsData
+import li.gkd.db.RuleTriggerStats
 
 object AppListSources {
     fun <T : Any> observe(
@@ -18,44 +19,72 @@ object AppListSources {
         rules: Flow<Loadable<T>>,
         actionOrder: Flow<List<String>>,
         visits: Flow<List<String>>,
-        triggerStats: Flow<List<li.gkd.db.RuleTriggerStats>>,
+        triggerStats: Flow<List<RuleTriggerStats>>,
         globalGroupCounts: (T) -> Map<String, Int>,
         appGroups: (T) -> Map<String, List<ResolvedAppGroup>>,
-    ): Flow<Loadable<AppListSource>> = combine(
-        catalog,
-        rules,
-        loadOrder(actionOrder),
-        loadOrder(visits),
-        triggerStats,
-    ) { state, loaded, order, visited, records ->
-        val snapshot = state.snapshot
-        when {
-            snapshot == null && state.failure != null -> Loadable.Failure(state.failure)
-            snapshot == null -> Loadable.Loading
-            else -> Loadable.Ready(
-                build(
-                    snapshot.visibleApps, order.value.orEmpty(), visited.value.orEmpty(),
-                    loaded.value?.let(globalGroupCounts), loaded.value?.let(appGroups).orEmpty(),
-                    snapshot.canQueryPackages, snapshot.queryPackagesAbnormal, state.refreshing,
-                ).copy(
-                    triggerStats = TriggerStats(records),
-                    actionOrderState = order.mapUnit(), visitOrderState = visited.mapUnit(),
-                    ruleStatsFailed = loaded is Loadable.Failure,
-                )
-            )
-        }
-    }.catch { emit(Loadable.Failure(it)) }
-
-    private fun loadOrder(source: Flow<List<String>>): Flow<Loadable<List<String>>> = source
-        .map<List<String>, Loadable<List<String>>> { Loadable.Ready(it) }
-        .onStart { emit(Loadable.Loading) }
-        .catch { emit(Loadable.Failure(it)) }
-
-    private fun Loadable<*>.mapUnit(): Loadable<Unit> = when (this) {
-        Loadable.Loading -> Loadable.Loading
-        is Loadable.Failure -> this
-        is Loadable.Ready -> Loadable.Ready(Unit)
+    ): Flow<Loadable<AppListSource>> {
+        val appSource =
+            combine(catalog, rules) { state, loaded ->
+                val snapshot = state.snapshot
+                when {
+                    snapshot == null && state.failure != null -> Loadable.Failure(state.failure)
+                    snapshot == null -> Loadable.Loading
+                    else ->
+                        Loadable.Ready(
+                            build(
+                                    snapshot.visibleApps,
+                                    emptyList(),
+                                    emptyList(),
+                                    loaded.value?.let(globalGroupCounts),
+                                    loaded.value?.let(appGroups).orEmpty(),
+                                    snapshot.canQueryPackages,
+                                    snapshot.queryPackagesAbnormal,
+                                    state.refreshing,
+                                )
+                                .copy(ruleStatsFailed = loaded is Loadable.Failure),
+                        )
+                }
+            }
+        return combine(
+                appSource,
+                loadOrder(actionOrder),
+                loadOrder(visits),
+                triggerStats.map(::TriggerStats),
+            ) { source, order, visited, stats ->
+                when (source) {
+                    is Loadable.Ready ->
+                        Loadable.Ready(
+                            source.value.copy(
+                                actionOrder = order.value.orEmpty(),
+                                visitOrder =
+                                    visited.value
+                                        .orEmpty()
+                                        .mapIndexed { index, id -> id to index }
+                                        .toMap(),
+                                triggerStats = stats,
+                                actionOrderState = order.mapUnit(),
+                                visitOrderState = visited.mapUnit(),
+                            ),
+                        )
+                    Loadable.Loading -> Loadable.Loading
+                    is Loadable.Failure -> source
+                }
+            }
+            .catch { emit(Loadable.Failure(it)) }
     }
+
+    private fun loadOrder(source: Flow<List<String>>): Flow<Loadable<List<String>>> =
+        source
+            .map<List<String>, Loadable<List<String>>> { Loadable.Ready(it) }
+            .onStart { emit(Loadable.Loading) }
+            .catch { emit(Loadable.Failure(it)) }
+
+    private fun Loadable<*>.mapUnit(): Loadable<Unit> =
+        when (this) {
+            Loadable.Loading -> Loadable.Loading
+            is Loadable.Failure -> this
+            is Loadable.Ready -> Loadable.Ready(Unit)
+        }
 
     fun build(
         apps: List<AppInfo>,
@@ -66,20 +95,25 @@ object AppListSources {
         canQueryPackages: Boolean = true,
         queryPackagesAbnormal: Boolean = false,
         refreshing: Boolean = false,
-    ) = AppListSource(
-        apps = apps,
-        ruleStats = if (globalGroupCounts == null) emptyMap() else apps.associate { info ->
-            info.id to GkRuleStatsData(
-                globalGroups = globalGroupCounts[info.id] ?: 0,
-                appGroups = appGroups[info.id]?.size ?: 0,
-                enabledAppGroups = appGroups[info.id]?.count { it.enable } ?: 0,
-                enabledOnly = true,
-            )
-        },
-        actionOrder = actionOrder,
-        visitOrder = visits.mapIndexed { index, id -> id to index }.toMap(),
-        canQueryPackages = canQueryPackages,
-        queryPackagesAbnormal = queryPackagesAbnormal,
-        refreshing = refreshing,
-    )
+    ) =
+        AppListSource(
+            apps = apps,
+            ruleStats =
+                if (globalGroupCounts == null) emptyMap()
+                else
+                    apps.associate { info ->
+                        info.id to
+                            GkRuleStatsData(
+                                globalGroups = globalGroupCounts[info.id] ?: 0,
+                                appGroups = appGroups[info.id]?.size ?: 0,
+                                enabledAppGroups = appGroups[info.id]?.count { it.enable } ?: 0,
+                                enabledOnly = true,
+                            )
+                    },
+            actionOrder = actionOrder,
+            visitOrder = visits.mapIndexed { index, id -> id to index }.toMap(),
+            canQueryPackages = canQueryPackages,
+            queryPackagesAbnormal = queryPackagesAbnormal,
+            refreshing = refreshing,
+        )
 }

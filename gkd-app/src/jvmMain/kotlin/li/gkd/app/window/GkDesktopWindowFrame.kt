@@ -27,8 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.awt.ComposePanel
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.awt.RenderSettings
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -47,39 +47,49 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
-import li.gkd.app.ui.component.GkIcons
-import java.awt.Rectangle
 import java.awt.BorderLayout
+import java.awt.Color as JavaColor
 import java.awt.Dimension
+import java.awt.Rectangle
 import java.awt.Window
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.RootPaneContainer
 import javax.swing.SwingUtilities
 import kotlin.math.roundToInt
-import java.awt.Color as JavaColor
+import li.gkd.app.ui.component.GkIcons
 
 /** Geometry shared by live screenshots and pointer input, in AWT logical coordinates. */
 object DesktopWindowGeometry {
     private const val CONTENT = "gkd.window.contentBounds"
     private const val FRAME = "gkd.window.customFrame"
+
     fun contentBounds(window: Window, frame: Boolean = false): Rectangle {
         val host = window as? RootPaneContainer
         val pane = host?.contentPane ?: window
         val full = Rectangle(pane.locationOnScreen, pane.size)
         val content = host?.rootPane?.getClientProperty(CONTENT) as? Rectangle
-        return if (frame || content == null) full else Rectangle(
-            full.x + content.x, full.y + content.y, content.width, content.height,
-        )
+        return if (frame || content == null) full
+        else
+            Rectangle(
+                full.x + content.x,
+                full.y + content.y,
+                content.width,
+                content.height,
+            )
     }
 
     fun isCustom(window: ComposeWindow) = window.rootPane.getClientProperty(FRAME) == true
+
     fun update(window: ComposeWindow, bounds: Rectangle, custom: Boolean) {
         val pane = window.contentPane
         val content = (pane.layout as BorderLayout).getLayoutComponent(BorderLayout.CENTER)
-        window.rootPane.putClientProperty(CONTENT, Rectangle(bounds).apply {
-            translate(content.x, content.y)
-        })
+        window.rootPane.putClientProperty(
+            CONTENT,
+            Rectangle(bounds).apply {
+                translate(content.x, content.y)
+            },
+        )
         window.rootPane.putClientProperty(FRAME, custom)
     }
 
@@ -114,20 +124,23 @@ fun GkDesktopWindowFrame(
     }
     val density = LocalDensity.current.density
     DisposableEffect(window) {
-        val listener = object : WindowAdapter() {
-            override fun windowActivated(e: WindowEvent) {
-                active = true
-            }
+        val listener =
+            object : WindowAdapter() {
+                override fun windowActivated(e: WindowEvent) {
+                    active = true
+                }
 
-            override fun windowDeactivated(e: WindowEvent) {
-                active = false
+                override fun windowDeactivated(e: WindowEvent) {
+                    active = false
+                }
             }
-        }
         window.addWindowListener(listener)
-        val installed = if (System.getProperty("os.name").startsWith("Windows")) {
-            runCatching { WindowsWindowFrameController(window).also { it.install() } }
-                .onFailure { System.err.println("GKD: using system title bar: $it") }.getOrNull()
-        } else null
+        val installed =
+            if (System.getProperty("os.name").startsWith("Windows")) {
+                runCatching { WindowsWindowFrameController(window).also { it.install() } }
+                    .onFailure { System.err.println("GKD: using system title bar: $it") }
+                    .getOrNull()
+            } else null
         controller = installed
         frameInitialized = true
         onDispose {
@@ -144,32 +157,42 @@ fun GkDesktopWindowFrame(
     DisposableEffect(window, frameInitialized, viewportSize, showTitle, density) {
         var disposed = false
         if (frameInitialized && (currentReadyCallback != null || viewportSize != null)) {
-            // A Compose coroutine can run inside render; defer to a separate AWT event to avoid re-entry.
+            // A Compose coroutine can run inside render; defer to a separate AWT event to avoid
+            // re-entry.
             SwingUtilities.invokeLater {
                 if (!disposed && window.isDisplayable) {
                     viewportSize?.let { viewport ->
                         val insets = window.insets
-                        val target = DpSize(
-                            (viewport.width.value + insets.left + insets.right).dp,
-                            (viewport.height.value + insets.top + insets.bottom + if (showTitle) 32 else 0).dp,
-                        )
+                        val target =
+                            DpSize(
+                                (viewport.width.value + insets.left + insets.right).dp,
+                                (viewport.height.value +
+                                        insets.top +
+                                        insets.bottom +
+                                        if (showTitle) 32 else 0)
+                                    .dp,
+                            )
                         if (window.isVisible) {
-                            // Let Compose own subsequent resizes and reconcile native resize events.
+                            // Let Compose own subsequent resizes and reconcile native resize
+                            // events.
                             state.size = target
                         } else {
-                            // Initial geometry must be applied synchronously before the first visible frame.
+                            // Initial geometry must be applied synchronously before the first
+                            // visible frame.
                             window.setSize(
                                 target.width.value.roundToInt(),
-                                target.height.value.roundToInt()
+                                target.height.value.roundToInt(),
                             )
                         }
                     }
                     if (!window.isVisible) {
                         window.validate()
                         window.renderImmediately()
-                        // ComposeWindow only renders its own canvas; the caption has a separate scene.
+                        // ComposeWindow only renders its own canvas; the caption has a separate
+                        // scene.
                         val pane = window.contentPane
-                        ((pane.layout as BorderLayout).getLayoutComponent(BorderLayout.NORTH) as? ComposePanel)
+                        ((pane.layout as BorderLayout).getLayoutComponent(BorderLayout.NORTH)
+                                as? ComposePanel)
                             ?.renderImmediately()
                         currentReadyCallback?.invoke()
                     }
@@ -183,65 +206,100 @@ fun GkDesktopWindowFrame(
     }
     if (showTitle) {
         DesktopTitleHost(window, requireNotNull(controller)) {
-            // Consume the host theme's animated colors so the caption and content share one transition.
+            // Consume the host theme's animated colors so the caption and content share one
+            // transition.
             val foreground = MaterialTheme.colorScheme.onSurface
             Row(
-                Modifier.fillMaxWidth().height(32.dp)
+                Modifier.fillMaxWidth()
+                    .height(32.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
                     .onGloballyPositioned { coordinates ->
                         controller?.let {
                             it.layout = it.layout.copy(title = coordinates.boundsInWindow())
                         }
-                    }, verticalAlignment = Alignment.CenterVertically
+                    },
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     GkIcons.Logo,
                     null,
                     Modifier.padding(start = 10.dp).size(16.dp),
-                    tint = Color.Unspecified
+                    tint = Color.Unspecified,
                 )
                 Text(
-                    title, color = foreground.copy(alpha = if (active) 1f else .55f),
-                    fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
+                    title,
+                    color = foreground.copy(alpha = if (active) 1f else .55f),
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
                 )
                 if (onOpenControls != null) {
                     CaptionButton(
-                        "打开模拟控制", GkIcons.Settings, foreground, dark, active,
+                        "打开模拟控制",
+                        GkIcons.Settings,
+                        foreground,
+                        dark,
+                        active,
                         { rect -> controller?.let { it.layout = it.layout.copy(settings = rect) } },
-                        iconSize = 16.dp, onClick = onOpenControls
+                        iconSize = 16.dp,
+                        onClick = onOpenControls,
                     )
                 }
                 CaptionButton(
-                    "最小化窗口", CaptionIcons.minimize, foreground, dark, active,
+                    "最小化窗口",
+                    CaptionIcons.minimize,
+                    foreground,
+                    dark,
+                    active,
                     { rect -> controller?.let { it.layout = it.layout.copy(minimize = rect) } },
-                    onClick = { state.isMinimized = true })
+                    onClick = { state.isMinimized = true },
+                )
                 CaptionButton(
                     if (state.placement == WindowPlacement.Maximized) "还原窗口" else "最大化窗口",
-                    if (state.placement == WindowPlacement.Maximized) CaptionIcons.restore else CaptionIcons.maximize,
-                    foreground, dark, active,
+                    if (state.placement == WindowPlacement.Maximized) CaptionIcons.restore
+                    else CaptionIcons.maximize,
+                    foreground,
+                    dark,
+                    active,
                     { rect -> controller?.let { it.layout = it.layout.copy(maximize = rect) } },
                     onClick = {
-                        state.placement = if (state.placement == WindowPlacement.Maximized)
-                            WindowPlacement.Floating else WindowPlacement.Maximized
-                    })
+                        state.placement =
+                            if (state.placement == WindowPlacement.Maximized)
+                                WindowPlacement.Floating
+                            else WindowPlacement.Maximized
+                    },
+                )
                 CaptionButton(
-                    "关闭窗口", CaptionIcons.close, foreground, dark, active,
+                    "关闭窗口",
+                    CaptionIcons.close,
+                    foreground,
+                    dark,
+                    active,
                     { rect -> controller?.let { it.layout = it.layout.copy(close = rect) } },
-                    close = true, onClick = onCloseRequest
+                    close = true,
+                    onClick = onCloseRequest,
                 )
             }
         }
     }
-    Box(Modifier.fillMaxSize().background(background).onGloballyPositioned {
-        val rect = it.boundsInWindow()
-        DesktopWindowGeometry.update(
-            window, Rectangle(
-                (rect.left / density).roundToInt(), (rect.top / density).roundToInt(),
-                (rect.width / density).roundToInt(), (rect.height / density).roundToInt(),
-            ), showTitle
-        )
-    }) { content() }
+    Box(
+        Modifier.fillMaxSize().background(background).onGloballyPositioned {
+            val rect = it.boundsInWindow()
+            DesktopWindowGeometry.update(
+                window,
+                Rectangle(
+                    (rect.left / density).roundToInt(),
+                    (rect.top / density).roundToInt(),
+                    (rect.width / density).roundToInt(),
+                    (rect.height / density).roundToInt(),
+                ),
+                showTitle,
+            )
+        },
+    ) {
+        content()
+    }
 }
 
 /** A sibling of the application's canvas, outside its Dialog/Popup input and drawing layers. */
@@ -257,15 +315,16 @@ private fun DesktopTitleHost(
     val typography by rememberUpdatedState(MaterialTheme.typography)
     val shapes by rememberUpdatedState(MaterialTheme.shapes)
     DisposableEffect(window, controller) {
-        val panel = ComposePanel(renderSettings = RenderSettings.SkiaSurface()).apply {
-            preferredSize = Dimension(0, 32)
-            background = JavaColor(colors.surfaceContainer.toArgb(), true)
-            setContent {
-                MaterialTheme(colorScheme = colors, typography = typography, shapes = shapes) {
-                    currentContent()
+        val panel =
+            ComposePanel(renderSettings = RenderSettings.SkiaSurface()).apply {
+                preferredSize = Dimension(0, 32)
+                background = JavaColor(colors.surfaceContainer.toArgb(), true)
+                setContent {
+                    MaterialTheme(colorScheme = colors, typography = typography, shapes = shapes) {
+                        currentContent()
+                    }
                 }
             }
-        }
         window.contentPane.add(panel, BorderLayout.NORTH)
         val detach = controller.attachTitlePanel(panel)
         window.validate()
@@ -292,59 +351,91 @@ private fun CaptionButton(
     val source = remember { MutableInteractionSource() }
     val hovered by source.collectIsHoveredAsState()
     val pressed by source.collectIsPressedAsState()
-    val background = when {
-        close && pressed -> Color(0xffc42b1c)
-        close && hovered -> Color(0xffe81123)
-        pressed -> foreground.copy(alpha = .16f)
-        hovered -> foreground.copy(alpha = if (dark) .10f else .08f)
-        else -> Color.Transparent
-    }
+    val background =
+        when {
+            close && pressed -> Color(0xffc42b1c)
+            close && hovered -> Color(0xffe81123)
+            pressed -> foreground.copy(alpha = .16f)
+            hovered -> foreground.copy(alpha = if (dark) .10f else .08f)
+            else -> Color.Transparent
+        }
     Box(
-        Modifier.size(46.dp, 32.dp).background(background)
+        Modifier.size(46.dp, 32.dp)
+            .background(background)
             .onGloballyPositioned { bounds(it.boundsInWindow()) }
             .clickable(
                 interactionSource = source,
                 indication = null,
                 role = Role.Button,
-                onClick = onClick
+                onClick = onClick,
             ),
-        contentAlignment = Alignment.Center) {
+        contentAlignment = Alignment.Center,
+    ) {
         Icon(
             icon,
             label,
             Modifier.size(iconSize),
-            tint = if (close && (hovered || pressed)) Color.White
-            else foreground.copy(alpha = if (active) 1f else .55f)
+            tint =
+                if (close && (hovered || pressed)) Color.White
+                else foreground.copy(alpha = if (active) 1f else .55f),
         )
     }
 }
 
 private object CaptionIcons {
-    val minimize = ImageVector.Builder("WindowMinimize", 10.dp, 10.dp, 10f, 10f).apply {
-        path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
-            moveTo(0f, 5.5f); lineTo(
-            10f,
-            5.5f
-        )
-        }
-    }.build()
-    val maximize = ImageVector.Builder("WindowMaximize", 10.dp, 10.dp, 10f, 10f).apply {
-        path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
-            moveTo(.5f, .5f); lineTo(9.5f, .5f); lineTo(9.5f, 9.5f); lineTo(.5f, 9.5f); close()
-        }
-    }.build()
-    val restore = ImageVector.Builder("WindowRestore", 10.dp, 10.dp, 10f, 10f).apply {
-        path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
-            moveTo(2.5f, 2.5f); lineTo(2.5f, .5f); lineTo(9.5f, .5f); lineTo(9.5f, 7.5f); lineTo(
-            7.5f,
-            7.5f
-        )
-            moveTo(.5f, 2.5f); lineTo(7.5f, 2.5f); lineTo(7.5f, 9.5f); lineTo(.5f, 9.5f); close()
-        }
-    }.build()
-    val close = ImageVector.Builder("WindowClose", 10.dp, 10.dp, 10f, 10f).apply {
-        path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
-            moveTo(.5f, .5f); lineTo(9.5f, 9.5f); moveTo(9.5f, .5f); lineTo(.5f, 9.5f)
-        }
-    }.build()
+    val minimize =
+        ImageVector.Builder("WindowMinimize", 10.dp, 10.dp, 10f, 10f)
+            .apply {
+                path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
+                    moveTo(0f, 5.5f)
+                    lineTo(
+                        10f,
+                        5.5f,
+                    )
+                }
+            }
+            .build()
+    val maximize =
+        ImageVector.Builder("WindowMaximize", 10.dp, 10.dp, 10f, 10f)
+            .apply {
+                path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
+                    moveTo(.5f, .5f)
+                    lineTo(9.5f, .5f)
+                    lineTo(9.5f, 9.5f)
+                    lineTo(.5f, 9.5f)
+                    close()
+                }
+            }
+            .build()
+    val restore =
+        ImageVector.Builder("WindowRestore", 10.dp, 10.dp, 10f, 10f)
+            .apply {
+                path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
+                    moveTo(2.5f, 2.5f)
+                    lineTo(2.5f, .5f)
+                    lineTo(9.5f, .5f)
+                    lineTo(9.5f, 7.5f)
+                    lineTo(
+                        7.5f,
+                        7.5f,
+                    )
+                    moveTo(.5f, 2.5f)
+                    lineTo(7.5f, 2.5f)
+                    lineTo(7.5f, 9.5f)
+                    lineTo(.5f, 9.5f)
+                    close()
+                }
+            }
+            .build()
+    val close =
+        ImageVector.Builder("WindowClose", 10.dp, 10.dp, 10f, 10f)
+            .apply {
+                path(stroke = SolidColor(Color.Black), strokeLineWidth = 1f) {
+                    moveTo(.5f, .5f)
+                    lineTo(9.5f, 9.5f)
+                    moveTo(9.5f, .5f)
+                    lineTo(.5f, 9.5f)
+                }
+            }
+            .build()
 }

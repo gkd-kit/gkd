@@ -21,11 +21,11 @@ export interface Environment {
   android: Record<string, number | boolean | string>;
 }
 export type SimulatorSettings = Record<string, Record<string, unknown>>;
-export type SimulatedService = 'Status' | 'Button' | 'Activity' | 'Event' | 'Track' | 'Screenshot' | 'Http' | 'Accessibility' | 'Automation';
+export type SimulatedService = 'Status' | 'Button' | 'Activity' | 'Event' | 'Track' | 'Screenshot' | 'Debug' | 'Accessibility' | 'Automation';
 export type ServiceEventType = 'Authorized' | 'Cancelled' | 'Connected' | 'Failed';
 export interface ServiceSnapshot {
   runtime: Record<SimulatedService, { phase: 'Stopped' | 'AwaitingAuthorization' | 'Starting' | 'Running' | 'Failed'; attempt: number; failure: string | null }>;
-  plans: Record<Exclude<SimulatedService, 'Http'>, { startResult: 'Success' | 'Failure' | 'Manual'; authorization: 'Allow' | 'Cancel' | 'Manual'; failure: string }>;
+  plans: Record<Exclude<SimulatedService, 'Debug'>, { startResult: 'Success' | 'Failure' | 'Manual'; authorization: 'Allow' | 'Cancel' | 'Manual'; failure: string }>;
   a11yEnabled: boolean; partiallyDisabled: boolean;
   logs: string[];
 }
@@ -35,6 +35,9 @@ export interface DesktopState {
 }
 export interface DesktopResponse {
   status: number; headers: IncomingHttpHeaders; body: Buffer;
+}
+export interface DesktopRequestOptions {
+  rawBody?: string; contentType?: string; headers?: Record<string, string>; timeoutMillis?: number;
 }
 export function nodes(root: UiNode): UiNode[] {
   return [root, ...root.children.flatMap(nodes)];
@@ -52,11 +55,11 @@ export class DesktopClient {
   readonly port: number;
   constructor(port: number) { this.port = port; }
   // Explicit direct localhost transport, independent of environment proxy settings.
-  response(path: string, body?: unknown, options: { rawBody?: string; contentType?: string } = {}): Promise<DesktopResponse> {
+  response(path: string, body?: unknown, options: DesktopRequestOptions = {}): Promise<DesktopResponse> {
     return new Promise((resolve, reject) => {
       const req = request({ hostname: '127.0.0.1', port: this.port, path: `/${path}`,
         method: body === undefined && options.rawBody === undefined ? 'GET' : 'POST',
-        headers: { 'Content-Type': options.contentType ?? 'application/json; charset=utf-8' },
+        headers: { 'Content-Type': options.contentType ?? 'application/json; charset=utf-8', ...options.headers },
       }, res => {
         const chunks: Buffer[] = [];
         res.on('data', chunk => chunks.push(Buffer.from(chunk)));
@@ -66,32 +69,37 @@ export class DesktopClient {
           resolve({ status: res.statusCode!, headers: res.headers, body: data });
         });
       });
-      req.setTimeout(20_000, () => req.destroy(new Error(`Request timeout: ${path}`)));
+      req.setTimeout(options.timeoutMillis ?? 20_000, () => req.destroy(new Error(`Request timeout: ${path}`)));
       req.on('error', reject);
       req.end(options.rawBody ?? (body === undefined ? undefined : JSON.stringify(body)));
     });
   }
-  async bytes(path: string, body?: unknown): Promise<Buffer> {
-    const response = await this.response(path, body);
+  async bytes(path: string, body?: unknown, options?: DesktopRequestOptions): Promise<Buffer> {
+    const response = await this.response(path, body, options);
     if (response.status !== 200) throw new Error(`HTTP ${response.status}: ${response.body.toString()}`);
     return response.body;
   }
-  async json<T>(path: string, body?: unknown): Promise<T> {
-    return JSON.parse((await this.bytes(path, body)).toString()) as T;
+  async json<T>(path: string, body?: unknown, options?: DesktopRequestOptions): Promise<T> {
+    return JSON.parse((await this.bytes(path, body, options)).toString()) as T;
   }
-  state() { return this.json<DesktopState>('state'); }
-  services() { return this.json<ServiceSnapshot>('services'); }
-  serviceCommand(service: SimulatedService, enabled: boolean) { return this.json<ServiceSnapshot>('services/command', { service, enabled }); }
+  state() { return this.json<DesktopState>('desktop/state'); }
+  services() { return this.json<ServiceSnapshot>('desktop/services'); }
+  async serviceCommand(service: SimulatedService, enabled: boolean): Promise<ServiceSnapshot | undefined> {
+    const response = await this.response('desktop/services/command', { service, enabled });
+    if (response.status === 202 && service === 'Debug' && !enabled) return;
+    if (response.status !== 200) throw new Error(`HTTP ${response.status}: ${response.body.toString()}`);
+    return JSON.parse(response.body.toString()) as ServiceSnapshot;
+  }
   serviceEvent(service: SimulatedService, type: ServiceEventType, attempt: number, reason?: string) {
-    return this.json<ServiceSnapshot>('services/event', { service, type, attempt, ...(reason === undefined ? {} : { reason }) });
+    return this.json<ServiceSnapshot>('desktop/services/event', { service, type, attempt, ...(reason === undefined ? {} : { reason }) });
   }
-  window(window: WindowId = 'app') { return this.json<WindowSnapshot>(`window?window=${window}`); }
-  scenario(page: string, extra: Record<string, unknown> = {}) { return this.json('scenario', { page, ...extra }); }
-  replaceSimulator(value: SimulatorSettings) { return this.json('simulator', value); }
-  patchSimulator(value: SimulatorSettings) { return this.json('simulator/patch', value); }
-  action(value: Record<string, unknown>) { return this.json('action', value); }
+  window(window: WindowId = 'app') { return this.json<WindowSnapshot>(`desktop/window?window=${window}`); }
+  scenario(page: string, extra: Record<string, unknown> = {}) { return this.json('desktop/scenario', { page, ...extra }); }
+  replaceSimulator(value: SimulatorSettings) { return this.json('desktop/simulator', value); }
+  patchSimulator(value: SimulatorSettings) { return this.json('desktop/simulator/patch', value); }
+  action(value: Record<string, unknown>) { return this.json('desktop/action', value); }
   key(key = 'Escape') { return this.action({ type: 'key', key }); }
-  async tree(window: WindowId = 'app') { return nodes(await this.json<UiNode>(`semantics?window=${window}`)); }
+  async tree(window: WindowId = 'app') { return nodes(await this.json<UiNode>(`desktop/semantics?window=${window}`)); }
   async find(match: (node: UiNode) => boolean, window: WindowId = 'app') {
     const found = await until(async () => (await this.tree(window)).filter(match), n => n.length === 1, `one matching UI node: ${match}`);
     return found[0]!;
@@ -117,6 +125,6 @@ export class DesktopClient {
   page(page: string) { return until(() => this.state(), s => s.page === page, `page ${page}`); }
   async screenshot(path: string, window: WindowId = 'app', area: 'content' | 'frame' = 'content', activate = false) {
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, await this.bytes(`screenshot?window=${window}&area=${area}&activate=${activate}`));
+    await writeFile(path, await this.bytes(`desktop/screenshot?window=${window}&area=${area}&activate=${activate}`));
   }
 }

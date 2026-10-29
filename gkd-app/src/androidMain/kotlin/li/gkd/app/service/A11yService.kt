@@ -9,6 +9,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -18,33 +19,40 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import li.gkd.app.a11y.A11yCommonImpl
-import li.gkd.app.a11y.A11yRuleEngine
-import li.gkd.app.a11y.A11yRuntime
-import li.gkd.app.a11y.A11yState
-import li.gkd.app.a11y.currentTopActivity
-import li.gkd.app.a11y.updateTopActivity
 import li.gkd.app.appScope
+import li.gkd.app.logging.LogUtils
+import li.gkd.app.matching.AndroidAutomationSession
+import li.gkd.app.matching.AndroidAutomationSessions
+import li.gkd.app.matching.AndroidMatchHost
+import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.input.AndroidForegroundState
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.platform.lifecycle.LifecycleHooks
 import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
-import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.settings.AutomatorMode
+import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.componentName
-import kotlin.coroutines.resume
+import li.gkd.app.util.monotonicTimeMillis
 
 @SuppressLint("AccessibilityPolicy")
-abstract class A11yService : AccessibilityService(), A11yCommonImpl {
+abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     private val lifecycleHooks = LifecycleHooks()
     override val scope = MainScope()
-    override val mode get() = AutomatorMode.A11y
-    override val windowNodeInfo: AccessibilityNodeInfo? get() = rootInActiveWindow
-    override val windowInfos: List<AccessibilityWindowInfo> get() = windows
+    override val mode
+        get() = AutomatorMode.A11y
+
+    override val windowNodeInfo: AccessibilityNodeInfo?
+        get() = rootInActiveWindow
+
+    override val windowInfos: List<AccessibilityWindowInfo>
+        get() = windows
+
     override suspend fun screenshot(): Bitmap? = suspendCancellableCoroutine { cont ->
         if (AndroidTarget.R) {
             takeScreenshot(
@@ -62,31 +70,33 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                             if (cont.isActive) {
                                 cont.resume(
                                     Bitmap.wrapHardwareBuffer(
-                                        screenshot.hardwareBuffer, screenshot.colorSpace
-                                    )
+                                        screenshot.hardwareBuffer,
+                                        screenshot.colorSpace,
+                                    ),
                                 )
                             }
                         } finally {
                             screenshot.hardwareBuffer.close()
                         }
                     }
-                }
+                },
             )
         } else {
             cont.resume(null)
         }
     }
 
-    override val ruleEngine by lazy { A11yRuleEngine(this) }
+    override val matchHost by lazy { AndroidMatchHost(this) }
 
     override fun onInterrupt() {}
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) = ruleEngine.onA11yEvent(event)
 
-    private val startTime = System.currentTimeMillis()
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) = matchHost.onA11yEvent(event)
+
+    private val startTime = monotonicTimeMillis()
     override var justStarted: Boolean = true
         get() {
             if (field) {
-                field = System.currentTimeMillis() - startTime < 3_000
+                field = monotonicTimeMillis() - startTime < 3_000
             }
             return field
         }
@@ -127,6 +137,7 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             }
         }
         lifecycleHooks.onDestroyed {
+            MatchingRuntime.coordinator.detach(this)
             scope.cancel()
             if (instance === this) {
                 instance = null
@@ -139,14 +150,17 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                 ToastUtils.show(Res.string.a11y_stopped.getSync())
                 updateEnableAutomator(false)
             }
-            A11yState.withTopActivityLock {
-                privilegeContextFlow.value?.run {
-                    topCpn()?.let { cpn ->
-                        // com.android.systemui
-                        if (!currentTopActivity.sameAs(cpn.packageName, cpn.className)) {
-                            updateTopActivity(cpn.packageName, cpn.className)
-                        }
-                    }
+            val context = privilegeContextFlow.value
+            val page = AndroidForegroundState.currentPage
+            val cpn = context?.topCpn()
+            AndroidForegroundState.withTopActivityLock {
+                if (
+                    cpn != null &&
+                        context === privilegeContextFlow.value &&
+                        page === AndroidForegroundState.currentPage &&
+                        !currentTopActivity.sameAs(cpn.packageName, cpn.className)
+                ) {
+                    updateTopActivity(cpn.packageName, cpn.className)
                 }
             }
             destroyed = true
@@ -157,14 +171,15 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    LogUtils.d("Runtime record flush failed", e)
+                    LogUtils.e("Runtime record flush failed", e)
                 }
             }
         }
     }
 
     private fun attachKeepAliveOverlay() {
-        if (!KeepAliveOverlayCoordinator.acquire(
+        if (
+            !KeepAliveOverlayCoordinator.acquire(
                 source = KeepAliveOverlayCoordinator.Source.Accessibility,
                 owner = this,
                 context = this,
@@ -180,8 +195,10 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
             KeepAliveOverlayCoordinator.releaseAfterHandoff(
                 source = KeepAliveOverlayCoordinator.Source.Accessibility,
                 owner = this@A11yService,
-                replacement = KeepAliveOverlayCoordinator.Source.Status
-                    .takeIf { StatusService.isRunning.value },
+                replacement =
+                    KeepAliveOverlayCoordinator.Source.Status.takeIf {
+                        StatusService.isRunning.value
+                    },
             )
         }
     }
@@ -193,13 +210,13 @@ abstract class A11yService : AccessibilityService(), A11yCommonImpl {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        LogUtils.d("onA11yConnected -> ${this::class.simpleName}")
+        LogUtils.i("onA11yConnected -> ${this::class.simpleName}")
         instance = this
         attachKeepAliveOverlay()
         connected = true
         ToastUtils.show(Res.string.a11y_started.getSync())
         if (currentAppUseA11y) {
-            A11yRuntime.onA11yConnected(this)
+            AndroidAutomationSessions.onA11yConnected(this)
         }
     }
 

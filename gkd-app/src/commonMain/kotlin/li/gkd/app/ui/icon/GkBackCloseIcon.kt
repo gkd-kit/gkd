@@ -20,24 +20,29 @@ import org.jetbrains.compose.resources.stringResource
 fun GkBackCloseIcon(
     backOrClose: Boolean,
     modifier: Modifier = Modifier,
-    contentDescription: String = if (backOrClose) stringResource(Res.string.action_back) else stringResource(
-        Res.string.action_close
-    ),
-    tint: Color = LocalContentColor.current
-) = GkTooltipIconButtonBox(
-    contentDescription = contentDescription,
-) {
-    AnimatedMorphIcon(
-        from = GkIcons.Close,
-        to = GkIcons.ArrowBack,
-        targetState = backOrClose,
-        modifier = modifier.size(24.dp),
+    contentDescription: String =
+        if (backOrClose) stringResource(Res.string.action_back)
+        else
+            stringResource(
+                Res.string.action_close,
+            ),
+    tint: Color = LocalContentColor.current,
+) =
+    GkTooltipIconButtonBox(
         contentDescription = contentDescription,
-        tint = tint,
-        options = MorphOptions(
-            transitionMode = MorphTransitionMode.ExperimentalStrokeInference,
-            rotationPreference = MorphRotationPreference.PreferCounterClockwise,
-        ),
-        animationSpec = tween(300),
-    )
-}
+    ) {
+        AnimatedMorphIcon(
+            from = GkIcons.Close,
+            to = GkIcons.ArrowBack,
+            targetState = backOrClose,
+            modifier = modifier.size(24.dp),
+            contentDescription = contentDescription,
+            tint = tint,
+            options =
+                MorphOptions(
+                    transitionMode = MorphTransitionMode.ExperimentalStrokeInference,
+                    rotationPreference = MorphRotationPreference.PreferCounterClockwise,
+                ),
+            animationSpec = tween(300),
+        )
+    }

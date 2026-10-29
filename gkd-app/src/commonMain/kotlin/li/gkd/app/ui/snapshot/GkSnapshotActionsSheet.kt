@@ -69,29 +69,35 @@ fun GkSnapshotActionsSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-                .widthIn(max = 560.dp).fillMaxWidth().heightIn(max = 560.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 24.dp),
+            modifier =
+                Modifier.align(Alignment.CenterHorizontally)
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .heightIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             SnapshotActionsHeader(
                 imageLoader,
                 snapshot,
                 appName,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
             SnapshotActionRow(
                 icon = if (snapshot.githubAssetId == null) GkIcons.Link else GkIcons.ContentCopy,
-                title = if (snapshot.githubAssetId == null) {
-                    stringResource(Res.string.snapshot_generate_link)
-                } else {
-                    stringResource(Res.string.link_copy)
-                },
+                title =
+                    if (snapshot.githubAssetId == null) {
+                        stringResource(Res.string.snapshot_generate_link)
+                    } else {
+                        stringResource(Res.string.link_copy)
+                    },
                 trailingText = snapshot.githubAssetId?.let { "#$it" },
                 onClick = {
                     val assetId = snapshot.githubAssetId
-                    if (assetId == null) perform(onUpload) else copyText(AppLinks.ImportSnapshot + assetId)
+                    if (assetId == null) perform(onUpload)
+                    else copyText(AppLinks.ImportSnapshot + assetId)
                 },
             )
             SnapshotActionRow(
@@ -136,24 +142,28 @@ private fun SnapshotActionsHeader(
     val context = LocalPlatformContext.current
     val screenshotFile = snapshot.image()
     val screenshotModifiedAt = screenshotFile.modifiedAt
-    val request = remember(context, screenshotFile, screenshotModifiedAt) {
-        ImageRequest.Builder(context)
-            .data(screenshotFile.path)
-            .memoryCacheKey("snapshot-sheet-${snapshot.id}-$screenshotModifiedAt")
-            .diskCachePolicy(CachePolicy.DISABLED)
-            .build()
-    }
+    val request =
+        remember(context, screenshotFile, screenshotModifiedAt) {
+            ImageRequest.Builder(context)
+                .data(screenshotFile.path)
+                .memoryCacheKey("snapshot-sheet-${snapshot.id}-$screenshotModifiedAt")
+                .diskCachePolicy(CachePolicy.DISABLED)
+                .build()
+        }
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AsyncImage(
-            imageLoader = imageLoader, model = request,
+            imageLoader = imageLoader,
+            model = request,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(56.dp).clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier =
+                Modifier.size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             GkAppNameText(
@@ -162,7 +172,8 @@ private fun SnapshotActionsHeader(
                 style = MaterialTheme.typography.titleMedium,
             )
             getShowActivityId(snapshot.appId, snapshot.activityId)
-                ?.takeIf(String::isNotBlank)?.let { activityId ->
+                ?.takeIf(String::isNotBlank)
+                ?.let { activityId ->
                     Text(
                         text = activityId,
                         maxLines = 1,
@@ -201,10 +212,12 @@ private fun SnapshotActionRow(
 ) {
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f)
     Row(
-        modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
-            .clickable(enabled = enabled, onClick = onClick)
-            .heightIn(min = if (subtitle == null) 48.dp else 56.dp)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(enabled = enabled, onClick = onClick)
+                .heightIn(min = if (subtitle == null) 48.dp else 56.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {

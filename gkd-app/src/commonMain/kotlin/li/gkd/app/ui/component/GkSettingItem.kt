@@ -33,23 +33,26 @@ fun GkSettingItem(
     subtitleOverflow: TextOverflow = TextOverflow.Clip,
 ) {
     Row(
-        modifier = Modifier
-            .let {
-                if (onClick != null) {
-                    it.clickable(
-                        onClick = onClick,
-                        onClickLabel = onClickLabel
-                            ?: stringResource(Res.string.page_enter_description, title)
-                    )
-                } else {
-                    it
+        modifier =
+            Modifier.let {
+                    if (onClick != null) {
+                        it.clickable(
+                            onClick = onClick,
+                            onClickLabel =
+                                onClickLabel
+                                    ?: stringResource(Res.string.page_enter_description, title),
+                        )
+                    } else {
+                        it
+                    }
                 }
-            }
-            .fillMaxWidth()
-            .itemPadding(),
+                .fillMaxWidth()
+                .itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = if (imageVector != null) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
+        Column(
+            modifier = if (imageVector != null) Modifier.weight(1f) else Modifier.fillMaxWidth(),
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -67,17 +70,21 @@ fun GkSettingItem(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = suffix,
-                            style = MaterialTheme.typography.bodyMedium.run {
-                                if (suffixUnderline) {
-                                    copy(textDecoration = TextDecoration.Underline)
-                                } else {
-                                    this
-                                }
-                            },
+                            style =
+                                MaterialTheme.typography.bodyMedium.run {
+                                    if (suffixUnderline) {
+                                        copy(textDecoration = TextDecoration.Underline)
+                                    } else {
+                                        this
+                                    }
+                                },
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = if (onSuffixClick != null) Modifier.clickable(
-                                onClick = onSuffixClick,
-                            ) else Modifier
+                            modifier =
+                                if (onSuffixClick != null)
+                                    Modifier.clickable(
+                                        onClick = onSuffixClick,
+                                    )
+                                else Modifier,
                         )
                     }
                 } else {

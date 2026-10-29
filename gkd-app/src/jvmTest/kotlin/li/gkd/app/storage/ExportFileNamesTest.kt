@@ -1,11 +1,10 @@
 package li.gkd.app.storage
 
+import java.nio.file.Files
 import li.gkd.app.testing.TestFiles
-
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.nio.file.Files
 
 class ExportFileNamesTest {
     @Test

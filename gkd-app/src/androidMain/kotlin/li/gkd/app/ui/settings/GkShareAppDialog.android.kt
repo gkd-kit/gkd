@@ -36,12 +36,13 @@ actual fun UiHost.GkShareAppDialog(
                 LinkAnnotation.Url(
                     AppLinks.GoogleServicesHelp,
                     TextLinkStyles(
-                        style = SpanStyle(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    )
-                )
+                        style =
+                            SpanStyle(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            ),
+                    ),
+                ),
             ) {
                 append(stringResource(Res.string.apk_download_official_link))
             }
@@ -49,28 +50,34 @@ actual fun UiHost.GkShareAppDialog(
         }
         GkShareAppDialog(
             onDismiss = onDismissRequest,
-            onShare = scope.launchUiAction(Dispatchers.IO) {
-                if (!META.isGkdChannel) {
-                    if (!dialogs.confirm(
-                            title = Res.string.share_notice.getSync(),
-                            text = exportPlayTipText,
-                            confirmText = Res.string.action_continue.getSync(),
+            onShare =
+                scope.launchUiAction(Dispatchers.IO) {
+                    if (!META.isGkdChannel) {
+                        if (
+                            !dialogs.confirm(
+                                title = Res.string.share_notice.getSync(),
+                                text = exportPlayTipText,
+                                confirmText = Res.string.action_continue.getSync(),
+                            )
                         )
-                    ) return@launchUiAction
-                }
-                context.shareFile(ApkUtils.createShareFile(), Res.string.apk_share.getSync())
-            },
-            onSave = scope.launchUiAction(Dispatchers.IO) {
-                if (!META.isGkdChannel) {
-                    if (!dialogs.confirm(
-                            title = Res.string.save_notice.getSync(),
-                            text = exportPlayTipText,
-                            confirmText = Res.string.action_continue.getSync(),
+                            return@launchUiAction
+                    }
+                    context.shareFile(ApkUtils.createShareFile(), Res.string.apk_share.getSync())
+                },
+            onSave =
+                scope.launchUiAction(Dispatchers.IO) {
+                    if (!META.isGkdChannel) {
+                        if (
+                            !dialogs.confirm(
+                                title = Res.string.save_notice.getSync(),
+                                text = exportPlayTipText,
+                                confirmText = Res.string.action_continue.getSync(),
+                            )
                         )
-                    ) return@launchUiAction
-                }
-                context.saveFileToDownloads(ApkUtils.createShareFile())
-            },
+                            return@launchUiAction
+                    }
+                    context.saveFileToDownloads(ApkUtils.createShareFile())
+                },
             onPlay = {
                 onOpenUrl(AppLinks.PlayStore)
             },

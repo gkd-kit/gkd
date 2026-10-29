@@ -27,85 +27,92 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun WebViewScreen(
-    title: String, loading: Boolean, onBack: () -> Unit,
-    onReload: () -> Unit, onCopyLink: () -> Unit, onOpenExternal: () -> Unit,
-    modifier: Modifier = Modifier, onCompatibilityNotice: (() -> Unit)? = null,
+    title: String,
+    loading: Boolean,
+    onBack: () -> Unit,
+    onReload: () -> Unit,
+    onCopyLink: () -> Unit,
+    onOpenExternal: () -> Unit,
+    modifier: Modifier = Modifier,
+    onCompatibilityNotice: (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    GkScaffold(modifier = modifier, topBar = {
-        GkTopAppBar(
-            modifier = Modifier.fillMaxWidth(),
-            navigationIcon = {
-                GkIconButton(
-                    imageVector = GkIcons.ArrowBack,
-                    onClick = { onBack() },
-                )
-            },
-            title = {
-                val loadingState = loading
-                if (loadingState) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.iconTextSize(),
-                    )
-                } else {
-                    Text(
-                        // webViewState.pageTitle 在调用 reload 后会变成 null
-                        text = title,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            },
-            actions = {
-                if (onCompatibilityNotice != null) {
+    GkScaffold(
+        modifier = modifier,
+        topBar = {
+            GkTopAppBar(
+                modifier = Modifier.fillMaxWidth(),
+                navigationIcon = {
                     GkIconButton(
-                        imageVector = GkIcons.WarningAmber,
-                        onClick = onCompatibilityNotice,
+                        imageVector = GkIcons.ArrowBack,
+                        onClick = { onBack() },
                     )
-                }
-                var expanded by remember { mutableStateOf(false) }
-                if (expanded) LocalOverlayBackHandler.current { expanded = false }
-                Box(
-                    modifier = Modifier
-                        .wrapContentSize(Alignment.TopStart)
-                ) {
-                    GkIconButton(imageVector = GkIcons.MoreVert, onClick = { expanded = true })
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        if (!loading) {
+                },
+                title = {
+                    val loadingState = loading
+                    if (loadingState) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.iconTextSize(),
+                        )
+                    } else {
+                        Text(
+                            // webViewState.pageTitle 在调用 reload 后会变成 null
+                            text = title,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
+                actions = {
+                    if (onCompatibilityNotice != null) {
+                        GkIconButton(
+                            imageVector = GkIcons.WarningAmber,
+                            onClick = onCompatibilityNotice,
+                        )
+                    }
+                    var expanded by remember { mutableStateOf(false) }
+                    if (expanded) LocalOverlayBackHandler.current { expanded = false }
+                    Box(
+                        modifier = Modifier.wrapContentSize(Alignment.TopStart),
+                    ) {
+                        GkIconButton(imageVector = GkIcons.MoreVert, onClick = { expanded = true })
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            if (!loading) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = stringResource(Res.string.webview_reload))
+                                    },
+                                    onClick = {
+                                        expanded = false
+                                        onReload()
+                                    },
+                                )
+                            }
                             DropdownMenuItem(
                                 text = {
-                                    Text(text = stringResource(Res.string.webview_reload))
+                                    Text(text = stringResource(Res.string.link_copy))
                                 },
                                 onClick = {
                                     expanded = false
-                                    onReload()
-                                }
+                                    onCopyLink()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = stringResource(Res.string.link_open_external))
+                                },
+                                onClick = {
+                                    expanded = false
+                                    onOpenExternal()
+                                },
                             )
                         }
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = stringResource(Res.string.link_copy))
-                            },
-                            onClick = {
-                                expanded = false
-                                onCopyLink()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = stringResource(Res.string.link_open_external))
-                            },
-                            onClick = {
-                                expanded = false
-                                onOpenExternal()
-                            }
-                        )
                     }
-                }
-            }
-        )
-    }) { contentPadding ->
+                },
+            )
+        },
+    ) { contentPadding ->
         content(contentPadding)
     }
 }

@@ -33,27 +33,29 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import li.gkd.app.a11y.initA11yFeat
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.crash.CrashMetadata
 import li.gkd.app.crash.CrashRecorder
 import li.gkd.app.data.AndroidLogMetadata
 import li.gkd.app.data.appinfo.PackageAppCatalog
+import li.gkd.app.logging.LogUtils
+import li.gkd.app.matching.input.initMatchingRuleObservers
+import li.gkd.app.matching.input.initScreenEvents
 import li.gkd.app.notif.NotificationChannels
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
 import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
-import li.gkd.app.service.clearHttpSubs
+import li.gkd.app.service.clearDebugSubscription
 import li.gkd.app.service.initA11yWhiteAppList
+import li.gkd.app.snapshot.initVolumeSnapshotTrigger
 import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
-import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.AndroidToastUtils
+import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.Db
 import li.gkd.db.initialize
@@ -114,7 +116,7 @@ class App : Application() {
 
     fun registerObserver(
         uri: Uri,
-        observer: ContentObserver
+        observer: ContentObserver,
     ) {
         contentResolver.registerContentObserver(uri, false, observer)
     }
@@ -124,6 +126,7 @@ class App : Application() {
     }
 
     fun getSecureString(name: String): String? = Settings.Secure.getString(contentResolver, name)
+
     fun putSecureString(name: String, value: String?): Boolean {
         return Settings.Secure.putString(contentResolver, name, value)
     }
@@ -135,15 +138,20 @@ class App : Application() {
     fun getSecureA11yServices(): MutableSet<ComponentName> {
         val value = getSecureString(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
         if (value.isNullOrEmpty()) return mutableSetOf()
-        return value.split(
-            ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR
-        ).mapNotNull { ComponentName.unflattenFromString(it) }.toHashSet()
+        return value
+            .split(
+                ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR,
+            )
+            .mapNotNull { ComponentName.unflattenFromString(it) }
+            .toHashSet()
     }
 
     fun putSecureA11yServices(services: Set<ComponentName>) {
         putSecureString(
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-            services.joinToString(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR.toString()) { it.flattenToShortString() }
+            services.joinToString(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR.toString()) {
+                it.flattenToShortString()
+            },
         )
     }
 
@@ -151,11 +159,12 @@ class App : Application() {
         return intent.resolveActivity(packageManager)?.packageName
     }
 
-    fun getPkgInfo(appId: String): PackageInfo? = try {
-        packageManager.getPackageInfo(appId, PackageAppCatalog.packageFlags)
-    } catch (_: PackageManager.NameNotFoundException) {
-        null
-    }
+    fun getPkgInfo(appId: String): PackageInfo? =
+        try {
+            packageManager.getPackageInfo(appId, PackageAppCatalog.packageFlags)
+        } catch (_: PackageManager.NameNotFoundException) {
+            null
+        }
 
     fun resolveAppId(action: String, category: String? = null): String? {
         val intent = Intent(action)
@@ -168,17 +177,18 @@ class App : Application() {
     fun startLaunchActivity() {
         val intent = packageManager.getLaunchIntentForPackage(META.appId)!!
         intent.addFlags(
-            Intent.FLAG_ACTIVITY_NEW_TASK
-                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK,
         )
         startActivity(intent)
     }
 
-    fun checkGrantedPermission(permission: String) = ContextCompat.checkSelfPermission(
-        this,
-        permission,
-    ) == PackageManager.PERMISSION_GRANTED
+    fun checkGrantedPermission(permission: String) =
+        ContextCompat.checkSelfPermission(
+            this,
+            permission,
+        ) == PackageManager.PERMISSION_GRANTED
 
     val startTime = System.currentTimeMillis()
     var justStarted: Boolean = true
@@ -191,9 +201,13 @@ class App : Application() {
 
     val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
     val appOpsManager by lazy { app.getSystemService(APP_OPS_SERVICE) as AppOpsManager }
-    val inputMethodManager by lazy { app.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
+    val inputMethodManager by lazy {
+        app.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+    }
     val inputManager by lazy { app.getSystemService(INPUT_SERVICE) as InputManager }
-    val mediaProjectionManager by lazy { getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager }
+    val mediaProjectionManager by lazy {
+        getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+    }
     val windowManager by lazy { app.getSystemService(WINDOW_SERVICE) as WindowManager }
     val displayManager by lazy { app.getSystemService(DISPLAY_SERVICE) as DisplayManager }
     val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
@@ -203,12 +217,12 @@ class App : Application() {
     val launcherApps by lazy { getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps }
 
     val compatDisplay: Display
-        get() = if (AndroidTarget.R) {
-            displayManager.getDisplay(Display.DEFAULT_DISPLAY)
-        } else {
-            @Suppress("DEPRECATION")
-            windowManager.defaultDisplay
-        }
+        get() =
+            if (AndroidTarget.R) {
+                displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+            } else {
+                @Suppress("DEPRECATION") windowManager.defaultDisplay
+            }
 
     override fun onCreate() {
         super.onCreate()
@@ -216,23 +230,24 @@ class App : Application() {
         installCrashHandler()
         Db.initialize(this, AndroidStorage.storage.database.absolutePath)
         AppInfoRepository.initialize()
-        LogUtils.d()
+        LogUtils.i()
         initializeRuntimeComponents()
     }
 
     private fun installCrashHandler() {
-        val recorder = CrashRecorder(
-            CrashMetadata(
-                AndroidLogMetadata.deviceDescription,
-                Build.VERSION.SDK_INT,
-                Build.VERSION.RELEASE,
-                META.versionCode,
-                META.versionName
+        val recorder =
+            CrashRecorder(
+                CrashMetadata(
+                    AndroidLogMetadata.deviceDescription,
+                    Build.VERSION.SDK_INT,
+                    Build.VERSION.RELEASE,
+                    META.versionCode,
+                    META.versionName,
+                ),
             )
-        )
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             ToastUtils.show(e.message ?: e.toString())
-            LogUtils.d("UncaughtExceptionHandler", t, e)
+            LogUtils.e("UncaughtExceptionHandler", t, e)
             appScope.launchLogged(Dispatchers.IO) {
                 try {
                     recorder.record(t, e)
@@ -255,7 +270,9 @@ class App : Application() {
     private fun initializeRuntimeComponents() {
         NotificationChannels.initialize()
         PackageAppCatalog.initialize()
-        initA11yFeat()
+        initMatchingRuleObservers()
+        initVolumeSnapshotTrigger()
+        initScreenEvents()
         initPrivilege()
         appScope.launchLogged(Dispatchers.IO) {
             PrivilegeUi.prepareExternalShellScript(gkdPrivilegeUiConfig.manualShellScriptPath)
@@ -265,7 +282,7 @@ class App : Application() {
         }
         appScope.launchLogged(Dispatchers.IO) {
             SubscriptionRepository.initialize(SubscriptionDefaults.fromResources())
-            clearHttpSubs()
+            clearDebugSubscription()
         }
         initA11yWhiteAppList()
         RuntimeStateSynchronizer.requestSync()

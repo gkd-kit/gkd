@@ -37,5 +37,6 @@ class NotificationTextViewModel : BaseViewModel() {
             title.value != initial.customNotifTitle ||
             text.value != initial.customNotifText
 
-    suspend fun save() = SettingsRepository.saveNotificationText(enabled.value, title.value, text.value)
+    suspend fun save() =
+        SettingsRepository.saveNotificationText(enabled.value, title.value, text.value)
 }

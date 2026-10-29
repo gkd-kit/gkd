@@ -1,7 +1,6 @@
 package li.gkd.app.ui.snapshot
 
-import li.gkd.app.ui.component.SheetRequest
-import li.gkd.app.ui.component.MultiSelectionState
+import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -10,17 +9,18 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
+import li.gkd.app.ui.component.MultiSelectionState
+import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.Db
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
-import java.io.File
 
 data class SnapshotDeleteResult(
     val deletedIds: Set<Long>,
@@ -60,11 +60,15 @@ class SnapshotViewModel : BaseViewModel() {
             try {
                 for (snapshot in targets) {
                     currentCoroutineContext().ensureActive()
-                    // Finish this ZIP and record ownership before cancellation can discard its result.
+                    // Finish this ZIP and record ownership before cancellation can discard its
+                    // result.
                     withContext(NonCancellable) {
-                        archives += SnapshotStore.createArchive(
-                            snapshot.id, snapshot.appId, snapshot.activityId
-                        )
+                        archives +=
+                            SnapshotStore.createArchive(
+                                snapshot.id,
+                                snapshot.appId,
+                                snapshot.activityId,
+                            )
                     }
                     currentCoroutineContext().ensureActive()
                     shareProgress.value = SnapshotShareProgress(archives.size, targets.size)
@@ -75,7 +79,8 @@ class SnapshotViewModel : BaseViewModel() {
                         ToastUtils.show(getString(Res.string.platform_action_unsupported))
                 }
             } finally {
-                // Receivers may read files after the chooser returns; cache expiry owns those files.
+                // Receivers may read files after the chooser returns; cache expiry owns those
+                // files.
                 withContext(NonCancellable) {
                     if (!handedOff) archives.forEach { SnapshotStore.deleteArchive(it) }
                     shareProgress.value = null
@@ -98,11 +103,10 @@ class SnapshotViewModel : BaseViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d(e)
+                LogUtils.e(e)
                 failedCount++
             }
         }
         return SnapshotDeleteResult(deletedIds, failedCount)
     }
-
 }

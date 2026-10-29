@@ -40,8 +40,10 @@ public data class SelectorPosition(
     val end: Int,
 )
 
+internal interface SourceMapped
+
 internal class SelectorSourceMap(
-    private val ranges: Map<Any, SourceRange>,
+    private val ranges: Map<SourceMapped, SourceRange>,
 ) {
-    fun rangeOf(value: Any): SourceRange? = ranges[value]
+    fun rangeOf(value: SourceMapped): SourceRange? = ranges[value]
 }

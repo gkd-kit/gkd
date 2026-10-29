@@ -1,7 +1,5 @@
 package li.gkd.app.storage
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -14,6 +12,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertSame
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 
 class FileTransferTest {
     private fun session(): File {
@@ -29,10 +29,12 @@ class FileTransferTest {
             assertContentEquals(file.readBytes(), readFileBytes(FileSource.Local(file), 3))
             assertContentEquals(
                 file.readBytes(),
-                readFileBytes(FileSource.Uri(file.toURI().toString()), 3)
+                readFileBytes(FileSource.Uri(file.toURI().toString()), 3),
             )
             assertFailsWith<FileTooLargeException> { readFileBytes(FileSource.Local(file), 2) }
-            assertFailsWith<IOException> { readFileBytes(FileSource.Local(root.resolve("missing"))) }
+            assertFailsWith<IOException> {
+                readFileBytes(FileSource.Local(root.resolve("missing")))
+            }
         } finally {
             root.deleteRecursively()
         }
@@ -63,8 +65,10 @@ class FileTransferTest {
             val archive = root.resolve("export.zip").apply { writeText("archive") }
             assertFailsWith<CancellationException> {
                 FileExports.withTemporaryFile(
-                    create = { archive }, delete = { it.delete() },
-                    consume = { throw CancellationException("cancelled picker") })
+                    create = { archive },
+                    delete = { it.delete() },
+                    consume = { throw CancellationException("cancelled picker") },
+                )
             }
             assertFalse(archive.exists())
         } finally {
@@ -76,11 +80,14 @@ class FileTransferTest {
     fun cleanupFailureDoesNotReplaceTheOperationFailure() = runTest {
         val original = IOException("export failed")
         val cleanup = IOException("cleanup failed")
-        val thrown = assertFailsWith<IOException> {
-            FileExports.withTemporaryFile(
-                create = { File("not-created") }, delete = { throw cleanup },
-                consume = { throw original })
-        }
+        val thrown =
+            assertFailsWith<IOException> {
+                FileExports.withTemporaryFile(
+                    create = { File("not-created") },
+                    delete = { throw cleanup },
+                    consume = { throw original },
+                )
+            }
         assertSame(original, thrown)
         val suppressed = assertIs<IOException>(thrown.suppressed.single())
         assertEquals(cleanup.message, suppressed.message)
@@ -88,16 +95,19 @@ class FileTransferTest {
 
     @Test
     fun zeroLengthReadDoesNotLoopOrSkipLimit() {
-        val input = object : ByteArrayInputStream(byteArrayOf(1, 2)) {
-            override fun read(bytes: ByteArray, offset: Int, length: Int) = 0
-        }
+        val input =
+            object : ByteArrayInputStream(byteArrayOf(1, 2)) {
+                override fun read(bytes: ByteArray, offset: Int, length: Int) = 0
+            }
         val output = ByteArrayOutputStream()
         assertFailsWith<IOException> {
             BoundedStreams.copy(
                 input,
                 output,
-                1
-            ) { IOException("limit") }
+                1,
+            ) {
+                IOException("limit")
+            }
         }
         assertContentEquals(byteArrayOf(1), output.toByteArray())
     }

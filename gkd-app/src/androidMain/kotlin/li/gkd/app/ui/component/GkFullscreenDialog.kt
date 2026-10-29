@@ -21,41 +21,46 @@ import org.jetbrains.compose.resources.stringResource
 fun GkFullscreenDialog(
     onDismissRequest: () -> Unit,
     content: @Composable () -> Unit,
-) = GkDialog(
-    onDismissRequest = onDismissRequest,
-    properties = DialogProperties(
-        dismissOnClickOutside = false,
-        usePlatformDefaultWidth = false,
-        decorFitsSystemWindows = false,
-        windowTitle = stringResource(Res.string.fullscreen_dialog),
-    )
-) {
-    val activity = LocalActivity.current!!
-    val parentView = LocalView.current.parent as View
-    val dialogWindow = (parentView as DialogWindowProvider).window
-    SideEffect {
-        dialogWindow.setDimAmount(0f)
-        dialogWindow.attributes = WindowManager.LayoutParams().apply {
-            copyFrom(activity.window.attributes)
-            type = dialogWindow.attributes.type
-            windowAnimations = android.R.style.Animation_Dialog
+) =
+    GkDialog(
+        onDismissRequest = onDismissRequest,
+        properties =
+            DialogProperties(
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+                windowTitle = stringResource(Res.string.fullscreen_dialog),
+            ),
+    ) {
+        val activity = LocalActivity.current!!
+        val parentView = LocalView.current.parent as View
+        val dialogWindow = (parentView as DialogWindowProvider).window
+        SideEffect {
+            dialogWindow.setDimAmount(0f)
+            dialogWindow.attributes =
+                WindowManager.LayoutParams().apply {
+                    copyFrom(activity.window.attributes)
+                    type = dialogWindow.attributes.type
+                    windowAnimations = android.R.style.Animation_Dialog
+                }
+            parentView.layoutParams =
+                FrameLayout.LayoutParams(
+                    activity.window.decorView.width,
+                    activity.window.decorView.height,
+                )
+            parentView.setBackgroundColor(Color.TRANSPARENT)
         }
-        parentView.layoutParams = FrameLayout.LayoutParams(
-            activity.window.decorView.width,
-            activity.window.decorView.height
-        )
-        parentView.setBackgroundColor(Color.TRANSPARENT)
+        val darkTheme = LocalDarkTheme.current
+        val controller =
+            remember(dialogWindow) {
+                WindowInsetsControllerCompat(
+                    dialogWindow,
+                    dialogWindow.decorView,
+                )
+            }
+        LaunchedEffect(darkTheme) {
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
+        content()
     }
-    val darkTheme = LocalDarkTheme.current
-    val controller = remember(dialogWindow) {
-        WindowInsetsControllerCompat(
-            dialogWindow,
-            dialogWindow.decorView
-        )
-    }
-    LaunchedEffect(darkTheme) {
-        controller.isAppearanceLightStatusBars = !darkTheme
-        controller.isAppearanceLightNavigationBars = !darkTheme
-    }
-    content()
-}

@@ -19,13 +19,15 @@ fun GkTemplateVariableRow(variable: String, description: String) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            variable, fontFamily = FontFamily.Monospace,
+            variable,
+            fontFamily = FontFamily.Monospace,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
         Text(
-            description, style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

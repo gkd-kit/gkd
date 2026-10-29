@@ -36,9 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
-import li.gkd.app.error.messageResource
 import li.gkd.app.resources.*
 import li.gkd.app.subscription.CategoryPolicy
+import li.gkd.app.subscription.SubscriptionEditResult
 import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAppNameText
@@ -51,8 +51,6 @@ import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
-import li.gkd.app.util.ToastUtils
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -77,20 +75,20 @@ fun CategoryEditorPage(
         val conflict = route.categoryKey != null && categorySnapshot != draft.originalCategory
         val validation =
             remember(subscription, route.categoryKey, name) {
-                runCatching { CategoryPolicy.validateEdit(subscription, route.categoryKey, name) }
+                CategoryPolicy.validateEdit(subscription, route.categoryKey, name)
             }
         val preview =
             remember(subscription, route.categoryKey, previewName) {
-                runCatching { CategoryPolicy.previewEdit(subscription, route.categoryKey, previewName, "") }
+                CategoryPolicy.previewEdit(subscription, route.categoryKey, previewName, "")
             }
         val error =
             if (conflict) stringResource(Res.string.category_edit_conflict)
-            else validation.exceptionOrNull()?.messageResource()
+            else validation?.let { stringResource(it.messageResource) }
+        val previewSubscription = (preview as? SubscriptionEditResult.Success)?.value
         val previewCategoryKey =
-            route.categoryKey ?: preview.getOrNull()?.categories?.maxOfOrNull { it.key }
+            route.categoryKey ?: previewSubscription?.categories?.maxOfOrNull { it.key }
         val apps =
-            preview
-                .getOrNull()
+            previewSubscription
                 ?.let { edited ->
                     previewCategoryKey?.let(edited::getCategoryApps)
                 }
@@ -102,7 +100,7 @@ fun CategoryEditorPage(
                 title =
                     stringResource(
                         if (route.categoryKey == null) Res.string.category_add
-                        else Res.string.category_edit
+                        else Res.string.category_edit,
                     ),
                 hasChanges = {
                     name.trim() != draft.originalName.trim() ||
@@ -110,14 +108,7 @@ fun CategoryEditorPage(
                 },
                 saveEnabled = error == null,
                 onSave = {
-                    val changed = vm.save(subscription, name.trim(), description.trim())
-                    ToastUtils.show(
-                        getString(
-                            if (!changed) Res.string.unchanged
-                            else if (route.categoryKey == null) Res.string.add_success
-                            else Res.string.update_success
-                        )
-                    )
+                    vm.save(subscription, name.trim(), description.trim())
                 },
             ),
             navigator = mainVm.navigator,
@@ -165,8 +156,8 @@ fun CategoryEditorPage(
                     Card(
                         colors =
                             CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
                     ) {
                         Column(Modifier.fillMaxWidth().padding(16.dp)) {
                             Text(
@@ -177,7 +168,7 @@ fun CategoryEditorPage(
                                 TextButton(
                                     onClick = {
                                         vm.reloadDraft(subscription)
-                                    }
+                                    },
                                 ) {
                                     Text(stringResource(Res.string.action_reload_latest))
                                 }
@@ -248,7 +239,7 @@ fun CategoryEditorPage(
                                         colors =
                                             CardDefaults.cardColors(
                                                 containerColor =
-                                                    MaterialTheme.colorScheme.surfaceContainer
+                                                    MaterialTheme.colorScheme.surfaceContainer,
                                             ),
                                     ) {
                                         Column(

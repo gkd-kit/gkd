@@ -14,12 +14,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.app.AppSort
 import li.gkd.app.error.messageResource
+import li.gkd.app.model.findOption
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
@@ -43,6 +44,7 @@ import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSubsAppCard
 import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
@@ -51,8 +53,6 @@ import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsAppListRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
-import li.gkd.app.app.AppSort
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -60,9 +60,9 @@ import li.gkd.app.ui.share.ListPlaceholder
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.ToastUtils
+import li.gkd.db.SubscriptionIds
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import li.gkd.db.SubscriptionIds
 
 @Composable
 fun SubsAppListPage(
@@ -74,7 +74,6 @@ fun SubsAppListPage(
 
     val vm = viewModel { SubsAppListViewModel(route) }
     val scope = vm.scope
-    val busy by vm.busyFlow.collectAsStateWithLifecycle()
     val subscriptionSnapshot by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
     val subscription = subscriptionSnapshot.value?.subscriptions?.get(subsItemId)
 
@@ -97,26 +96,28 @@ fun SubsAppListPage(
     val configIndex = remember(state?.configs) { state?.configs?.let(::RuleConfigIndex) }
     val firstLoading = loadableState is Loadable.Loading
     val loadError = (loadableState as? Loadable.Failure)?.cause
-    val sortedApps = remember(state, environment, store, visits) {
-        filterSubsApps(
-            state?.subscription?.apps.orEmpty(),
-            environment.apps,
-            store,
-            state?.appActionOrder.orEmpty(),
-            visits.value.orEmpty(),
-            environment.blockedApps,
-            { it.subsAppGroupType },
-            { AppSort.options.findOption(it.subsAppSort) },
-            { it.subsAppShowBlock },
-            triggerCounts = state?.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
-        )
-    }
-    val apps = remember(sortedApps, searchStr, appInfoMap) {
-        sortedApps.filter { app ->
-            app.id.contains(searchStr, true) || (appInfoMap[app.id]?.name ?: app.name).orEmpty()
-                .contains(searchStr, true)
+    val sortedApps =
+        remember(state, environment, store, visits) {
+            filterSubsApps(
+                state?.subscription?.apps.orEmpty(),
+                environment.apps,
+                store,
+                state?.appActionOrder.orEmpty(),
+                visits.value.orEmpty(),
+                environment.blockedApps,
+                { it.subsAppGroupType },
+                { AppSort.options.findOption(it.subsAppSort) },
+                { it.subsAppShowBlock },
+                triggerCounts = state?.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
+            )
         }
-    }
+    val apps =
+        remember(sortedApps, searchStr, appInfoMap) {
+            sortedApps.filter { app ->
+                app.id.contains(searchStr, true) ||
+                    (appInfoMap[app.id]?.name ?: app.name).orEmpty().contains(searchStr, true)
+            }
+        }
     val selection = vm.selection
     val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
     val visibleTargets = apps.mapTo(mutableSetOf()) { it.id }
@@ -127,22 +128,21 @@ fun SubsAppListPage(
     GkBackHandler(showSearchBar && !selectionSnapshot.active) {
         if (!host.hideIme()) closeSearch()
     }
-    GkBackHandler(selectionSnapshot.active) { if (!busy) selection.clear() }
+    GkBackHandler(selectionSnapshot.active) { selection.clear() }
     val updateSelected: (RuleSetting) -> Unit = { setting ->
         val request = vm.prepareSwitches(checkNotNull(state), selected)
         scope.launchUi {
-            vm.runAction {
-                if (mainVm.dialogRequests.confirm(
-                        getString(Res.string.subscription_app_switch_set),
-                        getString(
-                            Res.string.subscription_app_switch_batch_confirmation,
-                            selected.size.toString(),
-                            setting.labelText()
-                        )
-                    )
-                ) {
-                    ToastUtils.show(vm.applySwitches(request, setting).description())
-                }
+            if (
+                mainVm.dialogRequests.confirm(
+                    getString(Res.string.subscription_app_switch_set),
+                    getString(
+                        Res.string.subscription_app_switch_batch_confirmation,
+                        selected.size.toString(),
+                        setting.labelText(),
+                    ),
+                )
+            ) {
+                ToastUtils.show(vm.applySwitches(request, setting).description())
             }
         }
     }
@@ -157,11 +157,13 @@ fun SubsAppListPage(
         modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
         topBar = {
             GkMultiSelectionTopAppBar(
-                selectedMode = selectionSnapshot.active, selectedCount = selected.size,
+                selectedMode = selectionSnapshot.active,
+                selectedCount = selected.size,
                 onExitSelection = selection::clear,
                 onNavigateBack = { if (showSearchBar) closeSearch() else mainVm.navigator.pop() },
                 onTitleClick = if (showSearchBar) null else pageScrollState::resetScroll,
-                scrollBehavior = scrollBehavior, title = {
+                scrollBehavior = scrollBehavior,
+                title = {
                     val firstShowSearchBar = remember { showSearchBar }
                     if (showSearchBar) {
                         GkAppBarTextField(
@@ -176,20 +178,30 @@ fun SubsAppListPage(
                     } else {
                         GkTwoLineText(
                             title = subscription?.name ?: subsItemId.toString(),
-                            subtitle = stringResource(Res.string.app_rules)
+                            subtitle = stringResource(Res.string.app_rules),
                         )
                     }
-                }, actions = { selectedMode ->
+                },
+                actions = { selectedMode ->
                     if (selectedMode) {
-                        GkMultiSelectionActions(selectionSnapshot.selectedKeys, visibleTargets, selection::selectAll, selection::invert, !busy) { dismiss ->
-                            GkRuleBatchMenuItems(!busy, dismiss, updateSelected)
+                        GkMultiSelectionActions(
+                            selectionSnapshot.selectedKeys,
+                            visibleTargets,
+                            selection::selectAll,
+                            selection::invert,
+                        ) { dismiss ->
+                            GkRuleBatchMenuItems(dismiss, updateSelected)
                         }
                     } else {
                         GkSearchCloseIconButton(
                             isSearchOpen = showSearchBar,
-                            contentDescription = if (!showSearchBar) stringResource(Res.string.search_open) else if (searchStr.isEmpty()) stringResource(
-                                Res.string.search_close
-                            ) else stringResource(Res.string.search_clear),
+                            contentDescription =
+                                if (!showSearchBar) stringResource(Res.string.search_open)
+                                else if (searchStr.isEmpty())
+                                    stringResource(
+                                        Res.string.search_close,
+                                    )
+                                else stringResource(Res.string.search_clear),
                             onClick = {
                                 if (!showSearchBar) vm.setShowSearchBar(true)
                                 else if (searchStr.isNotEmpty()) vm.setSearchStr("")
@@ -203,11 +215,12 @@ fun SubsAppListPage(
                             },
                         )
                         Box(
-                            modifier = Modifier.wrapContentSize(Alignment.TopStart)
+                            modifier = Modifier.wrapContentSize(Alignment.TopStart),
                         ) {
                             DropdownMenu(
                                 expanded = expanded,
-                                onDismissRequest = { expanded = false }) {
+                                onDismissRequest = { expanded = false },
+                            ) {
                                 GkAppFilterContent(
                                     sort = store.subsAppSort,
                                     groupType = store.subsAppGroupType,
@@ -219,20 +232,23 @@ fun SubsAppListPage(
                             }
                         }
                     }
-                })
+                },
+            )
         },
         floatingActionButton = {
             if (SubscriptionIds.isLocal(subsItemId) && !selectionSnapshot.active) {
-                FloatingActionButton(onClick = {
-                    mainVm.navigator.navigate(
-                        UpsertRuleGroupRoute(
-                            subsId = subsItemId,
-                            groupKey = null,
-                            appId = "",
-                            forward = true,
+                FloatingActionButton(
+                    onClick = {
+                        mainVm.navigator.navigate(
+                            UpsertRuleGroupRoute(
+                                subsId = subsItemId,
+                                groupKey = null,
+                                appId = "",
+                                forward = true,
+                            ),
                         )
-                    )
-                }) {
+                    },
+                ) {
                     GkIcon(
                         imageVector = GkIcons.Add,
                     )
@@ -242,19 +258,26 @@ fun SubsAppListPage(
     ) { contentPadding ->
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
-            state = listState
+            state = listState,
         ) {
             items(apps, { it.id }) { app ->
-                val enabledGroupCount = remember(app, state, environment) {
-                    val current = checkNotNull(state)
-                    app.groups.count { group ->
-                        // Match the child list's switch positions, independent of parent availability.
-                        environment.resolve(
-                            current.subscription, group, app.id, current.configs,
-                            checkNotNull(configIndex)
-                        ).configuredEnabled
+                val enabledGroupCount =
+                    remember(app, state, environment) {
+                        val current = checkNotNull(state)
+                        app.groups.count { group ->
+                            // Match the child list's switch positions, independent of parent
+                            // availability.
+                            environment
+                                .resolve(
+                                    current.subscription,
+                                    group,
+                                    app.id,
+                                    current.configs,
+                                    checkNotNull(configIndex),
+                                )
+                                .configuredEnabled
+                        }
                     }
-                }
                 GkSubsAppCard(
                     appIcon = { GkAppIcon(app.id, 32.dp) },
                     appName = { GkAppNameText(app.id, app.name) },
@@ -263,19 +286,19 @@ fun SubsAppListPage(
                     enabledGroupCount = enabledGroupCount,
                     triggerSummary = state?.triggerStats?.app(app.id),
                     appInfo = appInfoMap[app.id],
-                    control = environment.app(
-                        subsItemId, app.id, checkNotNull(state).configs,
-                        checkNotNull(configIndex)
-                    ),
-                    selectionEnabled = !busy,
+                    control =
+                        environment.app(
+                            subsItemId,
+                            app.id,
+                            checkNotNull(state).configs,
+                            checkNotNull(configIndex),
+                        ),
                     selectedMode = selectionSnapshot.active,
                     selected = app.id in selected,
                     onLongClick = {
-                        if (!busy) {
-                            focusManager.clearFocus()
-                            host.hideIme()
-                            selection.select(app.id)
-                        }
+                        focusManager.clearFocus()
+                        host.hideIme()
+                        selection.select(app.id)
                     },
                     onSelect = { selection.toggle(app.id) },
                     onClick = {
@@ -285,8 +308,9 @@ fun SubsAppListPage(
                     onSettingChange = { setting ->
                         val request = vm.prepareSwitches(checkNotNull(state), setOf(app.id))
                         scope.launchUi {
-                            vm.applySwitches(request, setting).failureMessage()
-                                ?.let { ToastUtils.show(it) }
+                            vm.applySwitches(request, setting).failureMessage()?.let {
+                                ToastUtils.show(it)
+                            }
                         }
                     },
                 )
@@ -294,15 +318,18 @@ fun SubsAppListPage(
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 if (apps.isEmpty() && !firstLoading) {
                     GkEmptyState(
-                        text = if (loadError != null) {
-                            loadError.messageResource()
-                        } else if (searchStr.isNotEmpty()) {
-                            if (showAllApps) stringResource(Res.string.search_no_results) else stringResource(
-                                Res.string.search_no_results_filter_hint
-                            )
-                        } else {
-                            stringResource(Res.string.rules_empty)
-                        }
+                        text =
+                            if (loadError != null) {
+                                loadError.messageResource()
+                            } else if (searchStr.isNotEmpty()) {
+                                if (showAllApps) stringResource(Res.string.search_no_results)
+                                else
+                                    stringResource(
+                                        Res.string.search_no_results_filter_hint,
+                                    )
+                            } else {
+                                stringResource(Res.string.rules_empty)
+                            },
                     )
                     GkPageBottomSpace(height = GkPageBottomSpaceDefaults.CompactHeight)
                 } else {

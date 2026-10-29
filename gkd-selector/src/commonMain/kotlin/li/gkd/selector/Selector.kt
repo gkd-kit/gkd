@@ -1,16 +1,17 @@
 package li.gkd.selector
 
+import kotlin.js.JsExport
+import kotlin.js.JsStatic
 import li.gkd.selector.engine.SelectorExpression
 import li.gkd.selector.engine.SelectorProgram
 import li.gkd.selector.syntax.PositionRecorder
 import li.gkd.selector.syntax.SelectorParser
 import li.gkd.selector.syntax.SelectorPrinter
 import li.gkd.selector.syntax.SelectorTokenizer
-import kotlin.js.JsExport
-import kotlin.js.JsStatic
 
 @JsExport
-public class Selector internal constructor(
+public class Selector
+internal constructor(
     private val expression: SelectorExpression,
     private val sourceMap: SelectorSourceMap?,
 ) {
@@ -20,6 +21,10 @@ public class Selector internal constructor(
         return SelectorPrinter.render(expression)
     }
 
+    /**
+     * Returns the target and successful path together for convenient JS calls via JsNodeAdapter.
+     * This result-oriented API avoids requiring an observer to collect matching diagnostics.
+     */
     @JsExport.Ignore
     public fun <T : Any> matchWithTrace(
         node: T,
@@ -38,8 +43,10 @@ public class Selector internal constructor(
         node: T,
         adapter: NodeAdapter<T>,
         options: MatchOptions = MatchOptions.default,
+        observer: SelectorObserver<T>? = null,
     ): T? {
-        return program.match(MatchContext(node), adapter, options)
+        return if (observer == null) program.match(MatchContext(node), adapter, options)
+        else program.matchExplained(MatchContext(node), adapter, options, observer)
     }
 
     internal val fastQueries: List<FastQuery>
@@ -53,8 +60,8 @@ public class Selector internal constructor(
         get() = program.isMatchRoot
 
     public fun validateType(typeModel: SelectorTypeModel): SelectorTypeResult {
-        val failure = program.validateType(typeModel.globalType)
-            ?: return SelectorTypeResult.Success(this)
+        val failure =
+            program.validateType(typeModel.globalType) ?: return SelectorTypeResult.Success(this)
         return SelectorTypeResult.Failure(
             failure.toException(sourceMap?.rangeOf(failure.positionValue)),
         )
@@ -62,14 +69,16 @@ public class Selector internal constructor(
 
     /** Collects every independent type error, retaining ranges when this selector was parsed. */
     public fun getTypeErrors(typeModel: SelectorTypeModel): Array<out SelectorTypeException> =
-        program.collectTypeFailures(typeModel.globalType)
+        program
+            .collectTypeFailures(typeModel.globalType)
             .mapIndexed { order, failure ->
                 order to failure.toException(sourceMap?.rangeOf(failure.positionValue))
             }
             .sortedWith(
                 compareBy<Pair<Int, SelectorTypeException>> { (_, error) ->
-                    error.index ?: Int.MAX_VALUE
-                }.thenBy { (order) -> order },
+                        error.index ?: Int.MAX_VALUE
+                    }
+                    .thenBy { (order) -> order },
             )
             .map { (_, error) -> error }
             .toTypedArray()
@@ -77,11 +86,12 @@ public class Selector internal constructor(
     public companion object {
         /** Strict semantic compilation for matching-only callers. */
         @JsStatic
-        public fun compile(source: String): SelectorCompileResult = try {
-            SelectorCompileResult.Success(Selector(SelectorParser(source).readSelector(), null))
-        } catch (error: SelectorSyntaxException) {
-            SelectorCompileResult.Failure(error)
-        }
+        public fun compile(source: String): SelectorCompileResult =
+            try {
+                SelectorCompileResult.Success(Selector(SelectorParser(source).readSelector(), null))
+            } catch (error: SelectorSyntaxException) {
+                SelectorCompileResult.Failure(error)
+            }
 
         /** Strict semantic parsing with source positions and highlight tokens. */
         @JsStatic

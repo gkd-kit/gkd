@@ -1,5 +1,6 @@
 package li.gkd.app
 
+import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -10,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.File
 
 data class SimulatorSaveStatus(val pending: Boolean = false, val error: String? = null)
 
@@ -26,6 +26,7 @@ class SimulatorPersistence(
 
     private sealed interface Command {
         data class Snapshot(val revision: Long, val value: SimulatorSettings) : Command
+
         data class Flush(val result: CompletableDeferred<Boolean>) : Command
     }
 
@@ -43,9 +44,11 @@ class SimulatorPersistence(
     @Synchronized
     private fun completed(snapshot: Command.Snapshot, error: Exception?) {
         if (snapshot.revision == revision) {
-            status.value = SimulatorSaveStatus(
-                error != null,
-                error?.let { "${it.javaClass.simpleName}: ${it.message}" })
+            status.value =
+                SimulatorSaveStatus(
+                    error != null,
+                    error?.let { "${it.javaClass.simpleName}: ${it.message}" },
+                )
         }
     }
 
@@ -61,26 +64,30 @@ class SimulatorPersistence(
         }
     }
 
-    private val worker = scope.launch(dispatcher) {
-        var pending: Command.Snapshot? = null
-        var scheduled = false
-        while (isActive) {
-            val command =
-                if (scheduled) withTimeoutOrNull(200) { commands.receive() } else commands.receive()
-            when (command) {
-                is Command.Snapshot -> {
-                    pending = command; scheduled = true
-                }
+    private val worker =
+        scope.launch(dispatcher) {
+            var pending: Command.Snapshot? = null
+            var scheduled = false
+            while (isActive) {
+                val command =
+                    if (scheduled) withTimeoutOrNull(200) { commands.receive() }
+                    else commands.receive()
+                when (command) {
+                    is Command.Snapshot -> {
+                        pending = command
+                        scheduled = true
+                    }
 
-                is Command.Flush, null -> {
-                    val success = pending?.let { persist(it) } ?: true
-                    if (success) pending = null
-                    scheduled = false
-                    if (command is Command.Flush) command.result.complete(success)
+                    is Command.Flush,
+                    null -> {
+                        val success = pending?.let { persist(it) } ?: true
+                        if (success) pending = null
+                        scheduled = false
+                        if (command is Command.Flush) command.result.complete(success)
+                    }
                 }
             }
         }
-    }
 
     /** A barrier for all commands submitted before this call, also used for retry. */
     suspend fun flush(): Boolean {
@@ -90,6 +97,7 @@ class SimulatorPersistence(
     }
 
     fun close() {
-        worker.cancel(); commands.close()
+        worker.cancel()
+        commands.close()
     }
 }

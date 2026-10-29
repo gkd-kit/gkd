@@ -1,8 +1,8 @@
 package li.gkd.app.ui.home
 
+import kotlin.time.TimeSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlin.time.TimeSource
 
 data class PageScrollResetRequest(val id: Long, val navItem: BottomNavItem)
 
@@ -34,7 +34,11 @@ class HomeState(
             scrollResetRequest.value = null
             onTabChanged(tab)
         }
-        if (previous?.first == tab && selectedTab.value == tab && now - previous.second in 0L until 500L) {
+        if (
+            previous?.first == tab &&
+                selectedTab.value == tab &&
+                now - previous.second in 0L until 500L
+        ) {
             scrollResetRequest.value = PageScrollResetRequest(++nextRequestId, tab)
         }
         selectedTab.value = tab

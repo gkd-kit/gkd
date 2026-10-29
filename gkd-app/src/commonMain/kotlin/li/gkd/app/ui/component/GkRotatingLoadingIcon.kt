@@ -24,31 +24,33 @@ fun GkRotatingLoadingIcon(
         if (loading) {
             rotation.animateTo(
                 targetValue = rotation.value + 180f,
-                animationSpec = tween(
-                    durationMillis = 250,
-                    easing = { x -> sin(Math.PI / 2 * (x - 1f)).toFloat() + 1f }
-                )
+                animationSpec =
+                    tween(
+                        durationMillis = 250,
+                        easing = { x -> sin(Math.PI / 2 * (x - 1f)).toFloat() + 1f },
+                    ),
             )
             rotation.animateTo(
                 targetValue = rotation.value + 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 500, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                )
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(durationMillis = 500, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart,
+                    ),
             )
         } else if (rotation.value != 0f) {
             rotation.animateTo(
                 targetValue = rotation.value + 180f,
-                animationSpec = tween(
-                    durationMillis = 250,
-                    easing = { x -> sin(Math.PI / 2 * x).toFloat() }
-                )
+                animationSpec =
+                    tween(
+                        durationMillis = 250,
+                        easing = { x -> sin(Math.PI / 2 * x).toFloat() },
+                    ),
             )
         }
     }
     GkIcon(
         imageVector = imageVector,
-        modifier = modifier.graphicsLayer(rotationZ = rotation.value)
+        modifier = modifier.graphicsLayer(rotationZ = rotation.value),
     )
 }
-

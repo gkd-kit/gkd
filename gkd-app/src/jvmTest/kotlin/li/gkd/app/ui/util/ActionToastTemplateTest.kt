@@ -12,7 +12,7 @@ class ActionToastTemplateTest {
                 $$"${1} / ${2}\n${3} · ${1}",
                 "子规则",
                 "规则组",
-                2147483648L
+                2147483648L,
             ),
         )
     }
@@ -24,5 +24,4 @@ class ActionToastTemplateTest {
             ActionToastTemplate.render($$"GKD ${unknown}", "子规则", "规则组", 3L),
         )
     }
-
 }

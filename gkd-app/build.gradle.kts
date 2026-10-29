@@ -23,18 +23,23 @@ val validateStringResources =
         resourceDirectory.set(layout.projectDirectory.dir("src/commonMain/composeResources"))
     }
 
-tasks.matching { it.name == "prepareComposeResourcesTaskForCommonMain" }.configureEach {
-    dependsOn(validateStringResources)
-}
+tasks
+    .matching { it.name == "prepareComposeResourcesTaskForCommonMain" }
+    .configureEach {
+        dependsOn(validateStringResources)
+    }
 
-val generateDesktopAppMeta = tasks.register<WriteProperties>("generateDesktopAppMeta") {
-    destinationFile.set(layout.buildDirectory.file("generated/desktopAppMeta/app-meta.properties"))
-    property("versionCode", rootProject.extra["gkdVersionCode"] as Int)
-    property("versionName", rootProject.extra["gkdVersionName"] as String)
-    property("commitId", project.gitInfo.commitId)
-    property("commitTime", project.gitInfo.commitTime)
-    property("tagName", project.gitInfo.tagName.orEmpty())
-}
+val generateDesktopAppMeta =
+    tasks.register<WriteProperties>("generateDesktopAppMeta") {
+        destinationFile.set(
+            layout.buildDirectory.file("generated/desktopAppMeta/app-meta.properties"),
+        )
+        property("versionCode", rootProject.extra["gkdVersionCode"] as Int)
+        property("versionName", rootProject.extra["gkdVersionName"] as String)
+        property("commitId", project.gitInfo.commitId)
+        property("commitTime", project.gitInfo.commitTime)
+        property("tagName", project.gitInfo.tagName.orEmpty())
+    }
 
 kotlin {
     android {
@@ -47,7 +52,9 @@ kotlin {
     jvm()
     sourceSets {
         jvmMain {
-            resources.srcDir(generateDesktopAppMeta.map { it.destinationFile.get().asFile.parentFile })
+            resources.srcDir(
+                generateDesktopAppMeta.map { it.destinationFile.get().asFile.parentFile },
+            )
         }
         commonMain.dependencies {
             compileOnly(libs.codeorigin)
@@ -56,7 +63,7 @@ kotlin {
             api(project(":gkd-selector"))
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.atomicfu)
-            api(libs.exp4j)
+            implementation(libs.expression)
             api(libs.androidx.paging.compose)
             api(libs.coil.compose)
             api(libs.coil.network)
@@ -87,6 +94,7 @@ kotlin {
             api(libs.kotlinx.serialization.json)
         }
         androidMain.dependencies {
+            api(libs.priv.kit.input)
             api(project(":gkd-aidl"))
             api(libs.androidx.lifecycle.service)
             api(libs.compose.activity)
@@ -127,6 +135,7 @@ kotlin {
             }
         }
         jvmTest.dependencies {
+            implementation(libs.exp4j) // Differential compatibility oracle; absent from production.
             implementation(libs.androidx.sqlite.bundled)
         }
     }
@@ -140,9 +149,11 @@ val collectDesktopConsumerRules =
     tasks.register<CollectConsumerProguardRulesTask>("collectDesktopConsumerRules") {
         group = "compose desktop"
         description = "Collects META-INF/proguard/*.pro from JVM runtime dependencies."
-        runtimeJars.from(configurations.named("jvmRuntimeClasspath").map { classpath ->
-            classpath.filter { it.extension.equals("jar", ignoreCase = true) }
-        })
+        runtimeJars.from(
+            configurations.named("jvmRuntimeClasspath").map { classpath ->
+                classpath.filter { it.extension.equals("jar", ignoreCase = true) }
+            },
+        )
         rulesFile.set(layout.buildDirectory.file("generated/proguard/desktop-consumer-rules.pro"))
     }
 
@@ -156,7 +167,14 @@ compose.desktop.application {
             iconFile.set(project.file("src/jvmMain/resources/gkd.ico"))
         }
         // suggestModules plus dynamic JDBC/naming providers used by runtime dependencies.
-        modules("java.instrument", "java.management", "jdk.unsupported", "java.sql", "java.naming")
+        modules(
+            "java.instrument",
+            "java.management",
+            "jdk.management",
+            "jdk.unsupported",
+            "java.sql",
+            "java.naming",
+        )
     }
     buildTypes.release.proguard {
         version.set(libs.versions.proguard)
@@ -168,7 +186,9 @@ compose.desktop.application {
     }
 }
 
-tasks.withType<JavaExec>().matching { it.name == "run" || it.name == "runRelease" }
+tasks
+    .withType<JavaExec>()
+    .matching { it.name == "run" || it.name == "runRelease" }
     .configureEach {
         systemProperty("gkd.projectRoot", rootProject.projectDir.absolutePath)
         // Match Gradle's UTF-8 decoder instead of the Windows native output encoding.
@@ -177,15 +197,18 @@ tasks.withType<JavaExec>().matching { it.name == "run" || it.name == "runRelease
     }
 
 if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
-    val archiveBaseName = if (buildProperty("GKD_RENAME_PACKAGE_FLAG").isPresent) {
-        "gkd-v${rootProject.extra["gkdVersionName"]}"
-    } else {
-        "gkd"
-    }
-    val archiveArchitecture = when (val architecture = System.getProperty("os.arch").lowercase()) {
-        "amd64", "x86_64" -> "x86_64"
-        else -> architecture
-    }
+    val archiveBaseName =
+        if (buildProperty("GKD_RENAME_PACKAGE_FLAG").isPresent) {
+            "gkd-v${rootProject.extra["gkdVersionName"]}"
+        } else {
+            "gkd"
+        }
+    val archiveArchitecture =
+        when (val architecture = System.getProperty("os.arch").lowercase()) {
+            "amd64",
+            "x86_64" -> "x86_64"
+            else -> architecture
+        }
     tasks.register<Zip>("packageWindowsPortable") {
         group = "compose desktop"
         description = "Packages the Windows application and Java runtime as a portable ZIP."

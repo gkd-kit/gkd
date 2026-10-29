@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import li.gkd.app.error.displayMessage
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotStore
@@ -15,7 +16,6 @@ import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.upload.createSnapshotUploadItem
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
@@ -43,6 +43,7 @@ class SnapshotActionCoordinator(
     }
 
     override fun saveToDownloads(snapshot: Snapshot) = saveOne(snapshot, false)
+
     override fun saveToAlbum(snapshot: Snapshot) = saveOne(snapshot, true)
 
     private fun saveOne(snapshot: Snapshot, album: Boolean) {
@@ -50,8 +51,10 @@ class SnapshotActionCoordinator(
             if (!platform.ensureSavePermission()) return@launchUi
             ToastUtils.show(getString(Res.string.saving_progress))
             when (val result = save(snapshot, album)) {
-                is PlatformResult.Success -> if (result.value) ToastUtils.show(getString(Res.string.save_success))
-                PlatformResult.Unsupported -> ToastUtils.show(getString(Res.string.platform_action_unsupported))
+                is PlatformResult.Success ->
+                    if (result.value) ToastUtils.show(getString(Res.string.save_success))
+                PlatformResult.Unsupported ->
+                    ToastUtils.show(getString(Res.string.platform_action_unsupported))
             }
         }
     }
@@ -78,7 +81,7 @@ class SnapshotActionCoordinator(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d(e)
+                LogUtils.e(e)
             }
         }
         return saved
@@ -96,7 +99,7 @@ class SnapshotActionCoordinator(
                     SnapshotStore.createArchive(
                         snapshot.id,
                         snapshot.appId,
-                        snapshot.activityId
+                        snapshot.activityId,
                     )
                 },
                 delete = SnapshotStore::deleteArchive,
@@ -107,7 +110,8 @@ class SnapshotActionCoordinator(
     override fun upload(snapshot: Snapshot) {
         scope.launch {
             try {
-                if (dialogs.confirm(
+                if (
+                    dialogs.confirm(
                         title = getString(Res.string.snapshot_generate_link),
                         text = getString(Res.string.snapshot_upload_privacy_warning),
                         confirmText = getString(Res.string.snapshot_generate_link),
@@ -126,7 +130,8 @@ class SnapshotActionCoordinator(
     override fun delete(snapshot: Snapshot) {
         scope.launch {
             try {
-                if (dialogs.confirm(
+                if (
+                    dialogs.confirm(
                         title = getString(Res.string.snapshot_delete),
                         text = getString(Res.string.snapshot_delete_confirmation),
                         error = true,
@@ -138,7 +143,8 @@ class SnapshotActionCoordinator(
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        onDeleteFailed(); throw e
+                        onDeleteFailed()
+                        throw e
                     }
                     ToastUtils.show(getString(Res.string.delete_success))
                 }

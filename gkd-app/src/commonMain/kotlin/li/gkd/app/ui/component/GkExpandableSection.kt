@@ -41,19 +41,23 @@ fun GkExpandableSection(
     val description =
         if (expanded) stringResource(Res.string.expanded) else stringResource(Res.string.collapsed)
     val transition = updateTransition(expanded, label = "sectionExpansion")
-    val rotation by transition.animateFloat(
-        transitionSpec = { tween(ExpansionDurationMillis, easing = FastOutSlowInEasing) },
-        label = "expansionIndicatorRotation",
-    ) { if (it) 180f else 0f }
+    val rotation by
+        transition.animateFloat(
+            transitionSpec = { tween(ExpansionDurationMillis, easing = FastOutSlowInEasing) },
+            label = "expansionIndicatorRotation",
+        ) {
+            if (it) 180f else 0f
+        }
 
     Column(modifier) {
         Box(
             Modifier.fillMaxWidth()
                 .clickable(
                     onClickLabel = if (expanded) collapseLabel else expandLabel,
-                    onClick = onToggle
+                    onClick = onToggle,
                 )
-                .semantics { stateDescription = description }) {
+                .semantics { stateDescription = description },
+        ) {
             header {
                 GkIcon(
                     imageVector = GkIcons.ExpandMore,
@@ -66,18 +70,23 @@ fun GkExpandableSection(
         // The same transition drives both animations and retains content until collapse finishes.
         transition.AnimatedVisibility(
             visible = { it },
-            enter = expandVertically(
-                animationSpec = tween(ExpansionDurationMillis, easing = FastOutSlowInEasing),
-                expandFrom = Alignment.Top,
-            ),
-            exit = shrinkVertically(
-                animationSpec = tween(ExpansionDurationMillis, easing = FastOutSlowInEasing),
-                shrinkTowards = Alignment.Top,
-            ),
+            enter =
+                expandVertically(
+                    animationSpec = tween(ExpansionDurationMillis, easing = FastOutSlowInEasing),
+                    expandFrom = Alignment.Top,
+                ),
+            exit =
+                shrinkVertically(
+                    animationSpec = tween(ExpansionDurationMillis, easing = FastOutSlowInEasing),
+                    shrinkTowards = Alignment.Top,
+                ),
         ) {
-            Column(Modifier.fillMaxWidth().semantics {
-                if (!expanded) hideFromAccessibility()
-            }, content = content)
+            Column(
+                Modifier.fillMaxWidth().semantics {
+                    if (!expanded) hideFromAccessibility()
+                },
+                content = content,
+            )
         }
     }
 }

@@ -16,7 +16,8 @@ import li.gkd.selector.property.compileRegex
 internal class PropertySyntaxParser(
     private val context: ParserContext,
 ) {
-    private val cursor get() = context.cursor
+    private val cursor
+        get() = context.cursor
 
     private class PositionedValue<T : Any>(
         val value: T,
@@ -68,11 +69,12 @@ internal class PropertySyntaxParser(
                     cursor.index++
                 }
 
-                else -> if (cursor.current.isOneOf(IDENTIFIER_PART_CHARS)) {
-                    cursor.index++
-                } else {
-                    return cursor.source.substring(start, cursor.index)
-                }
+                else ->
+                    if (cursor.current.isOneOf(IDENTIFIER_PART_CHARS)) {
+                        cursor.index++
+                    } else {
+                        return cursor.source.substring(start, cursor.index)
+                    }
             }
         }
     }
@@ -140,13 +142,14 @@ internal class PropertySyntaxParser(
                 val term = finish(frame)
                 cursor.readChar(')')
                 frames.removeAt(frames.lastIndex)
-                val groupedTerm: PositionedValue<PropertyExpression> = if (frame.negated) {
-                    val value = NotExpression(term.value)
-                    context.record(value, SelectorPositionKind.NegatedCondition, frame.start)
-                    PositionedValue(value, frame.start, cursor.index)
-                } else {
-                    PositionedValue(term.value, frame.start, cursor.index)
-                }
+                val groupedTerm: PositionedValue<PropertyExpression> =
+                    if (frame.negated) {
+                        val value = NotExpression(term.value)
+                        context.record(value, SelectorPositionKind.NegatedCondition, frame.start)
+                        PositionedValue(value, frame.start, cursor.index)
+                    } else {
+                        PositionedValue(term.value, frame.start, cursor.index)
+                    }
                 frames.last().values.add(groupedTerm)
                 continue
             }
@@ -171,8 +174,7 @@ internal class PropertySyntaxParser(
 
     private fun reduceOperators(frame: ExpressionFrame, incoming: LogicalOperator) {
         while (
-            frame.operators.isNotEmpty() &&
-            frame.operators.last().precedence >= incoming.precedence
+            frame.operators.isNotEmpty() && frame.operators.last().precedence >= incoming.precedence
         ) {
             reduceLastOperator(frame)
         }
@@ -212,12 +214,13 @@ internal class PropertySyntaxParser(
                         cursor.errorExpected("regular expression string literal")
                     }
                     when (val result = right.value.compileRegex()) {
-                        is RegexCompileResult.Success -> ComparisonExpression.RegexComparison(
-                            left = left,
-                            regexOperator = operator,
-                            right = right,
-                            matches = result.matches,
-                        )
+                        is RegexCompileResult.Success ->
+                            ComparisonExpression.RegexComparison(
+                                left = left,
+                                regexOperator = operator,
+                                right = right,
+                                matches = result.matches,
+                            )
 
                         is RegexCompileResult.Failure -> {
                             val regexEnd = cursor.index
@@ -231,18 +234,20 @@ internal class PropertySyntaxParser(
                     }
                 }
 
-                is CompareOperator.ValueOperator -> ComparisonExpression.ValueComparison(
-                    left,
-                    operator,
-                    right
-                )
+                is CompareOperator.ValueOperator ->
+                    ComparisonExpression.ValueComparison(
+                        left,
+                        operator,
+                        right,
+                    )
             }
         }
 
     private fun readCompareOperator(): CompareOperator {
-        val operator = CompareOperator.parseOrder.firstOrNull {
-            cursor.source.startsWith(it.key, cursor.index)
-        } ?: cursor.errorExpected("comparison operator")
+        val operator =
+            CompareOperator.parseOrder.firstOrNull {
+                cursor.source.startsWith(it.key, cursor.index)
+            } ?: cursor.errorExpected("comparison operator")
         cursor.index += operator.key.length
         return operator
     }
@@ -340,10 +345,11 @@ internal class PropertySyntaxParser(
                             ')' -> {
                                 cursor.readChar(')')
                                 frames.removeAt(frames.lastIndex)
-                                val value = ValueExpression.CallExpression(
-                                    frame.callee,
-                                    frame.arguments,
-                                )
+                                val value =
+                                    ValueExpression.CallExpression(
+                                        frame.callee,
+                                        frame.arguments,
+                                    )
                                 context.record(value, SelectorPositionKind.Call, frame.start)
                                 term = PositionedValue(value, frame.start, cursor.index)
                             }
@@ -360,33 +366,38 @@ internal class PropertySyntaxParser(
     private fun readValuePrimary(): PositionedValue<ValueExpression> {
         val start = cursor.index
         cursor.expectOneOf(VALUE_PRIMARY_START_CHARS, "value")
-        val value = when {
-            cursor.readLiteral("null") -> ValueExpression.NullLiteral().also {
-                context.record(it, SelectorPositionKind.NullLiteral, start)
+        val value =
+            when {
+                cursor.readLiteral("null") ->
+                    ValueExpression.NullLiteral().also {
+                        context.record(it, SelectorPositionKind.NullLiteral, start)
+                    }
+
+                cursor.readLiteral("false") ->
+                    ValueExpression.BooleanLiteral(false).also {
+                        context.record(it, SelectorPositionKind.BooleanLiteral, start)
+                    }
+
+                cursor.readLiteral("true") ->
+                    ValueExpression.BooleanLiteral(true).also {
+                        context.record(it, SelectorPositionKind.BooleanLiteral, start)
+                    }
+
+                cursor.current.isOneOf("-$DIGIT_CHARS") ->
+                    ValueExpression.IntLiteral(cursor.readInt()).also {
+                        context.record(it, SelectorPositionKind.IntLiteral, start)
+                    }
+
+                cursor.current.isOneOf(STRING_QUOTE_CHARS) ->
+                    ValueExpression.StringLiteral(cursor.readString()).also {
+                        context.record(it, SelectorPositionKind.StringLiteral, start)
+                    }
+
+                else ->
+                    ValueExpression.Identifier(readIdentifierName()).also {
+                        context.record(it, SelectorPositionKind.Identifier, start)
+                    }
             }
-
-            cursor.readLiteral("false") -> ValueExpression.BooleanLiteral(false).also {
-                context.record(it, SelectorPositionKind.BooleanLiteral, start)
-            }
-
-            cursor.readLiteral("true") -> ValueExpression.BooleanLiteral(true).also {
-                context.record(it, SelectorPositionKind.BooleanLiteral, start)
-            }
-
-            cursor.current.isOneOf("-$DIGIT_CHARS") ->
-                ValueExpression.IntLiteral(cursor.readInt()).also {
-                    context.record(it, SelectorPositionKind.IntLiteral, start)
-                }
-
-            cursor.current.isOneOf(STRING_QUOTE_CHARS) ->
-                ValueExpression.StringLiteral(cursor.readString()).also {
-                    context.record(it, SelectorPositionKind.StringLiteral, start)
-                }
-
-            else -> ValueExpression.Identifier(readIdentifierName()).also {
-                context.record(it, SelectorPositionKind.Identifier, start)
-            }
-        }
         return PositionedValue(value, start, cursor.index)
     }
 

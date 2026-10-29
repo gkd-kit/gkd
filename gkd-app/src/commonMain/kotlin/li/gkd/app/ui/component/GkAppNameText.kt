@@ -48,49 +48,54 @@ fun GkAppNameText(
         )
     } else {
         val userNameColor = MaterialTheme.colorScheme.tertiary
-        val annotatedString = remember(showSystemIcon, appName, userName, userNameColor) {
-            buildAnnotatedString {
-                if (showSystemIcon) {
-                    appendInlineContent("icon")
-                }
-                append(appName)
-                if (userName != null) {
-                    append(" ")
-                    withStyle(
-                        style = SpanStyle(
-                            fontWeight = FontWeight.Bold,
-                            color = userNameColor,
-                        )
-                    ) {
-                        append(userName)
+        val annotatedString =
+            remember(showSystemIcon, appName, userName, userNameColor) {
+                buildAnnotatedString {
+                    if (showSystemIcon) {
+                        appendInlineContent("icon")
+                    }
+                    append(appName)
+                    if (userName != null) {
+                        append(" ")
+                        withStyle(
+                            style =
+                                SpanStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    color = userNameColor,
+                                ),
+                        ) {
+                            append(userName)
+                        }
                     }
                 }
             }
-        }
-        val inlineContent = if (showSystemIcon) {
-            val contentColor = style.color.takeOrElse { LocalContentColor.current }
-            remember(style, contentColor) {
-                mapOf(
-                    "icon" to InlineTextContent(
-                        placeholder = Placeholder(
-                            width = style.fontSize,
-                            height = style.lineHeight,
-                            placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-                        )
-                    ) {
-                        GkIcon(
-                            imageVector = GkIcons.VerifiedUser,
-                            modifier = Modifier
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .fillMaxSize(),
-                            tint = contentColor
-                        )
-                    }
-                )
+        val inlineContent =
+            if (showSystemIcon) {
+                val contentColor = style.color.takeOrElse { LocalContentColor.current }
+                remember(style, contentColor) {
+                    mapOf(
+                        "icon" to
+                            InlineTextContent(
+                                placeholder =
+                                    Placeholder(
+                                        width = style.fontSize,
+                                        height = style.lineHeight,
+                                        placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
+                                    ),
+                            ) {
+                                GkIcon(
+                                    imageVector = GkIcons.VerifiedUser,
+                                    modifier =
+                                        Modifier.clip(MaterialTheme.shapes.extraSmall)
+                                            .fillMaxSize(),
+                                    tint = contentColor,
+                                )
+                            },
+                    )
+                }
+            } else {
+                emptyMap()
             }
-        } else {
-            emptyMap()
-        }
         Text(
             modifier = modifier,
             text = annotatedString,
@@ -114,19 +119,18 @@ fun GkAppNameText(
     appInfo: AppInfo? = null,
 ) {
     val catalog = AppInfoRepository.state.collectAsStateWithLifecycle().value.snapshot
-    val info =
-        appInfo ?: catalog?.apps?.get(appId)
+    val info = appInfo ?: catalog?.apps?.get(appId)
     val showSystemIcon = info?.isSystem == true
     val appName = info?.name ?: fallbackName ?: appId
-    val userName = info?.userId?.let { userId ->
-        if (userId == catalog?.inventory?.userId) {
-            null
-        } else {
-            val userInfo =
-                catalog?.users?.get(userId)
-            stringResource(Res.string.app_profile_name, userInfo?.name ?: userId.toString())
+    val userName =
+        info?.userId?.let { userId ->
+            if (userId == catalog?.inventory?.userId) {
+                null
+            } else {
+                val userInfo = catalog?.users?.get(userId)
+                stringResource(Res.string.app_profile_name, userInfo?.name ?: userId.toString())
+            }
         }
-    }
     GkAppNameText(
         appName = appName,
         showSystemIcon = showSystemIcon,

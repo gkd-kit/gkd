@@ -8,14 +8,16 @@ public sealed class SelectorException(
 ) : Exception(message)
 
 @JsExport
-public class SelectorSyntaxException internal constructor(
+public class SelectorSyntaxException
+internal constructor(
     public val expected: String,
     public val actual: String,
     public val range: SourceRange,
     public val detail: String? = null,
-) : SelectorException(
-    buildSyntaxErrorMessage(expected, actual, range, detail),
-) {
+) :
+    SelectorException(
+        buildSyntaxErrorMessage(expected, actual, range, detail),
+    ) {
     public val index: Int
         get() = range.start
 }
@@ -47,33 +49,36 @@ public enum class SelectorTypeErrorKind(
 }
 
 @JsExport
-public class SelectorTypeException internal constructor(
+public class SelectorTypeException
+internal constructor(
     public val kind: SelectorTypeErrorKind,
     public val expression: String,
     public val expected: String?,
     public val actual: String?,
     public val range: SourceRange?,
-) : SelectorException(
-    buildTypeErrorMessage(kind, expression, expected, actual),
-) {
+) :
+    SelectorException(
+        buildTypeErrorMessage(kind, expression, expected, actual),
+    ) {
     public val index: Int?
         get() = range?.start
 }
 
 internal data class TypeCheckFailure(
     val kind: SelectorTypeErrorKind,
-    val positionValue: Any,
+    val positionValue: SourceMapped,
     val expression: String,
     val expected: String? = null,
     val actual: String? = null,
 ) {
-    fun toException(range: SourceRange?): SelectorTypeException = SelectorTypeException(
-        kind = kind,
-        expression = expression,
-        expected = expected,
-        actual = actual,
-        range = range,
-    )
+    fun toException(range: SourceRange?): SelectorTypeException =
+        SelectorTypeException(
+            kind = kind,
+            expression = expression,
+            expected = expected,
+            actual = actual,
+            range = range,
+        )
 }
 
 private fun buildTypeErrorMessage(

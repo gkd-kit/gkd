@@ -7,6 +7,7 @@ import li.gkd.gradle.BuildAssetVariant
 import li.gkd.gradle.GenerateSourcePathsTask
 import li.gkd.gradle.buildProperty
 import li.gkd.gradle.configureBuildAssets
+import li.gkd.gradle.getOrCreateSigningConfigs
 import li.gkd.gradle.gitInfo
 import li.gkd.gradle.releaseBuildKey
 
@@ -14,6 +15,7 @@ val gitInfo = project.gitInfo
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.codeorigin)
 }
 
@@ -37,33 +39,7 @@ android {
         manifestPlaceholders["tagName"] = gitInfo.tagName.orEmpty()
     }
 
-    buildFeatures {
-        resValues = true
-    }
-
-    val gkdStoreFile = buildProperty("GKD_STORE_FILE").orNull
-    val gkdSigningConfig = if (gkdStoreFile != null) {
-        signingConfigs.create("gkd") {
-            storeFile = file(gkdStoreFile)
-            storePassword = buildProperty("GKD_STORE_PASSWORD").orNull
-            keyAlias = buildProperty("GKD_KEY_ALIAS").orNull
-            keyPassword = buildProperty("GKD_KEY_PASSWORD").orNull
-        }
-    } else {
-        signingConfigs.getByName("debug")
-    }
-
-    val playStoreFile = buildProperty("PLAY_STORE_FILE").orNull
-    val playSigningConfig = if (playStoreFile != null) {
-        signingConfigs.create("play") {
-            storeFile = file(playStoreFile)
-            storePassword = buildProperty("PLAY_STORE_PASSWORD").orNull
-            keyAlias = buildProperty("PLAY_KEY_ALIAS").orNull
-            keyPassword = buildProperty("PLAY_KEY_PASSWORD").orNull
-        }
-    } else {
-        gkdSigningConfig
-    }
+    val signing = project.getOrCreateSigningConfigs(signingConfigs)
 
     buildTypes {
         all {
@@ -78,7 +54,7 @@ android {
             )
         }
         debug {
-            signingConfig = gkdSigningConfig
+            signingConfig = signing.gkd
             applicationIdSuffix = ".debug"
         }
     }
@@ -86,18 +62,17 @@ android {
         flavorDimensions += "channel"
         create("gkd") {
             isDefault = true
-            signingConfig = gkdSigningConfig
-            resValue("bool", "is_accessibility_tool", "true")
+            signingConfig = signing.gkd
         }
         create("play") {
-            signingConfig = playSigningConfig
-            resValue("bool", "is_accessibility_tool", "false")
+            signingConfig = signing.play
         }
         all {
             dimension = flavorDimensions.first()
             manifestPlaceholders["channel"] = name
         }
     }
+
     // https://github.com/LSPosed/AndroidHiddenApiBypass
     dependenciesInfo {
         includeInApk = false
@@ -105,20 +80,22 @@ android {
     }
     // https://priv-kit.pages.dev/zh/guide/getting-started#native-library-packaging
     packaging.jniLibs.useLegacyPackaging = true
-    packaging.resources.excludes += setOf(
-        "META-INF/**",
-        "DebugProbesKt.bin",
-    )
+    packaging.resources.excludes +=
+        setOf(
+            "META-INF/**",
+            "DebugProbesKt.bin",
+        )
 }
 
 val androidBuildAssetAdapter =
     BuildAssetAdapter<ApplicationAndroidComponentsExtension, ApplicationVariant>(
         onVariants = { components, buildType, action ->
-            val selector = if (buildType == null) {
-                components.selector().all()
-            } else {
-                components.selector().withBuildType(buildType)
-            }
+            val selector =
+                if (buildType == null) {
+                    components.selector().all()
+                } else {
+                    components.selector().withBuildType(buildType)
+                }
             components.onVariants(selector, action)
         },
         addGeneratedSourceDirectory = { variant, task ->
@@ -128,17 +105,16 @@ val androidBuildAssetAdapter =
             )
         },
         describe = { variant ->
-            val flavorName = variant.productFlavors
-                .single { it.first == "channel" }
-                .second
+            val flavorName = variant.productFlavors.single { it.first == "channel" }.second
             val mainOutput = variant.outputs.single()
             BuildAssetVariant(
                 name = variant.name,
                 flavor = flavorName,
                 buildType = requireNotNull(variant.buildType),
-                mappingFile = variant.artifacts.get(
-                    SingleArtifact.OBFUSCATION_MAPPING_FILE,
-                ),
+                mappingFile =
+                    variant.artifacts.get(
+                        SingleArtifact.OBFUSCATION_MAPPING_FILE,
+                    ),
                 versionCode = mainOutput.versionCode,
                 versionName = mainOutput.versionName,
             )
@@ -156,9 +132,7 @@ configureBuildAssets(
 androidComponents.onVariants(
     androidComponents.selector().withBuildType("release"),
 ) { variant ->
-    val flavorName = variant.productFlavors
-        .single { it.first == "channel" }
-        .second
+    val flavorName = variant.productFlavors.single { it.first == "channel" }.second
     variant.manifestPlaceholders.put(
         "buildKey",
         project.releaseBuildKey(flavorName, gitInfo.commitId),

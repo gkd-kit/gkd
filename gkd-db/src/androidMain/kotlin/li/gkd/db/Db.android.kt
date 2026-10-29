@@ -9,10 +9,10 @@ fun Db.initialize(context: Context, databasePath: String) {
     val applicationContext = context.applicationContext
     initialize {
         Room.databaseBuilder(
-            applicationContext,
-            AppDb::class.java,
-            databasePath,
-        )
+                applicationContext,
+                AppDb::class.java,
+                databasePath,
+            )
             .addMigrations(Migration14To15)
             .setDriver(AndroidSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)

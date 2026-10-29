@@ -35,12 +35,13 @@ fun AppTheme(
     val appearance by rememberAppearance()
     val darkTheme = appearance.isDark(isSystemInDarkTheme(), invertedTheme)
     val enableDynamicColor = appearance.dynamicColor
-    val colorScheme = when {
-        AndroidTarget.S && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
-        AndroidTarget.S && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme =
+        when {
+            AndroidTarget.S && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
+            AndroidTarget.S && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
+            darkTheme -> DarkColorScheme
+            else -> LightColorScheme
+        }
 
     val activity = LocalActivity.current
     if (activity != null) {
@@ -68,7 +69,7 @@ fun AppTheme(
     }
     CompositionLocalProvider(
         LocalDarkTheme provides darkTheme,
-        LocalIsTalkbackEnabled provides isTalkbackEnabled
+        LocalIsTalkbackEnabled provides isTalkbackEnabled,
     ) {
         GkTheme(
             colorScheme = colorScheme,

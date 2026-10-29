@@ -9,6 +9,7 @@ import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
@@ -19,34 +20,36 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import java.io.IOException
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.model.ActionResult
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.GkdAction
 import li.gkd.app.resources.*
+import li.gkd.app.snapshot.SnapshotCaptureOutcome
 import li.gkd.app.snapshot.SnapshotStore
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.util.LogUtils
 import li.gkd.db.Db
-import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
+import li.gkd.db.SubscriptionIds
 import org.jetbrains.compose.resources.getString
-import java.io.IOException
 
-private val httpSubsItem = SubsItem(
-    id = SubscriptionIds.LOCAL_HTTP,
-    order = -1,
-    enableUpdate = false,
-)
+private val httpSubsItem =
+    SubsItem(
+        id = SubscriptionIds.LOCAL_HTTP,
+        order = -1,
+        enableUpdate = false,
+    )
 
 fun Application.configureInspectionServer(
     serverInfo: () -> ServerInfo,
-    captureSnapshot: suspend () -> ComplexSnapshot,
+    captureSnapshot: suspend () -> SnapshotCaptureOutcome<ComplexSnapshot>,
     execSelector: suspend (GkdAction) -> ActionResult,
     scriptUrl: String,
     jsonFormat: Json,
@@ -55,9 +58,13 @@ fun Application.configureInspectionServer(
     install(getRpcPlugin(jsonFormat))
     install(ContentNegotiation) { json(jsonFormat) }
     routing {
-        get("/") { call.respondText(ContentType.Text.Html) { "<script type='module' src='$scriptUrl'></script>" } }
+        get("/") {
+            call.respondText(ContentType.Text.Html) {
+                "<script type='module' src='$scriptUrl'></script>"
+            }
+        }
         route("/api") {
-            registerSubscriptionRoutes()
+            registerSubscriptionRoutes(jsonFormat)
             post("/getServerInfo") { call.respond(serverInfo()) }
             post("/getSnapshot") {
                 val data = call.receive<ReqId>()
@@ -76,20 +83,25 @@ fun Application.configureInspectionServer(
                 call.respondFile(fp)
             }
             post("/captureSnapshot") {
-                call.respond(captureSnapshot())
+                when (val result = captureSnapshot()) {
+                    is SnapshotCaptureOutcome.Captured -> call.respond(result.value)
+                    SnapshotCaptureOutcome.Busy ->
+                        call.respondBusinessFailure(SnapshotCaptureOutcome.Busy, jsonFormat)
+                }
             }
             post("/getSnapshots") {
-                val list = Db.snapshotDao.query().first().mapNotNull {
-                    try {
-                        SnapshotStore.getMinSnapshot(it.id)
-                    } catch (e: IOException) {
-                        LogUtils.d("Cannot read snapshot ${it.id}", e)
-                        null
-                    } catch (e: SerializationException) {
-                        LogUtils.d("Invalid snapshot ${it.id}", e)
-                        null
+                val list =
+                    Db.snapshotDao.query().first().mapNotNull {
+                        try {
+                            SnapshotStore.getMinSnapshot(it.id)
+                        } catch (e: IOException) {
+                            LogUtils.e("Cannot read snapshot ${it.id}", e)
+                            null
+                        } catch (e: SerializationException) {
+                            LogUtils.e("Invalid snapshot ${it.id}", e)
+                            null
+                        }
                     }
-                }
                 call.respond(list)
             }
             post("/deleteSnapshot") {
@@ -106,12 +118,12 @@ fun Application.configureInspectionServer(
             post("/updateSubscription") {
                 val source = call.receiveText()
                 val subscription =
-                    RawSubscription.parse(source, json5 = false)
+                    RawSubscriptionParser.parse(source, json5 = false)
                         .copy(
                             id = SubscriptionIds.LOCAL_HTTP,
                             name = getString(Res.string.subscription_memory),
                             version = 0,
-                            author = "@gkd-kit/inspect"
+                            author = "@gkd-kit/inspect",
                         )
                 SubscriptionRepository.saveWithItem(subscription, httpSubsItem)
                 call.respond(rpcSuccess)
@@ -124,21 +136,25 @@ fun Application.configureInspectionServer(
     }
 }
 
-private fun getKtorCorsPlugin() = createApplicationPlugin(name = "KtorCorsPlugin") {
-    onCall { call ->
-        mapOf(
-            HttpHeaders.AccessControlAllowOrigin to "*",
-            HttpHeaders.AccessControlAllowMethods to "*",
-            HttpHeaders.AccessControlAllowHeaders to "*",
-            HttpHeaders.AccessControlExposeHeaders to "*",
-            "Access-Control-Allow-Private-Network" to "true",
-        ).forEach { (k, v) ->
-            if (!call.response.headers.contains(k)) {
-                call.response.header(k, v)
+private fun getKtorCorsPlugin() =
+    createApplicationPlugin(name = "KtorCorsPlugin") {
+        onCall { call ->
+            val path = call.request.path()
+            if (path != "/" && !path.startsWith("/api/")) return@onCall
+            mapOf(
+                    HttpHeaders.AccessControlAllowOrigin to "*",
+                    HttpHeaders.AccessControlAllowMethods to "*",
+                    HttpHeaders.AccessControlAllowHeaders to "*",
+                    HttpHeaders.AccessControlExposeHeaders to "*",
+                    "Access-Control-Allow-Private-Network" to "true",
+                )
+                .forEach { (k, v) ->
+                    if (!call.response.headers.contains(k)) {
+                        call.response.header(k, v)
+                    }
+                }
+            if (call.request.httpMethod == HttpMethod.Options) {
+                call.respond(rpcSuccess)
             }
         }
-        if (call.request.httpMethod == HttpMethod.Options) {
-            call.respond(rpcSuccess)
-        }
     }
-}

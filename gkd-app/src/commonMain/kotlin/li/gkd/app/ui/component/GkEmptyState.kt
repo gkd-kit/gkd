@@ -29,13 +29,14 @@ fun GkEmptyState(
     action: (@Composable () -> Unit)? = null,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                start = GkEmptyStateDefaults.HorizontalPadding,
-                top = GkEmptyStateDefaults.TopPadding,
-                end = GkEmptyStateDefaults.HorizontalPadding,
-            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(
+                    start = GkEmptyStateDefaults.HorizontalPadding,
+                    top = GkEmptyStateDefaults.TopPadding,
+                    end = GkEmptyStateDefaults.HorizontalPadding,
+                ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(

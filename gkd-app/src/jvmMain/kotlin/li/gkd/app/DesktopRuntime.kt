@@ -14,48 +14,51 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.app.applicationScope
+import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.CrashMetadata
 import li.gkd.app.crash.CrashRecorder
-import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.FileCrashStorage
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.network.NetworkClients
-import li.gkd.app.network.inspection.DesktopHttpService
+import li.gkd.app.network.inspection.DesktopDebugService
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
-import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.ui.image.ImageLoaders
 import li.gkd.app.ui.component.ToastState
-import li.gkd.app.util.LogUtils
+import li.gkd.app.ui.image.ImageLoaders
 import li.gkd.db.Db
-import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
+import li.gkd.db.SubscriptionIds
 import li.gkd.db.initialize
 
 /** Application-owned repositories outlive routes and explicit UI scenario reloads. */
 class DesktopRuntime(
-    val simulator: SimulatorStore
+    val simulator: SimulatorStore,
 ) : AutoCloseable {
     private val scope = applicationScope()
     val appCatalog = DesktopAppCatalog(simulator)
     val toast = ToastState()
-    val httpService = DesktopHttpService(simulator, scope, toast::show)
-    val services = DesktopServiceSimulation(simulator, httpService::setEnabled) { enabled ->
-        SettingsRepository.updateSettings { it.copy(enableStatusService = enabled) }
-    }
+    val debugService = DesktopDebugService(simulator, scope, toast::show)
+    val services =
+        DesktopServiceSimulation(simulator, debugService::setEnabled) { enabled ->
+            SettingsRepository.updateSettings { it.copy(enableStatusService = enabled) }
+        }
     private var pendingCrashData = emptyList<CrashData>()
-    val crashInitialization = scope.launch(Dispatchers.IO) {
-        pendingCrashData = FileCrashStorage.takePending()
-    }
+    val crashInitialization =
+        scope.launch(Dispatchers.IO) {
+            pendingCrashData = FileCrashStorage.takePending()
+        }
 
-    fun takeCrashDataList(): List<CrashData> = pendingCrashData.also { pendingCrashData = emptyList() }
+    fun takeCrashDataList(): List<CrashData> = pendingCrashData.also {
+        pendingCrashData = emptyList()
+    }
 
     companion object {
-        @Volatile
-        private var current: DesktopRuntime? = null
+        @Volatile private var current: DesktopRuntime? = null
 
         fun requireCurrent(): DesktopRuntime =
             checkNotNull(current) { "Desktop runtime is not active" }
@@ -68,7 +71,7 @@ class DesktopRuntime(
     }
 
     init {
-        LogUtils.d("Desktop runtime started")
+        LogUtils.i("Desktop runtime started")
     }
 
     private val pendingProfile = DesktopStorage.sessionDirectory.resolve("profile-import-pending")
@@ -87,18 +90,19 @@ class DesktopRuntime(
     }
     val imageLoader: ImageLoader by sharedImageLoader
 
-    private val crashRecorder = CrashRecorder(
-        CrashMetadata(
-            device = "Desktop " + System.getProperty("os.name"),
-            osCode = 0,
-            osName = System.getProperty("os.version"),
-            versionCode = META.versionCode,
-            versionName = META.versionName
+    private val crashRecorder =
+        CrashRecorder(
+            CrashMetadata(
+                device = "Desktop " + System.getProperty("os.name"),
+                osCode = 0,
+                osName = System.getProperty("os.version"),
+                versionCode = META.versionCode,
+                versionName = META.versionName,
+            ),
         )
-    )
     private val previousCrashHandler = Thread.getDefaultUncaughtExceptionHandler()
     private val crashHandler = Thread.UncaughtExceptionHandler { thread, error ->
-        LogUtils.d("UncaughtExceptionHandler", thread, error)
+        LogUtils.e("UncaughtExceptionHandler", thread, error)
         runCatching { crashRecorder.record(thread, error) }.onFailure { it.printStackTrace() }
         runCatching { LogUtils.flush() }.onFailure { it.printStackTrace() }
         previousCrashHandler?.uncaughtException(thread, error) ?: error.printStackTrace()
@@ -128,11 +132,16 @@ class DesktopRuntime(
         if (!imported.exists()) {
             val existing = Db.subsItemDao.queryAll().mapTo(mutableSetOf()) { it.id }
 
-            DesktopProfile.directory.resolve("subscriptions").takeIf { importProfile }?.listFiles()
-                .orEmpty().filter { it.extension == "json" }.forEachIndexed { index, file ->
-                    val value =
-                        RawSubscription.parse(file.readText(), json5 = false)
-                    if (value.id in existing && value.id != SubscriptionIds.LOCAL) return@forEachIndexed
+            DesktopProfile.directory
+                .resolve("subscriptions")
+                .takeIf { importProfile }
+                ?.listFiles()
+                .orEmpty()
+                .filter { it.extension == "json" }
+                .forEachIndexed { index, file ->
+                    val value = RawSubscriptionParser.parse(file.readText(), json5 = false)
+                    if (value.id in existing && value.id != SubscriptionIds.LOCAL)
+                        return@forEachIndexed
                     val enabled = DesktopProfile.subscriptionEnabled[value.id] ?: true
                     SubscriptionRepository.saveWithItem(
                         value,
@@ -140,30 +149,36 @@ class DesktopRuntime(
                             id = value.id,
                             order = index,
                             enable = enabled,
-                            updateUrl = value.updateUrl
-                        )
+                            updateUrl = value.updateUrl,
+                        ),
                     )
                 }
             imported.writeText("1")
-            check(!pendingProfile.exists() || pendingProfile.delete()) { "Cannot clear profile import marker" }
+            check(!pendingProfile.exists() || pendingProfile.delete()) {
+                "Cannot clear profile import marker"
+            }
         }
-        DesktopProfile.directory.resolve("fixtures.json").takeIf { it.isFile }?.let {
-            importDesktopFixtures(
-                it,
-                appStorage().snapshot,
-                DesktopStorage.sessionDirectory.resolve("fixtures-imported")
-            )
-        }
+        DesktopProfile.directory
+            .resolve("fixtures.json")
+            .takeIf { it.isFile }
+            ?.let {
+                importDesktopFixtures(
+                    it,
+                    appStorage().snapshot,
+                    DesktopStorage.sessionDirectory.resolve("fixtures-imported"),
+                )
+            }
     }
 
     override fun close() {
         simulator.onServiceRunningChanged = null
         simulator.onAppCatalogChanged = null
-        if (Thread.getDefaultUncaughtExceptionHandler() === crashHandler) Thread.setDefaultUncaughtExceptionHandler(
-            previousCrashHandler
-        )
+        if (Thread.getDefaultUncaughtExceptionHandler() === crashHandler)
+            Thread.setDefaultUncaughtExceptionHandler(
+                previousCrashHandler,
+            )
         try {
-            httpService.close()
+            debugService.close()
             services.close()
             runBlocking {
                 try {
@@ -173,7 +188,7 @@ class DesktopRuntime(
                 }
             }
         } catch (e: Exception) {
-            LogUtils.d("Desktop closed with unsaved data", e)
+            LogUtils.e("Desktop closed with unsaved data", e)
         } finally {
             try {
                 runBlocking { scope.coroutineContext[Job]!!.cancelAndJoin() }
@@ -184,7 +199,7 @@ class DesktopRuntime(
                 synchronized(Companion) {
                     if (current === this) current = null
                 }
-                LogUtils.d("Desktop runtime closed")
+                LogUtils.i("Desktop runtime closed")
                 LogUtils.close()
             }
         }

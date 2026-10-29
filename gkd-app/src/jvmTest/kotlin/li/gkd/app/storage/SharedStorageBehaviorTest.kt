@@ -11,12 +11,14 @@ import kotlin.test.assertTrue
 import li.gkd.app.subscription.FileSubscriptionFiles
 import li.gkd.app.subscription.SubscriptionException
 import li.gkd.app.subscription.SubscriptionFailureReason
+import li.gkd.app.testing.TestFiles
 import li.gkd.db.SubscriptionIds
 
 class SharedStorageBehaviorTest {
     @Test
     fun subscriptionReaderReportsMissingAndCorruptFilesWithoutInventingDefaultContent() {
-        val root = Files.createTempDirectory("gkd-subscription-read").toFile()
+        val root =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-subscription-read").toFile()
         try {
             val files = FileSubscriptionFiles(root)
             for (id in listOf(SubscriptionIds.LOCAL, SubscriptionIds.LOCAL_HTTP, 42L)) {
@@ -36,7 +38,8 @@ class SharedStorageBehaviorTest {
 
     @Test
     fun subscriptionStorageRecoversAndroidBackupAndDeletesAllRecoveryArtifacts() {
-        val root = Files.createTempDirectory("gkd-subscription-recovery").toFile()
+        val root =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-subscription-recovery").toFile()
         try {
             val files = FileSubscriptionFiles(root)
             root.resolve("1.json").writeText("incomplete")
@@ -54,17 +57,25 @@ class SharedStorageBehaviorTest {
 
     @Test
     fun cacheCleanupLeavesRecentFilesAndPersistentDataUntouched() {
-        val root = Files.createTempDirectory("gkd-cache-cleanup").toFile()
+        val root = Files.createTempDirectory(TestFiles.root.toPath(), "gkd-cache-cleanup").toFile()
         try {
-            val layout = AppStorageLayout(
-                root.resolve("files"),
-                root.resolve("cache"),
-                root.resolve("files")
-            )
-            val old = layout.tempCache.resolve("old").apply { writeText("old"); setLastModified(1) }
+            val layout =
+                AppStorageLayout(
+                    root.resolve("files"),
+                    root.resolve("cache"),
+                    root.resolve("files"),
+                )
+            val old =
+                layout.tempCache.resolve("old").apply {
+                    writeText("old")
+                    setLastModified(1)
+                }
             val recent = layout.sharedCache.resolve("new").apply { writeText("new") }
             val config =
-                layout.store.resolve("store.json").apply { writeText("{}"); setLastModified(1) }
+                layout.store.resolve("store.json").apply {
+                    writeText("{}")
+                    setLastModified(1)
+                }
             StorageMaintenance.clearExpired(layout)
             assertFalse(old.exists())
             assertTrue(recent.exists())

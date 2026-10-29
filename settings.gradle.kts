@@ -1,5 +1,9 @@
 pluginManagement {
     repositories {
+        exclusiveContent {
+            forRepository { mavenLocal() }
+            filter { includeVersionByRegex(".*", ".*", ".*-SNAPSHOT") }
+        }
         mavenCentral()
         google {
             content {
@@ -18,8 +22,10 @@ plugins {
 }
 
 rootProject.name = "gkd"
+
 include(
     ":gkd-android",
+    ":gkd-a11y-fixture",
     ":gkd-aidl",
     ":gkd-app",
     ":gkd-db",
@@ -29,6 +35,10 @@ include(
 
 dependencyResolutionManagement {
     repositories {
+        exclusiveContent {
+            forRepository { mavenLocal() }
+            filter { includeVersionByRegex(".*", ".*", ".*-SNAPSHOT") }
+        }
         mavenCentral()
         google {
             content {

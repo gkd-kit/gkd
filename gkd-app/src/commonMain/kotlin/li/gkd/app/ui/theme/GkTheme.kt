@@ -12,17 +12,19 @@ import androidx.compose.ui.graphics.Color
 fun GkTheme(
     colorScheme: ColorScheme,
     typography: Typography = Typography(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     MaterialTheme(colorScheme = colorScheme.animation(), typography = typography, content = content)
 }
 
 @Composable
-private fun Color.animation() = animateColorAsState(
-    targetValue = this,
-    animationSpec = tween(durationMillis = 500),
-    label = "animation"
-).value
+private fun Color.animation() =
+    animateColorAsState(
+            targetValue = this,
+            animationSpec = tween(durationMillis = 500),
+            label = "animation",
+        )
+        .value
 
 @Composable
 private fun ColorScheme.animation(): ColorScheme {

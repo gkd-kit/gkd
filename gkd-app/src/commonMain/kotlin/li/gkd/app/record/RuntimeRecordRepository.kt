@@ -34,7 +34,8 @@ data class ActionRecordInput(
     val time: Long,
 )
 
-/** Application-owned record writer. The host supplies the calling coroutine and handles failures.
+/**
+ * Application-owned record writer. The host supplies the calling coroutine and handles failures.
  * Only partial/failed Activity batches are buffered; visits and actions are never queued for retry.
  */
 object RuntimeRecordRepository {
@@ -48,16 +49,19 @@ object RuntimeRecordRepository {
 
     suspend fun recordVisit(input: AppVisitInput) {
         val currentLauncherAppId = launcherAppIdFlow.value
-        fun weighted(appId: String, time: Long) = when (appId) {
-            META.appId -> time - 120_000
-            currentLauncherAppId, Constants.systemUiAppId -> time - 60_000
-            else -> time
-        }
+        fun weighted(appId: String, time: Long) =
+            when (appId) {
+                META.appId -> time - 120_000
+                currentLauncherAppId,
+                Constants.systemUiAppId -> time - 60_000
+                else -> time
+            }
 
-        val records = listOf(
-            AppLastVisit(input.oldAppId, weighted(input.oldAppId, input.time - 1)),
-            AppLastVisit(input.newAppId, weighted(input.newAppId, input.time)),
-        )
+        val records =
+            listOf(
+                AppLastVisit(input.oldAppId, weighted(input.oldAppId, input.time - 1)),
+                AppLastVisit(input.newAppId, weighted(input.newAppId, input.time)),
+            )
         writer.withLock {
             withContext(NonCancellable) {
                 RuntimeRecordStore.writeVisits(records, visitCount % TRIM_INTERVAL == 0L)
@@ -72,12 +76,18 @@ object RuntimeRecordRepository {
     }
 
     suspend fun recordAction(input: ActionRecordInput) {
-        val record = ActionLog(
-            appId = input.appId, activityId = input.activityId,
-            subsId = input.subsId, subsVersion = input.subsVersion,
-            groupKey = input.groupKey, groupType = input.groupType,
-            ruleIndex = input.ruleIndex, ruleKey = input.ruleKey, ctime = input.time,
-        )
+        val record =
+            ActionLog(
+                appId = input.appId,
+                activityId = input.activityId,
+                subsId = input.subsId,
+                subsVersion = input.subsVersion,
+                groupKey = input.groupKey,
+                groupType = input.groupType,
+                ruleIndex = input.ruleIndex,
+                ruleKey = input.ruleKey,
+                ctime = input.time,
+            )
         writer.withLock {
             withContext(NonCancellable) {
                 RuntimeRecordStore.writeAction(record, (actionCount + 1) % TRIM_INTERVAL == 0L)
@@ -94,7 +104,8 @@ object RuntimeRecordRepository {
         // Finish COMMIT and in-memory acknowledgement together, even if the caller is canceled.
         withContext(NonCancellable) {
             val end = activityCount + activities.size
-            val trim = activityCount == 0L ||
+            val trim =
+                activityCount == 0L ||
                     (activityCount - 1) / TRIM_INTERVAL != (end - 1) / TRIM_INTERVAL
             RuntimeRecordStore.writeActivities(activities.toList(), trim)
             activities.clear()

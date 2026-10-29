@@ -50,11 +50,12 @@ import li.gkd.app.util.tryStartActivity
 import org.jetbrains.compose.resources.getString
 
 class MainActivity : ComponentActivity() {
-    val mainVm by viewModels<MainViewModel> {
-        androidx.lifecycle.viewmodel.viewModelFactory {
-            initializer { createMainViewModel() }
+    val mainVm by
+        viewModels<MainViewModel> {
+            androidx.lifecycle.viewmodel.viewModelFactory {
+                initializer { createMainViewModel() }
+            }
         }
-    }
     val imeController = ActivityImeController(this)
     private val activityResultHost = ActivityResultRequests.Host(this)
     private val permissionRequestHost = PermissionRequests.Host(this)
@@ -66,32 +67,40 @@ class MainActivity : ComponentActivity() {
         useLogLifecycle()
         onCreated {
             lifecycleScope.launch {
-                settings.mapState(lifecycleScope) { s -> s.excludeFromRecents }.collect {
-                    app.activityManager.appTasks.forEach { task ->
-                        task.setExcludeFromRecents(it)
+                settings
+                    .mapState(lifecycleScope) { s -> s.excludeFromRecents }
+                    .collect {
+                        app.activityManager.appTasks.forEach { task ->
+                            task.setExcludeFromRecents(it)
+                        }
                     }
-                }
             }
         }
     }
 
     fun shareFile(file: File, title: String) {
-        val uri = FileProvider.getUriForFile(
-            app,
-            "${app.packageName}.provider",
-            file,
-        )
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            putExtra(Intent.EXTRA_STREAM, uri)
-            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        val uri =
+            FileProvider.getUriForFile(
+                app,
+                "${app.packageName}.provider",
+                file,
+            )
+        val intent =
+            Intent(Intent.ACTION_SEND).apply {
+                putExtra(Intent.EXTRA_STREAM, uri)
+                type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         tryStartActivity(Intent.createChooser(intent, title))
     }
 
     suspend fun saveFileToDownloads(file: File) {
-        if (!mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)) {
+        if (
+            !mainVm.androidState.permissionRequests.ensurePermissions(
+                PermissionStates.writeExternalStorage,
+            )
+        ) {
             return
         }
         val result = saveToDownloads(file)
@@ -112,7 +121,8 @@ class MainActivity : ComponentActivity() {
         permissionRequestHost.bind(mainVm.androidState.permissionRequests)
         mainVm.registerCurrent()
         addOnNewIntentListener {
-            if (!DesktopProfileExport.handle(this@MainActivity, it)) mainVm.androidState.handleIntent(it)
+            if (!DesktopProfileExport.handle(this@MainActivity, it))
+                mainVm.androidState.handleIntent(it)
             intent = null
         }
         StatusService.autoStart()
@@ -127,10 +137,13 @@ class MainActivity : ComponentActivity() {
             }
             CompositionLocalProvider(
                 LocalTopBarWindowInsets provides topBarWindowInsets,
-            ) { AppRoot() }
+            ) {
+                AppRoot()
+            }
             LaunchedEffect(null) {
                 intent?.let {
-                    if (!DesktopProfileExport.handle(this@MainActivity, it)) mainVm.androidState.handleIntent(it)
+                    if (!DesktopProfileExport.handle(this@MainActivity, it))
+                        mainVm.androidState.handleIntent(it)
                     intent = null
                 }
             }

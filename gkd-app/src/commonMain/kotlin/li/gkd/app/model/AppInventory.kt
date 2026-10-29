@@ -12,10 +12,10 @@ data class AppInventory(
 ) {
     // Primary profile wins when a package is installed in more than one profile.
     val appsById: Map<String, AppInfo>
-        get() = AppCatalog.normalize(this).let {
-            it.othersApps.associateBy { app -> app.id } + it.apps.associateBy { app -> app.id }
-        }
+        get() =
+            AppCatalog.normalize(this).let {
+                it.othersApps.associateBy { app -> app.id } + it.apps.associateBy { app -> app.id }
+            }
 }
 
-@Serializable
-data class AppUser(val id: Int, val name: String?)
+@Serializable data class AppUser(val id: Int, val name: String?)

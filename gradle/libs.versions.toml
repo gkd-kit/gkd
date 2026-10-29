@@ -13,7 +13,7 @@ ktor = "3.6.0"
 lifecycle = "2.11.0"
 nav3 = "1.2.0"
 paging = "3.5.2"
-priv-kit = "0.17.8"
+priv-kit = "0.17.9"
 proguard = "7.10.0"
 remap = "0.1.7"
 room = "3.0.3"
@@ -56,6 +56,7 @@ compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "compose" }
 device = "com.github.getActivity:DeviceCompat:2.6"
 exp4j = "net.objecthunter:exp4j:0.4.8"
+expression = "li.songe:expression:0.1.1"
 google-accompanist-drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.3"
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
@@ -83,6 +84,7 @@ kmp-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel
 kmp-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 permissions = "com.github.getActivity:XXPermissions:28.3"
 priv-kit-ui = { module = "io.github.priv-kit:priv-ui", version.ref = "priv-kit" }
+priv-kit-input = { module = "io.github.priv-kit:priv-input", version.ref = "priv-kit" }
 remap-annotation = { module = "li.songe.remap:remap-annotation", version.ref = "remap" }
 remap-processor = { module = "li.songe.remap:remap-processor", version.ref = "remap" }
 reorderable = "sh.calvin.reorderable:reorderable:3.1.0"

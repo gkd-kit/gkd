@@ -2,31 +2,33 @@ package li.gkd.app.service
 
 import android.content.Intent
 import coil3.Bitmap
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withTimeoutOrNull
 import li.gkd.app.app
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.notif.NotificationCatalog
-import li.gkd.app.platform.lifecycle.ResourceSlot
 import li.gkd.app.platform.screenshot.MediaProjectionScreenshotSession
 import li.gkd.app.resources.*
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.componentName
-import kotlin.time.Duration.Companion.milliseconds
 
 class ScreenshotService : LifecycleHookService() {
-    private val captureSessionSlot = ResourceSlot<MediaProjectionScreenshotSession>()
+    @Volatile private var captureSession: MediaProjectionScreenshotSession? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
             return super.onStartCommand(intent, flags, startId)
         } finally {
             intent?.let {
-                captureSessionSlot.replace { createCaptureSession(intent) }
-                LogUtils.d("screenshot restart")
+                val oldSession = captureSession
+                captureSession = null
+                oldSession?.close()
+                captureSession = createCaptureSession(intent)
+                LogUtils.i("screenshot restart")
             }
         }
     }
@@ -34,7 +36,7 @@ class ScreenshotService : LifecycleHookService() {
     private fun createCaptureSession(intent: Intent): MediaProjectionScreenshotSession {
         return MediaProjectionScreenshotSession(intent) { invalidatedSession ->
             ThreadUtils.runMainOrPost {
-                if (captureSessionSlot.get() === invalidatedSession) {
+                if (captureSession === invalidatedSession) {
                     stopSelf()
                 }
             }
@@ -54,7 +56,9 @@ class ScreenshotService : LifecycleHookService() {
         }
         onDestroyed {
             instance = null
-            captureSessionSlot.close()
+            val oldSession = captureSession
+            captureSession = null
+            oldSession?.close()
         }
     }
 
@@ -67,12 +71,12 @@ class ScreenshotService : LifecycleHookService() {
             if (!isRunning.value) return null
             return try {
                 withTimeoutOrNull(5000.milliseconds) {
-                    instance?.captureSessionSlot?.get()?.capture()
+                    instance?.captureSession?.capture()
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LogUtils.d("截取屏幕失败", e)
+                LogUtils.e("截取屏幕失败", e)
                 null
             }
         }

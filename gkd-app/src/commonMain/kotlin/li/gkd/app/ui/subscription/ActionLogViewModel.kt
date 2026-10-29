@@ -5,8 +5,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -22,11 +22,10 @@ import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.toRuleGroupTarget
-import li.gkd.app.rule.toSwitchTarget
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
-import li.gkd.app.ui.MainViewModel
 import li.gkd.app.subscription.SubscriptionRepository
+import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.ActionLog
@@ -74,7 +73,6 @@ class ActionLogViewModel(
         showAppFilter.value = value
     }
 
-
     val filterAppIds: StateFlow<Set<String>>
         field = MutableStateFlow(emptySet())
 
@@ -97,102 +95,144 @@ class ActionLogViewModel(
         filterQuery.value = query
     }
 
-    val filterApps: StateFlow<Loadable<List<ActionLogAppOption>>> = combine(
-        Db.actionLogDao.queryAppIds(route.subsId), AppInfoRepository.state, filterQuery,
-    ) { ids, catalog, query ->
-        ids.map { ActionLogAppOption(it, catalog.snapshot?.apps?.get(it)?.name ?: it) }
-            .filter { it.id.contains(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true) }
-    }.map<List<ActionLogAppOption>, Loadable<List<ActionLogAppOption>>> { Loadable.Ready(it) }
-        .onStart { emit(Loadable.Loading) }
-        .catch { emit(Loadable.Failure(it)) }
-        .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
-
-    val pagingDataFlow = filterAppIds.flatMapLatest { appIds ->
-        Pager(PagingConfig(pageSize = 100)) {
-            Db.actionLogDao.pagingSource(route.subsId, route.appId?.let(::listOf) ?: appIds.toList())
-        }.flow
-    }
-        .cachedIn(scope)
-        .combine(SubscriptionRepository.snapshotFlow) { pagingData, snapshot ->
-            val subsMap = snapshot.value?.subscriptions.orEmpty()
-            pagingData.map { actionLog ->
-                val subscription = subsMap[actionLog.subsId]
-                val group = if (actionLog.groupType == RuleGroupType.App) {
-                    subscription?.apps
-                        ?.find { app -> app.id == actionLog.appId }
-                        ?.groups
-                        ?.find { group -> group.key == actionLog.groupKey }
-                } else {
-                    subscription?.globalGroups?.find { group -> group.key == actionLog.groupKey }
-                }
-                val rule = group?.rules?.run {
-                    if (actionLog.ruleKey != null) {
-                        find { rule -> rule.key == actionLog.ruleKey }
-                    } else {
-                        getOrNull(actionLog.ruleIndex)
+    val filterApps: StateFlow<Loadable<List<ActionLogAppOption>>> =
+        combine(
+                Db.actionLogDao.queryAppIds(route.subsId),
+                AppInfoRepository.state,
+                filterQuery,
+            ) { ids, catalog, query ->
+                ids.map { ActionLogAppOption(it, catalog.snapshot?.apps?.get(it)?.name ?: it) }
+                    .filter {
+                        it.id.contains(query, ignoreCase = true) ||
+                            it.name.contains(query, ignoreCase = true)
                     }
-                }
-                ActionLogListItem(
-                    actionLog, group, rule, subscription,
-                    subscription != null || (snapshot is Loadable.Ready && actionLog.subsId !in snapshot.value.loadErrors)
-                )
             }
-        }
+            .map<List<ActionLogAppOption>, Loadable<List<ActionLogAppOption>>> {
+                Loadable.Ready(it)
+            }
+            .onStart { emit(Loadable.Loading) }
+            .catch { emit(Loadable.Failure(it)) }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
+
+    val pagingDataFlow =
+        filterAppIds
+            .flatMapLatest { appIds ->
+                Pager(PagingConfig(pageSize = 100)) {
+                        Db.actionLogDao.pagingSource(
+                            route.subsId,
+                            route.appId?.let(::listOf) ?: appIds.toList(),
+                        )
+                    }
+                    .flow
+            }
+            .cachedIn(scope)
+            .combine(SubscriptionRepository.snapshotFlow) { pagingData, snapshot ->
+                val subsMap = snapshot.value?.subscriptions.orEmpty()
+                pagingData.map { actionLog ->
+                    val subscription = subsMap[actionLog.subsId]
+                    val group =
+                        if (actionLog.groupType == RuleGroupType.App) {
+                            subscription
+                                ?.apps
+                                ?.find { app -> app.id == actionLog.appId }
+                                ?.groups
+                                ?.find { group -> group.key == actionLog.groupKey }
+                        } else {
+                            subscription?.globalGroups?.find { group ->
+                                group.key == actionLog.groupKey
+                            }
+                        }
+                    val rule =
+                        group?.rules?.run {
+                            if (actionLog.ruleKey != null) {
+                                find { rule -> rule.key == actionLog.ruleKey }
+                            } else {
+                                getOrNull(actionLog.ruleIndex)
+                            }
+                        }
+                    ActionLogListItem(
+                        actionLog,
+                        group,
+                        rule,
+                        subscription,
+                        subscription != null ||
+                            (snapshot is Loadable.Ready &&
+                                actionLog.subsId !in snapshot.value.loadErrors),
+                    )
+                }
+            }
 
     private val selectedActionLogFlow = MutableStateFlow<ActionLog?>(null)
 
-    val dialogStateFlow = selectedActionLogFlow.flatMapLatest { actionLog ->
-        if (actionLog == null) {
-            flowOf(null)
-        } else {
-            combine(
-                SubscriptionConfigStore.observe()
-                    .map<SubscriptionConfigSnapshot, Loadable<SubscriptionConfigSnapshot>> {
-                        Loadable.Ready(
-                            it
+    val dialogStateFlow =
+        selectedActionLogFlow
+            .flatMapLatest { actionLog ->
+                if (actionLog == null) {
+                    flowOf(null)
+                } else {
+                    combine(
+                        SubscriptionConfigStore.observe()
+                            .map<SubscriptionConfigSnapshot, Loadable<SubscriptionConfigSnapshot>> {
+                                Loadable.Ready(
+                                    it,
+                                )
+                            }
+                            .onStart { emit(Loadable.Loading) }
+                            .catch { emit(Loadable.Failure(it)) },
+                        SubscriptionRepository.snapshotFlow,
+                    ) { configs, snapshot ->
+                        val subsMap = snapshot.value?.subscriptions.orEmpty()
+                        val subscription = subsMap[actionLog.subsId]
+                        val group =
+                            if (actionLog.groupType == RuleGroupType.App)
+                                subscription
+                                    ?.getAppGroups(
+                                        actionLog.appId,
+                                    )
+                                    ?.find { it.key == actionLog.groupKey }
+                            else subscription?.globalGroups?.find { it.key == actionLog.groupKey }
+                        val subsConfig =
+                            if (actionLog.groupType == RuleGroupType.App)
+                                configs.value?.appGroupConfigs?.find {
+                                    it.subsId == actionLog.subsId &&
+                                        it.appId == actionLog.appId &&
+                                        it.groupKey == actionLog.groupKey
+                                }
+                            else
+                                configs.value?.globalGroupConfigs?.find {
+                                    it.subsId == actionLog.subsId &&
+                                        it.groupKey == actionLog.groupKey
+                                }
+                        val exclude = ExcludeData.parse(subsConfig?.exclude)
+                        val subscriptionError = snapshot.value?.loadErrors?.get(actionLog.subsId)
+                        ActionLogDialogState(
+                            actionLog = actionLog,
+                            subsConfig = subsConfig,
+                            subscription = subscription,
+                            group = group,
+                            configs = configs.value,
+                            loadState =
+                                when {
+                                    configs is Loadable.Failure -> configs
+                                    snapshot is Loadable.Failure -> snapshot
+                                    configs is Loadable.Loading || snapshot is Loadable.Loading ->
+                                        Loadable.Loading
+                                    subscriptionError != null -> Loadable.Failure(subscriptionError)
+                                    else -> Loadable.Ready(Unit)
+                                },
+                            activityDisabled =
+                                actionLog.activityId?.let { activityId ->
+                                    exclude.activityIds.contains(actionLog.appId to activityId)
+                                } ?: false,
                         )
                     }
-                    .onStart { emit(Loadable.Loading) }
-                    .catch { emit(Loadable.Failure(it)) },
-                SubscriptionRepository.snapshotFlow
-            ) { configs, snapshot ->
-                val subsMap = snapshot.value?.subscriptions.orEmpty()
-                val subscription = subsMap[actionLog.subsId]
-                val group =
-                    if (actionLog.groupType == RuleGroupType.App) subscription?.getAppGroups(
-                        actionLog.appId
-                    )?.find { it.key == actionLog.groupKey }
-                    else subscription?.globalGroups?.find { it.key == actionLog.groupKey }
-                val subsConfig =
-                    if (actionLog.groupType == RuleGroupType.App) configs.value?.appGroupConfigs?.find {
-                        it.subsId == actionLog.subsId && it.appId == actionLog.appId && it.groupKey == actionLog.groupKey
-                    } else configs.value?.globalGroupConfigs?.find { it.subsId == actionLog.subsId && it.groupKey == actionLog.groupKey }
-                val exclude = ExcludeData.parse(subsConfig?.exclude)
-                val subscriptionError = snapshot.value?.loadErrors?.get(actionLog.subsId)
-                ActionLogDialogState(
-                    actionLog = actionLog,
-                    subsConfig = subsConfig,
-                    subscription = subscription,
-                    group = group,
-                    configs = configs.value,
-                    loadState = when {
-                        configs is Loadable.Failure -> configs
-                        snapshot is Loadable.Failure -> snapshot
-                        configs is Loadable.Loading || snapshot is Loadable.Loading -> Loadable.Loading
-                        subscriptionError != null -> Loadable.Failure(subscriptionError)
-                        else -> Loadable.Ready(Unit)
-                    },
-                    activityDisabled = actionLog.activityId?.let { activityId ->
-                        exclude.activityIds.contains(actionLog.appId to activityId)
-                    } ?: false,
-                )
+                }
             }
-        }
-    }.stateIn(
-        scope,
-        SharingStarted.Eagerly,
-        null,
-    )
+            .stateIn(
+                scope,
+                SharingStarted.Eagerly,
+                null,
+            )
 
     fun showActionLog(actionLog: ActionLog) {
         selectedActionLogFlow.value = actionLog
@@ -205,30 +245,40 @@ class ActionLogViewModel(
     fun prepareSwitch(state: ActionLogDialogState): RuleSwitchRequest {
         val subscription =
             checkNotNull(state.subscription) { Res.string.subscription_missing.getSync() }
-        val group =
-            checkNotNull(state.group) { Res.string.rule_missing.getSync() }
+        val group = checkNotNull(state.group) { Res.string.rule_missing.getSync() }
         return RuleGroupConfigService.prepare(
             listOf(
-                group.toRuleGroupTarget(subscription.id, state.actionLog.appId).toSwitchTarget()
+                group.toRuleGroupTarget(subscription.id, state.actionLog.appId).toSwitchTarget(),
             ),
-            listOf(subscription), checkNotNull(state.configs)
+            listOf(subscription),
+            checkNotNull(state.configs),
         )
     }
 
     suspend fun applySwitch(request: RuleSwitchRequest, setting: RuleSetting) =
-        applyRuleSwitchWithConfirmation(request, setting, MainViewModel.requireCurrent().dialogRequests, RuleSwitchHost.RuleDetail)
+        applyRuleSwitchWithConfirmation(
+            request,
+            setting,
+            MainViewModel.requireCurrent().dialogRequests,
+            RuleSwitchHost.RuleDetail,
+        )
 
     suspend fun updateActivityExclusion(state: ActionLogDialogState) {
         val actionLog = state.actionLog
         val activityId = actionLog.activityId ?: return
-        val target = if (actionLog.groupType == RuleGroupType.App) {
-            RuleGroupTarget.App(actionLog.subsId, actionLog.appId, actionLog.groupKey)
-        } else {
-            RuleGroupTarget.Global(actionLog.subsId, actionLog.groupKey)
-        }
+        val target =
+            if (actionLog.groupType == RuleGroupType.App) {
+                RuleGroupTarget.App(actionLog.subsId, actionLog.appId, actionLog.groupKey)
+            } else {
+                RuleGroupTarget.Global(actionLog.subsId, actionLog.groupKey)
+            }
         RuleGroupConfigService.setActivityExclusion(
             checkNotNull(state.subscription) { Res.string.subscription_missing.getSync() },
-            target, actionLog.appId, activityId, state.activityDisabled, !state.activityDisabled
+            target,
+            actionLog.appId,
+            activityId,
+            state.activityDisabled,
+            !state.activityDisabled,
         )
     }
 }

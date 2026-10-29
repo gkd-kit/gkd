@@ -32,8 +32,12 @@ private data class PreparedBackup(
 )
 
 object BackupManager {
-    private val storage get() = appStorage()
-    private val json get() = SubscriptionJson.json
+    private val storage
+        get() = appStorage()
+
+    private val json
+        get() = SubscriptionJson.json
+
     private val mutationMutex = Mutex()
 
     suspend fun exportData(): File = mutationMutex.withLock {
@@ -47,25 +51,28 @@ object BackupManager {
                         resolve(filename).writeText(text)
                     }
                 }
-                tempDir.resolve("db.json").writeText(
-                    BackupFormat.encode(
-                        BackupDatabaseData.fromSnapshot(subscriptionBackup.configuration),
-                    ),
-                )
+                tempDir
+                    .resolve("db.json")
+                    .writeText(
+                        BackupFormat.encode(
+                            BackupDatabaseData.fromSnapshot(subscriptionBackup.configuration),
+                        ),
+                    )
                 tempDir.resolve("subscription").run {
                     mkdir()
                     subscriptionBackup.subscriptions.forEach { subs ->
                         resolve("${subs.id}.json").writeText(json.encodeToString(subs))
                     }
                 }
-                val file = ExportFileNames.reserve(
-                    storage.sharedCache,
-                    "gkd-backup-${ExportFileNames.timestamp(System.currentTimeMillis())}",
-                    "zip",
-                )
+                val file =
+                    ExportFileNames.reserve(
+                        storage.sharedCache,
+                        "gkd-backup-${ExportFileNames.timestamp(System.currentTimeMillis())}",
+                        "zip",
+                    )
                 try {
-                    val files = tempDir.listFiles()
-                        ?: throw IOException("Cannot list directory: $tempDir")
+                    val files =
+                        tempDir.listFiles() ?: throw IOException("Cannot list directory: $tempDir")
                     ZipArchive.zipFiles(files.toList(), file)
                     file
                 } catch (e: Throwable) {
@@ -78,8 +85,7 @@ object BackupManager {
         }
     }
 
-    suspend fun importData(source: FileSource): Int =
-        importData { openFileSource(source) }
+    suspend fun importData(source: FileSource): Int = importData { openFileSource(source) }
 
     suspend fun importData(open: () -> InputStream) = mutationMutex.withLock {
         withContext(Dispatchers.IO) {
@@ -114,7 +120,8 @@ object BackupManager {
                 } catch (error: Throwable) {
                     previousFiles.forEach { (id, bytes) ->
                         runCatching { SubscriptionRepository.files.restore(id, bytes) }
-                            .exceptionOrNull()?.let(error::addSuppressed)
+                            .exceptionOrNull()
+                            ?.let(error::addSuppressed)
                     }
                     throw error
                 }
@@ -124,47 +131,57 @@ object BackupManager {
     private suspend fun prepareBackup(unzipDir: File): PreparedBackup =
         withContext(Dispatchers.IO) {
             val dbFile = unzipDir.resolve("db.json")
-            val dbData = if (dbFile.exists() && dbFile.isFile) {
-                val text = dbFile.readText()
-                withContext(Dispatchers.Default) {
-                    BackupFormat.decode(text).toSnapshot()
+            val dbData =
+                if (dbFile.exists() && dbFile.isFile) {
+                    val text = dbFile.readText()
+                    withContext(Dispatchers.Default) {
+                        BackupFormat.decode(text).toSnapshot()
+                    }
+                } else {
+                    null
                 }
-            } else {
-                null
-            }
-            val storeEntries = SettingsRepository.backupFilenames.mapNotNull { filename ->
-                val file = unzipDir.resolve("store/$filename")
-                if (!file.exists() || !file.isFile) return@mapNotNull null
-                filename to file.readText()
-            }
+            val storeEntries =
+                SettingsRepository.backupFilenames.mapNotNull { filename ->
+                    val file = unzipDir.resolve("store/$filename")
+                    if (!file.exists() || !file.isFile) return@mapNotNull null
+                    filename to file.readText()
+                }
             val subsDir = unzipDir.resolve("subscription")
-            val subscriptions = if (!Files.notExists(subsDir.toPath())) {
-                (subsDir.listFiles { file ->
-                    file.isFile && file.name.endsWith(".json")
-                } ?: throw IOException("Cannot list directory: $subsDir")).sortedBy { it.name }.map { file ->
-                    val fileId = file.nameWithoutExtension.toLongOrNull()
-                        ?: throw StorageException(
-                            BackupIssue.SubscriptionInvalidFilename,
-                            file.name
-                        )
-                    val text = file.readText()
-                    withContext(Dispatchers.Default) { json.decodeFromString<RawSubscription>(text) }.also { subscription ->
-                        if (subscription.id != fileId) {
-                            throw StorageException(
-                                BackupIssue.SubscriptionFileIdMismatch,
-                                fileId,
-                                subscription.id
-                            )
+            val subscriptions =
+                if (!Files.notExists(subsDir.toPath())) {
+                    (subsDir.listFiles { file ->
+                            file.isFile && file.name.endsWith(".json")
+                        } ?: throw IOException("Cannot list directory: $subsDir"))
+                        .sortedBy { it.name }
+                        .map { file ->
+                            val fileId =
+                                file.nameWithoutExtension.toLongOrNull()
+                                    ?: throw StorageException(
+                                        BackupIssue.SubscriptionInvalidFilename,
+                                        file.name,
+                                    )
+                            val text = file.readText()
+                            withContext(Dispatchers.Default) {
+                                    json.decodeFromString<RawSubscription>(text)
+                                }
+                                .also { subscription ->
+                                    if (subscription.id != fileId) {
+                                        throw StorageException(
+                                            BackupIssue.SubscriptionFileIdMismatch,
+                                            fileId,
+                                            subscription.id,
+                                        )
+                                    }
+                                }
                         }
-                    }
-                }.also { list ->
-                    if (list.map { it.id }.distinct().size != list.size) {
-                        throw StorageException(BackupIssue.DuplicateSubscriptionId)
-                    }
+                        .also { list ->
+                            if (list.map { it.id }.distinct().size != list.size) {
+                                throw StorageException(BackupIssue.DuplicateSubscriptionId)
+                            }
+                        }
+                } else {
+                    emptyList()
                 }
-            } else {
-                emptyList()
-            }
             PreparedBackup(
                 dbData = dbData,
                 storeEntries = storeEntries.toMap(),

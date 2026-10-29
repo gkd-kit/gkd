@@ -7,20 +7,29 @@ import androidx.room3.withWriteTransaction
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class AppDbMigrationTest {
-    private val schemaDirectory =
-        Path.of(checkNotNull(System.getProperty("room.schemaDirectory")))
-    private val tempDirectory = createTempDirectory("app-db-migration-test")
+    private val schemaDirectory = Path.of(checkNotNull(System.getProperty("room.schemaDirectory")))
+    private val tempDirectory = run {
+        val project =
+            generateSequence(File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
+                .first { it.resolve("settings.gradle.kts").isFile }
+        val parent = project.resolve(".local/tests/desktop").toPath()
+        Files.createDirectories(parent)
+        createTempDirectory(parent, "app-db-migration-test-")
+    }
 
     private fun databasePath(databaseName: String): Path = tempDirectory.resolve(databaseName)
 
@@ -40,13 +49,14 @@ class AppDbMigrationTest {
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()
 
-    private suspend fun AppDb.captureConfigurations() = SubscriptionConfigSnapshot(
-        subsItems = subsItemDao().queryAll(),
-        appConfigs = subsAppConfigDao().queryAll(),
-        categoryConfigs = subsCategoryConfigDao().queryAll(),
-        appGroupConfigs = subsAppGroupConfigDao().queryAll(),
-        globalGroupConfigs = subsGlobalGroupConfigDao().queryAll(),
-    )
+    private suspend fun AppDb.captureConfigurations() =
+        SubscriptionConfigSnapshot(
+            subsItems = subsItemDao().queryAll(),
+            appConfigs = subsAppConfigDao().queryAll(),
+            categoryConfigs = subsCategoryConfigDao().queryAll(),
+            appGroupConfigs = subsAppGroupConfigDao().queryAll(),
+            globalGroupConfigs = subsGlobalGroupConfigDao().queryAll(),
+        )
 
     private fun SQLiteConnection.queryLong(sql: String): Long =
         prepare(sql).use { statement ->
@@ -76,31 +86,38 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun migration17To18StartsEmptyWithoutRecountingRetainedLogsAndPersistsNewCounts() = runBlocking {
-        val name = "trigger-statistics.db"
-        val helper = migrationHelper(name)
-        helper.createDatabase(17).use {
-            it.execSQL("INSERT INTO action_log (ctime, app_id, subs_id, subs_version, group_key, group_type, rule_index) VALUES (100, 'app', 7, 1, 2, 2, 0)")
-        }
-        helper.runMigrationsAndValidate(18).close()
-        val db = openDatabase(name)
-        try {
-            assertEquals(1, db.actionLogDao().count().first())
-            assertEquals(emptyList(), db.ruleTriggerStatsDao().observe().first())
-            db.withWriteTransaction {
-                db.ruleTriggerStatsDao().insertIfAbsent(RuleTriggerStats(7, RuleGroupType.App, 2, "app", 0, 200))
-                db.ruleTriggerStatsDao().increment(7, RuleGroupType.App, 2, "app", 200)
+    fun migration17To18StartsEmptyWithoutRecountingRetainedLogsAndPersistsNewCounts() =
+        runBlocking {
+            val name = "trigger-statistics.db"
+            val helper = migrationHelper(name)
+            helper.createDatabase(17).use {
+                it.execSQL(
+                    "INSERT INTO action_log (ctime, app_id, subs_id, subs_version, group_key, group_type, rule_index) VALUES (100, 'app', 7, 1, 2, 2, 0)",
+                )
             }
-        } finally {
-            db.close()
+            helper.runMigrationsAndValidate(18).close()
+            val db = openDatabase(name)
+            try {
+                assertEquals(1, db.actionLogDao().count().first())
+                assertEquals(emptyList(), db.ruleTriggerStatsDao().observe().first())
+                db.withWriteTransaction {
+                    db.ruleTriggerStatsDao()
+                        .insertIfAbsent(RuleTriggerStats(7, RuleGroupType.App, 2, "app", 0, 200))
+                    db.ruleTriggerStatsDao().increment(7, RuleGroupType.App, 2, "app", 200)
+                }
+            } finally {
+                db.close()
+            }
+            val reopened = openDatabase(name)
+            try {
+                assertEquals(
+                    RuleTriggerStats(7, RuleGroupType.App, 2, "app", 1, 200),
+                    reopened.ruleTriggerStatsDao().observe().first().single(),
+                )
+            } finally {
+                reopened.close()
+            }
         }
-        val reopened = openDatabase(name)
-        try {
-            assertEquals(RuleTriggerStats(7, RuleGroupType.App, 2, "app", 1, 200), reopened.ruleTriggerStatsDao().observe().first().single())
-        } finally {
-            reopened.close()
-        }
-    }
 
     @Test
     fun migration16To17KeepsOverridesAndDefaultsNewScopeToFollowSubscription() = runBlocking {
@@ -138,32 +155,42 @@ class AppDbMigrationTest {
             connection.execSQL("INSERT INTO subs_item VALUES (7, 1, 2, 1, 1, 0, NULL)")
             connection.execSQL("INSERT INTO app_config VALUES (0, 7, 'app.one')")
             connection.execSQL("INSERT INTO category_config VALUES (NULL, 7, 3)")
-            connection.execSQL("INSERT INTO app_group_config VALUES (7, 'app.one', 4, NULL, 'app-exclude')")
+            connection.execSQL(
+                "INSERT INTO app_group_config VALUES (7, 'app.one', 4, NULL, 'app-exclude')",
+            )
             connection.execSQL("INSERT INTO global_group_config VALUES (7, 4, 1, 'global-exclude')")
-            connection.execSQL("INSERT INTO activity_log_v2 VALUES (41, 100, 'app.one', 'MainActivity')")
-            connection.execSQL("INSERT INTO app_visit_log VALUES ('app.one', 100), ('app.two', 200)")
-            connection.execSQL("""INSERT INTO a11y_event_log VALUES (5, 300, 32, 'app.one', 'Event', 'description', '["first","second"]')""")
+            connection.execSQL(
+                "INSERT INTO activity_log_v2 VALUES (41, 100, 'app.one', 'MainActivity')",
+            )
+            connection.execSQL(
+                "INSERT INTO app_visit_log VALUES ('app.one', 100), ('app.two', 200)",
+            )
+            connection.execSQL(
+                """INSERT INTO a11y_event_log VALUES (5, 300, 32, 'app.one', 'Event', 'description', '["first","second"]')""",
+            )
         }
         helper.runMigrationsAndValidate(16, listOf(Migration14To15)).use { connection ->
             assertEquals(
                 100L,
-                connection.queryLong("SELECT last_visit_time FROM app_last_visit WHERE app_id = 'app.one'")
+                connection.queryLong(
+                    "SELECT last_visit_time FROM app_last_visit WHERE app_id = 'app.one'",
+                ),
             )
             assertEquals(
                 "app.one",
-                connection.queryText("SELECT app_id FROM a11y_event_log WHERE id = 5")
+                connection.queryText("SELECT app_id FROM a11y_event_log WHERE id = 5"),
             )
             assertEquals(
                 "description",
-                connection.queryText("SELECT desc FROM a11y_event_log WHERE id = 5")
+                connection.queryText("SELECT desc FROM a11y_event_log WHERE id = 5"),
             )
             assertEquals(
                 """["first","second"]""",
-                connection.queryText("SELECT text FROM a11y_event_log WHERE id = 5")
+                connection.queryText("SELECT text FROM a11y_event_log WHERE id = 5"),
             )
             assertEquals(
                 "MainActivity",
-                connection.queryText("SELECT activity_id FROM activity_log WHERE id = 41")
+                connection.queryText("SELECT activity_id FROM activity_log WHERE id = 41"),
             )
             connection.prepare("PRAGMA foreign_key_check").use { assertTrue(!it.step()) }
         }
@@ -172,17 +199,17 @@ class AppDbMigrationTest {
             val before = database.captureConfigurations()
             assertEquals(
                 listOf(SubsItem(7, ctime = 1, mtime = 2, enable = true, order = 0)),
-                before.subsItems
+                before.subsItems,
             )
             assertEquals(listOf(SubsAppConfig(false, 7, "app.one")), before.appConfigs)
             assertEquals(listOf(SubsCategoryConfig(null, 7, 3)), before.categoryConfigs)
             assertEquals(
                 listOf(SubsAppGroupConfig(7, "app.one", 4, null, "app-exclude")),
-                before.appGroupConfigs
+                before.appGroupConfigs,
             )
             assertEquals(
                 listOf(SubsGlobalGroupConfig(7, 4, true, "global-exclude")),
-                before.globalGroupConfigs
+                before.globalGroupConfigs,
             )
 
             assertEquals(listOf("app.two", "app.one"), database.appLastVisitDao().query().first())
@@ -190,7 +217,7 @@ class AppDbMigrationTest {
             assertEquals(listOf("app.one", "app.two"), database.appLastVisitDao().query().first())
             assertEquals(
                 listOf(42L),
-                database.activityLogDao().insert(ActivityLog(ctime = 400, appId = "app.two"))
+                database.activityLogDao().insert(ActivityLog(ctime = 400, appId = "app.two")),
             )
             assertEquals(2, database.activityLogDao().count().first())
             assertEquals(1, database.a11yEventLogDao().count().first())
@@ -198,7 +225,10 @@ class AppDbMigrationTest {
             // Renaming child tables must preserve both parent-update and cascading-delete behavior.
             val updatedItem = before.subsItems.single().copy(enable = false)
             database.subsItemDao().upsert(updatedItem)
-            assertEquals(before.copy(subsItems = listOf(updatedItem)), database.captureConfigurations())
+            assertEquals(
+                before.copy(subsItems = listOf(updatedItem)),
+                database.captureConfigurations(),
+            )
             database.subsItemDao().deleteById(7)
             assertEquals(SubscriptionConfigSnapshot(), database.captureConfigurations())
         } finally {
@@ -238,29 +268,37 @@ class AppDbMigrationTest {
             assertEquals(3, appDao.queryAll().size)
             assertEquals(
                 SubsAppGroupConfig(7, "app.one", 4, false, "old"),
-                appDao.queryConfig(7, "app.one", 4).first()
+                appDao.queryConfig(7, "app.one", 4).first(),
             )
             assertEquals(
                 listOf(SubsGlobalGroupConfig(7, 4, null, "old-global")),
-                database.subsGlobalGroupConfigDao().queryAll()
+                database.subsGlobalGroupConfigDao().queryAll(),
             )
             assertEquals(
                 listOf(SubsAppConfig(false, 7, "app.one")),
-                database.subsAppConfigDao().queryAll()
+                database.subsAppConfigDao().queryAll(),
             )
             assertEquals(
                 listOf(SubsCategoryConfig(null, 7, 3)),
-                database.subsCategoryConfigDao().queryAll()
+                database.subsCategoryConfigDao().queryAll(),
             )
 
-            // A switch update must affect the same sole row used by first-match UI and indexed runtime reads.
+            // A switch update must affect the same sole row used by first-match UI and indexed
+            // runtime reads.
             appDao.upsert(SubsAppGroupConfig(7, "app.one", 4, true, "old"))
             val configs = appDao.queryByAppId(7, "app.one").first()
             assertEquals(1, configs.size)
             assertEquals(true, configs.find { it.groupKey == 4 }?.enable)
-            assertEquals(true, appDao.queryUsedList().first().associateBy {
-                Triple(it.subsId, it.appId, it.groupKey)
-            }[Triple(7L, "app.one", 4)]?.enable)
+            assertEquals(
+                true,
+                appDao
+                    .queryUsedList()
+                    .first()
+                    .associateBy {
+                        Triple(it.subsId, it.appId, it.groupKey)
+                    }[Triple(7L, "app.one", 4)]
+                    ?.enable,
+            )
         } finally {
             database.close()
         }
@@ -275,14 +313,16 @@ class AppDbMigrationTest {
                 INSERT INTO subs_config
                     (id, type, enable, subs_item_id, app_id, group_key, exclude)
                 VALUES (101, 2, 1, 77, 'sample.app', 5, '')
-                """.trimIndent()
+                """
+                    .trimIndent(),
             )
             execSQL(
                 """
                 INSERT INTO category_config
                     (id, enable, subs_item_id, category_key)
                 VALUES (102, 1, 88, 6)
-                """.trimIndent()
+                """
+                    .trimIndent(),
             )
             close()
         }
@@ -312,7 +352,8 @@ class AppDbMigrationTest {
                 VALUES
                     (201, 'sample.app', 'sample.Activity', 'Old name', 12,
                      '1.2', 1920, 1080, 0, 301)
-                """.trimIndent()
+                """
+                    .trimIndent(),
             )
             close()
         }
@@ -343,7 +384,8 @@ class AppDbMigrationTest {
                 INSERT INTO subs_item
                     (id, ctime, mtime, enable, enable_update, `order`, update_url)
                 VALUES (42, 1, 1, 1, 1, 0, NULL)
-                """.trimIndent()
+                """
+                    .trimIndent(),
             )
             close()
         }
@@ -370,34 +412,87 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun flowPagingAndListConverterWorkOnJvm() = runBlocking {
-        val databaseName = "room3-query-adapters.db"
+    fun eventTextLoadsUnchangedIncludingMalformedJsonAndLegacyEmptyText() = runBlocking {
+        val databaseName = "malformed-event-text.db"
+        val expectedText =
+            mapOf(
+                1 to "{broken",
+                2 to """["first","second"]""",
+                3 to "",
+                4 to "[]",
+            )
+        // A malformed record must not prevent the same page's valid and legacy records from
+        // loading.
+        migrationHelper(databaseName).createDatabase(18).use {
+            it.execSQL(
+                "INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (1, 1, 1, 'sample.app', 'event', '{broken')",
+            )
+            it.execSQL(
+                """INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (2, 2, 1, 'sample.app', 'event', '["first","second"]')""",
+            )
+            it.execSQL(
+                "INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (3, 3, 1, 'sample.app', 'event', '')",
+            )
+            it.execSQL(
+                "INSERT INTO a11y_event_log (id, ctime, type, app_id, name, text) VALUES (4, 4, 1, 'sample.app', 'event', '[]')",
+            )
+        }
         val database = openDatabase(databaseName)
         try {
-            val expectedText = listOf("first", "second")
-            database.a11yEventLogDao().insert(
-                listOf(
-                    A11yEventLog(
-                        id = 1,
-                        ctime = 2,
-                        type = 3,
-                        appId = "sample.app",
-                        name = "sample.Event",
-                        desc = null,
-                        text = expectedText,
+            val result =
+                database
+                    .a11yEventLogDao()
+                    .pagingSource()
+                    .load(
+                        PagingSource.LoadParams.Refresh<Int>(null, 10, false),
                     )
+            assertIs<PagingSource.LoadResult.Page<Int, A11yEventLog>>(result)
+            assertEquals(expectedText, result.data.associate { it.id to it.text })
+        } finally {
+            database.close()
+        }
+        BundledSQLiteDriver().open(databasePath(databaseName).toString()).use {
+            expectedText.forEach { (id, text) ->
+                assertEquals(text, it.queryText("SELECT text FROM a11y_event_log WHERE id = $id"))
+            }
+        }
+    }
+
+    @Test
+    fun flowPagingAndRawEventTextStorageWorkOnJvm() = runBlocking {
+        val databaseName = "room3-query-adapters.db"
+        val expectedText = """["first","second"]"""
+        val database = openDatabase(databaseName)
+        try {
+            database
+                .a11yEventLogDao()
+                .insert(
+                    listOf(
+                        A11yEventLog(
+                            id = 1,
+                            ctime = 2,
+                            type = 3,
+                            appId = "sample.app",
+                            name = "sample.Event",
+                            desc = null,
+                            text = expectedText,
+                        ),
+                    ),
                 )
-            )
 
             assertEquals(1, database.a11yEventLogDao().count().first())
             when (
-                val result = database.a11yEventLogDao().pagingSource().load(
-                    PagingSource.LoadParams.Refresh(
-                        key = null,
-                        loadSize = 10,
-                        placeholdersEnabled = false,
-                    )
-                )
+                val result =
+                    database
+                        .a11yEventLogDao()
+                        .pagingSource()
+                        .load(
+                            PagingSource.LoadParams.Refresh(
+                                key = null,
+                                loadSize = 10,
+                                placeholdersEnabled = false,
+                            ),
+                        )
             ) {
                 is PagingSource.LoadResult.Page -> {
                     assertEquals(1, result.data.size)
@@ -405,10 +500,14 @@ class AppDbMigrationTest {
                 }
 
                 is PagingSource.LoadResult.Error -> throw result.throwable
-                is PagingSource.LoadResult.Invalid -> error("PagingSource became invalid before loading")
+                is PagingSource.LoadResult.Invalid ->
+                    error("PagingSource became invalid before loading")
             }
         } finally {
             database.close()
+        }
+        BundledSQLiteDriver().open(databasePath(databaseName).toString()).use {
+            assertEquals(expectedText, it.queryText("SELECT text FROM a11y_event_log WHERE id = 1"))
         }
     }
 }

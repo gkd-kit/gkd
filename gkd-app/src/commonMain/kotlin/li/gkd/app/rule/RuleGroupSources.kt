@@ -22,17 +22,18 @@ import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
 
 data class RuleGroupSnapshot(val groups: RuleGroupSummary, val apps: Map<String, AppInfo>)
+
 data class RuleAppEnvironment(val apps: Map<String, AppInfo>, val launcherAppId: String)
 
 object RuleGroupSources {
     fun usedSubscriptions(
         items: List<SubsItem>,
-        subscriptions: Map<Long, RawSubscription>
-    ): List<UsedSubsEntry> =
-        items.mapNotNull { item ->
-            subscriptions[item.id]?.takeIf { item.enable && it.hasRule }
-                ?.let { UsedSubsEntry(item, it) }
-        }
+        subscriptions: Map<Long, RawSubscription>,
+    ): List<UsedSubsEntry> = items.mapNotNull { item ->
+        subscriptions[item.id]
+            ?.takeIf { item.enable && it.hasRule }
+            ?.let { UsedSubsEntry(item, it) }
+    }
 
     fun observe(
         subscriptions: Flow<Loadable<SubscriptionSnapshot>>,
@@ -40,31 +41,36 @@ object RuleGroupSources {
         configs: Flow<SubscriptionConfigSnapshot>,
     ): Flow<Loadable<RuleGroupSnapshot>> =
         combine(subscriptions, environment, configs) { loaded, input, config ->
-            when (loaded) {
-                Loadable.Loading -> Loadable.Loading
-                is Loadable.Failure -> Loadable.Failure(loaded.cause)
-                is Loadable.Ready -> Loadable.Ready(
-                    RuleGroupSnapshot(
-                        RuleGroupSummaryBuilder.build(
-                            usedSubscriptions(config.subsItems, loaded.value.subscriptions),
-                            input.apps,
-                            config.appConfigs,
-                            config.appGroupConfigs + config.globalGroupConfigs,
-                            config.categoryConfigs,
-                            input.launcherAppId
-                        ), input.apps
-                    )
-                )
+                when (loaded) {
+                    Loadable.Loading -> Loadable.Loading
+                    is Loadable.Failure -> Loadable.Failure(loaded.cause)
+                    is Loadable.Ready ->
+                        Loadable.Ready(
+                            RuleGroupSnapshot(
+                                RuleGroupSummaryBuilder.build(
+                                    usedSubscriptions(config.subsItems, loaded.value.subscriptions),
+                                    input.apps,
+                                    config.appConfigs,
+                                    config.appGroupConfigs + config.globalGroupConfigs,
+                                    config.categoryConfigs,
+                                    input.launcherAppId,
+                                ),
+                                input.apps,
+                            ),
+                        )
+                }
             }
-        }.catch { emit(Loadable.Failure(it)) }.flowOn(Dispatchers.Default)
+            .catch { emit(Loadable.Failure(it)) }
+            .flowOn(Dispatchers.Default)
 }
 
 val ruleGroupState: StateFlow<Loadable<RuleGroupSnapshot>> by lazy {
     RuleGroupSources.observe(
-        SubscriptionRepository.snapshotFlow,
-        combine(AppInfoRepository.appInfoMapFlow, launcherAppIdFlow) { apps, launcher ->
-            RuleAppEnvironment(apps, launcher)
-        },
-        SubscriptionConfigStore.observe(),
-    ).stateIn(applicationScope(), SharingStarted.Eagerly, Loadable.Loading)
+            SubscriptionRepository.snapshotFlow,
+            combine(AppInfoRepository.appInfoMapFlow, launcherAppIdFlow) { apps, launcher ->
+                RuleAppEnvironment(apps, launcher)
+            },
+            SubscriptionConfigStore.observe(),
+        )
+        .stateIn(applicationScope(), SharingStarted.Eagerly, Loadable.Loading)
 }

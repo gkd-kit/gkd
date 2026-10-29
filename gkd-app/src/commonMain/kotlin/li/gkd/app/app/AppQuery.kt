@@ -7,28 +7,37 @@ object AppQuery {
     data class Result(val apps: List<AppInfo>, val showAllApps: Boolean)
 
     fun select(
-        visibleApps: List<AppInfo>, search: String, group: Int, sort: Int,
-        showBlocked: Boolean = true, blocked: Set<String> = emptySet(),
-        actionOrder: List<String> = emptyList(), visitOrder: Map<String, Int> = emptyMap(),
+        visibleApps: List<AppInfo>,
+        search: String,
+        group: Int,
+        sort: Int,
+        showBlocked: Boolean = true,
+        blocked: Set<String> = emptySet(),
+        actionOrder: List<String> = emptyList(),
+        visitOrder: Map<String, Int> = emptyMap(),
         triggerCounts: Map<String, Long> = emptyMap(),
     ): Result {
         var apps = visibleApps.filter { app ->
             (showBlocked || app.id !in blocked) &&
-                    (group and (if (app.isSystem) AppGroupFlags.System else AppGroupFlags.User) != 0)
+                (group and (if (app.isSystem) AppGroupFlags.System else AppGroupFlags.User) != 0)
         }
         val showAll = apps.size == visibleApps.size
-        apps = when (sort) {
-            AppSort.ByActionTime.value -> {
-                val actionPositions = actionOrder.withIndex().associate { it.value to it.index }
-                apps.sortedBy { actionPositions[it.id] ?: Int.MAX_VALUE }
+        apps =
+            when (sort) {
+                AppSort.ByActionTime.value -> {
+                    val actionPositions = actionOrder.withIndex().associate { it.value to it.index }
+                    apps.sortedBy { actionPositions[it.id] ?: Int.MAX_VALUE }
+                }
+                AppSort.ByTriggerCount.value ->
+                    apps.sortedByDescending { triggerCounts[it.id] ?: 0L }
+                AppSort.ByUsedTime.value -> apps.sortedBy { visitOrder[it.id] ?: Int.MAX_VALUE }
+                else -> apps
             }
-            AppSort.ByTriggerCount.value -> apps.sortedByDescending { triggerCounts[it.id] ?: 0L }
-            AppSort.ByUsedTime.value -> apps.sortedBy { visitOrder[it.id] ?: Int.MAX_VALUE }
-            else -> apps
-        }
         if (search.isNotBlank()) {
-            apps = (apps.filter { it.name.contains(search, true) } +
-                    apps.filter { it.id.contains(search, true) }).distinct()
+            apps =
+                (apps.filter { it.name.contains(search, true) } +
+                        apps.filter { it.id.contains(search, true) })
+                    .distinct()
         }
         return Result(apps, showAll)
     }

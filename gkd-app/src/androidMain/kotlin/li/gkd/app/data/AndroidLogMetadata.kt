@@ -11,18 +11,20 @@ import li.gkd.app.logging.LogMetadata
 object AndroidLogMetadata {
     val deviceDescription by lazy {
         listOf(
-            Build.MANUFACTURER,
-            Build.MODEL,
-            DeviceBrand.getBrandName(),
-            DeviceOs.getOsName() + DeviceOs.getOsVersionName() + DeviceOs.getOsBigVersionCode(),
-            DeviceMarketName.getMarketName(app)
-        ).joinToString("/")
+                Build.MANUFACTURER,
+                Build.MODEL,
+                DeviceBrand.getBrandName(),
+                DeviceOs.getOsName() + DeviceOs.getOsVersionName() + DeviceOs.getOsBigVersionCode(),
+                DeviceMarketName.getMarketName(app),
+            )
+            .joinToString("/")
     }
 
-    fun create() = LogMetadata(
-        systemName = "Android",
-        systemVersion = "${Build.VERSION.RELEASE} (${Build.VERSION.SDK_INT})",
-        device = deviceDescription,
-        app = "${META.versionName} (${META.versionCode})",
-    )
+    fun create() =
+        LogMetadata(
+            systemName = "Android",
+            systemVersion = "${Build.VERSION.RELEASE} (${Build.VERSION.SDK_INT})",
+            device = deviceDescription,
+            app = "${META.versionName} (${META.versionCode})",
+        )
 }

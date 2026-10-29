@@ -47,11 +47,12 @@ internal fun <T : Any> ValueExpression.evaluate(
                 when (val callee = current.callee) {
                     is ValueExpression.CallExpression -> result = null
                     is ValueExpression.Identifier -> {
-                        val frame = ValueEvaluationFrame.Call(
-                            expression = current,
-                            state = EXPECT_ARGUMENT,
-                            receiver = context,
-                        )
+                        val frame =
+                            ValueEvaluationFrame.Call(
+                                expression = current,
+                                state = EXPECT_ARGUMENT,
+                                receiver = context,
+                            )
                         stack.add(frame)
                         if (current.arguments.isEmpty()) {
                             result = finishCall(frame, adapter)
@@ -84,75 +85,78 @@ internal fun <T : Any> ValueExpression.evaluate(
                     result = result?.let { readProperty(it, frame.property, adapter) }
                 }
 
-                is ValueEvaluationFrame.Call -> when (frame.state) {
-                    EXPECT_RECEIVER -> {
-                        if (result == null) {
-                            stack.removeAt(stack.lastIndex)
-                            continue
-                        }
-                        frame.receiver = result
-                        val callee = frame.expression.callee as ValueExpression.MemberExpression
-                        when {
-                            BuiltinMembers.isShortCircuitOr(callee.property, result) &&
+                is ValueEvaluationFrame.Call ->
+                    when (frame.state) {
+                        EXPECT_RECEIVER -> {
+                            if (result == null) {
+                                stack.removeAt(stack.lastIndex)
+                                continue
+                            }
+                            frame.receiver = result
+                            val callee = frame.expression.callee as ValueExpression.MemberExpression
+                            when {
+                                BuiltinMembers.isShortCircuitOr(callee.property, result) &&
                                     result == true -> {
-                                stack.removeAt(stack.lastIndex)
-                                result = true
-                            }
+                                    stack.removeAt(stack.lastIndex)
+                                    result = true
+                                }
 
-                            BuiltinMembers.isShortCircuitAnd(callee.property, result) &&
+                                BuiltinMembers.isShortCircuitAnd(callee.property, result) &&
                                     result == false -> {
-                                stack.removeAt(stack.lastIndex)
-                                result = false
-                            }
+                                    stack.removeAt(stack.lastIndex)
+                                    result = false
+                                }
 
-                            BuiltinMembers.isIfElse(
-                                callee.property,
-                                result,
-                                frame.expression.arguments.size,
-                            ) -> {
-                                frame.state = EXPECT_SELECTED_ARGUMENT
-                                val selectedIndex = if (result == true) 0 else 1
-                                current = frame.expression.arguments[selectedIndex]
-                                break
-                            }
+                                BuiltinMembers.isIfElse(
+                                    callee.property,
+                                    result,
+                                    frame.expression.arguments.size,
+                                ) -> {
+                                    frame.state = EXPECT_SELECTED_ARGUMENT
+                                    val selectedIndex = if (result == true) 0 else 1
+                                    current = frame.expression.arguments[selectedIndex]
+                                    break
+                                }
 
-                            frame.expression.arguments.isEmpty() -> {
-                                stack.removeAt(stack.lastIndex)
-                                result = finishCall(frame, adapter)
-                            }
+                                frame.expression.arguments.isEmpty() -> {
+                                    stack.removeAt(stack.lastIndex)
+                                    result = finishCall(frame, adapter)
+                                }
 
-                            else -> {
-                                frame.state = EXPECT_ARGUMENT
-                                current = frame.expression.arguments.first()
-                                break
+                                else -> {
+                                    frame.state = EXPECT_ARGUMENT
+                                    current = frame.expression.arguments.first()
+                                    break
+                                }
                             }
                         }
-                    }
 
-                    EXPECT_SELECTED_ARGUMENT -> {
-                        stack.removeAt(stack.lastIndex)
-                    }
-
-                    EXPECT_ARGUMENT -> {
-                        val callee = frame.expression.callee
-                        val allowsNull = callee is ValueExpression.Identifier &&
-                                callee.role == ValueExpression.IdentifierRole.NullTolerantFunction
-                        if (result == null && !allowsNull) {
+                        EXPECT_SELECTED_ARGUMENT -> {
                             stack.removeAt(stack.lastIndex)
-                            continue
                         }
-                        frame.arguments.add(result)
-                        frame.argumentIndex++
-                        if (frame.argumentIndex < frame.expression.arguments.size) {
-                            current = frame.expression.arguments[frame.argumentIndex]
-                            break
-                        }
-                        stack.removeAt(stack.lastIndex)
-                        result = finishCall(frame, adapter)
-                    }
 
-                    else -> error("Unknown value evaluation state")
-                }
+                        EXPECT_ARGUMENT -> {
+                            val callee = frame.expression.callee
+                            val allowsNull =
+                                callee is ValueExpression.Identifier &&
+                                    callee.role ==
+                                        ValueExpression.IdentifierRole.NullTolerantFunction
+                            if (result == null && !allowsNull) {
+                                stack.removeAt(stack.lastIndex)
+                                continue
+                            }
+                            frame.arguments.add(result)
+                            frame.argumentIndex++
+                            if (frame.argumentIndex < frame.expression.arguments.size) {
+                                current = frame.expression.arguments[frame.argumentIndex]
+                                break
+                            }
+                            stack.removeAt(stack.lastIndex)
+                            result = finishCall(frame, adapter)
+                        }
+
+                        else -> error("Unknown value evaluation state")
+                    }
             }
         }
     }
@@ -161,11 +165,12 @@ internal fun <T : Any> ValueExpression.evaluate(
 private fun <T : Any> ValueExpression.Identifier.resolve(
     context: MatchContext<T>,
     adapter: NodeAdapter<T>,
-): Any? = when {
-    role == ValueExpression.IdentifierRole.Previous -> context.prev
-    role == ValueExpression.IdentifierRole.Current -> context.current
-    else -> adapter.getAttr(context.current, name)
-}
+): Any? =
+    when {
+        role == ValueExpression.IdentifierRole.Previous -> context.prev
+        role == ValueExpression.IdentifierRole.Current -> context.current
+        else -> adapter.getAttr(context.current, name)
+    }
 
 private fun <T : Any> readProperty(
     receiver: Any,
@@ -188,23 +193,26 @@ private fun <T : Any> readProperty(
 private fun <T : Any> finishCall(
     frame: ValueEvaluationFrame.Call,
     adapter: NodeAdapter<T>,
-): Any? = when (val callee = frame.expression.callee) {
-    is ValueExpression.CallExpression -> null
-    is ValueExpression.Identifier -> invoke(
-        receiver = frame.receiver ?: return null,
-        name = callee.name,
-        arguments = frame.arguments,
-        adapter = adapter,
-        global = true,
-    )
+): Any? =
+    when (val callee = frame.expression.callee) {
+        is ValueExpression.CallExpression -> null
+        is ValueExpression.Identifier ->
+            invoke(
+                receiver = frame.receiver ?: return null,
+                name = callee.name,
+                arguments = frame.arguments,
+                adapter = adapter,
+                global = true,
+            )
 
-    is ValueExpression.MemberExpression -> invoke(
-        receiver = frame.receiver ?: return null,
-        name = callee.property,
-        arguments = frame.arguments,
-        adapter = adapter,
-    )
-}
+        is ValueExpression.MemberExpression ->
+            invoke(
+                receiver = frame.receiver ?: return null,
+                name = callee.property,
+                arguments = frame.arguments,
+                adapter = adapter,
+            )
+    }
 
 private fun <T : Any> invoke(
     receiver: Any,

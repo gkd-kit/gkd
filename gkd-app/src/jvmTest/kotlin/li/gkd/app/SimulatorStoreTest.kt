@@ -1,7 +1,5 @@
 package li.gkd.app
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import java.io.IOException
 import java.nio.file.Files
 import java.util.concurrent.Executors
@@ -10,6 +8,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import li.gkd.app.testing.TestFiles
 
 class SimulatorStoreTest {
     @Test
@@ -23,23 +24,25 @@ class SimulatorStoreTest {
         assertEquals(42, store.settings.value.device.batteryPercent)
         assertEquals(100, writes.last().device.batteryPercent)
         val writeCount = writes.size
-        store.updateHostBattery(255)
-        assertEquals(100, store.settings.value.device.batteryPercent)
+        store.updateHostBattery(43)
+        assertEquals(43, store.settings.value.device.batteryPercent)
         assertEquals(writeCount, writes.size)
     }
 
     @Test
     fun failedWritePreservesFileAndSnapshotAndCanBeRetried() {
-        val directory = Files.createTempDirectory("simulator-store-").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "simulator-store-").toFile()
         try {
             val storage = DesktopSimulatorStorage(directory.resolve("simulator.json"))
             val initial = SimulatorSettings()
             storage.save(initial)
             var fail = true
-            val store = SimulatorStore(initial) {
-                if (fail) throw IOException("disk unavailable")
-                storage.save(it)
-            }
+            val store =
+                SimulatorStore(initial) {
+                    if (fail) throw IOException("disk unavailable")
+                    storage.save(it)
+                }
             val error = assertFailsWith<IOException> { store.setRestricted(true) }
             assertEquals("disk unavailable", error.message)
             assertEquals(initial, store.settings.value)
@@ -55,16 +58,29 @@ class SimulatorStoreTest {
 
     @Test
     fun concurrentFieldPatchesPreserveOtherCommandsAndPersistLatestSnapshot() {
-        val directory = Files.createTempDirectory("simulator-concurrent-").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "simulator-concurrent-").toFile()
         val executor = Executors.newFixedThreadPool(3)
         try {
             val storage = DesktopSimulatorStorage(directory.resolve("simulator.json"))
             val store = SimulatorStore(SimulatorSettings(), storage::save)
-            val work = listOf(
-                executor.submit { store.setRestricted(true) },
-                executor.submit { store.patch(Json.parseToJsonElement("""{"device":{"fontScale":1.5}}""").jsonObject) },
-                executor.submit { store.patch(Json.parseToJsonElement("""{"device":{"wifi":false,"mobileSignal":0}}""").jsonObject) },
-            )
+            val work =
+                listOf(
+                    executor.submit { store.setRestricted(true) },
+                    executor.submit {
+                        store.patch(
+                            Json.parseToJsonElement("""{"device":{"fontScale":1.5}}""").jsonObject,
+                        )
+                    },
+                    executor.submit {
+                        store.patch(
+                            Json.parseToJsonElement(
+                                    """{"device":{"wifi":false,"mobileSignal":0}}""",
+                                )
+                                .jsonObject,
+                        )
+                    },
+                )
             work.forEach { it.get() }
             assertTrue(store.settings.value.permissions.restricted)
             assertEquals(1.5f, store.settings.value.device.fontScale)
@@ -76,8 +92,8 @@ class SimulatorStoreTest {
             }
             assertEquals(before, store.settings.value)
         } finally {
-            executor.shutdownNow(); directory.deleteRecursively()
+            executor.shutdownNow()
+            directory.deleteRecursively()
         }
     }
-
 }

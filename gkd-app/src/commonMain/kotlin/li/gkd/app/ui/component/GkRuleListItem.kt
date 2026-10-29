@@ -2,8 +2,8 @@ package li.gkd.app.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,8 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -53,55 +53,73 @@ fun GkRuleListItem(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val selectionLabel = stringResource(Res.string.selection_mode_enter)
-    val containerColor by animateColorAsState(
-        targetValue = if (selected || highlighted) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceContainer,
-        animationSpec = tween(durationMillis = 300),
-        label = "Rule card background",
-    )
+    val containerColor by
+        animateColorAsState(
+            targetValue =
+                if (selected || highlighted) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceContainer,
+            animationSpec = tween(durationMillis = 300),
+            label = "Rule card background",
+        )
     Card(
         modifier = modifier.padding(horizontal = 8.dp, vertical = 3.dp).fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = containerColor,
+            ),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
-                .then(
-                    if (!selectedMode || selectable) {
-                        Modifier.combinedClickable(
-                            interactionSource = interactionSource,
-                            indication = LocalIndication.current,
-                            enabled = !selectedMode || selectionEnabled,
-                            onClick = if (selectedMode) onSelect else onClick,
-                            onLongClick = if (handlesLongPress && selectable && selectionEnabled) onLongClick else null,
-                            onClickLabel = if (selectedMode) stringResource(Res.string.selection_toggle) else stringResource(
-                                Res.string.details_view
-                            ),
-                        )
-                    } else {
-                        Modifier
-                    }
-                ).semantics {
-                    if (!handlesLongPress && selectable && selectionEnabled && onLongClick != null) {
-                        this.onLongClick(label = selectionLabel) {
-                            onLongClick()
-                            true
+            modifier =
+                Modifier.fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .then(
+                        if (!selectedMode || selectable) {
+                            Modifier.combinedClickable(
+                                interactionSource = interactionSource,
+                                indication = LocalIndication.current,
+                                enabled = !selectedMode || selectionEnabled,
+                                onClick = if (selectedMode) onSelect else onClick,
+                                onLongClick =
+                                    if (handlesLongPress && selectable && selectionEnabled)
+                                        onLongClick
+                                    else null,
+                                onClickLabel =
+                                    if (selectedMode) stringResource(Res.string.selection_toggle)
+                                    else
+                                        stringResource(
+                                            Res.string.details_view,
+                                        ),
+                            )
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .semantics {
+                        if (
+                            !handlesLongPress &&
+                                selectable &&
+                                selectionEnabled &&
+                                onLongClick != null
+                        ) {
+                            this.onLongClick(label = selectionLabel) {
+                                onLongClick()
+                                true
+                            }
+                        }
+                        if (selectedMode && selectable) {
+                            role = Role.Checkbox
+                            this.selected = selected
                         }
                     }
-                    if (selectedMode && selectable) {
-                        role = Role.Checkbox
-                        this.selected = selected
-                    }
-                }.heightIn(min = 64.dp)
-                .padding(end = if (!selectedMode && trailing == null) 8.dp else 0.dp),
+                    .heightIn(min = 64.dp)
+                    .padding(end = if (!selectedMode && trailing == null) 8.dp else 0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 Modifier.weight(1f).padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 leading?.invoke()
                 Column(Modifier.weight(1f), content = content)
@@ -112,11 +130,12 @@ fun GkRuleListItem(
             if (selectedMode || trailing != null) {
                 Box(Modifier.width(68.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
                     if (selectedMode) {
-                        if (selectable) GkCheckbox(
-                            selected,
-                            onCheckedChange = null,
-                            enabled = selectionEnabled
-                        )
+                        if (selectable)
+                            GkCheckbox(
+                                selected,
+                                onCheckedChange = null,
+                                enabled = selectionEnabled,
+                            )
                     } else {
                         trailing?.invoke(Modifier.fillMaxSize())
                     }

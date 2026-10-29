@@ -9,15 +9,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import li.gkd.app.resources.*
 import li.gkd.app.ui.icon.SportsBasketball
@@ -31,30 +31,38 @@ data class GkRuleStatsData(
     val enabledAppGroups: Int? = null,
     val showZeroCounts: Boolean = false,
 ) {
-    val hasRules: Boolean get() = (globalGroups ?: 0) > 0 || (appGroups ?: 0) > 0
+    val hasRules: Boolean
+        get() = (globalGroups ?: 0) > 0 || (appGroups ?: 0) > 0
 
     val description: String
         @Composable
         get() = buildList {
             val prefix =
-                if (enabledOnly) stringResource(Res.string.enabled) else stringResource(Res.string.total_prefix)
-            globalGroups?.takeIf { it > 0 || showZeroCounts }
+                if (enabledOnly) stringResource(Res.string.enabled)
+                else stringResource(Res.string.total_prefix)
+            globalGroups
+                ?.takeIf { it > 0 || showZeroCounts }
                 ?.let {
                     add(stringResource(Res.string.global_rule_group_stats, prefix, it))
                 }
-            apps?.takeIf { it > 0 || showZeroCounts }
+            apps
+                ?.takeIf { it > 0 || showZeroCounts }
                 ?.let { add(stringResource(Res.string.app_count, it)) }
-            appGroups?.takeIf { it > 0 || showZeroCounts }?.let {
-                add(
-                    if (enabledAppGroups != null) stringResource(
-                        Res.string.app_rule_group_enabled_stats,
-                        enabledAppGroups,
-                        it
+            appGroups
+                ?.takeIf { it > 0 || showZeroCounts }
+                ?.let {
+                    add(
+                        if (enabledAppGroups != null)
+                            stringResource(
+                                Res.string.app_rule_group_enabled_stats,
+                                enabledAppGroups,
+                                it,
+                            )
+                        else stringResource(Res.string.app_rule_group_stats, prefix, it),
                     )
-                    else stringResource(Res.string.app_rule_group_stats, prefix, it)
-                )
-            }
-        }.joinToString("，")
+                }
+        }
+            .joinToString("，")
 }
 
 @Composable
@@ -66,30 +74,39 @@ fun GkRuleStats(
     textStyle: TextStyle = MaterialTheme.typography.bodyMedium,
 ) {
     val entries = buildList {
-        stats.globalGroups?.takeIf { it > 0 || stats.showZeroCounts }
+        stats.globalGroups
+            ?.takeIf { it > 0 || stats.showZeroCounts }
             ?.let {
                 add(RuleStatEntry(SportsBasketball, it))
             }
-        stats.apps?.takeIf { it > 0 || stats.showZeroCounts }
+        stats.apps
+            ?.takeIf { it > 0 || stats.showZeroCounts }
             ?.let { add(RuleStatEntry(GkIcons.Android, it)) }
-        stats.appGroups?.takeIf { it > 0 || stats.showZeroCounts }?.let {
-            add(RuleStatEntry(GkIcons.Rule, it, stats.enabledAppGroups))
-        }
+        stats.appGroups
+            ?.takeIf { it > 0 || stats.showZeroCounts }
+            ?.let {
+                add(RuleStatEntry(GkIcons.Rule, it, stats.enabledAppGroups))
+            }
     }
-    val description = listOfNotNull(
-        stats.description.takeIf { it.isNotEmpty() },
-        if (triggerCount > 0) stringResource(Res.string.trigger_count_value, triggerCount.toString()) else null,
-    ).joinToString("，")
+    val description =
+        listOfNotNull(
+                stats.description.takeIf { it.isNotEmpty() },
+                if (triggerCount > 0)
+                    stringResource(Res.string.trigger_count_value, triggerCount.toString())
+                else null,
+            )
+            .joinToString("，")
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     if (!stats.hasRules && !stats.showZeroCounts && triggerCount == 0L) {
-        if (emptyText.isNotEmpty()) Text(
-            text = emptyText,
-            modifier = modifier,
-            style = textStyle,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (emptyText.isNotEmpty())
+            Text(
+                text = emptyText,
+                modifier = modifier,
+                style = textStyle,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
     } else {
         FlowRow(
             modifier = modifier.clearAndSetSemantics { contentDescription = description },
@@ -110,19 +127,24 @@ fun GkRuleStats(
                         icon,
                         modifier = Modifier.size(16.dp),
                         contentDescription = null,
-                        tint = color
+                        tint = color,
                     )
                     Text(
-                        text = buildAnnotatedString {
-                            if (enabled != null) {
-                                withStyle(SpanStyle(
-                                    fontWeight = FontWeight.Medium,
-                                )) { append(enabled.toString()) }
-                                withStyle(SpanStyle(color = color.copy(alpha = 0.7f))) {
-                                    append("/$count")
-                                }
-                            } else append(count.toString())
-                        },
+                        text =
+                            buildAnnotatedString {
+                                if (enabled != null) {
+                                    withStyle(
+                                        SpanStyle(
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                    ) {
+                                        append(enabled.toString())
+                                    }
+                                    withStyle(SpanStyle(color = color.copy(alpha = 0.7f))) {
+                                        append("/$count")
+                                    }
+                                } else append(count.toString())
+                            },
                         style = textStyle,
                         color = color,
                     )

@@ -29,13 +29,27 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 `GkAppNavigation` 是双端生产路由注册，`GkNavigation` 管理导航条目、框架保存状态及 ViewModel 生命周期。每次入栈由 `AppNavEntry` 区分，即使路由相同也不共享条目状态。HomeRoute 的 HomeViewModel 管理四标签状态与业务，子路由持有各自需要的 ViewModel；纯展示和组件瞬时状态不单独创建 ViewModel。
 
-仓库只读 Flow 在消费处收集；ViewModel 管理业务查询聚合、Paging、加载/失败及保存冲突基准。数据库查询首发前使用 `Loadable.Loading`，已加载空结果使用 `Ready(emptyList())`。搜索/筛选、编辑草稿及基准等自定义页面状态由所属 ViewModel 的 `MutableStateFlow` 持有，页面通过只读 `StateFlow` 和明确事件方法使用，不依赖自定义 Saver 恢复。状态随所属导航条目清理，StateFlow 本身不承担落盘或进程重启恢复。
+页面 ViewModel 持有查询聚合、Paging、加载状态与编辑草稿；状态随导航条目清理，不提供进程重启恢复。数据库首发以 `Loadable.Loading` 区分已加载的空结果。滚动、焦点和动画留在 Compose；状态归属与收集方式见 [开发规范](../AGENTS.md#ui-与生命周期)。
 
-滚动、焦点、动画等工具状态留在 Compose，使用官方 `rememberXxxState`；简单工具/组件状态确需恢复时允许 `rememberSaveable`，瞬时状态使用 `remember`。Navigation3 和官方组件内部的保存机制保留；主题通过 `rememberAppearance` 跟随组合生命周期。具体边界统一见 [开发规范](../AGENTS.md#ui-与生命周期)。
+`AndroidAutomationSessions` 选择真实服务；应用生命周期的 `MatchingRuntime.coordinator` 统一自动规则、业务 HTTP 与单次诊断的输入通道。commonMain 的 `queryRules`、`matchRuleSelectors`、`ForegroundTracker`、`MatchInputReducer` 和规则运行状态承载共享决策；规则快照安装通过 `RuleReconciliation` 保留未受依赖变更影响的状态；Android 引擎保留事件接入、节点缓存和平台调用。服务交接会取消旧上下文，旧输入收尾完成后才能开始新输入。事件使用独立副本与有界队列，资源随所属 Android 组件释放。页面退出不销毁应用仓库；Desktop 场景重建不清空持久化数据。实现边界与操作说明见 [匹配引擎调试](matching-engine-debugging.md)。
 
-`A11yRuntime` 选择真实服务，各服务持有自己的规则引擎、事件缓存及延迟任务，资源随所属 Android 组件释放。页面退出不销毁应用仓库；Desktop 场景重建不清空持久化数据。
+匹配相关代码按职责组织在 `li.gkd.app` 下，Android/JVM 实现在各自源码集的对应包中：
+
+| 包 | 当前职责 |
+| --- | --- |
+| `rule` | 规则定义、解析、分组、配置、身份、运行状态、限制与状态判定；声明可选的状态观察接口 |
+| `matching` | 应用运行时组装、协程协调、调度状态机、规则状态复用与前台规则快照 |
+| `matching.input` | 事件输入、前台判定、时序策略；Android 前台状态、系统应用信息及屏幕/规则观察 |
+| `matching.query` | 查询流程、选择器组合、根节点读取；Android `A11yQueryContext` 与节点缓存 |
+| `matching.action` | 连续手势、Android 动作执行、手动查询动作与全局返回 |
+| `matching.diagnostics` | 诊断会话、节点指标、属性解释、查询与系统录制、统一诊断包及停止现场保存 |
+| `development.matching` | 调试 HTTP、单次运行、模拟节点与性能基准 |
+
+这些是职责包，不是独立 Gradle 模块，也不构成严格的逐包分层。平台宿主和调试入口组装同一个协调器；`rule` 不依赖 `matching` 或调试实现。选择器组合算法只依赖规则与 `gkd-selector`，诊断从外侧观察。`MatchScheduleMachine` 只接收生产调度命令，不引用诊断记录；采集器保存输入、实际节点访问、调度效果和规则状态供分析，不再提供离线重放。
 
 ## 数据读写与兼容
+
+订阅坐标表达式由 `li.songe:expression` 编译、静态校验并在动作注入前求值；选择器由 `gkd-selector` 独立处理。语法、错误处理和验证工具见 [规则坐标表达式](rule-expressions.md)。
 
 | 数据 | 读取 | 写入与一致性 |
 | --- | --- | --- |
@@ -58,7 +72,7 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 - 外部 Gradle 坐标和版本统一放在 [版本目录](../gradle/libs.versions.toml)，固定组合使用 bundle。公共依赖放 commonMain，Activity、Service、权限、特权进程及 GIF 解码放 androidMain，桌面窗口、WebView2 和开发 HTTP 放 jvmMain；调试与测试依赖保留对应作用域。
 - gkd-android 通过 `implementation(project(":gkd-app"))` 获取应用实现，不重复声明已由 gkd-app 明确 `api` 导出的库。gkd-app 仅导出消费者需要的 API，Atomicfu、表达式和拖拽等内部依赖保留 `implementation`；模块直接使用且未被导出的库仍显式声明，包括 Android 设备测试使用的 Serialization JSON。
 - gkd-app/androidMain 依赖 gkd-aidl 的 Binder 产物。gkd-hidden-api 通过顶层 `remapApi` 提供编译期 stub 与 remap 索引，不作为运行时依赖；remap 插件转换 gkd-app 的 KMP Android 产物。
-- remap、priv-ui 和 WebView2 使用发布版本，以版本目录为准。不同发布体系的 UI 版本号不直接等同。依赖调整需核对直接使用及运行时注册，验证 JVM 和 Android `gkd`；涉及产物或字节码转换时检查最终打包链路。
+- remap、priv-ui 和 WebView2 使用发布版本，以版本目录为准。不同发布体系的 UI 版本号不直接等同。验证范围见 [开发规范](../AGENTS.md#验证与-git)。
 - npm 开发工具由根 [package.json](../package.json) 管理，私有子包仅声明 workspace 依赖；可发布 selector 包自行声明安装所需依赖。
 
 ## 字符串资源
@@ -72,9 +86,7 @@ import org.jetbrains.compose.resources.stringResource
 Text(stringResource(Res.string.app_count, apps.size.toString()))
 ```
 
-Compose 使用 `stringResource` / `pluralStringResource`，协程使用 suspend `getString` / `getPluralString`。同步边界的低频调用才使用阻塞的 `StringResource.getSync()`；不在静态初始化或高频路径缓存解析文案。
-
-参数仅使用 `%1$s`、`%2$s`，数字、日期、百分比及单位先由 Kotlin 按明确 Locale 和精度格式化。要展示百分号或占位符语法时将其作为参数传入。换行使用 `\n`，XML 的 `&`、`<` 用实体转义；Compose 资源不使用 Android 外层双引号保护空白，首尾空白直接保留。`${i}` 等持久化通知模板变量是普通文本，不随语言切换改写用户模板。
+资源解析、占位符与平台归属约束见 [开发规范](../AGENTS.md#资源与-kotlin-规范)。Compose 资源 XML 的 `&`、`<` 使用实体转义，首尾空白直接保留；`${i}` 等持久化通知模板变量是普通文本。
 
 领域和存储错误保留语义、参数与原因，由共享 UI 映射资源；订阅/规则使用 `SubscriptionException`，仓库不接收文案适配器。默认订阅名称只用于创建缺失记录，已有用户名称优先。
 

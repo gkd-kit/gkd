@@ -18,14 +18,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -41,10 +44,12 @@ import li.gkd.app.ui.component.GkSizedIconButton
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotSettingsRoute
@@ -64,7 +69,7 @@ fun AdvancedPage(
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AdvancedViewModel() }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val httpRunning: Boolean = httpRunning()
+    val debugServiceRunning: Boolean = debugServiceRunning()
 
     val serverAddresses: List<String> = httpServerAddresses()
 
@@ -87,7 +92,7 @@ fun AdvancedPage(
                     onClick = {
                         vm.setShowTrackNotice(false)
                         host.setTrackServiceEnabled(true)
-                    }
+                    },
                 ) {
                     Text(stringResource(Res.string.action_continue))
                 }
@@ -99,25 +104,25 @@ fun AdvancedPage(
             },
         )
     val showEditPortDialog by vm.showEditPortDialog.collectAsStateWithLifecycle()
-    val showHttpSettingsDialog by vm.showHttpSettingsDialog.collectAsStateWithLifecycle()
+    val showDebugSettingsDialog by vm.showDebugSettingsDialog.collectAsStateWithLifecycle()
 
-    if (showHttpSettingsDialog) {
+    if (showDebugSettingsDialog) {
         GkSettingsDialog(
-            title = stringResource(Res.string.http_settings_title),
-            onDismissRequest = { vm.setShowHttpSettingsDialog(false) },
+            title = stringResource(Res.string.debug_settings_title),
+            onDismissRequest = { vm.setShowDebugSettingsDialog(false) },
         ) {
             GkSettingItem(
-                title = stringResource(Res.string.http_port),
+                title = stringResource(Res.string.debug_port),
                 subtitle = store.httpServerPort.toString(),
                 imageVector = GkIcons.Edit,
-                onClickLabel = stringResource(Res.string.http_port_edit),
+                onClickLabel = stringResource(Res.string.debug_port_edit),
                 onClick = {
                     vm.editPort(store.httpServerPort)
                 },
             )
             GkTextSwitch(
-                title = stringResource(Res.string.http_clear_subscription),
-                subtitle = stringResource(Res.string.http_clear_subscription_description),
+                title = stringResource(Res.string.debug_clear_subscription),
+                subtitle = stringResource(Res.string.debug_clear_subscription_description),
                 checked = store.autoClearMemorySubs,
                 onCheckedChange = { enabled ->
                     SettingsRepository.updateSettings { it.copy(autoClearMemorySubs = enabled) }
@@ -141,7 +146,7 @@ fun AdvancedPage(
                     }
                     vm.closeEditPortDialog()
                 } else {
-                    ToastUtils.show(Res.string.http_port_input_hint.getSync())
+                    ToastUtils.show(Res.string.debug_port_input_hint.getSync())
                 }
             },
         )
@@ -165,7 +170,9 @@ fun AdvancedPage(
     ) { contentPadding ->
         Column(
             modifier =
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(contentPadding)
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding),
         ) {
             AdvancedSectionTitle(
                 stringResource(Res.string.advanced_background_running),
@@ -194,13 +201,13 @@ fun AdvancedPage(
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_live_debug))
-            HttpServiceItem(
-                running = httpRunning,
-                settingsSelected = showHttpSettingsDialog,
+            DebugServiceItem(
+                running = debugServiceRunning,
+                settingsSelected = showDebugSettingsDialog,
                 port = store.httpServerPort,
                 serverAddresses = serverAddresses,
-                onSettingsClick = { vm.setShowHttpSettingsDialog(true) },
-                onRunningChange = host::setHttpServiceEnabled,
+                onSettingsClick = { vm.setShowDebugSettingsDialog(true) },
+                onRunningChange = host::setDebugServiceEnabled,
                 onAddressClick = mainVm.textDialog::showUrl,
             )
             GkTextSwitch(
@@ -219,7 +226,9 @@ fun AdvancedPage(
                 title = stringResource(Res.string.track_overlay),
                 subtitle = stringResource(Res.string.track_overlay_description),
                 checked = trackServiceRunning,
-                onCheckedChange = { if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false) },
+                onCheckedChange = {
+                    if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false)
+                },
             )
             GkSettingItem(
                 title = stringResource(Res.string.external_calls_title),
@@ -231,6 +240,7 @@ fun AdvancedPage(
             )
 
             AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
+            DiagnosticSettings(vm)
             GkSettingItem(
                 title = stringResource(Res.string.activity_switch_logs),
                 onClick = { mainVm.navigator.navigate(ActivityLogRoute) },
@@ -261,7 +271,7 @@ fun AdvancedPage(
 
 expect fun UiHost.setSnapshotButtonEnabled(enabled: Boolean)
 
-expect fun UiHost.setHttpServiceEnabled(enabled: Boolean)
+expect fun UiHost.setDebugServiceEnabled(enabled: Boolean)
 
 expect fun UiHost.httpServerPortChanged()
 
@@ -271,7 +281,7 @@ expect fun UiHost.setEventMonitorEnabled(enabled: Boolean)
 
 expect fun UiHost.setTrackServiceEnabled(enabled: Boolean)
 
-@Composable expect fun httpRunning(): Boolean
+@Composable expect fun debugServiceRunning(): Boolean
 
 @Composable expect fun httpServerAddresses(): List<String>
 
@@ -294,7 +304,7 @@ private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {
 }
 
 @Composable
-private fun HttpServiceItem(
+private fun DebugServiceItem(
     running: Boolean,
     settingsSelected: Boolean,
     port: Int,
@@ -307,47 +317,47 @@ private fun HttpServiceItem(
         MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = TABULAR_NUMBERS_FONT_FEATURE)
     val addressItem: @Composable (String, String) -> Unit = { host, type ->
         Text(
-            text = stringResource(Res.string.http_address_description, host, port, type),
+            text = stringResource(Res.string.debug_address_description, host, port, type),
             style = addressStyle,
             color = MaterialTheme.colorScheme.primary,
             modifier =
                 Modifier.fillMaxWidth()
                     .clickable(
-                        onClickLabel = stringResource(Res.string.http_view_addresses, type),
+                        onClickLabel = stringResource(Res.string.debug_view_addresses, type),
                         onClick = { onAddressClick("http://${host}:${port}") },
                     )
                     .padding(vertical = 2.dp),
         )
     }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier =
                 Modifier.fillMaxWidth()
                     .clickable(
-                        onClickLabel = stringResource(Res.string.http_toggle_service),
+                        onClickLabel = stringResource(Res.string.debug_toggle_service),
                         onClick = { onRunningChange(!running) },
                     )
                     .padding(
                         start = itemHorizontalPadding,
                         top = itemVerticalPadding,
                         end = itemHorizontalPadding,
-                        bottom = 4.dp,
-                    )
+                        bottom = itemVerticalPadding,
+                    ),
         ) {
             GkTextSwitch(
                 modifier = Modifier.fillMaxWidth(),
                 paddingDisabled = true,
-                title = stringResource(Res.string.http_service_label),
-                subtitle = stringResource(Res.string.http_service_description),
+                title = stringResource(Res.string.debug_service_label),
+                subtitle = stringResource(Res.string.debug_service_description),
                 suffixIcon = {
                     GkSizedIconButton(
                         size = 32.dp,
                         iconSize = 20.dp,
-                        onClickLabel = stringResource(Res.string.http_settings_open),
+                        onClickLabel = stringResource(Res.string.debug_settings_open),
                         onClick = onSettingsClick,
                         imageVector = GkIcons.PageInfo,
-                        contentDescription = stringResource(Res.string.http_settings_button),
+                        contentDescription = stringResource(Res.string.debug_settings_button),
                         tint =
                             if (settingsSelected) {
                                 MaterialTheme.colorScheme.primary
@@ -368,11 +378,17 @@ private fun HttpServiceItem(
                         start = itemHorizontalPadding,
                         top = 0.dp,
                         end = itemHorizontalPadding,
-                        bottom = 4.dp,
-                    )
+                        bottom = itemVerticalPadding,
+                    ),
             ) {
                 serverAddresses.forEach { host ->
-                    addressItem(host, stringResource(if (host == Constants.loopbackHost) Res.string.network_local_device else Res.string.network_lan))
+                    addressItem(
+                        host,
+                        stringResource(
+                            if (host == Constants.loopbackHost) Res.string.network_local_device
+                            else Res.string.network_lan,
+                        ),
+                    )
                 }
             }
         }
@@ -388,11 +404,11 @@ private fun EditHttpPortDialog(
 ) {
     GkAlertDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
-        title = { Text(text = stringResource(Res.string.http_port)) },
+        title = { Text(text = stringResource(Res.string.debug_port)) },
         text = {
             OutlinedTextField(
                 value = value,
-                placeholder = { Text(text = stringResource(Res.string.http_port_input_hint)) },
+                placeholder = { Text(text = stringResource(Res.string.debug_port_input_hint)) },
                 onValueChange = onValueChange,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().autoFocus(),
@@ -420,5 +436,35 @@ private fun EditHttpPortDialog(
                 Text(text = stringResource(Res.string.action_cancel))
             }
         },
+    )
+}
+
+@Composable
+private fun DiagnosticSettings(vm: AdvancedViewModel) {
+    val main = MainViewModel.requireCurrent()
+    val diagnostics = MatchingRuntime.coordinator.diagnostics
+    val control =
+        remember(diagnostics) {
+            diagnostics.state.map { it?.id to (it?.active == true) }.distinctUntilChanged()
+        }
+    val current by
+        control.collectAsStateWithLifecycle(
+            initialValue =
+                diagnostics.state.value.let {
+                    it?.id to (it?.active == true)
+                },
+        )
+    GkTextSwitch(
+        title = stringResource(Res.string.match_debug_collect),
+        subtitle = stringResource(Res.string.match_debug_intro),
+        checked = current.second,
+        onCheckedChange = { enabled ->
+            if (enabled) vm.requestDiagnosticCapture()
+            else current.first?.let { MatchingRuntime.coordinator.stopDiagnostics(it) }
+        },
+    )
+    GkSettingItem(
+        title = stringResource(Res.string.match_debug_records),
+        onClick = { main.navigator.navigate(MatchDebugRoute) },
     )
 }

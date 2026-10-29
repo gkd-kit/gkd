@@ -10,4 +10,3 @@ data class NodeInfo(
     val textQf: Boolean?,
     val attr: AttrInfo,
 )
-

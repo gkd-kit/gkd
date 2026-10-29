@@ -17,12 +17,15 @@ import kotlinx.serialization.Serializable
 @Entity(
     tableName = "subs_app_config",
     primaryKeys = ["subs_id", "app_id"],
-    foreignKeys = [ForeignKey(
-        entity = SubsItem::class,
-        parentColumns = ["id"],
-        childColumns = ["subs_id"],
-        onDelete = ForeignKey.CASCADE,
-    )],
+    foreignKeys =
+        [
+            ForeignKey(
+                entity = SubsItem::class,
+                parentColumns = ["id"],
+                childColumns = ["subs_id"],
+                onDelete = ForeignKey.CASCADE,
+            ),
+        ],
 )
 data class SubsAppConfig(
     @ColumnInfo(name = "enable") val enable: Boolean,
@@ -31,23 +34,21 @@ data class SubsAppConfig(
 ) {
     @Dao
     interface SubsAppConfigDao {
-        @Query("SELECT * FROM subs_app_config")
-        suspend fun queryAll(): List<SubsAppConfig>
+        @Query("SELECT * FROM subs_app_config") suspend fun queryAll(): List<SubsAppConfig>
 
-        @Update
-        suspend fun update(vararg objects: SubsAppConfig): Int
+        @Update suspend fun update(vararg objects: SubsAppConfig): Int
 
-        @Upsert
-        suspend fun upsert(vararg users: SubsAppConfig)
+        @Upsert suspend fun upsert(vararg users: SubsAppConfig)
 
-        @Query("SELECT * FROM subs_app_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
+        @Query(
+            "SELECT * FROM subs_app_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)",
+        )
         fun queryUsedList(): Flow<List<SubsAppConfig>>
 
         @Insert(onConflict = OnConflictStrategy.IGNORE)
         suspend fun insertOrIgnore(vararg objects: SubsAppConfig): List<Long>
 
-        @Delete
-        suspend fun delete(vararg objects: SubsAppConfig): Int
+        @Delete suspend fun delete(vararg objects: SubsAppConfig): Int
 
         @Query("SELECT * FROM subs_app_config WHERE subs_id IN (:subsItemIds)")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<SubsAppConfig>

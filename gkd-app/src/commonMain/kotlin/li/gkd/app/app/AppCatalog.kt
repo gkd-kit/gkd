@@ -1,19 +1,22 @@
 package li.gkd.app.app
 
-import li.gkd.app.model.AppInfo
-import li.gkd.app.model.AppInventory
 import java.text.Collator
 import java.util.Locale
+import li.gkd.app.model.AppInfo
+import li.gkd.app.model.AppInventory
 
 object AppCatalog {
     fun normalize(inventory: AppInventory): AppInventory {
         val primary = inventory.apps.associateBy { it.id }
         return inventory.copy(
             apps = primary.values.toList(),
-            otherUsers = inventory.otherUsers.filter { it.id != inventory.userId }
-                .sortedBy { it.id },
-            othersApps = inventory.othersApps.sortedBy { it.userId }
-                .filter { it.id !in primary }.distinctBy { it.id },
+            otherUsers =
+                inventory.otherUsers.filter { it.id != inventory.userId }.sortedBy { it.id },
+            othersApps =
+                inventory.othersApps
+                    .sortedBy { it.userId }
+                    .filter { it.id !in primary }
+                    .distinctBy { it.id },
         )
     }
 

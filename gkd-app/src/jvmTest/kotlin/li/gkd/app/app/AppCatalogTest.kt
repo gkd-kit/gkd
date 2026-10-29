@@ -1,9 +1,9 @@
 package li.gkd.app.app
 
-import li.gkd.app.model.AppInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import li.gkd.app.model.AppInfo
 
 class AppCatalogTest {
     @Test

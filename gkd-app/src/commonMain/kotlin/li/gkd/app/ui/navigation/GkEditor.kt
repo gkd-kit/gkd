@@ -3,11 +3,11 @@ package li.gkd.app.ui.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import li.gkd.app.ui.page.EditorActionsState
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.ui.component.GkEditorDialogs
 import li.gkd.app.ui.component.GkEditorLayout
+import li.gkd.app.ui.page.EditorActionsState
 import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.GkBackHandler
 

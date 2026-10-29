@@ -22,40 +22,43 @@ object AppChangeMonitor {
             },
             IntentFilter().apply {
                 arrayOf(
-                    Intent.ACTION_PACKAGE_ADDED,
-                    Intent.ACTION_PACKAGE_REPLACED,
-                    Intent.ACTION_PACKAGE_REMOVED,
-                ).forEach(::addAction)
+                        Intent.ACTION_PACKAGE_ADDED,
+                        Intent.ACTION_PACKAGE_REPLACED,
+                        Intent.ACTION_PACKAGE_REMOVED,
+                    )
+                    .forEach(::addAction)
                 addDataScheme("package")
             },
             ContextCompat.RECEIVER_EXPORTED,
         )
 
         // 某些设备 ACTION_PACKAGE_ADDED 接收不到，使用 LauncherApps.Callback 作为补充。
-        app.launcherApps.registerCallback(object : LauncherApps.Callback() {
-            override fun onPackageAdded(packageName: String, user: UserHandle) {
-                onChanged(packageName, "LauncherApps.onPackageAdded(user=$user)")
-            }
+        app.launcherApps.registerCallback(
+            object : LauncherApps.Callback() {
+                override fun onPackageAdded(packageName: String, user: UserHandle) {
+                    onChanged(packageName, "LauncherApps.onPackageAdded(user=$user)")
+                }
 
-            override fun onPackageChanged(packageName: String, user: UserHandle) {
-                onChanged(packageName, "LauncherApps.onPackageChanged(user=$user)")
-            }
+                override fun onPackageChanged(packageName: String, user: UserHandle) {
+                    onChanged(packageName, "LauncherApps.onPackageChanged(user=$user)")
+                }
 
-            override fun onPackageRemoved(packageName: String, user: UserHandle) {
-                onChanged(packageName, "LauncherApps.onPackageRemoved(user=$user)")
-            }
+                override fun onPackageRemoved(packageName: String, user: UserHandle) {
+                    onChanged(packageName, "LauncherApps.onPackageRemoved(user=$user)")
+                }
 
-            override fun onPackagesAvailable(
-                packageNames: Array<String>,
-                user: UserHandle,
-                replacing: Boolean,
-            ) = Unit
+                override fun onPackagesAvailable(
+                    packageNames: Array<String>,
+                    user: UserHandle,
+                    replacing: Boolean,
+                ) = Unit
 
-            override fun onPackagesUnavailable(
-                packageNames: Array<String>,
-                user: UserHandle,
-                replacing: Boolean,
-            ) = Unit
-        })
+                override fun onPackagesUnavailable(
+                    packageNames: Array<String>,
+                    user: UserHandle,
+                    replacing: Boolean,
+                ) = Unit
+            },
+        )
     }
 }

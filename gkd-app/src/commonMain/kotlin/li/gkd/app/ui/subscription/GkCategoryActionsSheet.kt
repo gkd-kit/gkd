@@ -43,7 +43,6 @@ fun GkCategoryActionsSheet(
     setting: CategorySetting,
     overrideCount: Int,
     editable: Boolean,
-    busy: Boolean,
     onDismissRequest: () -> Unit,
     onSetting: (CategorySetting) -> Unit,
     onClearOverrides: () -> Unit,
@@ -56,25 +55,29 @@ fun GkCategoryActionsSheet(
         subtitleContent = {
             Column(
                 Modifier.fillMaxWidth().animateContentSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                category.desc?.takeIf { it.isNotBlank() }?.let { description ->
-                    Text(
-                        description, style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                category.desc
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { description ->
+                        Text(
+                            description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 if (overrideCount > 0) {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            ),
                     ) {
                         Row(
                             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             GkRulePropertyIcon(
                                 property = RuleProperty.CustomSetting,
@@ -84,23 +87,22 @@ fun GkCategoryActionsSheet(
                             )
                             Column(
                                 Modifier.weight(1f).padding(end = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 Text(
                                     stringResource(
                                         Res.string.category_override_count,
-                                        overrideCount
+                                        overrideCount,
                                     ),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
                                 Text(
                                     stringResource(Res.string.category_override_unaffected),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             TextButton(
-                                enabled = !busy,
                                 onClick = onClearOverrides,
                                 modifier = Modifier.size(width = 56.dp, height = 48.dp),
                                 contentPadding = PaddingValues(horizontal = 8.dp),
@@ -138,55 +140,73 @@ private fun CategoryDefaultContent(
     setting: CategorySetting,
     onSelect: (CategorySetting) -> Unit,
 ) {
-    val subscriptionDefault = when (category.enable) {
-        true -> stringResource(Res.string.category_follow_subscription_enabled)
-        false -> stringResource(Res.string.category_follow_subscription_disabled)
-        null -> stringResource(Res.string.category_follow_subscription_unspecified)
-    }
+    val subscriptionDefault =
+        when (category.enable) {
+            true -> stringResource(Res.string.category_follow_subscription_enabled)
+            false -> stringResource(Res.string.category_follow_subscription_disabled)
+            null -> stringResource(Res.string.category_follow_subscription_unspecified)
+        }
     val customSelected = setting == CategorySetting.Enabled || setting == CategorySetting.Disabled
-    val customEnabled = when (setting) {
-        CategorySetting.Enabled -> true
-        CategorySetting.Disabled -> false
-        CategorySetting.FollowSubscription -> category.enable ?: true
-        CategorySetting.GroupDefault -> true
-    }
+    val customEnabled =
+        when (setting) {
+            CategorySetting.Enabled -> true
+            CategorySetting.Disabled -> false
+            CategorySetting.FollowSubscription -> category.enable ?: true
+            CategorySetting.GroupDefault -> true
+        }
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         CategoryChoice.entries.forEach { choice ->
-            val choiceSetting = when (choice) {
-                CategoryChoice.Subscription -> CategorySetting.FollowSubscription
-                CategoryChoice.Custom -> CategorySetting.fromOverride(customEnabled)
-                CategoryChoice.GroupDefault -> CategorySetting.GroupDefault
-            }
-            val selected = when (choice) {
-                CategoryChoice.Custom -> customSelected
-                else -> setting == choiceSetting
-            }
+            val choiceSetting =
+                when (choice) {
+                    CategoryChoice.Subscription -> CategorySetting.FollowSubscription
+                    CategoryChoice.Custom -> CategorySetting.fromOverride(customEnabled)
+                    CategoryChoice.GroupDefault -> CategorySetting.GroupDefault
+                }
+            val selected =
+                when (choice) {
+                    CategoryChoice.Custom -> customSelected
+                    else -> setting == choiceSetting
+                }
             val label = stringResource(choice.labelResource)
-            val description = when (choice) {
-                CategoryChoice.Subscription -> subscriptionDefault
-                else -> stringResource(choiceSetting.descriptionResource)
-            }
-            val interaction = if (choice == CategoryChoice.Custom && customSelected) {
-                Modifier.toggleable(value = customEnabled, role = Role.Switch, onValueChange = {
-                    onSelect(CategorySetting.fromOverride(it))
-                })
-            } else {
-                Modifier.selectable(selected = selected, role = Role.RadioButton, onClick = {
-                    onSelect(choiceSetting)
-                })
-            }
+            val description =
+                when (choice) {
+                    CategoryChoice.Subscription -> subscriptionDefault
+                    else -> stringResource(choiceSetting.descriptionResource)
+                }
+            val interaction =
+                if (choice == CategoryChoice.Custom && customSelected) {
+                    Modifier.toggleable(
+                        value = customEnabled,
+                        role = Role.Switch,
+                        onValueChange = {
+                            onSelect(CategorySetting.fromOverride(it))
+                        },
+                    )
+                } else {
+                    Modifier.selectable(
+                        selected = selected,
+                        role = Role.RadioButton,
+                        onClick = {
+                            onSelect(choiceSetting)
+                        },
+                    )
+                }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(
-                    containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer
-                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            if (selected) MaterialTheme.colorScheme.secondaryContainer
+                            else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().then(interaction)
-                        .heightIn(min = 72.dp)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .then(interaction)
+                            .heightIn(min = 72.dp)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(
@@ -195,31 +215,34 @@ private fun CategoryDefaultContent(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             GkIcon(
                                 imageVector = choiceSetting.icon,
                                 animateMorph = choice == CategoryChoice.Custom,
                                 modifier = Modifier.size(20.dp),
                                 contentDescription = null,
-                                tint = if (selected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint =
+                                    if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(label, style = MaterialTheme.typography.bodyLarge)
                         }
                         Text(
-                            description, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Box(
                         Modifier.size(width = 56.dp, height = 48.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         if (choice == CategoryChoice.Custom) {
                             GkSwitch(
-                                checked = customEnabled, onCheckedChange = null,
-                                enabled = customSelected
+                                checked = customEnabled,
+                                onCheckedChange = null,
+                                enabled = customSelected,
                             )
                         } else {
                             RadioButton(selected = selected, onClick = null)

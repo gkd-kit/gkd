@@ -2,6 +2,7 @@ package li.gkd.app.subscription
 
 import li.gkd.db.SubscriptionConfigSnapshot
 
+@kotlinx.serialization.Serializable
 data class SubscriptionBackupSnapshot(
     val configuration: SubscriptionConfigSnapshot,
     val subscriptions: List<RawSubscription>,

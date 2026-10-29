@@ -14,15 +14,22 @@ class FileSubscriptionFiles(
     }
 
     private fun file(id: Long) = directory.resolve("$id.json")
+
     override fun load(id: Long): RawSubscription {
-        val bytes = readBytes(id) ?: throw SubscriptionException(
-            SubscriptionFailureReason.SubscriptionFileMissing,
-        )
-        val subscription = try {
-            RawSubscription.parse(bytes.decodeToString(), json5 = false)
-        } catch (e: Exception) {
-            throw SubscriptionException(SubscriptionFailureReason.SubscriptionFileParseFailed, cause = e)
-        }
+        val bytes =
+            readBytes(id)
+                ?: throw SubscriptionException(
+                    SubscriptionFailureReason.SubscriptionFileMissing,
+                )
+        val subscription =
+            try {
+                RawSubscriptionParser.parse(bytes.decodeToString(), json5 = false)
+            } catch (e: SubscriptionParseException) {
+                throw SubscriptionException(
+                    SubscriptionFailureReason.SubscriptionFileParseFailed,
+                    cause = e,
+                )
+            }
         check(subscription.id == id) {
             throw SubscriptionException(SubscriptionFailureReason.SubscriptionFileIdMismatch)
         }
@@ -34,19 +41,21 @@ class FileSubscriptionFiles(
         val target = file(id)
         // Preserve Android AtomicFile recovery artifacts when reusing an existing directory.
         val backup = directory.resolve("$id.json.bak")
-        if (backup.isFile) Files.move(
-            backup.toPath(),
-            target.toPath(),
-            StandardCopyOption.REPLACE_EXISTING
-        )
+        if (backup.isFile)
+            Files.move(
+                backup.toPath(),
+                target.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+            )
         Files.deleteIfExists(directory.resolve("$id.json.new").toPath())
         return target.takeIf { it.isFile }?.readBytes()
     }
 
-    override fun write(subscription: RawSubscription) = writeBytes(
-        subscription.id,
-        SubscriptionJson.json.encodeToString(subscription).encodeToByteArray()
-    )
+    override fun write(subscription: RawSubscription) =
+        writeBytes(
+            subscription.id,
+            SubscriptionJson.json.encodeToString(subscription).encodeToByteArray(),
+        )
 
     override fun restore(id: Long, bytes: ByteArray?) {
         if (bytes == null) delete(id) else writeBytes(id, bytes)
@@ -58,7 +67,10 @@ class FileSubscriptionFiles(
         Files.deleteIfExists(directory.resolve("$id.json.bak").toPath())
         Files.deleteIfExists(directory.resolve("$id.json.new").toPath())
         check(!target.exists() || target.delete()) {
-            throw SubscriptionException(SubscriptionFailureReason.FileDeleteFailed, listOf(target.name))
+            throw SubscriptionException(
+                SubscriptionFailureReason.FileDeleteFailed,
+                listOf(target.name),
+            )
         }
     }
 
@@ -67,13 +79,16 @@ class FileSubscriptionFiles(
         readBytes(id) // Recover an interrupted Android write before starting the next one.
         val temporary = Files.createTempFile(directory.toPath(), "$id-", ".tmp")
         try {
-            FileOutputStream(temporary.toFile()).use { it.write(bytes); it.fd.sync() }
+            FileOutputStream(temporary.toFile()).use {
+                it.write(bytes)
+                it.fd.sync()
+            }
             try {
                 Files.move(
                     temporary,
                     file(id).toPath(),
                     StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING
+                    StandardCopyOption.REPLACE_EXISTING,
                 )
             } catch (_: AtomicMoveNotSupportedException) {
                 Files.move(temporary, file(id).toPath(), StandardCopyOption.REPLACE_EXISTING)

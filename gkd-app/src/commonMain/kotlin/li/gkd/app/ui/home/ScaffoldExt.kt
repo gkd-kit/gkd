@@ -10,13 +10,14 @@ data class ScaffoldExt(
     val navItem: BottomNavItem,
     val modifier: Modifier = Modifier,
     val topBar: @Composable () -> Unit = {
-        GkTopAppBar(title = {
-            Text(
-                text = navItem.label,
-            )
-        })
+        GkTopAppBar(
+            title = {
+                Text(
+                    text = navItem.label,
+                )
+            },
+        )
     },
     val floatingActionButton: @Composable () -> Unit = {},
-    val content: @Composable (PaddingValues) -> Unit
+    val content: @Composable (PaddingValues) -> Unit,
 )
-

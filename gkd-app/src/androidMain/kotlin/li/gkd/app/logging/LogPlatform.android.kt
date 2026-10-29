@@ -7,41 +7,34 @@ import li.gkd.app.data.AndroidLogMetadata
 
 actual fun logMetadata(): LogMetadata = AndroidLogMetadata.create()
 
-actual fun writePlatformLog(tag: String, message: String) {
-    Log.d(tag, message)
+actual fun writePlatformLog(level: LogLevel, tag: String, message: String) {
+    Log.println(
+        when (level) {
+            LogLevel.DEBUG -> Log.DEBUG
+            LogLevel.INFO -> Log.INFO
+            LogLevel.WARN -> Log.WARN
+            LogLevel.ERROR -> Log.ERROR
+        },
+        tag,
+        message,
+    )
 }
 
-actual fun formatLogValue(value: Any?): String = when (value) {
-    is Bundle -> {
-        val sb = StringBuilder()
-        sb.append("Bundle{")
-        val keys = value.keySet()
-        keys.forEachIndexed { index, key ->
-            @Suppress("DEPRECATION")
-            val item = value.get(key)
-            sb.append("$key=${formatLogValue(item)}")
-            if (index < keys.size - 1) {
-                sb.append(",")
+actual fun formatLogValue(value: Any?): String =
+    when (value) {
+        is Bundle ->
+            "Bundle{keys=${value.keySet().take(16).map { logText(it, 80) }}, size=${value.size()}}"
+        is Intent ->
+            buildString {
+                append("Intent{")
+                value.action?.let { append("action=${logText(it)},") }
+                value.data?.let { append("data=${logUrl(it.toString())},") }
+                value.type?.let { append("type=${logText(it)},") }
+                value.component?.let { append("component=$it,") }
+                value.categories?.let { append("categories=${it.take(16)},") }
+                value.extras?.let { append("extras=${formatLogValue(it)}") }
+                append("}")
             }
-        }
-        sb.append("}")
-        sb.toString()
+        is Throwable -> value.stackTraceToString()
+        else -> value.toString()
     }
-
-    is Intent -> {
-        val sb = StringBuilder()
-        sb.append("Intent{")
-        value.action?.let { sb.append("action=$it,") }
-        value.data?.let { sb.append("data=$it,") }
-        value.type?.let { sb.append("type=$it,") }
-        value.component?.let { sb.append("component=$it,") }
-        value.categories?.let { sb.append("categories=$it,") }
-        value.extras?.let { sb.append("extras=${formatLogValue(it)}") }
-        sb.append("}")
-        sb.toString()
-    }
-
-    is Throwable -> Log.getStackTraceString(value)
-
-    else -> value.toString()
-}

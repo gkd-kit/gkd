@@ -1,23 +1,24 @@
 package li.gkd.app.model
 
-
 data class ExcludeData(
     val appIds: Map<String, Boolean>,
     val activityIds: Set<Pair<String, String>>,
 ) {
     fun stringify(appId: String? = null): String {
         return if (appId != null) {
-            activityIds.filter { entry -> entry.first == appId }.map { entry -> entry.second }
+            activityIds
+                .filter { entry -> entry.first == appId }
+                .map { entry -> entry.second }
                 .sorted()
                 .joinToString("\n\n")
         } else {
             (appIds.entries.map { entry ->
-                if (entry.value) {
-                    entry.key
-                } else {
-                    "!${entry.key}"
-                }
-            } + activityIds.map { entry -> "${entry.first}/${entry.second}" })
+                    if (entry.value) {
+                        entry.key
+                    } else {
+                        "!${entry.key}"
+                    }
+                } + activityIds.map { entry -> "${entry.first}/${entry.second}" })
                 .sorted()
                 .joinToString("\n\n")
         }
@@ -25,32 +26,37 @@ data class ExcludeData(
 
     fun clear(appId: String): ExcludeData {
         return copy(
-            appIds = appIds.toMutableMap().apply {
-                remove(appId)
-            },
+            appIds =
+                appIds.toMutableMap().apply {
+                    remove(appId)
+                },
         )
     }
 
     fun switch(appId: String, activityId: String? = null): ExcludeData {
         return if (activityId == null) {
             copy(
-                appIds = appIds.toMutableMap().apply {
-                    if (get(appId) != false) {
-                        set(appId, false)
-                    } else {
-                        set(appId, true)
-                    }
-                },
+                appIds =
+                    appIds.toMutableMap().apply {
+                        if (get(appId) != false) {
+                            set(appId, false)
+                        } else {
+                            set(appId, true)
+                        }
+                    },
             )
         } else {
-            copy(activityIds = activityIds.toMutableSet().apply {
-                val entry = appId to activityId
-                if (contains(entry)) {
-                    remove(entry)
-                } else {
-                    add(entry)
-                }
-            })
+            copy(
+                activityIds =
+                    activityIds.toMutableSet().apply {
+                        val entry = appId to activityId
+                        if (contains(entry)) {
+                            remove(entry)
+                        } else {
+                            add(entry)
+                        }
+                    },
+            )
         }
     }
 
@@ -63,7 +69,8 @@ data class ExcludeData(
             }
             val appIds = HashMap<String, Boolean>()
             val activityIds = HashSet<Pair<String, String>>()
-            exclude.split('\n')
+            exclude
+                .split('\n')
                 .filter { it.isNotBlank() }
                 .forEach { value ->
                     if (value[0] == '!') {

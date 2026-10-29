@@ -33,21 +33,21 @@ fun GkMultiTextField(
     inputInsets: Modifier = Modifier.imePadding(),
 ) {
     Box(modifier = modifier) {
-        val textColors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-        )
+        val textColors =
+            TextFieldDefaults.colors(
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                errorIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+            )
         CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
-            val modifier = Modifier
-                .autoFocus(immediateFocus = immediateFocus)
-                .fillMaxSize()
-                .then(inputInsets)
+            val modifier =
+                Modifier.autoFocus(immediateFocus = immediateFocus).fillMaxSize().then(inputInsets)
             TextField(
                 value = text,
                 onValueChange = onTextChange,
-                placeholder = if (placeholderText != null) ({ Text(text = placeholderText) }) else null,
+                placeholder =
+                    if (placeholderText != null) ({ Text(text = placeholderText) }) else null,
                 modifier = modifier,
                 shape = RectangleShape,
                 colors = textColors,
@@ -57,12 +57,12 @@ fun GkMultiTextField(
         if (actualSize > 0 && text.isNotEmpty()) {
             Text(
                 text = actualSize.toString(),
-                modifier = Modifier
-                    .padding(8.dp)
-                    .align(Alignment.TopEnd)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .padding(horizontal = 2.dp),
+                modifier =
+                    Modifier.padding(8.dp)
+                        .align(Alignment.TopEnd)
+                        .clip(MaterialTheme.shapes.extraSmall)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(horizontal = 2.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.tertiary,
             )

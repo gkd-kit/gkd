@@ -1,11 +1,11 @@
 package li.gkd.app.permission
 
 import com.hjq.permissions.permission.base.IPermission
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class PermissionHostCommands {
     sealed interface Command {
@@ -62,24 +62,26 @@ class PermissionHostCommands {
     }
 
     fun complete(id: Long) {
-        val currentContinuation = synchronized(this) {
-            val pending = commandFlow.value
-            if (pending?.command?.id != id) return
-            commandFlow.value = null
-            continuation.also { continuation = null }
-        }
+        val currentContinuation =
+            synchronized(this) {
+                val pending = commandFlow.value
+                if (pending?.command?.id != id) return
+                commandFlow.value = null
+                continuation.also { continuation = null }
+            }
         if (currentContinuation?.isActive == true) {
             currentContinuation.resume(Unit)
         }
     }
 
     fun fail(id: Long, error: Throwable) {
-        val currentContinuation = synchronized(this) {
-            val pending = commandFlow.value
-            if (pending?.command?.id != id) return
-            commandFlow.value = null
-            continuation.also { continuation = null }
-        }
+        val currentContinuation =
+            synchronized(this) {
+                val pending = commandFlow.value
+                if (pending?.command?.id != id) return
+                commandFlow.value = null
+                continuation.also { continuation = null }
+            }
         if (currentContinuation?.isActive == true) {
             currentContinuation.resumeWithException(error)
         }
@@ -89,17 +91,18 @@ class PermissionHostCommands {
         resumed: Boolean,
         hasWindowFocus: Boolean,
     ) {
-        val returnedCommandId = synchronized(this) {
-            val pending = commandFlow.value ?: return@synchronized null
-            if (pending.launched && (!resumed || !hasWindowFocus)) {
-                commandFlow.value = pending.copy(leftHost = true)
-                null
-            } else if (pending.launched && pending.leftHost) {
-                pending.command.id
-            } else {
-                null
+        val returnedCommandId =
+            synchronized(this) {
+                val pending = commandFlow.value ?: return@synchronized null
+                if (pending.launched && (!resumed || !hasWindowFocus)) {
+                    commandFlow.value = pending.copy(leftHost = true)
+                    null
+                } else if (pending.launched && pending.leftHost) {
+                    pending.command.id
+                } else {
+                    null
+                }
             }
-        }
         returnedCommandId?.let(::complete)
     }
 
@@ -113,10 +116,11 @@ class PermissionHostCommands {
     }
 
     fun dispose() {
-        val currentContinuation = synchronized(this) {
-            commandFlow.value = null
-            continuation.also { continuation = null }
-        }
+        val currentContinuation =
+            synchronized(this) {
+                commandFlow.value = null
+                continuation.also { continuation = null }
+            }
         currentContinuation?.cancel()
     }
 
@@ -140,10 +144,11 @@ class PermissionHostCommands {
         }
     }
 
-    private fun takeCommandToLaunch(): Command? = synchronized(this) {
-        val pending = commandFlow.value ?: return@synchronized null
-        if (pending.launched) return@synchronized null
-        commandFlow.value = pending.copy(launched = true)
-        pending.command
-    }
+    private fun takeCommandToLaunch(): Command? =
+        synchronized(this) {
+            val pending = commandFlow.value ?: return@synchronized null
+            if (pending.launched) return@synchronized null
+            commandFlow.value = pending.copy(launched = true)
+            pending.command
+        }
 }

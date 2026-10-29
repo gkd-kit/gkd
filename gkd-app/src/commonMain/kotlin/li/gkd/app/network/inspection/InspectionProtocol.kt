@@ -6,9 +6,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.DeviceInfo
 
-val rpcSuccess = JsonObject(
-    mapOf("message" to JsonPrimitive("success"))
-)
+val rpcSuccess =
+    JsonObject(
+        mapOf("message" to JsonPrimitive("success")),
+    )
 
 @Serializable
 data class RpcError(
@@ -26,5 +27,5 @@ data class ReqId(
 @Serializable
 data class ServerInfo(
     val device: DeviceInfo,
-    val gkdAppInfo: AppInfo
+    val gkdAppInfo: AppInfo,
 )

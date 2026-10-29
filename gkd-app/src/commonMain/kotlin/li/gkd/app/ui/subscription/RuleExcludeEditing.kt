@@ -24,16 +24,31 @@ suspend fun saveRuleExclusions(
 ): Boolean {
     if (value == expected) return false
     if (target is RuleGroupTarget.Global) {
-        val enabledApps = value.appIds.filter { (id, excluded) ->
-            !excluded && expected.appIds[id] != false
-        }.keys
+        val enabledApps =
+            value.appIds
+                .filter { (id, excluded) ->
+                    !excluded && expected.appIds[id] != false
+                }
+                .keys
         if (enabledApps.isNotEmpty()) {
-            val request = RuleGroupConfigService.prepare(
-                enabledApps.map { RuleSwitchTarget.GlobalApp(target.subsId, target.groupKey, it) },
-                listOf(subscription), SubscriptionConfigStore.capture(),
-            )
-            if (!confirmRuleSwitch(request, RuleSetting.Enabled, MainViewModel.requireCurrent().dialogRequests, RuleSwitchHost.GlobalRuleApps)) {
-                // Keep the draft and allow retry; EditorSaveSession must not record a completed save.
+            val request =
+                RuleGroupConfigService.prepare(
+                    enabledApps.map {
+                        RuleSwitchTarget.GlobalApp(target.subsId, target.groupKey, it)
+                    },
+                    listOf(subscription),
+                    SubscriptionConfigStore.capture(),
+                )
+            if (
+                !confirmRuleSwitch(
+                    request,
+                    RuleSetting.Enabled,
+                    MainViewModel.requireCurrent().dialogRequests,
+                    RuleSwitchHost.GlobalRuleApps,
+                )
+            ) {
+                // Keep the draft and allow retry; EditorSaveSession must not record a completed
+                // save.
                 throw CancellationException("Rule enable cancelled")
             }
         }

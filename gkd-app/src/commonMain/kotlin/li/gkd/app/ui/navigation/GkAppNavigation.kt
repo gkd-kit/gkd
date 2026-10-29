@@ -13,6 +13,7 @@ import li.gkd.app.ui.home.HomePage
 import li.gkd.app.ui.home.NotificationTextPage
 import li.gkd.app.ui.log.A11yEventLogPage
 import li.gkd.app.ui.log.ActivityLogPage
+import li.gkd.app.ui.log.MatchDebugPage
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.settings.A11yScopeAppListPage
 import li.gkd.app.ui.settings.AboutPage
@@ -79,6 +80,7 @@ fun GkAppNavigation(
                 AboutRoute -> AboutPage(host)
                 BlockA11ySetupRoute -> BlockA11ySetupPage(host)
                 AdvancedPageRoute -> AdvancedPage(host)
+                MatchDebugRoute -> MatchDebugPage(host)
                 ExternalCallsRoute -> ExternalCallsPage()
                 QuickSettingsTilesRoute -> QuickSettingsTilesPage()
                 PrivilegeServiceRoute -> PrivilegeServicePage(host)

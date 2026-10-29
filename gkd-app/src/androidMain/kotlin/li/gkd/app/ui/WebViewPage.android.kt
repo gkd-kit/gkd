@@ -33,6 +33,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import li.gkd.app.META
 import li.gkd.app.MainActivity
+import li.gkd.app.logging.LogUtils
+import li.gkd.app.logging.logUrl
 import li.gkd.app.model.WebViewEnvironment
 import li.gkd.app.network.NetworkClients
 import li.gkd.app.resources.*
@@ -45,7 +47,6 @@ import li.gkd.app.ui.share.LocalDarkTheme
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.LogUtils
 import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -72,7 +73,9 @@ actual fun WebViewPage(
         }
         Unit
     }
-    val openExternal = { SystemActionFeedback.openExternal(state.failure?.url ?: webView?.url ?: initUrl) }
+    val openExternal = {
+        SystemActionFeedback.openExternal(state.failure?.url ?: webView?.url ?: initUrl)
+    }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(webView, lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -88,25 +91,26 @@ actual fun WebViewPage(
     // The toolbar leaves the route; system Back first traverses browser history.
     BackHandler(state.canGoBack) { state.view?.goBack() }
     WebViewScreen(
-        title = if (state.failure != null) stringResource(Res.string.webview_load_failed) else state.title,
+        title =
+            if (state.failure != null) stringResource(Res.string.webview_load_failed)
+            else state.title,
         loading = state.loading,
         onBack = mainVm.navigator::pop,
         onReload = reload,
         onCopyLink = { copyText(state.failure?.url ?: webView?.url ?: initUrl) },
         onOpenExternal = openExternal,
-        onCompatibilityNotice = if (chromeVersion in 1..<MINI_CHROME_VERSION) {
-            mainVm.scope.launchUiAction {
-                mainVm.dialogRequests.showMessage(
-                    title = getString(Res.string.compatibility_notice),
-                    text = getString(Res.string.webview_outdated_notice, chromeVersion),
-                )
-            }
-        } else null,
+        onCompatibilityNotice =
+            if (chromeVersion in 1..<MINI_CHROME_VERSION) {
+                mainVm.scope.launchUiAction {
+                    mainVm.dialogRequests.showMessage(
+                        title = getString(Res.string.compatibility_notice),
+                        text = getString(Res.string.webview_outdated_notice, chromeVersion),
+                    )
+                }
+            } else null,
     ) { contentPadding ->
         Box(
-            Modifier
-                .fillMaxSize()
-                .scaffoldPadding(contentPadding)
+            Modifier.fillMaxSize().scaffoldPadding(contentPadding),
         ) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -117,11 +121,12 @@ actual fun WebViewPage(
                         setBackgroundColor(background)
                         visibility = View.INVISIBLE
                         webViewClient = GkdWebViewClient(state)
-                        webChromeClient = object : WebChromeClient() {
-                            override fun onReceivedTitle(view: WebView, title: String?) {
-                                if (state.failure == null) state.title = title.orEmpty()
+                        webChromeClient =
+                            object : WebChromeClient() {
+                                override fun onReceivedTitle(view: WebView, title: String?) {
+                                    if (state.failure == null) state.title = title.orEmpty()
+                                }
                             }
-                        }
                         addJavascriptInterface(GkdWebViewJsApi(state), "gkd")
                         settings.apply {
                             @SuppressLint("SetJavaScriptEnabled")
@@ -140,7 +145,7 @@ actual fun WebViewPage(
                         state.dark = dark
                         view.evaluateJavascript(
                             "window.dispatchEvent(new Event('gkd:themechange'));",
-                            null
+                            null,
                         )
                     }
                     view.setBackgroundColor(background)
@@ -158,8 +163,10 @@ actual fun WebViewPage(
             )
             state.failure?.let { failure ->
                 GkWebViewErrorContent(
-                    onRetry = reload, onOpenExternal = openExternal,
-                    url = failure.url, errorText = failure.code
+                    onRetry = reload,
+                    onOpenExternal = openExternal,
+                    url = failure.url,
+                    errorText = failure.code,
                 )
             }
         }
@@ -168,26 +175,24 @@ actual fun WebViewPage(
 
 @Suppress("unused")
 private class GkdWebViewJsApi(private val state: BrowserState) {
-    @JavascriptInterface
-    fun isDarkTheme(): Boolean = state.dark
+    @JavascriptInterface fun isDarkTheme(): Boolean = state.dark
 
-    @JavascriptInterface
-    fun getEnvironment(): String = EnvironmentCache.json
+    @JavascriptInterface fun getEnvironment(): String = EnvironmentCache.json
 }
 
 private object EnvironmentCache {
     val json by lazy {
         WebViewEnvironment(
-            platform = "android",
-            appId = META.appId,
-            appName = META.appName,
-            versionCode = META.versionCode,
-            versionName = META.versionName,
-            channel = META.channel,
-            debuggable = META.debuggable,
-        ).toJson()
+                platform = "android",
+                appId = META.appId,
+                appName = META.appName,
+                versionCode = META.versionCode,
+                versionName = META.versionName,
+                channel = META.channel,
+                debuggable = META.debuggable,
+            )
+            .toJson()
     }
-
 }
 
 private const val MINI_CHROME_VERSION = 107
@@ -200,7 +205,8 @@ private val chromeVersion by lazy {
 private const val DOC_CONFIG_URL =
     "https://registry.npmmirror.com/@gkd-kit/docs/latest/files/_config.json"
 
-private const val DEBUG_JS_TEXT = """
+private const val DEBUG_JS_TEXT =
+    """
 <script src="https://registry.npmmirror.com/eruda/latest/files"></script>
 <script>eruda.init();</script>
 """
@@ -208,14 +214,13 @@ private const val DEBUG_JS_TEXT = """
 @Serializable
 private data class DocConfig(
     val mirrorBaseUrl: String,
-    val htmlUrlMap: Map<String, String>
+    val htmlUrlMap: Map<String, String>,
 )
 
 private data class BrowserFailure(val url: String, val code: String)
 
 private class BrowserState {
-    @Volatile
-    var dark = false
+    @Volatile var dark = false
     var view by mutableStateOf<WebView?>(null)
     var title by mutableStateOf("")
     var loading by mutableStateOf(true)
@@ -267,8 +272,10 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
     ) {
         if (request.isForMainFrame) {
             state.fail(
-                view, request.url.toString(),
-                error.description.toString().ifBlank { "ERROR_CODE: ${error.errorCode}" })
+                view,
+                request.url.toString(),
+                error.description.toString().ifBlank { "ERROR_CODE: ${error.errorCode}" },
+            )
         }
     }
 
@@ -279,8 +286,9 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
     ) {
         if (request.isForMainFrame) {
             state.fail(
-                view, request.url.toString(),
-                "HTTP ${errorResponse.statusCode} ${errorResponse.reasonPhrase}".trim()
+                view,
+                request.url.toString(),
+                "HTTP ${errorResponse.statusCode} ${errorResponse.reasonPhrase}".trim(),
             )
         }
     }
@@ -300,34 +308,42 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
 
     override fun shouldInterceptRequest(
         view: WebView?,
-        request: WebResourceRequest?
+        request: WebResourceRequest?,
     ): WebResourceResponse? {
         try {
-            if (request != null && request.run { isForMainFrame && url.host == "gkd.li" && method == "GET" }) {
-                LogUtils.d(request.method, request.url)
+            if (
+                request != null &&
+                    request.run { isForMainFrame && url.host == "gkd.li" && method == "GET" }
+            ) {
+                LogUtils.d { "${request.method} ${logUrl(request.url.toString())}" }
                 runBlocking(Dispatchers.IO) {
-                    val docConfig = NetworkClients.client.get(DOC_CONFIG_URL).body<DocConfig>()
-                    val path = request.url.path.let { if (it.isNullOrEmpty()) "/" else it }
-                    val textUrl = docConfig.htmlUrlMap[path]?.let { docConfig.mirrorBaseUrl + it }
-                    if (textUrl != null) {
-                        val textContent = NetworkClients.client.get(textUrl).body<String>().let {
-                            if (META.debuggable) {
-                                DEBUG_JS_TEXT + it
-                            } else {
-                                it
-                            }
+                        val docConfig = NetworkClients.client.get(DOC_CONFIG_URL).body<DocConfig>()
+                        val path = request.url.path.let { if (it.isNullOrEmpty()) "/" else it }
+                        val textUrl =
+                            docConfig.htmlUrlMap[path]?.let { docConfig.mirrorBaseUrl + it }
+                        if (textUrl != null) {
+                            val textContent =
+                                NetworkClients.client.get(textUrl).body<String>().let {
+                                    if (META.debuggable) {
+                                        DEBUG_JS_TEXT + it
+                                    } else {
+                                        it
+                                    }
+                                }
+                            return@runBlocking WebResourceResponse(
+                                "text/html",
+                                "UTF-8",
+                                textContent.byteInputStream(),
+                            )
                         }
-                        return@runBlocking WebResourceResponse(
-                            "text/html",
-                            "UTF-8",
-                            textContent.byteInputStream()
-                        )
+                        return@runBlocking null
                     }
-                    return@runBlocking null
-                }?.let { return it }
+                    ?.let {
+                        return it
+                    }
             }
         } catch (e: Throwable) {
-            e.printStackTrace()
+            LogUtils.w("WebView mirror unavailable, using original request", e)
         }
         return super.shouldInterceptRequest(view, request)
     }

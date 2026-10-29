@@ -2,11 +2,11 @@ package li.gkd.app.ui.settings
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.app.AppSort
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.home.scopeAppSource
-import li.gkd.app.app.AppSort
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
@@ -22,34 +22,38 @@ class A11yScopeAppListViewModel : BaseViewModel() {
     }
 
     val uiState = scopeAppSource.stateLoadable()
-    private val editor = AppIdListEditor(
-        { SettingsRepository.a11yScopeAppList.value },
-        SettingsRepository::replaceA11yScopeAppList
-    )
+    private val editor =
+        AppIdListEditor(
+            { SettingsRepository.a11yScopeAppList.value },
+            SettingsRepository::saveA11yScopeAppList,
+        )
 
     suspend fun showHelp() {
-        MainViewModel.requireCurrent().dialogRequests.showMessage(
-            title = getString(Res.string.a11y_scoped),
-            text = getString(Res.string.scoped_a11y_help_problem) +
-                getString(Res.string.scoped_a11y_help_behavior) +
-                getString(Res.string.scoped_a11y_help_scope),
-        )
+        MainViewModel.requireCurrent()
+            .dialogRequests
+            .showMessage(
+                title = getString(Res.string.a11y_scoped),
+                text =
+                    getString(Res.string.scoped_a11y_help_problem) +
+                        getString(Res.string.scoped_a11y_help_behavior) +
+                        getString(Res.string.scoped_a11y_help_scope),
+            )
     }
 
     fun startEditing() {
         editorState.closeSearch(::setSearchStr)
-        editorState.startEditing(editor.initialText())
+        editor.startEditing(editorState)
     }
 
     suspend fun closeEditor() {
-        if (editor.hasChanges(editorState.state.value.draft)) {
-            val confirmed = MainViewModel.requireCurrent().dialogRequests.confirm(
-                title = getString(Res.string.notice_title),
-                text = getString(Res.string.edit_discard_confirmation),
-            )
-            if (!confirmed) return
+        editor.close(editorState) {
+            MainViewModel.requireCurrent()
+                .dialogRequests
+                .confirm(
+                    title = getString(Res.string.notice_title),
+                    text = getString(Res.string.edit_discard_confirmation),
+                )
         }
-        editorState.closeEditor()
     }
 
     suspend fun onBack() {
@@ -58,10 +62,11 @@ class A11yScopeAppListViewModel : BaseViewModel() {
     }
 
     suspend fun saveEditor() {
-        val draft = editorState.state.value.draft
-        val changed = editor.save(draft)
-        ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
-        if (editorState.state.value.draft == draft) editorState.closeEditor()
+        editor.save(editorState) { changed ->
+            ToastUtils.show(
+                getString(if (changed) Res.string.update_success else Res.string.unchanged),
+            )
+        }
     }
 
     fun setSortType(value: AppSort) {
@@ -72,7 +77,7 @@ class A11yScopeAppListViewModel : BaseViewModel() {
         SettingsRepository.updateSettings { it.copy(a11yScopeAppGroupType = value) }
     }
 
-    fun toggleApp(appId: String) {
+    suspend fun toggleApp(appId: String) {
         SettingsRepository.updateA11yScopeAppList { if (appId in it) it - appId else it + appId }
     }
 }

@@ -1,6 +1,5 @@
 package li.gkd.app.service
 
-import li.gkd.app.util.copyText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,11 +30,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.gkd.app.a11y.A11yState
-import li.gkd.app.a11y.ActivityScene
-import li.gkd.app.a11y.currentTopActivity
-import li.gkd.app.a11y.topActivityFlow
-import li.gkd.app.a11y.updateTopActivity
+import li.gkd.app.matching.input.ActivityScene
+import li.gkd.app.matching.input.AndroidForegroundState
+import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.topActivityFlow
+import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
@@ -44,41 +43,47 @@ import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.util.IntentUtils
+import li.gkd.app.util.copyText
 
-class ActivityService : OverlayWindowService(
-    positionKey = "activity"
-) {
+class ActivityService :
+    OverlayWindowService(
+        positionKey = "activity",
+    ) {
     private val activityOkFlow by lazy {
         combine(A11yService.isRunning, privilegeContextFlow) { a, b ->
-            a || b != null
-        }.stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
+                a || b != null
+            }
+            .stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
     }
 
     @Composable
     override fun ComposeContent() {
         val bgColor = MaterialTheme.colorScheme.surface
         Column(
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.small)
-                .background(bgColor.copy(alpha = 0.9f))
-                .width(IntrinsicSize.Max)
-                .padding(4.dp)
+            modifier =
+                Modifier.clip(MaterialTheme.shapes.small)
+                    .background(bgColor.copy(alpha = 0.9f))
+                    .width(IntrinsicSize.Max)
+                    .padding(4.dp),
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                val topActivity by topActivityFlow.collectAsStateWithLifecycle(initialValue = currentTopActivity)
+                val topActivity by
+                    topActivityFlow.collectAsStateWithLifecycle(initialValue = currentTopActivity)
                 val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
-                    title = if (hasAuth) Res.string.activity_record_service.getSync() else Res.string.activity_record_service_no_permission.getSync()
+                    title =
+                        if (hasAuth) Res.string.activity_record_service.getSync()
+                        else Res.string.activity_record_service_no_permission.getSync(),
                 )
                 if (hasAuth) {
                     Box {
                         Column(
-                            modifier = Modifier.padding(start = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp),
                         ) {
                             RowText(text = topActivity.appId)
                             RowText(
                                 text = topActivity.shortActivityId,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.secondary,
                             )
                         }
                         if (topActivity.number > 0) {
@@ -86,11 +91,11 @@ class ActivityService : OverlayWindowService(
                                 text = topActivity.number.toString(),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .zIndex(1f)
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .padding(end = 4.dp),
+                                modifier =
+                                    Modifier.align(Alignment.TopEnd)
+                                        .zIndex(1f)
+                                        .clip(MaterialTheme.shapes.extraSmall)
+                                        .padding(end = 4.dp),
                             )
                         }
                     }
@@ -113,7 +118,7 @@ class ActivityService : OverlayWindowService(
                 }
             }
             if (!A11yService.isRunning.value) {
-                A11yState.withTopActivityLock {
+                AndroidForegroundState.withTopActivityLock {
                     privilegeContextFlow.value?.run {
                         topCpn()?.let { cpn ->
                             updateTopActivity(
@@ -138,7 +143,6 @@ class ActivityService : OverlayWindowService(
         }
 
         fun stop() = IntentUtils.stopService(ActivityService::class)
-
     }
 }
 
@@ -150,12 +154,14 @@ private fun RowText(text: String?, color: Color = Color.Unspecified) {
             Spacer(modifier = Modifier.width(4.dp))
             GkIcon(
                 imageVector = GkIcons.ContentCopy,
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = {
-                        copyText(text)
-                    })
-                    .iconTextSize(),
+                modifier =
+                    Modifier.clip(MaterialTheme.shapes.extraSmall)
+                        .clickable(
+                            onClick = {
+                                copyText(text)
+                            },
+                        )
+                        .iconTextSize(),
             )
         }
     }

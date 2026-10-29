@@ -23,21 +23,22 @@ class SelectorTypeTest {
 
     @Test
     fun documentedValueTypesAndMethodsValidate() {
-        val sources = listOf(
-            "View[text='x']",
-            "View[text^='x']",
-            "View[text~='x']",
-            "View[width>1]",
-            "View[clickable=true]",
-            "View[parent=null]",
-            "View[text.length=1]",
-            "View[text.substring(0,1)='x']",
-            "View[width.plus(1)=2]",
-            "View[width.toString()='1']",
-            "View[clickable.ifElse(text,desc)='x']",
-            "View[parent.getChild(0)=null]",
-            "View[equal(text,'x')=true]",
-        )
+        val sources =
+            listOf(
+                "View[text='x']",
+                "View[text^='x']",
+                "View[text~='x']",
+                "View[width>1]",
+                "View[clickable=true]",
+                "View[parent=null]",
+                "View[text.length=1]",
+                "View[text.substring(0,1)='x']",
+                "View[width.plus(1)=2]",
+                "View[width.toString()='1']",
+                "View[clickable.ifElse(text,desc)='x']",
+                "View[parent.getChild(0)=null]",
+                "View[equal(text,'x')=true]",
+            )
 
         sources.forEach { source ->
             val selector = compileSelector(source)
@@ -48,65 +49,66 @@ class SelectorTypeTest {
 
     @Test
     fun invalidTypesReturnStructuredFailures() {
-        val cases = listOf(
-            TypeFailureCase(
-                source = "View[true>1]",
-                kind = SelectorTypeErrorKind.OperatorTypeMismatch,
-                expression = "true>1",
-                expected = "int operands",
-                actual = "boolean and int",
-            ),
-            TypeFailureCase(
-                source = "View[true^='x']",
-                kind = SelectorTypeErrorKind.OperatorTypeMismatch,
-                expression = "true^=\"x\"",
-                expected = "string operands",
-                actual = "boolean and string",
-            ),
-            TypeFailureCase(
-                source = "View[true~='x']",
-                kind = SelectorTypeErrorKind.OperatorTypeMismatch,
-                expression = "true~=\"x\"",
-                expected = "variable and regular expression string literal",
-                actual = "boolean and string",
-            ),
-            TypeFailureCase(
-                source = "View[text>1]",
-                kind = SelectorTypeErrorKind.OperandTypeMismatch,
-                expression = "text>1",
-                expected = "string",
-                actual = "int",
-            ),
-            TypeFailureCase(
-                source = "View[unknown=1]",
-                kind = SelectorTypeErrorKind.UnknownIdentifier,
-                expression = "unknown",
-            ),
-            TypeFailureCase(
-                source = "View[text.unknown=1]",
-                kind = SelectorTypeErrorKind.UnknownMember,
-                expression = "text.unknown",
-            ),
-            TypeFailureCase(
-                source = "View[unknown()=1]",
-                kind = SelectorTypeErrorKind.UnknownMethod,
-                expression = "unknown",
-            ),
-            TypeFailureCase(
-                source = "View[text.substring()='x']",
-                kind = SelectorTypeErrorKind.ArgumentCountMismatch,
-                expression = "text.substring()",
-                expected = "1 or 2",
-                actual = "0",
-            ),
-            TypeFailureCase(
-                source = "View[text.substring(true)='x']",
-                kind = SelectorTypeErrorKind.ArgumentTypeMismatch,
-                expression = "true",
-                expected = "int",
-                actual = "boolean",
-            ),
-        )
+        val cases =
+            listOf(
+                TypeFailureCase(
+                    source = "View[true>1]",
+                    kind = SelectorTypeErrorKind.OperatorTypeMismatch,
+                    expression = "true>1",
+                    expected = "int operands",
+                    actual = "boolean and int",
+                ),
+                TypeFailureCase(
+                    source = "View[true^='x']",
+                    kind = SelectorTypeErrorKind.OperatorTypeMismatch,
+                    expression = "true^=\"x\"",
+                    expected = "string operands",
+                    actual = "boolean and string",
+                ),
+                TypeFailureCase(
+                    source = "View[true~='x']",
+                    kind = SelectorTypeErrorKind.OperatorTypeMismatch,
+                    expression = "true~=\"x\"",
+                    expected = "variable and regular expression string literal",
+                    actual = "boolean and string",
+                ),
+                TypeFailureCase(
+                    source = "View[text>1]",
+                    kind = SelectorTypeErrorKind.OperandTypeMismatch,
+                    expression = "text>1",
+                    expected = "string",
+                    actual = "int",
+                ),
+                TypeFailureCase(
+                    source = "View[unknown=1]",
+                    kind = SelectorTypeErrorKind.UnknownIdentifier,
+                    expression = "unknown",
+                ),
+                TypeFailureCase(
+                    source = "View[text.unknown=1]",
+                    kind = SelectorTypeErrorKind.UnknownMember,
+                    expression = "text.unknown",
+                ),
+                TypeFailureCase(
+                    source = "View[unknown()=1]",
+                    kind = SelectorTypeErrorKind.UnknownMethod,
+                    expression = "unknown",
+                ),
+                TypeFailureCase(
+                    source = "View[text.substring()='x']",
+                    kind = SelectorTypeErrorKind.ArgumentCountMismatch,
+                    expression = "text.substring()",
+                    expected = "1 or 2",
+                    actual = "0",
+                ),
+                TypeFailureCase(
+                    source = "View[text.substring(true)='x']",
+                    kind = SelectorTypeErrorKind.ArgumentTypeMismatch,
+                    expression = "true",
+                    expected = "int",
+                    actual = "boolean",
+                ),
+            )
 
         cases.forEach { case ->
             val result = compileSelector(case.source).validateType(typeModel)
@@ -169,9 +171,10 @@ class SelectorTypeTest {
         )
         assertEquals(errors.map { it.index }.sortedBy { it }, errors.map { it.index })
 
-        val firstFailure = assertIs<SelectorTypeResult.Failure>(
-            selector.validateType(typeModel),
-        )
+        val firstFailure =
+            assertIs<SelectorTypeResult.Failure>(
+                selector.validateType(typeModel),
+            )
         assertEquals("unknownA", firstFailure.error.expression)
     }
 
@@ -245,8 +248,7 @@ class SelectorTypeTest {
             compileSelector(memberSource).validateType(typeModel),
         )
 
-        val callSource = "View[width=" + "width.plus(".repeat(3_000) +
-                "1" + ")".repeat(3_000) + "]"
+        val callSource = "View[width=" + "width.plus(".repeat(3_000) + "1" + ")".repeat(3_000) + "]"
         assertIs<SelectorTypeResult.Success>(
             compileSelector(callSource).validateType(typeModel),
         )

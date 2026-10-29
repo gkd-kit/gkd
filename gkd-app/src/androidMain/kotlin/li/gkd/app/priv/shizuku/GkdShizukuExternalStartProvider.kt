@@ -2,23 +2,23 @@ package li.gkd.app.priv.shizuku
 
 import android.content.Context
 import android.content.pm.PackageManager
+import kotlin.coroutines.resume
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.suspendCancellableCoroutine
 import priv.kit.core.PrivilegeStartupLogListener
 import priv.kit.ui.PrivilegeUiExternalStartSnapshot
 import priv.kit.ui.PrivilegeUiStreamingExternalStartProvider
 import rikka.shizuku.Shizuku
-import kotlin.coroutines.resume
 
-object GkdShizukuExternalStartProvider :
-    PrivilegeUiStreamingExternalStartProvider {
+object GkdShizukuExternalStartProvider : PrivilegeUiStreamingExternalStartProvider {
     override val id: String = "shizuku"
     override val label: CharSequence = "Shizuku"
 
     override suspend fun snapshot(context: Context): PrivilegeUiExternalStartSnapshot =
         runCatching {
             shizukuSnapshot()
-        }.getOrElse { throwable ->
+        }
+        .getOrElse { throwable ->
             PrivilegeUiExternalStartSnapshot(
                 message = throwable.message ?: throwable.javaClass.name,
                 exceptionText = throwable.stackTraceToString(),
@@ -30,9 +30,7 @@ object GkdShizukuExternalStartProvider :
     ): PrivilegeUiExternalStartSnapshot {
         val current = snapshot(context)
         if (
-            !current.available ||
-            current.canStart ||
-            Shizuku.shouldShowRequestPermissionRationale()
+            !current.available || current.canStart || Shizuku.shouldShowRequestPermissionRationale()
         ) {
             return current
         }

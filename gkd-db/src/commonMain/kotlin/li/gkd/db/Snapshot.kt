@@ -16,35 +16,29 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Snapshot(
     @PrimaryKey @ColumnInfo(name = "id") override val id: Long,
-
     @ColumnInfo(name = "app_id") override val appId: String,
     @ColumnInfo(name = "activity_id") override val activityId: String?,
-
     @ColumnInfo(name = "screen_height") override val screenHeight: Int,
     @ColumnInfo(name = "screen_width") override val screenWidth: Int,
     @ColumnInfo(name = "is_landscape") override val isLandscape: Boolean,
-
     @ColumnInfo(name = "github_asset_id") val githubAssetId: Int? = null,
-
-    ) : BaseSnapshot {
+) : BaseSnapshot {
     @Dao
     interface SnapshotDao {
-        @Insert
-        suspend fun insert(vararg users: Snapshot): List<Long>
+        @Insert suspend fun insert(vararg users: Snapshot): List<Long>
 
-        @Delete
-        suspend fun delete(vararg users: Snapshot): Int
+        @Delete suspend fun delete(vararg users: Snapshot): Int
 
-        @Query("SELECT * FROM snapshot ORDER BY id DESC")
-        fun query(): Flow<List<Snapshot>>
+        @Query("SELECT * FROM snapshot ORDER BY id DESC") fun query(): Flow<List<Snapshot>>
 
         @Query("UPDATE snapshot SET github_asset_id=null WHERE id = :id")
         suspend fun deleteGithubAssetId(id: Long)
 
-        @Query("UPDATE snapshot SET github_asset_id=:assetId WHERE id=:id AND github_asset_id IS NULL")
+        @Query(
+            "UPDATE snapshot SET github_asset_id=:assetId WHERE id=:id AND github_asset_id IS NULL",
+        )
         suspend fun markUploadedIfPending(id: Long, assetId: Int): Int
 
-        @Query("SELECT COUNT(*) FROM snapshot")
-        fun count(): Flow<Int>
+        @Query("SELECT COUNT(*) FROM snapshot") fun count(): Flow<Int>
     }
 }

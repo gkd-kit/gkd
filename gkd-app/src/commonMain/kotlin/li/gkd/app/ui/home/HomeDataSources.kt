@@ -10,8 +10,11 @@ import li.gkd.db.Db
 data class LatestActionSnapshot(val record: ActionLog?)
 
 object HomeDataSources {
-    fun observeLatest(): Flow<Loadable<LatestActionSnapshot>> = Db.actionLogDao.queryLatest()
-        .map<ActionLog?, Loadable<LatestActionSnapshot>> { Loadable.Ready(LatestActionSnapshot(it)) }
-        .catch { emit(Loadable.Failure(it)) }
-
+    fun observeLatest(): Flow<Loadable<LatestActionSnapshot>> =
+        Db.actionLogDao
+            .queryLatest()
+            .map<ActionLog?, Loadable<LatestActionSnapshot>> {
+                Loadable.Ready(LatestActionSnapshot(it))
+            }
+            .catch { emit(Loadable.Failure(it)) }
 }

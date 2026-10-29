@@ -34,11 +34,12 @@ class PermissionRequestHost(
         this.commands = commands
         this.onDetachHost = onDetachHost
         this.onDispose = onDispose
-        bindingJob = activity.lifecycleScope.launch {
-            commands.collectCommands { command ->
-                execute(commands, coordinator, command)
+        bindingJob =
+            activity.lifecycleScope.launch {
+                commands.collectCommands { command ->
+                    execute(commands, coordinator, command)
+                }
             }
-        }
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
@@ -79,10 +80,11 @@ class PermissionRequestHost(
             commands.complete(command.id)
             return
         }
-        val description = GkdPermissionDescription(
-            prompt = command.prompt,
-            coordinator = coordinator,
-        )
+        val description =
+            GkdPermissionDescription(
+                prompt = command.prompt,
+                coordinator = coordinator,
+            )
         runCatching {
             XXPermissions.with(activity)
                 .unchecked()
@@ -91,9 +93,10 @@ class PermissionRequestHost(
                 .request { _, _ ->
                     commands.complete(command.id)
                 }
-        }.onFailure { error ->
-            commands.fail(command.id, error)
         }
+            .onFailure { error ->
+                commands.fail(command.id, error)
+            }
     }
 
     private fun openPermissionSettings(
@@ -104,9 +107,10 @@ class PermissionRequestHost(
             XXPermissions.startPermissionActivity(activity, command.permission) { _, _ ->
                 commands.complete(command.id)
             }
-        }.onFailure { error ->
-            commands.fail(command.id, error)
         }
+            .onFailure { error ->
+                commands.fail(command.id, error)
+            }
     }
 }
 

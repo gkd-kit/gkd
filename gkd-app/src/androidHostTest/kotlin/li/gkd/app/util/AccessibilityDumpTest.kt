@@ -8,64 +8,76 @@ class AccessibilityDumpTest {
 
     @Test
     fun androidOCurrentUserAutomationIsRunning() {
-        val dump = """
+        val dump =
+            """
             User state[attributes:{id=0, currentUser=true, accessibilityEnabled=false, Service[label=UiAutomation]
                        services:{}
-        """.trimIndent()
+            """
+                .trimIndent()
 
         assertTrue(containsUiAutomation(dump))
     }
 
     @Test
     fun androidOOrdinaryAccessibilityServiceIsNotAutomation() {
-        val dump = """
+        val dump =
+            """
             User state[attributes:{id=0, currentUser=true, accessibilityEnabled=true}
                        services:{Service[label=TalkBack]}
-        """.trimIndent()
+            """
+                .trimIndent()
 
         assertFalse(containsUiAutomation(dump))
     }
 
     @Test
     fun androidONonCurrentUserAutomationIsIgnored() {
-        val dump = """
+        val dump =
+            """
             User state[attributes:{id=0, currentUser=false, Service[label=UiAutomation]
                        services:{}
             User state[attributes:{id=10, currentUser=true}
                        services:{}
-        """.trimIndent()
+            """
+                .trimIndent()
 
         assertFalse(containsUiAutomation(dump))
     }
 
     @Test
     fun androidOFindsAutomationInSecondCurrentUserBlock() {
-        val dump = """
+        val dump =
+            """
             User state[attributes:{id=0, currentUser=false}
                        services:{}
             User state[attributes:{id=10, currentUser=true, Service[label=UiAutomation]
                        services:{}
-        """.trimIndent()
+            """
+                .trimIndent()
 
         assertTrue(containsUiAutomation(dump))
     }
 
     @Test
     fun androidPUiAutomationInUserAttributesIsRunning() {
-        val dump = """
+        val dump =
+            """
             User state[attributes:{id=0, currentUser=true, Ui Automation[eventTypes=TYPES_ALL_MASK]
                        services:{}
-        """.trimIndent()
+            """
+                .trimIndent()
 
         assertTrue(containsUiAutomation(dump))
     }
 
     @Test
     fun modernStandaloneUiAutomationIsRunning() {
-        val dump = """
+        val dump =
+            """
             ACCESSIBILITY MANAGER (dumpsys accessibility)
               Ui Automation[eventTypes=TYPES_ALL_MASK, notificationTimeout=0]
-        """.trimIndent()
+            """
+                .trimIndent()
 
         assertTrue(containsUiAutomation(dump))
     }

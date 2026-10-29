@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.getString
-import kotlin.coroutines.resume
 
 data class DialogRequest(
     val title: String,
@@ -44,11 +44,12 @@ class DialogRequests {
         title: String,
         text: String,
         confirmText: String? = null,
-    ) = showMessage(
-        title = title,
-        text = AnnotatedString(text),
-        confirmText = confirmText,
-    )
+    ) =
+        showMessage(
+            title = title,
+            text = AnnotatedString(text),
+            confirmText = confirmText,
+        )
 
     suspend fun showMessage(
         title: String,
@@ -63,7 +64,7 @@ class DialogRequests {
                 dismissText = null,
                 dismissOnRequest = true,
                 error = false,
-            )
+            ),
         )
     }
 
@@ -74,14 +75,15 @@ class DialogRequests {
         dismissText: String? = null,
         dismissOnRequest: Boolean = false,
         error: Boolean = false,
-    ): Boolean = confirm(
-        title = title,
-        text = AnnotatedString(text),
-        confirmText = confirmText,
-        dismissText = dismissText,
-        dismissOnRequest = dismissOnRequest,
-        error = error,
-    )
+    ): Boolean =
+        confirm(
+            title = title,
+            text = AnnotatedString(text),
+            confirmText = confirmText,
+            dismissText = dismissText,
+            dismissOnRequest = dismissOnRequest,
+            error = error,
+        )
 
     suspend fun confirm(
         title: String,
@@ -90,16 +92,17 @@ class DialogRequests {
         dismissText: String? = null,
         dismissOnRequest: Boolean = false,
         error: Boolean = false,
-    ): Boolean = request(
-        DialogRequest(
-            title = title,
-            text = text,
-            confirmText = confirmText ?: getString(Res.string.action_ok),
-            dismissText = dismissText ?: getString(Res.string.action_cancel),
-            dismissOnRequest = dismissOnRequest,
-            error = error,
+    ): Boolean =
+        request(
+            DialogRequest(
+                title = title,
+                text = text,
+                confirmText = confirmText ?: getString(Res.string.action_ok),
+                dismissText = dismissText ?: getString(Res.string.action_cancel),
+                dismissOnRequest = dismissOnRequest,
+                error = error,
+            ),
         )
-    )
 
     private fun confirmCurrent() = completeCurrent(true)
 
@@ -112,7 +115,12 @@ class DialogRequests {
         if (currentRequest != null) {
             GkAlertDialog(
                 title = { Text(text = currentRequest.title) },
-                text = { Text(text = currentRequest.text, modifier = Modifier.verticalScroll(rememberScrollState())) },
+                text = {
+                    Text(
+                        text = currentRequest.text,
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    )
+                },
                 onDismissRequest = {
                     if (currentRequest.dismissOnRequest) {
                         dismissCurrent()
@@ -121,24 +129,27 @@ class DialogRequests {
                 confirmButton = {
                     TextButton(
                         onClick = ::confirmCurrent,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = if (currentRequest.error) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                Color.Unspecified
-                            },
-                        ),
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                contentColor =
+                                    if (currentRequest.error) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        Color.Unspecified
+                                    },
+                            ),
                     ) {
                         Text(text = currentRequest.confirmText)
                     }
                 },
-                dismissButton = currentRequest.dismissText?.let { dismissText ->
-                    {
-                        TextButton(onClick = ::dismissCurrent) {
-                            Text(text = dismissText)
+                dismissButton =
+                    currentRequest.dismissText?.let { dismissText ->
+                        {
+                            TextButton(onClick = ::dismissCurrent) {
+                                Text(text = dismissText)
+                            }
                         }
-                    }
-                },
+                    },
             )
         }
     }

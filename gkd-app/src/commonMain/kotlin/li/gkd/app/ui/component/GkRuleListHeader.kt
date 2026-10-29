@@ -24,13 +24,14 @@ fun GkRuleListHeader(
     title: @Composable RowScope.() -> Unit,
 ) {
     Row(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 8.dp)
-            .clip(MaterialTheme.shapes.extraSmall)
-            .clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClick)
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 8.dp)
+                .clip(MaterialTheme.shapes.extraSmall)
+                .clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClick)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

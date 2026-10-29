@@ -16,9 +16,9 @@
 ./gradlew.bat :gkd-app:run --args="--test --focus"
 ```
 
-日常启动使用已有开发数据，默认按正常窗口启动。`--focus` 仅绕过测试模式的后台窗口限制，焦点交给系统决定，不主动抢焦点或置顶；绿色版也支持此参数。`--test` 自动创建隔离会话，不读取日常 profile；无测试输入时使用最小模拟清单。测试窗口默认位于可视区域之外且不获取系统焦点；组合 `--test --focus` 时窗口显示在屏幕内并允许获取焦点，数据仍然隔离。控制窗口通过标题栏齿轮或 F12 打开，关闭它不会退出 App。
+日常启动使用已有开发数据，默认按正常窗口启动。`--focus` 仅绕过测试模式的后台窗口启动方式，焦点交给系统决定，不主动抢焦点或置顶；绿色版也支持此参数。`--test` 自动创建隔离会话，不读取日常 profile；无测试输入时使用最小模拟清单。测试窗口默认位于可视区域之外且不主动获取系统焦点；点击任务栏图标可手动聚焦，并将窗口移回屏幕内。后台弹窗不抢焦点，手动激活后弹窗可正常接收焦点。组合 `--test --focus` 时窗口直接显示在屏幕内并允许获取焦点，数据仍然隔离。控制窗口通过标题栏齿轮或 F12 打开，关闭它不会退出 App。
 
-HTTP 默认监听 `127.0.0.1:17322`，可用 `GKD_DESKTOP_PORT` 修改端口，关闭 App 时停止。修改 Kotlin 后先关闭本任务启动的 Desktop，再编译、重启，避免覆盖运行中的 JAR。
+Desktop 启动时自动开启唯一调试服务，监听 `127.0.0.1:<httpServerPort>`（默认 8888）。`/api/*` 为浏览器接口，`/debug/*` 为应用诊断，`/desktop/*` 为 JVM 宿主控制。实际端口写入当前会话 `debug-server.json`，改端口后更新，停止时删除。页面或 F12 控制窗口可关闭整个服务并重新开启，关闭期间所有 HTTP 接口均不可用。退出 App 时停止服务。修改 Kotlin 后先关闭本任务启动的 Desktop，再编译、重启，避免覆盖运行中的 JAR。
 
 按改动范围选择命令，不必每次全部执行：
 
@@ -27,7 +27,7 @@ HTTP 默认监听 `127.0.0.1:17322`，可用 `GKD_DESKTOP_PORT` 修改端口，�
 ./gradlew.bat :gkd-app:jvmTest
 pnpm type-check
 pnpm test
-pnpm app:tools --help
+pnpm app-tools --help
 ```
 
 共享逻辑、共享 UI 和 Desktop 修改只做相关 JVM 验证；涉及 Android 实现、依赖或构建链路时才执行相关 `gkd` 渠道验证。业务、持久化、协议和恢复行为保留自动测试；UI 默认使用人工或 HTTP 实际交互检查；仅为已发生、难以稳定人工复查的重要回归增加小范围自动测试，具体边界见 AGENTS.md。
@@ -54,19 +54,32 @@ ZIP 输出到 `.local/desktop-packages/gkd.win-<架构>.zip`。解压完整的 `
 
 绿色版数据、profile 和模拟配置保存在 `GKD.exe` 同目录的 `.local/desktop/`；`--test` 使用同目录的 `.local/tests/desktop/<会话ID>/`。可以整体移动目录，启动不依赖工作目录或源码仓库。请解压到可写目录；升级时保留已有 `.local/`。Gradle `run` 仍使用仓库根目录的 `.local/`。
 
+## 构建并更新真机 Debug
+
+设备需已安装并初始化 GKD Debug。在仓库根目录运行：
+
+```powershell
+# 构建一次，再顺序更新全部已连接且已授权的设备
+pnpm app-tools device-install
+# 只更新指定设备
+pnpm app-tools device-install --serial SERIAL
+```
+
+命令位于 `scripts/desktop`，执行 `:gkd-android:assembleGkdDebug` 后直接复用公共安装流程，不启动调试服务。省略 `--serial` 时跳过离线或未授权设备；单台更新失败会保留原因，继续其余设备，最后汇总失败。安装前暂停自动化，相同 APK 按 SHA-256 跳过，不同则覆盖更新；仅确认已核对身份的本次安装弹窗。每台设备结束时恢复并核对本次设置字段，GKD 本体不加入临时测试应用清理列表。此命令替代已删除的 `.local/install.ps1`。
+
 ## 导入设备资料
 
 连接并解锁真机，构建带导出能力的调试包，再运行工具：
 
 ```powershell
 ./gradlew.bat :gkd-android:assembleGkdDebug
-pnpm app:tools capture-profile --install --screens
+pnpm app-tools capture-profile --install --screens
 ./gradlew.bat :gkd-app:run
 ```
 
 工具位于根目录 `scripts/desktop`，支持 `--serial`、`--apps`、`--font`、`--install`、`--screens`、`--output`，不会自行构建 APK。省略 `--apps` 时使用设备导出的应用清单；默认字体路径为 `/system/fonts/MiSansVF.ttf`，其他设备通过 `--font` 指定。
 
-工具先记录自动化开关和运行模式，关闭自动化并确认后导出，最后仅恢复这两个字段并核对。中断或断连后如保留 `automation-recovery.json`，必须先按记录恢复再重试。资料校验、暂存及真机恢复成功后才替换目标 profile，失败保留原资料。
+工具先记录自动化开关和运行模式，关闭自动化并确认后导出，最后仅恢复这两个字段并核对。中断或断连后的恢复记录位于 `.local/device-recovery/`；重新连接后运行 `pnpm app-tools device-recovery --serial SERIAL --operation restore`，仅恢复本次两个字段。新采集会跨采集目录检查同一设备的待恢复记录。资料校验、暂存及真机恢复成功后才替换目标 profile，失败保留原资料。
 
 默认输出为日常 profile，包含设备尺寸、Insets、字体缩放、颜色、应用图标、订阅和初始设置。修改设备元数据后重启宿主，应用清单可在页面刷新。已有应用数据优先，重新导出不会清空数据库；profile 不复制数据库、规则统计或排序结果。字体和设备资料仅本地使用，不提交。
 
@@ -82,7 +95,7 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 控制窗口和 HTTP 操作同一个模拟器，配置自动保存；保存失败显示原因并提供重试，退出前须保存成功。模拟配置损坏或模型变更时可删除当前会话的 `simulator.json` 重置，不影响应用数据。路由、弹窗、IME 和进行中的任务不跨进程恢复。
 
-`GET /simulator` 读取配置，`POST /simulator` 替换配置，`POST /simulator/patch` 仅合并提供的字段。分组为 `device`、`permissions`、`services`、`prompts`、`privilege`。配置更新保留页面草稿；`POST /scenario` 重建页面及其 ViewModel/草稿，但保留持久化数据与模拟配置。
+`GET /desktop/simulator` 读取配置，`POST /desktop/simulator` 替换配置，`POST /desktop/simulator/patch` 仅合并提供的字段。分组为 `device`、`permissions`、`services`、`prompts`、`privilege`。配置更新保留页面草稿；`POST /desktop/scenario` 重建页面及其 ViewModel/草稿，但保留持久化数据与模拟配置。
 
 `device.width/height` 是内容视口 dp，`density` 为相对系统 DPI 的倍率，`fontScale` 单独控制字体。`locale` 影响格式化，当前资源只有默认中文。系统栏实时绘制：时间取本机时钟，电量取 Windows 系统，网络和充电为模拟值。隐藏状态栏仍保留挖孔安全高度；隐藏导航栏移除底部系统留白。
 
@@ -96,62 +109,65 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 生产页面的服务开关已接入 Desktop 生命周期管理，包括常驻通知、快照按钮、界面、事件、轨迹、截屏、HTTP、无障碍和自动化服务。HTTP 使用真实服务端，其他服务使用生命周期模拟。F12 控制窗口的“服务生命周期（模拟）”可配置成功、失败或手动完成，以及授权同意、取消或弹窗确认。截屏服务默认弹出模拟授权框；手动启动保持“启动中”，直到投递连接完成或失败事件。
 
-运行状态由 `SimulatorStore` 统一提供，页面重载不会停止服务；退出 Desktop 后不恢复运行状态。模拟条件会保存到会话 `simulator.json`。模拟不执行 Android 自动化、真实截屏或悬浮窗。HTTP 服务复用 Android 的共享检查路由，实际监听 `127.0.0.1:<httpServerPort>`（默认 8888），与 17322 开发控制接口独立。页面可打开真实地址；修改端口时重启监听，关闭时释放端口，并按“自动清空内存订阅”设置清理 HTTP 订阅。快照列表/文件读取、删除和订阅更新使用真实 Repository/DAO；`captureSnapshot`、`execSelector` 返回不支持，设备信息标识 Desktop。特权模拟断开会结束依赖它的自动化模拟。
+运行状态由 `SimulatorStore` 统一提供，页面重载不会停止服务；退出 Desktop 后不恢复运行状态。模拟条件会保存到会话 `simulator.json`。模拟不执行 Android 自动化、真实截屏或悬浮窗。调试服务复用 Android 的共享检查路由，实际监听 `127.0.0.1:<httpServerPort>`（默认 8888），浏览器、应用诊断和桌面控制共用该监听。页面可打开真实地址；修改端口时重启监听，关闭时释放端口，并按“自动清空内存订阅”设置清理 HTTP 订阅。快照列表/文件读取、删除和订阅更新使用真实 Repository/DAO；`captureSnapshot`、`execSelector` 返回不支持，设备信息标识 Desktop。特权模拟断开会结束依赖它的自动化模拟。
 
-可在隔离宿主中使用工具（`--port` 默认 17322）：
+工具默认读取日常会话 `.local/desktop/debug-server.json`；隔离宿主请使用启动日志中的连接文件，下列示例显式使用隔离会话连接文件，请替换 `<会话>`；也可使用 `--port` 指定该实例的实际端口：
 
 ```powershell
-pnpm app:tools services
+$connection = ".local/tests/desktop/<会话>/debug-server.json"
+pnpm app-tools services --connection "$connection"
 # 检查运行中的真实订阅 HTTP 接口（仅 --test 宿主）：
-pnpm app:tools check-subscription-http
+pnpm app-tools check-subscription-http --connection "$connection"
 # 在控制窗口将界面服务的启动结果设为“手动完成”后：
-pnpm app:tools service-start --service Activity
+pnpm app-tools service-start --service Activity --connection "$connection"
 # 将 1 替换为启动输出中的 runtime.Activity.attempt：
-pnpm app:tools service-event --service Activity --event Connected --attempt 1
-pnpm app:tools service-stop --service Activity
+pnpm app-tools service-event --service Activity --event Connected --attempt 1 --connection "$connection"
+pnpm app-tools service-stop --service Activity --connection "$connection"
 ```
 
-`check-subscription-http` 启动真实 HTTP 服务，验证订阅读写、开关、解析错误和持久化结果，报告写入当前隔离会话的 `reports/subscription-http.json`。开发控制端口使用 `--port`，业务 HTTP 端口使用 `--rpc-port`（默认 8888）。检查会更新内存订阅作为类别配置样本，并在成功后删除本次新增的正式订阅规则。
+`check-subscription-http` 启动真实调试服务，验证订阅读写、开关、解析错误和持久化结果，报告写入当前隔离会话的 `reports/subscription-http.json`。所有接口使用同一端口，工具通过 `--connection` 读取或通过 `--port` 显式指定。检查会更新内存订阅作为类别配置样本，并在成功后删除本次新增的正式订阅规则。
 
-`GET /services` 返回各服务的 `plans`、`runtime` 和 `[simulation]` 日志。`POST /services/command` 接收 `{"service":"Activity","enabled":true}`；`POST /services/event` 接收 `service`、`type`、`attempt` 及可选 `reason`。HTTP 不接受模拟完成/故障事件，也不使用模拟启动结果，其状态由真实端口绑定结果决定。其他服务事件类型为 `Authorized`、`Cancelled`、`Connected`、`Failed`（启动失败或运行中异常终止），`attempt` 使用当前服务返回的编号，旧请求的完成事件会被忽略。
+`GET /desktop/services` 返回各服务的 `plans`、`runtime` 和 `[simulation]` 日志。`POST /desktop/services/command` 关闭 `Debug` 时先返回 HTTP 202，再关闭整个监听；重新开启需使用应用页面或 F12 控制窗口。其他命令接收 `{"service":"Activity","enabled":true}`；`POST /desktop/services/event` 接收 `service`、`type`、`attempt` 及可选 `reason`。HTTP 不接受模拟完成/故障事件，也不使用模拟启动结果，其状态由真实端口绑定结果决定。其他服务事件类型为 `Authorized`、`Cancelled`、`Connected`、`Failed`（启动失败或运行中异常终止），`attempt` 使用当前服务返回的编号，旧请求的完成事件会被忽略。
 
-模拟条件通过控制窗口或 `/simulator/patch` 设置，例如 `{"services":{"plans":{"Activity":{"startResult":"Manual"}}}}`。服务枚举为 `Status`、`Button`、`Activity`、`Event`、`Track`、`Screenshot`、`Http`、`Accessibility`、`Automation`。`/simulator` 替换配置保留现有服务运行状态，`/simulator/patch` 不接受 `services.runtime/logs`；启停与故障使用服务命令/事件。验证页面按钮时仍通过 `/action` 操作真实控件。
+模拟条件通过控制窗口或 `/desktop/simulator/patch` 设置，例如 `{"services":{"plans":{"Activity":{"startResult":"Manual"}}}}`。服务枚举为 `Status`、`Button`、`Activity`、`Event`、`Track`、`Screenshot`、`Debug`、`Accessibility`、`Automation`。`/desktop/simulator` 替换配置保留现有服务运行状态，`/desktop/simulator/patch` 不接受 `services.runtime/logs`；启停与故障使用服务命令/事件。验证页面按钮时仍通过 `/desktop/action` 操作真实控件。
 
 ### 控件与数据接口
 
-所有写入检查先核对 `GET /state` 的 `isolated` 为 true。操作串行执行；节点失效时重新读取目标窗口控件树，只重试尚未执行的操作。
+所有写入检查先核对 `GET /desktop/state` 的 `isolated` 为 true。操作串行执行；节点失效时重新读取目标窗口控件树，只重试尚未执行的操作。
 
 | 方法与路径 | 用途 |
 | --- | --- |
-| `GET /health`、`GET /state` | 启动状态、场景与隔离标记 |
-| `GET /scenarios`、`POST /scenario` | 查询可用场景；打开页面或指定路由 |
-| `GET /simulator`、`POST /simulator`、`POST /simulator/patch` | 读取、替换或合并模拟配置 |
-| `GET /semantics`、`POST /action` | 读取实际控件树、执行实际控件操作 |
-| `GET /screenshot`、`GET /window` | 截图、窗口位置和尺寸 |
-| `GET /input-status` | 激活次数、可聚焦及已聚焦窗口数 |
-| `GET /app-catalog` | 生产仓库应用清单、刷新状态、错误及版本 |
-| `POST /runtime-records/replay` | 隔离宿主注入合成运行记录 |
-| `POST /snapshot-capture/replay` | 隔离宿主回放快照采集输入 |
+| `GET /health`、`GET /desktop/state` | 启动状态、场景与隔离标记 |
+| `GET /desktop/scenarios`、`POST /desktop/scenario` | 查询可用场景；打开页面或指定路由 |
+| `GET /desktop/simulator`、`POST /desktop/simulator`、`POST /desktop/simulator/patch` | 读取、替换或合并模拟配置 |
+| `GET /desktop/semantics`、`POST /desktop/action` | 读取实际控件树、执行实际控件操作 |
+| `GET /desktop/screenshot`、`GET /desktop/window` | 截图、窗口位置和尺寸 |
+| `GET /desktop/input-status` | 激活次数、可聚焦及已聚焦窗口数 |
+| `GET /desktop/app-catalog` | 生产仓库应用清单、刷新状态、错误及版本 |
+| `POST /desktop/runtime-records/replay` | 隔离宿主注入合成运行记录 |
+| `POST /desktop/snapshot-capture/replay` | 隔离宿主回放快照采集输入 |
 
 PowerShell 示例（`-NoProxy` 避免环回请求经过代理）：
 
 ```powershell
-$api = 'http://127.0.0.1:17322'
-$state = Invoke-RestMethod -NoProxy "$api/state"
+$connection = Get-Content -LiteralPath '.local/tests/desktop/<会话>/debug-server.json' | ConvertFrom-Json
+$api = "http://127.0.0.1:$($connection.port)"
+$state = Invoke-RestMethod -NoProxy "$api/desktop/state"
 if (-not $state.isolated) { throw '请使用 --test 隔离宿主' }
-Invoke-RestMethod -NoProxy "$api/scenario" -Method Post -ContentType 'application/json' `
+Invoke-RestMethod -NoProxy "$api/desktop/scenario" -Method Post -ContentType 'application/json' `
     -Body '{"page":"settings","variant":"normal"}'
-Invoke-RestMethod -NoProxy "$api/simulator/patch" -Method Post -ContentType 'application/json' `
+Invoke-RestMethod -NoProxy "$api/desktop/simulator/patch" -Method Post -ContentType 'application/json' `
     -Body '{"device":{"width":412,"height":820,"density":1,"fontScale":1.5,"dark":true}}'
-Invoke-RestMethod -NoProxy "$api/semantics?window=app"
+Invoke-RestMethod -NoProxy "$api/desktop/semantics?window=app"
 ```
 
-将截图保存到当前隔离会话的 `reports/`，请求为 `GET /screenshot?window=app`。控件树、截图和窗口查询显式指定 `window=app|controls`；操作请求在 JSON 中指定窗口：
+将截图保存到当前隔离会话的 `reports/`，请求为 `GET /desktop/screenshot?window=app`。控件树、截图和窗口查询显式指定 `window=app|controls`；操作请求在 JSON 中指定窗口：
 
 ```json
 {"window":"app","type":"invoke","node":"从控件树获取的节点 id","action":0}
 {"window":"app","type":"text","node":"可编辑节点 id","text":"新内容"}
 {"window":"app","type":"click","x":120,"y":200}
+{"window":"app","type":"longClick","x":120,"y":200}
 {"window":"app","type":"scroll","x":120,"y":500,"amount":3}
 {"window":"app","type":"key","key":"Escape"}
 ```
@@ -160,7 +176,7 @@ Invoke-RestMethod -NoProxy "$api/semantics?window=app"
 
 截图默认 `mode=compose`，读取当前 Skia 绘制记录并合成弹窗和最近网页帧，响应头为 `X-GKD-Capture: compose-recording`。它不重新创建页面，可在窗口被遮挡或位于屏幕外时使用，但不含系统菜单等原生窗口。`mode=screen` 捕获屏幕像素，响应头为 `X-GKD-Capture: screen`，要求窗口可见且可能包含遮挡。两者均禁止 `activate=true`。`area=frame` 包含 Compose 标题栏，不含原生外边框。
 
-`POST /scenario` 默认页面为 `dashboard`，完整场景以 `/scenarios` 为准。支持带持久化序列化名称的 `route`：
+`POST /desktop/scenario` 默认页面为 `dashboard`，完整场景以 `/desktop/scenarios` 为准。支持带持久化序列化名称的 `route`：
 
 ```json
 {"page":"rule-editor","route":{"type":"li.gkd.app.ui.navigation.UpsertRuleGroupRoute","subsId":-2,"forward":true}}
@@ -170,8 +186,8 @@ Invoke-RestMethod -NoProxy "$api/semantics?window=app"
 
 回放接口仅注入业务输入，不能代替控件点击验证：
 
-- `/runtime-records/replay` 接收 `activities`（appId/activityId/time）、`visits`（oldAppId/newAppId/time）、`actions`（appId/activityId/subsId/subsVersion/groupKey/groupType/ruleIndex/ruleKey/time）。空请求提交 Activity 缓冲并查询数据库；不执行真实动作、不增加旧的全局累计动作次数；`actions` 通过生产记录事务增加应用和规则组的累计触发统计。
-- `/snapshot-capture/replay` 接收 `source`（ComplexSnapshot，忽略原 ID）、与屏幕尺寸一致的 `screenshotBase64` 及可选 `autoExport`。共享流程生成并保存新快照，返回 `snapshot` 和 `exportResult`；系统下载不支持时仍保留已保存快照。
+- `/desktop/runtime-records/replay` 接收 `activities`（appId/activityId/time）、`visits`（oldAppId/newAppId/time）、`actions`（appId/activityId/subsId/subsVersion/groupKey/groupType/ruleIndex/ruleKey/time）。空请求提交 Activity 缓冲并查询数据库；不执行真实动作、不增加旧的全局累计动作次数；`actions` 通过生产记录事务增加应用和规则组的累计触发统计。
+- `/desktop/snapshot-capture/replay` 接收 `source`（ComplexSnapshot，忽略原 ID）、与屏幕尺寸一致的 `screenshotBase64` 及可选 `autoExport`。共享流程生成并保存新快照，返回 `snapshot` 和 `exportResult`；系统下载不支持时仍保留已保存快照。
 
 ## 故障处理与验收边界
 

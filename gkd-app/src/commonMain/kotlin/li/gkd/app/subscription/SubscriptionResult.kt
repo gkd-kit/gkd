@@ -20,7 +20,8 @@ sealed interface SubscriptionResult {
         override suspend fun message(): String? {
             val resource = kind.messageResource ?: return null
             return if (kind == SuccessKind.Refreshed) {
-                if (count > 0) getString(resource, count.toString()) else getString(Res.string.updates_none)
+                if (count > 0) getString(resource, count.toString())
+                else getString(Res.string.updates_none)
             } else getString(resource)
         }
     }
@@ -30,15 +31,21 @@ sealed interface SubscriptionResult {
         val detail: String? = null,
         val cause: Throwable? = null,
     ) : SubscriptionResult {
-        override suspend fun message(): String = when (reason) {
-            FailureReason.InvalidId -> getString(reason.messageResource, detail.orEmpty())
-            FailureReason.DeleteData, FailureReason.DeleteFile, FailureReason.Download,
-            FailureReason.Parse, FailureReason.Save -> ErrorMessage.WithDetail(
-                ErrorMessage.Resource(reason.messageResource),
-                ErrorMessage.Text(cause?.resolveMessage() ?: detail.orEmpty()),
-            ).resolve()
-            else -> getString(reason.messageResource)
-        }
+        override suspend fun message(): String =
+            when (reason) {
+                FailureReason.InvalidId -> getString(reason.messageResource, detail.orEmpty())
+                FailureReason.DeleteData,
+                FailureReason.DeleteFile,
+                FailureReason.Download,
+                FailureReason.Parse,
+                FailureReason.Save ->
+                    ErrorMessage.WithDetail(
+                            ErrorMessage.Resource(reason.messageResource),
+                            ErrorMessage.Text(cause?.resolveMessage() ?: detail.orEmpty()),
+                        )
+                        .resolve()
+                else -> getString(reason.messageResource)
+            }
     }
 
     enum class SuccessKind(val messageResource: StringResource?) {

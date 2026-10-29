@@ -38,9 +38,14 @@ class TimeFormatTest {
             val expected = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC)
             val start = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli()
             val timestamps = List(512) { start + it * 123456789L }
-            val results = executor.invokeAll(timestamps.map { timestamp ->
-                Callable { timestamp.format(pattern) }
-            }).map { it.get() }
+            val results =
+                executor
+                    .invokeAll(
+                        timestamps.map { timestamp ->
+                            Callable { timestamp.format(pattern) }
+                        },
+                    )
+                    .map { it.get() }
             assertEquals(timestamps.map { expected.format(Instant.ofEpochMilli(it)) }, results)
         } finally {
             executor.shutdownNow()

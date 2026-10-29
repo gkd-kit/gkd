@@ -12,9 +12,10 @@ class SelectorPositionTest {
         val result = assertIs<SelectorParseResult.Success>(Selector.parse(source))
 
         assertEquals(Selector.compile(source).value.toString(), result.value.toString())
-        val selectorPosition = result.positions.single {
-            it.kind == SelectorPositionKind.Selector
-        }
+        val selectorPosition =
+            result.positions.single {
+                it.kind == SelectorPositionKind.Selector
+            }
         assertEquals(SourceRange(0, source.length), selectorPosition.range)
         assertTrue(
             result.positions.any {
@@ -22,15 +23,17 @@ class SelectorPositionTest {
             },
         )
 
-        val binaryPosition = result.positions.first {
-            it.kind == SelectorPositionKind.Comparison &&
+        val binaryPosition =
+            result.positions.first {
+                it.kind == SelectorPositionKind.Comparison &&
                     source.substring(it.start, it.end) == "text='hello'"
-        }
+            }
         assertEquals("text='hello'", source.substring(binaryPosition.start, binaryPosition.end))
 
-        val unitPosition = result.positions.first {
-            it.kind == SelectorPositionKind.Unit
-        }
+        val unitPosition =
+            result.positions.first {
+                it.kind == SelectorPositionKind.Unit
+            }
         assertTrue(unitPosition.start < unitPosition.end)
     }
 
@@ -63,9 +66,10 @@ class SelectorPositionTest {
     fun repeatedLiteralsHaveIndependentExactPositions() {
         val source = "[a=null||b=null]"
         val result = assertIs<SelectorParseResult.Success>(Selector.parse(source))
-        val nullPositions = result.positions
-            .filter { it.kind == SelectorPositionKind.NullLiteral }
-            .sortedBy { it.start }
+        val nullPositions =
+            result.positions
+                .filter { it.kind == SelectorPositionKind.NullLiteral }
+                .sortedBy { it.start }
 
         assertEquals("null", source.substring(nullPositions[0].start, nullPositions[0].end))
         assertEquals("null", source.substring(nullPositions[1].start, nullPositions[1].end))
@@ -106,73 +110,75 @@ class SelectorPositionTest {
     fun fullParseRecordsEverySemanticLayerWithExactRanges() {
         val source = "!((@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D))"
         val result = assertIs<SelectorParseResult.Success>(Selector.parse(source))
-        val expected = listOf(
-            PositionExpectation(SelectorPositionKind.Identifier, 6, 7, "x"),
-            PositionExpectation(SelectorPositionKind.MemberAccess, 6, 9, "x.a"),
-            PositionExpectation(SelectorPositionKind.IntLiteral, 10, 11, "1"),
-            PositionExpectation(SelectorPositionKind.StringLiteral, 12, 15, "'s'"),
-            PositionExpectation(SelectorPositionKind.Call, 6, 16, "x.a(1,'s')"),
-            PositionExpectation(SelectorPositionKind.NullLiteral, 17, 21, "null"),
-            PositionExpectation(SelectorPositionKind.Comparison, 6, 21, "x.a(1,'s')=null"),
-            PositionExpectation(SelectorPositionKind.Identifier, 25, 29, "flag"),
-            PositionExpectation(SelectorPositionKind.BooleanLiteral, 30, 35, "false"),
-            PositionExpectation(SelectorPositionKind.Comparison, 25, 35, "flag=false"),
-            PositionExpectation(SelectorPositionKind.NegatedCondition, 23, 36, "!(flag=false)"),
-            PositionExpectation(
-                SelectorPositionKind.LogicalCondition,
-                6,
-                36,
-                "x.a(1,'s')=null&&!(flag=false)"
-            ),
-            PositionExpectation(
-                SelectorPositionKind.Property,
-                5,
-                37,
-                "[x.a(1,'s')=null&&!(flag=false)]"
-            ),
-            PositionExpectation(
-                SelectorPositionKind.PropertySelector,
-                3,
-                37,
-                "@A[x.a(1,'s')=null&&!(flag=false)]"
-            ),
-            PositionExpectation(SelectorPositionKind.TupleRange, 39, 44, "(1,2)"),
-            PositionExpectation(SelectorPositionKind.Relation, 38, 44, "+(1,2)"),
-            PositionExpectation(SelectorPositionKind.PropertySelector, 45, 46, "B"),
-            PositionExpectation(
-                SelectorPositionKind.Unit,
-                3,
-                46,
-                "@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B"
-            ),
-            PositionExpectation(SelectorPositionKind.PropertySelector, 52, 53, "C"),
-            PositionExpectation(SelectorPositionKind.PolynomialRange, 55, 61, "(2n-1)"),
-            PositionExpectation(SelectorPositionKind.Relation, 54, 61, "+(2n-1)"),
-            PositionExpectation(SelectorPositionKind.PropertySelector, 62, 63, "D"),
-            PositionExpectation(SelectorPositionKind.Unit, 52, 63, "C +(2n-1) D"),
-            PositionExpectation(
-                SelectorPositionKind.LogicalSelector,
-                2,
-                64,
-                "(@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D)",
-            ),
-            PositionExpectation(
-                SelectorPositionKind.NegatedSelector,
-                0,
-                65,
-                "!((@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D))",
-            ),
-            PositionExpectation(SelectorPositionKind.Selector, 0, 65, source),
-        )
-
-        val actual = result.positions.map { position ->
-            PositionExpectation(
-                position.kind,
-                position.start,
-                position.end,
-                source.substring(position.start, position.end),
+        val expected =
+            listOf(
+                PositionExpectation(SelectorPositionKind.Identifier, 6, 7, "x"),
+                PositionExpectation(SelectorPositionKind.MemberAccess, 6, 9, "x.a"),
+                PositionExpectation(SelectorPositionKind.IntLiteral, 10, 11, "1"),
+                PositionExpectation(SelectorPositionKind.StringLiteral, 12, 15, "'s'"),
+                PositionExpectation(SelectorPositionKind.Call, 6, 16, "x.a(1,'s')"),
+                PositionExpectation(SelectorPositionKind.NullLiteral, 17, 21, "null"),
+                PositionExpectation(SelectorPositionKind.Comparison, 6, 21, "x.a(1,'s')=null"),
+                PositionExpectation(SelectorPositionKind.Identifier, 25, 29, "flag"),
+                PositionExpectation(SelectorPositionKind.BooleanLiteral, 30, 35, "false"),
+                PositionExpectation(SelectorPositionKind.Comparison, 25, 35, "flag=false"),
+                PositionExpectation(SelectorPositionKind.NegatedCondition, 23, 36, "!(flag=false)"),
+                PositionExpectation(
+                    SelectorPositionKind.LogicalCondition,
+                    6,
+                    36,
+                    "x.a(1,'s')=null&&!(flag=false)",
+                ),
+                PositionExpectation(
+                    SelectorPositionKind.Property,
+                    5,
+                    37,
+                    "[x.a(1,'s')=null&&!(flag=false)]",
+                ),
+                PositionExpectation(
+                    SelectorPositionKind.PropertySelector,
+                    3,
+                    37,
+                    "@A[x.a(1,'s')=null&&!(flag=false)]",
+                ),
+                PositionExpectation(SelectorPositionKind.TupleRange, 39, 44, "(1,2)"),
+                PositionExpectation(SelectorPositionKind.Relation, 38, 44, "+(1,2)"),
+                PositionExpectation(SelectorPositionKind.PropertySelector, 45, 46, "B"),
+                PositionExpectation(
+                    SelectorPositionKind.Unit,
+                    3,
+                    46,
+                    "@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B",
+                ),
+                PositionExpectation(SelectorPositionKind.PropertySelector, 52, 53, "C"),
+                PositionExpectation(SelectorPositionKind.PolynomialRange, 55, 61, "(2n-1)"),
+                PositionExpectation(SelectorPositionKind.Relation, 54, 61, "+(2n-1)"),
+                PositionExpectation(SelectorPositionKind.PropertySelector, 62, 63, "D"),
+                PositionExpectation(SelectorPositionKind.Unit, 52, 63, "C +(2n-1) D"),
+                PositionExpectation(
+                    SelectorPositionKind.LogicalSelector,
+                    2,
+                    64,
+                    "(@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D)",
+                ),
+                PositionExpectation(
+                    SelectorPositionKind.NegatedSelector,
+                    0,
+                    65,
+                    "!((@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D))",
+                ),
+                PositionExpectation(SelectorPositionKind.Selector, 0, 65, source),
             )
-        }
+
+        val actual =
+            result.positions.map { position ->
+                PositionExpectation(
+                    position.kind,
+                    position.start,
+                    position.end,
+                    source.substring(position.start, position.end),
+                )
+            }
         assertEquals(expected.size, actual.size)
         assertEquals(expected.toSet(), actual.toSet())
     }
@@ -193,9 +199,10 @@ class SelectorPositionTest {
     fun indexesUseUtf16CodeUnitsOnJvmAndJs() {
         val source = "A[text='😀']"
         val result = assertIs<SelectorParseResult.Success>(Selector.parse(source))
-        val stringPosition = result.positions.single {
-            it.kind == SelectorPositionKind.StringLiteral
-        }
+        val stringPosition =
+            result.positions.single {
+                it.kind == SelectorPositionKind.StringLiteral
+            }
 
         assertEquals(source.indexOf('\''), stringPosition.start)
         assertEquals(source.lastIndexOf('\'') + 1, stringPosition.end)
@@ -204,10 +211,11 @@ class SelectorPositionTest {
 
     @Test
     fun semanticPositionBoundariesNeverSplitHighlightTokens() {
-        val sources = listOf(
-            "!((@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D))",
-            "TextView[text='unfinished",
-        )
+        val sources =
+            listOf(
+                "!((@A[x.a(1,'s')=null&&!(flag=false)] +(1,2) B) || (C +(2n-1) D))",
+                "TextView[text='unfinished",
+            )
 
         sources.forEach { source ->
             val result = Selector.parse(source)

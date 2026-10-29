@@ -20,24 +20,24 @@ class AppScopePolicyTest {
                 settings.copy(blockA11yAppListFollowMatch = true),
                 match,
                 a11y,
-                "blocked.a11y"
-            )
+                "blocked.a11y",
+            ),
         )
         assertFalse(
             AppScopePolicy.blocksMatch(
                 settings.copy(enableBlockA11yAppList = false),
                 match,
                 a11y,
-                "blocked.a11y"
-            )
+                "blocked.a11y",
+            ),
         )
         assertTrue(
             AppScopePolicy.blocksMatch(
                 settings.copy(enableBlockA11yAppList = false),
                 match,
                 a11y,
-                "blocked.match"
-            )
+                "blocked.match",
+            ),
         )
     }
 
@@ -46,14 +46,17 @@ class AppScopePolicyTest {
         val scope = setOf("app.one")
         assertEquals(
             emptySet(),
-            AppScopePolicy.a11yScope(SettingsStore(automatorMode = AutomatorMode.A11y.value), scope)
+            AppScopePolicy.a11yScope(
+                SettingsStore(automatorMode = AutomatorMode.A11y.value),
+                scope,
+            ),
         )
         assertEquals(
             scope,
             AppScopePolicy.a11yScope(
                 SettingsStore(automatorMode = AutomatorMode.Automation.value),
-                scope
-            )
+                scope,
+            ),
         )
     }
 }

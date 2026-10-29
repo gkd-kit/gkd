@@ -1,8 +1,9 @@
 package li.gkd.selector.property
 
 import li.gkd.selector.SelectorTypeKind
+import li.gkd.selector.SourceMapped
 
-internal sealed class ValueExpression {
+internal sealed class ValueExpression : SourceMapped {
     abstract val syntaxTypeName: String
 
     open val isStringOperand: Boolean
@@ -32,12 +33,14 @@ internal sealed class ValueExpression {
     class Identifier(
         val name: String,
     ) : Variable() {
-        val role = when (name) {
-            "prev" -> IdentifierRole.Previous
-            "current" -> IdentifierRole.Current
-            "equal", "notEqual" -> IdentifierRole.NullTolerantFunction
-            else -> IdentifierRole.Other
-        }
+        val role =
+            when (name) {
+                "prev" -> IdentifierRole.Previous
+                "current" -> IdentifierRole.Current
+                "equal",
+                "notEqual" -> IdentifierRole.NullTolerantFunction
+                else -> IdentifierRole.Other
+            }
     }
 
     class MemberExpression(

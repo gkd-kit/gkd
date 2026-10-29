@@ -10,4 +10,3 @@ data class SubsManageUiState(
     val refreshErrors: Map<Long, Exception>,
     val triggerCounts: Map<Long, Long>,
 )
-

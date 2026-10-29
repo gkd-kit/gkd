@@ -42,10 +42,18 @@ sealed interface GithubUploadStatus {
 
 @Composable
 fun GkGithubUploadDialogs(
-    cookieEditorVisible: Boolean, cookieDraft: String, status: GithubUploadStatus?,
-    canSaveCookie: Boolean, onDismissCookie: () -> Unit, onCookieHelp: () -> Unit,
-    onCookieChange: (String) -> Unit, onSaveCookie: () -> Unit, onStop: () -> Unit,
-    onClose: () -> Unit, onEditCookie: () -> Unit, onCopy: (String) -> Unit,
+    cookieEditorVisible: Boolean,
+    cookieDraft: String,
+    status: GithubUploadStatus?,
+    canSaveCookie: Boolean,
+    onDismissCookie: () -> Unit,
+    onCookieHelp: () -> Unit,
+    onCookieChange: (String) -> Unit,
+    onSaveCookie: () -> Unit,
+    onStop: () -> Unit,
+    onClose: () -> Unit,
+    onEditCookie: () -> Unit,
+    onCopy: (String) -> Unit,
 ) {
     if (cookieEditorVisible) {
         GkAlertDialog(
@@ -68,7 +76,9 @@ fun GkGithubUploadDialogs(
                 OutlinedTextField(
                     value = cookieDraft,
                     onValueChange = onCookieChange,
-                    placeholder = { Text(text = stringResource(Res.string.github_cookie_input_hint)) },
+                    placeholder = {
+                        Text(text = stringResource(Res.string.github_cookie_input_hint))
+                    },
                     modifier = Modifier.fillMaxWidth().autoFocus(),
                     maxLines = 10,
                 )
@@ -77,7 +87,9 @@ fun GkGithubUploadDialogs(
                 TextButton(
                     enabled = canSaveCookie,
                     onClick = onSaveCookie,
-                ) { Text(text = stringResource(Res.string.action_confirm)) }
+                ) {
+                    Text(text = stringResource(Res.string.action_confirm))
+                }
             },
             dismissButton = {
                 TextButton(onClick = onDismissCookie) {
@@ -99,7 +111,7 @@ fun GkGithubUploadDialogs(
                                     Res.string.upload_batch_progress,
                                     visibleStatus.index,
                                     visibleStatus.total,
-                                )
+                                ),
                             )
                             Text(visibleStatus.label)
                             UploadProgress(visibleStatus.progress)
@@ -117,24 +129,27 @@ fun GkGithubUploadDialogs(
 
         is GithubUploadStatus.Finished -> {
             GkAlertDialog(
-                properties = DialogProperties(
-                    dismissOnClickOutside = visibleStatus.links.isEmpty(),
-                ),
+                properties =
+                    DialogProperties(
+                        dismissOnClickOutside = visibleStatus.links.isEmpty(),
+                    ),
                 title = {
                     Text(
                         when {
                             visibleStatus.cancelled -> stringResource(Res.string.upload_cancelled)
                             visibleStatus.batch -> stringResource(Res.string.upload_batch_result)
-                            visibleStatus.remainingCount == 0 -> stringResource(Res.string.upload_complete)
+                            visibleStatus.remainingCount == 0 ->
+                                stringResource(Res.string.upload_complete)
                             else -> stringResource(Res.string.upload_failed)
-                        }
+                        },
                     )
                 },
                 text = {
                     if (visibleStatus.batch) {
                         Column(
-                            modifier = Modifier.heightIn(max = 360.dp)
-                                .verticalScroll(rememberScrollState()),
+                            modifier =
+                                Modifier.heightIn(max = 360.dp)
+                                    .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
@@ -142,10 +157,13 @@ fun GkGithubUploadDialogs(
                                     Res.string.upload_batch_summary,
                                     visibleStatus.links.size,
                                     visibleStatus.remainingCount,
-                                )
+                                ),
                             )
                             if (visibleStatus.links.isNotEmpty()) {
-                                GkCopyTextCard(text = visibleStatus.links.joinToString("\n"), onCopy = onCopy)
+                                GkCopyTextCard(
+                                    text = visibleStatus.links.joinToString("\n"),
+                                    onCopy = onCopy,
+                                )
                             }
                             visibleStatus.failures.take(5).forEach { (label, message) ->
                                 Text("$label: $message", style = MaterialTheme.typography.bodySmall)
@@ -158,13 +176,14 @@ fun GkGithubUploadDialogs(
                     }
                 },
                 onDismissRequest = onClose,
-                dismissButton = if (visibleStatus.cookieExpired) {
-                    {
-                        TextButton(onClick = onEditCookie) {
-                            Text(stringResource(Res.string.cookie_change))
+                dismissButton =
+                    if (visibleStatus.cookieExpired) {
+                        {
+                            TextButton(onClick = onEditCookie) {
+                                Text(stringResource(Res.string.cookie_change))
+                            }
                         }
-                    }
-                } else null,
+                    } else null,
                 confirmButton = {
                     TextButton(onClick = onClose) { Text(stringResource(Res.string.action_close)) }
                 },

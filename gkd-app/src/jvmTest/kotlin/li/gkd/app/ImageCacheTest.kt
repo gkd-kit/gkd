@@ -5,8 +5,6 @@ import coil3.decode.DataSource
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import com.sun.net.httpserver.HttpServer
-import kotlinx.coroutines.runBlocking
-import li.gkd.app.ui.image.ImageLoaders
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.net.InetSocketAddress
@@ -17,19 +15,25 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.runBlocking
+import li.gkd.app.testing.TestFiles
+import li.gkd.app.ui.image.ImageLoaders
 
 class ImageCacheTest {
     @Test
     fun networkImageSurvivesLoaderRestartInConfiguredCache() = runBlocking {
-        val directory = Files.createTempDirectory("gkd-coil-cache").toFile()
+        val directory =
+            Files.createTempDirectory(TestFiles.root.toPath(), "gkd-coil-cache").toFile()
         val calls = AtomicInteger()
         val buffer = ByteArrayOutputStream()
         ImageIO.write(
             BufferedImage(
                 2,
                 2,
-                BufferedImage.TYPE_INT_ARGB
-            ), "png", buffer
+                BufferedImage.TYPE_INT_ARGB,
+            ),
+            "png",
+            buffer,
         )
         val bytes = buffer.toByteArray()
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
@@ -42,8 +46,10 @@ class ImageCacheTest {
         }
         server.start()
         try {
-            val request = ImageRequest.Builder(PlatformContext.INSTANCE)
-                .data("http://127.0.0.1:${server.address.port}/image.png").build()
+            val request =
+                ImageRequest.Builder(PlatformContext.INSTANCE)
+                    .data("http://127.0.0.1:${server.address.port}/image.png")
+                    .build()
             val first = ImageLoaders.create(PlatformContext.INSTANCE, directory)
             try {
                 assertIs<SuccessResult>(first.execute(request))
@@ -60,7 +66,8 @@ class ImageCacheTest {
                 second.shutdown()
             }
         } finally {
-            server.stop(0); directory.deleteRecursively()
+            server.stop(0)
+            directory.deleteRecursively()
         }
     }
 }

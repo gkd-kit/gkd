@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 
 abstract class BaseTileService : TileService() {
     protected abstract val activeFlow: Flow<Boolean>
+
     protected abstract fun onTileClick()
 
     private val serviceScope = MainScope()

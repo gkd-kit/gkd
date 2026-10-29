@@ -25,8 +25,8 @@ internal fun <T : Any> NodeAdapter<T>.getFastQueryDescendantsExcludingSelf(
  * call to `Selector.match`, `Selector.matchWithTrace`, or a query helper on this adapter, all
  * adapter methods must return deterministic names, attributes, invocations, relationships, and
  * traversal order for the same arguments. State changes become visible to the next operation.
- * Relation traversal overrides must retain each candidate's original zero-based offset even when
- * an earlier allowed position has no node.
+ * Relation traversal overrides must retain each candidate's original zero-based offset even when an
+ * earlier allowed position has no node.
  */
 public abstract class NodeAdapter<T : Any> {
     public abstract fun getAttr(target: Any, name: String): Any?
@@ -120,9 +120,10 @@ public abstract class NodeAdapter<T : Any> {
         val parent = getParent(node) ?: return@sequence
         val nodeKey = getNodeKey(node)
         val childCount = getChildCount(parent)
-        val nodeIndex = (0 until childCount).firstOrNull { index ->
-            getChild(parent, index)?.let { getNodeKey(it) == nodeKey } == true
-        } ?: -1
+        val nodeIndex =
+            (0 until childCount).firstOrNull { index ->
+                getChild(parent, index)?.let { getNodeKey(it) == nodeKey } == true
+            } ?: -1
         if (nodeIndex < 0) return@sequence
         for (offset in 0 until nodeIndex) {
             if (relationExpression.maxOffset?.let { offset > it } == true) break
@@ -141,9 +142,10 @@ public abstract class NodeAdapter<T : Any> {
         val parent = getParent(node) ?: return@sequence
         val nodeKey = getNodeKey(node)
         val childCount = getChildCount(parent)
-        val nodeIndex = (0 until childCount).firstOrNull { index ->
-            getChild(parent, index)?.let { getNodeKey(it) == nodeKey } == true
-        } ?: -1
+        val nodeIndex =
+            (0 until childCount).firstOrNull { index ->
+                getChild(parent, index)?.let { getNodeKey(it) == nodeKey } == true
+            } ?: -1
         if (nodeIndex < 0) return@sequence
         for (index in nodeIndex + 1 until childCount) {
             val offset = index - nodeIndex - 1
@@ -180,53 +182,78 @@ public abstract class NodeAdapter<T : Any> {
      * Callers requiring depth-first order must disable fast queries.
      *
      * Implementations should defer work until iteration and yield candidates incrementally so
-     * first-result query helpers can stop before later fast queries run. Selector matching validates
-     * every returned candidate again.
+     * first-result query helpers can stop before later fast queries run. Selector matching
+     * validates every returned candidate again.
      */
     public open fun getFastQueryDescendants(
         node: T,
         fastQueryList: List<FastQuery>,
-    ): Sequence<T> = getDescendants(node).filter { candidate ->
-        fastQueryList.any { query ->
-            query.acceptValue(getAttr(candidate, query.attributeName))
+    ): Sequence<T> =
+        getDescendants(node).filter { candidate ->
+            fastQueryList.any { query ->
+                query.acceptValue(getAttr(candidate, query.attributeName))
+            }
         }
-    }
 
     private fun queryDescendants(
         node: T,
         selector: Selector,
         options: MatchOptions,
-    ): Sequence<T> = if (options.fastQuery && selector.fastQueries.isNotEmpty()) {
-        getFastQueryDescendantsExcludingSelf(node, selector.fastQueries)
-    } else {
-        getDescendants(node)
-    }
+    ): Sequence<T> =
+        if (options.fastQuery && selector.fastQueries.isNotEmpty()) {
+            getFastQueryDescendantsExcludingSelf(node, selector.fastQueries)
+        } else {
+            getDescendants(node)
+        }
 
     private fun querySelectorSequence(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
+        observer: SelectorObserver<T>? = null,
     ): Sequence<T> = sequence {
+        if (options.fastQuery && selector.fastQueries.isNotEmpty() && observer?.enabled == true) {
+            observer.record(
+                SelectorEvaluation(
+                    node = node,
+                    kind = SelectorEvaluationKind.FastQueryScope,
+                    expression = selector.toString(),
+                    matched = null,
+                ),
+            )
+        }
+        var visited = false
         queryDescendants(node, selector, options).forEach { childNode ->
-            selector.match(childNode, this@NodeAdapter, options)?.let { target ->
+            visited = true
+            selector.match(childNode, this@NodeAdapter, options, observer)?.let { target ->
                 yield(target)
             }
         }
+        if (!visited && observer?.enabled == true)
+            observer.record(
+                SelectorEvaluation(
+                    node = node,
+                    kind = SelectorEvaluationKind.NoCandidates,
+                    expression = selector.toString(),
+                    matched = null,
+                ),
+            )
     }
 
     public fun querySelector(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
-    ): T? = querySelectorSequence(node, selector, options).firstOrNull()
+        observer: SelectorObserver<T>? = null,
+    ): T? = querySelectorSequence(node, selector, options, observer).firstOrNull()
 
     public fun querySelectorAll(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
-    ): List<T> = querySelectorSequence(node, selector, options)
-        .distinctBy(::getNodeKey)
-        .toList()
+        observer: SelectorObserver<T>? = null,
+    ): List<T> =
+        querySelectorSequence(node, selector, options, observer).distinctBy(::getNodeKey).toList()
 
     private fun querySelectorWithTraceSequence(
         node: T,
@@ -240,17 +267,26 @@ public abstract class NodeAdapter<T : Any> {
         }
     }
 
+    /**
+     * Returns the first descendant match with its successful path for convenient JS calls via
+     * JsNodeAdapter. The path is returned directly; no diagnostic observer is required.
+     */
     public fun querySelectorWithTrace(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
     ): SelectorMatch<T>? = querySelectorWithTraceSequence(node, selector, options).firstOrNull()
 
+    /**
+     * Returns distinct descendant targets with their successful paths for convenient JS calls via
+     * JsNodeAdapter. Each result keeps its target and path together without a diagnostic observer.
+     */
     public fun querySelectorAllWithTrace(
         node: T,
         selector: Selector,
         options: MatchOptions = MatchOptions.default,
-    ): List<SelectorMatch<T>> = querySelectorWithTraceSequence(node, selector, options)
-        .distinctBy { result -> getNodeKey(result.target) }
-        .toList()
+    ): List<SelectorMatch<T>> =
+        querySelectorWithTraceSequence(node, selector, options)
+            .distinctBy { result -> getNodeKey(result.target) }
+            .toList()
 }

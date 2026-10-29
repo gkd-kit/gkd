@@ -1,11 +1,11 @@
 package li.gkd.app.app
 
-import li.gkd.app.model.AppInfo
-import li.gkd.app.model.AppInventory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import li.gkd.app.model.AppInfo
+import li.gkd.app.model.AppInventory
 
 class AppQueryTest {
     private fun app(id: String, name: String = id, system: Boolean = false, user: Int = 0) =
@@ -37,7 +37,7 @@ class AppQueryTest {
         val apps = listOf(app("a"), app("b"), app("c"))
         assertEquals(
             listOf(apps[2], apps[0], apps[1]),
-            AppQuery.select(apps, "", 3, 2, actionOrder = listOf("missing", "c")).apps
+            AppQuery.select(apps, "", 3, 2, actionOrder = listOf("missing", "c")).apps,
         )
     }
 
@@ -58,17 +58,24 @@ class AppQueryTest {
         assertEquals(
             listOf(apps[1], apps[0], apps[2]),
             AppQuery.select(
-                apps, "", AppGroupFlags.Installed, AppSort.ByUsedTime.value,
-                visitOrder = mapOf("b" to 0)
-            ).apps
+                    apps,
+                    "",
+                    AppGroupFlags.Installed,
+                    AppSort.ByUsedTime.value,
+                    visitOrder = mapOf("b" to 0),
+                )
+                .apps,
         )
         assertEquals(apps, AppQuery.select(apps, "", AppGroupFlags.Installed, 999).apps)
         assertEquals(
-            emptyList(), AppQuery.select(
-                apps, "", AppGroupFlags.Uninstalled,
-                AppSort.ByAppName.value
-            ).apps
+            emptyList(),
+            AppQuery.select(
+                    apps,
+                    "",
+                    AppGroupFlags.Uninstalled,
+                    AppSort.ByAppName.value,
+                )
+                .apps,
         )
     }
-
 }

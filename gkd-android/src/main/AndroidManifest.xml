@@ -155,15 +155,14 @@
         <service
             android:name="li.gkd.app.service.StatusService"
             android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Display the running state of the application" />
         </service>
         <service
-            android:name="li.gkd.app.service.HttpService"
-            android:exported="false"
+            android:name="li.gkd.app.service.DebugService"
+            android:exported="true"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
@@ -246,7 +245,7 @@
             android:name="li.gkd.app.service.HttpTileService"
             android:exported="true"
             android:icon="@drawable/ic_http"
-            android:label="@string/http_server"
+            android:label="@string/debug_service"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
@@ -328,6 +327,11 @@
             </intent-filter>
         </service>
 
+        <service android:name="li.gkd.app.service.MatchDiagnosticService"
+            android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User initiated matching diagnostics with notification stop control" />
+        </service>
     </application>
 
 </manifest>

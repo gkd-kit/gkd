@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +38,7 @@ import li.gkd.app.ui.component.GkSizedIconButton
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
@@ -79,7 +79,8 @@ fun SnapshotSettingsPage(
                         ToastUtils.show(Res.string.update_success.getSync())
                         vm.closeCaptureScreenshotDialog()
                     }
-                    ScreenshotConfigResult.InvalidApp -> ToastUtils.show(Res.string.app_id_invalid.getSync())
+                    ScreenshotConfigResult.InvalidApp ->
+                        ToastUtils.show(Res.string.app_id_invalid.getSync())
                     ScreenshotConfigResult.InvalidSelector ->
                         ToastUtils.show(Res.string.event_selector_invalid.getSync())
                 }
@@ -105,7 +106,9 @@ fun SnapshotSettingsPage(
     ) { contentPadding ->
         Column(
             modifier =
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(contentPadding)
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding),
         ) {
             Text(
                 text = stringResource(Res.string.snapshot_capture_methods),
@@ -140,7 +143,12 @@ fun SnapshotSettingsPage(
                         size = 32.dp,
                         iconSize = 20.dp,
                         onClickLabel = stringResource(Res.string.snapshot_screenshot_settings_open),
-                        onClick = { vm.editCaptureScreenshot(store.screenshotTargetAppId, store.screenshotEventSelector) },
+                        onClick = {
+                            vm.editCaptureScreenshot(
+                                store.screenshotTargetAppId,
+                                store.screenshotEventSelector,
+                            )
+                        },
                         imageVector = GkIcons.PageInfo,
                         contentDescription =
                             stringResource(Res.string.snapshot_screenshot_settings),

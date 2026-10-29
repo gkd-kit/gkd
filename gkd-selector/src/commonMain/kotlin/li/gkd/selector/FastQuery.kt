@@ -1,9 +1,9 @@
 package li.gkd.selector
 
+import kotlin.js.JsExport
 import li.gkd.selector.property.FastQueryOperator
 import li.gkd.selector.property.compareFastQueryValue
 import li.gkd.selector.property.comparePrimitiveValue
-import kotlin.js.JsExport
 
 @JsExport
 public sealed class FastQuery(

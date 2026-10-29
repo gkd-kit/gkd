@@ -9,6 +9,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkMultiTextField
 import li.gkd.app.ui.navigation.GkEditor
+import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -24,6 +25,7 @@ fun AppWhitelistPage(
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { AppWhitelistViewModel() }
     val text by vm.text.collectAsStateWithLifecycle()
+    val draft = text
     val indicatorSize by vm.indicatorSize.collectAsStateWithLifecycle()
     val inputInsets: Modifier = inputInsets()
 
@@ -33,11 +35,15 @@ fun AppWhitelistPage(
             { vm.hasChanges(text) },
             onSave = {
                 ToastUtils.show(
-                    (if (vm.saveChanges(text)) Res.string.update_success else Res.string.unchanged)
-                        .getSync()
+                    (if (vm.saveChanges(draft)) Res.string.update_success else Res.string.unchanged)
+                        .getSync(),
                 )
+                EditorSaveResult.Saved
             },
         ),
+        onSaved = {
+            if (vm.text.value == draft) mainVm.navigator.pop()
+        },
         navigator = mainVm.navigator,
         hideIme = host::hideIme,
         actions = vm.editorActions,

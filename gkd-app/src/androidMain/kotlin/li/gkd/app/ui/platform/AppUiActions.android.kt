@@ -13,12 +13,13 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.resources.*
+import li.gkd.app.service.switchAutomatorService
+import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.ToastUtils
 
 @Composable
-actual fun privilegeAvailable() =
-    privilegeContextFlow.collectAsStateWithLifecycle().value != null
+actual fun privilegeAvailable() = privilegeContextFlow.collectAsStateWithLifecycle().value != null
 
 @Composable
 actual fun ignoresBatteryOptimizations() =
@@ -31,7 +32,8 @@ actual fun RefreshPermissions() {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             withContext(Dispatchers.IO) {
                 while (isActive) {
-                    PermissionStates.refreshAll(); delay(1000)
+                    PermissionStates.refreshAll()
+                    delay(1000)
                 }
             }
         }
@@ -42,7 +44,7 @@ actual fun openAppDetails() {
     IntentUtils.openAppDetailsSettings()
 }
 
-actual fun openRecents() {
+actual suspend fun openRecents() {
     val context = privilegeContextFlow.value
     if (context?.keyevent(android.view.KeyEvent.KEYCODE_APP_SWITCH) != true) {
         ToastUtils.show(Res.string.recents_lock_manual_hint.getSync())
@@ -54,7 +56,7 @@ actual fun openA11ySettings() {
 }
 
 actual fun switchAutomator() {
-    li.gkd.app.service.switchAutomatorService()
+    switchAutomatorService()
 }
 
-actual fun dynamicColorAvailable() = li.gkd.app.util.AndroidTarget.S
+actual fun dynamicColorAvailable() = AndroidTarget.S

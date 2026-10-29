@@ -6,10 +6,11 @@ import androidx.paging.cachedIn
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.Db
 
-class ActivityLogViewModel :
-    BaseViewModel() {
-    val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
-        Db.activityLogDao.pagingSource()
-    }
-        .flow.cachedIn(scope)
+class ActivityLogViewModel : BaseViewModel() {
+    val pagingDataFlow =
+        Pager(PagingConfig(pageSize = 100)) {
+                Db.activityLogDao.pagingSource()
+            }
+            .flow
+            .cachedIn(scope)
 }

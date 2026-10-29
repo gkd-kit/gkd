@@ -72,6 +72,6 @@ private val LazyListState.isAtBottom: Boolean
         val layoutInfo = layoutInfo
         val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
         return lastVisibleItem != null &&
-                lastVisibleItem.index + 1 == layoutInfo.totalItemsCount &&
-                lastVisibleItem.offset + lastVisibleItem.size <= layoutInfo.viewportEndOffset
+            lastVisibleItem.index + 1 == layoutInfo.totalItemsCount &&
+            lastVisibleItem.offset + lastVisibleItem.size <= layoutInfo.viewportEndOffset
     }

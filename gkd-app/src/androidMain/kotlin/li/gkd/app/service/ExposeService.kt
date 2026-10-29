@@ -14,6 +14,7 @@ import li.gkd.app.util.ToastUtils
 
 class ExposeService : Service() {
     override fun onBind(intent: Intent?): Binder? = null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         appScope.launchUi {
             try {
@@ -37,7 +38,7 @@ class ExposeService : Service() {
             else -> {
                 ToastUtils.show(
                     Res.string.external_call_unknown.getSync(method, data),
-                    forced = true
+                    forced = true,
                 )
             }
         }

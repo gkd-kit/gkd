@@ -23,27 +23,31 @@ class CrashReportViewModel(
     }
 
     val crashDataState: StateFlow<Loadable<List<CrashData>>>
-        field = MutableStateFlow(
-            if (initialCrashDataList.isEmpty()) {
-                Loadable.Loading
-            } else {
-                Loadable.Ready(initialCrashDataList)
-            },
-        )
+        field =
+            MutableStateFlow(
+                if (initialCrashDataList.isEmpty()) {
+                    Loadable.Loading
+                } else {
+                    Loadable.Ready(initialCrashDataList)
+                },
+            )
 
-    private val initialLoadJob = scope.launch(Dispatchers.IO) {
-        crashDataState.value = Loadable.Ready(FileCrashStorage.load())
-    }
+    private val initialLoadJob =
+        scope.launch(Dispatchers.IO) {
+            crashDataState.value = Loadable.Ready(FileCrashStorage.load())
+        }
 
     suspend fun deleteCrash(crashData: CrashData) {
         initialLoadJob.join()
-        val deleted = withContext(Dispatchers.IO) {
-            FileCrashStorage.delete(crashData)
-        }
+        val deleted =
+            withContext(Dispatchers.IO) {
+                FileCrashStorage.delete(crashData)
+            }
         if (deleted) {
-            crashDataState.value = Loadable.Ready(
-                crashDataState.value.value.orEmpty().filterNot { it.id == crashData.id },
-            )
+            crashDataState.value =
+                Loadable.Ready(
+                    crashDataState.value.value.orEmpty().filterNot { it.id == crashData.id },
+                )
         } else {
             reloadAfterDeleteFailure()
             error(getString(Res.string.crash_report_delete_failed))
@@ -52,20 +56,23 @@ class CrashReportViewModel(
 
     suspend fun deleteAllCrashes() {
         initialLoadJob.join()
-        val deleted = withContext(Dispatchers.IO) {
-            FileCrashStorage.deleteAll()
-        }
-        crashDataState.value = Loadable.Ready(
-            withContext(Dispatchers.IO) { FileCrashStorage.load() },
-        )
+        val deleted =
+            withContext(Dispatchers.IO) {
+                FileCrashStorage.deleteAll()
+            }
+        crashDataState.value =
+            Loadable.Ready(
+                withContext(Dispatchers.IO) { FileCrashStorage.load() },
+            )
         if (!deleted) {
             error(getString(Res.string.crash_reports_delete_partially_failed))
         }
     }
 
     private suspend fun reloadAfterDeleteFailure() {
-        crashDataState.value = Loadable.Ready(
-            withContext(Dispatchers.IO) { FileCrashStorage.load() },
-        )
+        crashDataState.value =
+            Loadable.Ready(
+                withContext(Dispatchers.IO) { FileCrashStorage.load() },
+            )
     }
 }

@@ -25,6 +25,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import li.gkd.app.model.ExcludeData
@@ -42,15 +45,16 @@ fun GkRuleSettingsSheet(
         Text(
             title,
             modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
         )
     },
     subtitle: String? = null,
     subtitleContent: @Composable () -> Unit = {
         if (subtitle != null) {
             Text(
-                subtitle, style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     },
@@ -65,8 +69,10 @@ fun GkRuleSettingsSheet(
         sheetState = sheetState,
     ) {
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 24.dp),
+            Modifier.fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Column(
@@ -99,33 +105,30 @@ fun GkRuleSettingsContent(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
     ) {
         Row(
             Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 64.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(
-                Modifier.weight(1f).padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                // Keep restrictions visible independently of the saved switch value.
-                val restriction = RulePropertyText.restrictionSummary(state)
-                if (restriction != null) {
-                    Text(
-                        restriction, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            Text(
+                title,
+                modifier =
+                    Modifier.weight(1f)
+                        .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
+                style = MaterialTheme.typography.titleMedium,
+            )
             if (onViewControl != null) {
                 GkIconButton(
                     imageVector = GkIcons.Flowchart,
                     contentDescription = stringResource(Res.string.rule_control_view),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
+                    colors =
+                        IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
                     onClick = onViewControl,
                 )
             }
@@ -133,15 +136,17 @@ fun GkRuleSettingsContent(
                 imageVector = ResetSettings,
                 contentDescription = stringResource(Res.string.settings_reset_default),
                 enabled = state.hasCustomSetting,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
                 onClick = { onSettingChange(RuleSetting.FollowDefault) },
             )
             GkRuleEnableControl(
-                state, onSettingChange,
+                state,
+                onSettingChange,
                 showCustomSettingIcon = false,
-                modifier = Modifier.width(84.dp).fillMaxHeight()
+                modifier = Modifier.width(84.dp).fillMaxHeight(),
             )
         }
     }
@@ -157,31 +162,67 @@ fun GkRuleExclusionsCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
     ) {
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 64.dp)
+            Modifier.fillMaxWidth()
+                .heightIn(min = 64.dp)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    if (appId == null) RuleProperty.Personal.label else stringResource(Res.string.page_exclusion),
-                    style = MaterialTheme.typography.titleMedium
+            Text(
+                if (appId == null) RuleProperty.Personal.label
+                else stringResource(Res.string.page_exclusion),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            val apps = if (appId == null) exclude.appIds.size else 0
+            val pages = exclude.activityIds.count { appId == null || it.first == appId }
+            if (apps > 0) {
+                ExclusionCount(
+                    GkIcons.Apps,
+                    apps,
+                    stringResource(Res.string.app_count, apps.toString()),
                 )
-                val summary = RulePropertyText.personalSummary(exclude, appId)
-                if (summary != null) {
-                    Text(
-                        summary, style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            }
+            if (pages > 0) {
+                ExclusionCount(
+                    GkIcons.Layers,
+                    pages,
+                    stringResource(Res.string.page_count, pages.toString()),
+                )
             }
             GkRulePropertyIcon(
-                RuleProperty.Personal, modifier = Modifier.size(24.dp), contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                RuleProperty.Personal,
+                modifier = Modifier.size(24.dp),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun ExclusionCount(icon: ImageVector, count: Int, description: String) {
+    Row(
+        modifier = Modifier.clearAndSetSemantics { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        GkIcon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

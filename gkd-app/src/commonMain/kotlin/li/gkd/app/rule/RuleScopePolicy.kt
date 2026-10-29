@@ -1,6 +1,5 @@
 package li.gkd.app.rule
 
-import li.gkd.app.META
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ExcludeData
 import li.gkd.app.resources.*
@@ -30,10 +29,24 @@ object RuleScopePolicy {
         values.orEmpty().map { if (it.startsWith('.')) appId + it else it }
 
     fun versionMatches(props: RawSubscription.RawAppRuleProps, info: AppInfo?): Boolean =
-        info == null || (props.versionCode?.match(info.versionCode) != false &&
-                props.versionName?.match(info.versionName) != false)
+        versionMatches(props.versionCode, props.versionName, info, forConfiguration = false)
 
-    fun globalScope(app: RawSubscription.RawGlobalApp, info: AppInfo?, explicitlyIncluded: Boolean = true): GlobalAppScope =
+    private fun versionMatches(
+        versionCode: RawSubscription.IntegerMatcher?,
+        versionName: RawSubscription.StringMatcher?,
+        info: AppInfo?,
+        forConfiguration: Boolean,
+    ): Boolean =
+        info == null ||
+            (versionCode?.match(info.versionCode) != false &&
+                (if (forConfiguration) versionName?.matchValidConditions(info.versionName)
+                else versionName?.match(info.versionName)) != false)
+
+    fun globalScope(
+        app: RawSubscription.RawGlobalApp,
+        info: AppInfo?,
+        explicitlyIncluded: Boolean = true,
+    ): GlobalAppScope =
         GlobalAppScope(
             app.enable != false,
             fixActivities(app.id, app.activityIds),
@@ -42,14 +55,19 @@ object RuleScopePolicy {
             explicitlyIncluded,
         )
 
+    /** Configuration keeps invalid patterns editable; execution uses the strict default. */
     fun appVersionMatches(
         group: RawSubscription.RawAppGroup,
         rule: RawSubscription.RawAppRule,
-        info: AppInfo?
+        info: AppInfo?,
+        forConfiguration: Boolean = false,
     ): Boolean =
-        info == null || ((rule.versionCode
-            ?: group.versionCode)?.match(info.versionCode) != false &&
-                (rule.versionName ?: group.versionName)?.match(info.versionName) != false)
+        versionMatches(
+            rule.versionCode ?: group.versionCode,
+            rule.versionName ?: group.versionName,
+            info,
+            forConfiguration,
+        )
 
     fun globalApp(
         group: RawSubscription.RawGlobalGroup,
@@ -79,15 +97,20 @@ object RuleScopePolicy {
         systemAppIds: Set<String>,
         matchAnyApp: Boolean? = null,
         explicitlyIncluded: Boolean = group.apps.orEmpty().any { it.id == appId },
-    ): GlobalAppDefaultOffReason? = when {
-        explicitlyIncluded -> null
-        appId == launcherAppId && group.matchLauncher != true -> GlobalAppDefaultOffReason.Launcher
-        appId in systemAppIds && group.matchSystemApp != true -> GlobalAppDefaultOffReason.SystemApp
-        matchAnyApp == false -> GlobalAppDefaultOffReason.LocalDefault
-        matchAnyApp == null && group.matchAnyApp == false -> GlobalAppDefaultOffReason.SubscriptionDefault
-        else -> null
-    }
+    ): GlobalAppDefaultOffReason? =
+        when {
+            explicitlyIncluded -> null
+            appId == launcherAppId && group.matchLauncher != true ->
+                GlobalAppDefaultOffReason.Launcher
+            appId in systemAppIds && group.matchSystemApp != true ->
+                GlobalAppDefaultOffReason.SystemApp
+            matchAnyApp == false -> GlobalAppDefaultOffReason.LocalDefault
+            matchAnyApp == null && group.matchAnyApp == false ->
+                GlobalAppDefaultOffReason.SubscriptionDefault
+            else -> null
+        }
 
+    /** Configuration restrictions are independent of the group's static execution validity. */
     fun globalRuleRestriction(
         group: RawSubscription.RawGlobalGroup,
         rule: RawSubscription.RawGlobalRule?,
@@ -98,8 +121,11 @@ object RuleScopePolicy {
     ): RuleRestriction? {
         val app = globalApp(group, rule, appId)
         return globalAppRestriction(
-            app?.enable != false, app == null || versionMatches(app, info),
-            groupExcluded, manuallyEnabled,
+            app?.enable != false,
+            app == null ||
+                versionMatches(app.versionCode, app.versionName, info, forConfiguration = true),
+            groupExcluded,
+            manuallyEnabled,
         )
     }
 
@@ -108,12 +134,13 @@ object RuleScopePolicy {
         versionAllowed: Boolean,
         groupExcluded: Boolean,
         manuallyEnabled: Boolean,
-    ): RuleRestriction? = when {
-        !manuallyEnabled && groupExcluded -> RuleRestriction.ShadowedByAppRule
-        !manuallyEnabled && !enabled -> RuleRestriction.AppExcluded
-        !versionAllowed -> RuleRestriction.VersionMismatch
-        else -> null
-    }
+    ): RuleRestriction? =
+        when {
+            !manuallyEnabled && groupExcluded -> RuleRestriction.ShadowedByAppRule
+            !manuallyEnabled && !enabled -> RuleRestriction.AppExcluded
+            !versionAllowed -> RuleRestriction.VersionMismatch
+            else -> null
+        }
 
     fun matchGlobalActivity(
         app: GlobalAppScope?,
@@ -124,10 +151,15 @@ object RuleScopePolicy {
         exclude: ExcludeData,
     ): Boolean {
         val manuallyEnabled = exclude.appIds[appId] == false
-        if (globalAppRestriction(
-                app?.enabled != false, app?.versionAllowed != false, groupExcluded, manuallyEnabled,
+        if (
+            globalAppRestriction(
+                app?.enabled != false,
+                app?.versionAllowed != false,
+                groupExcluded,
+                manuallyEnabled,
             ) != null
-        ) return false
+        )
+            return false
         if (exclude.appIds[appId] == true) return false
         // Personal global page entries have always been exact activity IDs.
         if (activityId != null && appId to activityId in exclude.activityIds) return false
@@ -135,7 +167,9 @@ object RuleScopePolicy {
         if (exclude.appIds[appId] == false) return true
         if (app != null) {
             return (app.explicitlyIncluded || defaultEnabled) &&
-                    (activityId == null || app.included.isEmpty() || app.included.any(activityId::startsWith))
+                (activityId == null ||
+                    app.included.isEmpty() ||
+                    app.included.any(activityId::startsWith))
         }
         return defaultEnabled
     }
