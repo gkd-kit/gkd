@@ -1,2 +1,4 @@
 packages:
   - gkd-selector
+allowBuilds:
+  simple-git-hooks: false

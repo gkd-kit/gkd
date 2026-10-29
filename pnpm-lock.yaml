@@ -172,6 +172,15 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      kotlin-format:
+        specifier: ^0.0.11
+        version: 0.0.11
+      lint-staged:
+        specifier: ^17.6.0
+        version: 17.6.0
+      simple-git-hooks:
+        specifier: ^2.14.0
+        version: 2.14.0
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -310,8 +319,37 @@ packages:
   fflate@0.8.3:
     resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
+  ignore@7.0.14:
+    resolution: {integrity: sha512-wCBiZ77u1tuWde6G/nfOtLaCTYcFDU5yCzARzK10y+rLhzYoL7a7yEemcopcc2Mzow7gZOIjnV2ym1NYmdiJOQ==}
+    engines: {node: '>= 4'}
+
+  kotlin-format@0.0.11:
+    resolution: {integrity: sha512-Pz9RntPYjhcp3iN4ZLlbTBvTiv/n68P/kMzEZXNri0ORhPr5BjBuJHQjVCUP+s3ydEFltIa8I/pcIS+nzAUBqw==}
+    hasBin: true
+
+  lint-staged@17.6.0:
+    resolution: {integrity: sha512-nOhBfYkZEwkFtNzD5pK9s9LkcWoxJ+whLzEnhqi9nl7zTB5n7tg8+9iYgMGx2Wm3VlLu8cbNj0RACzY+nWi5iQ==}
+    engines: {node: '>=22.22.1'}
+    hasBin: true
+
+  picomatch@4.0.7:
+    resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
+    engines: {node: '>=12'}
+
   regex-wasm@0.1.1:
     resolution: {integrity: sha512-bWkfffC4bnzYbKxqDTGEZYBBiy1g6e94rZ+mXAx2KvaimO0Hb9RAY1eom7l7yRZwFOyjRlhdB8mVnmkJR8rDEw==}
+
+  simple-git-hooks@2.14.0:
+    resolution: {integrity: sha512-kkTORPAuxQz2g1QUuN0J8yGWT28tjGBfPOdJ4xT7Vbeu30veKUZQIoID2qGgCDAakaQn59UeZJJ4cFGB8PVP2A==}
+    hasBin: true
+
+  string-argv@0.3.2:
+    resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
+    engines: {node: '>=0.6.19'}
+
+  tinyexec@1.3.1:
+    resolution: {integrity: sha512-GCvB3aoys96IuDFBMcTB46JOR6mdMtAToqwiW8JlWhsoh1mhHi/xn9ss/Dg7N555GiJyEt2qzoG/NHCwM6h1EA==}
+    engines: {node: '>=18'}
 
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
@@ -320,6 +358,11 @@ packages:
 
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
+
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
 
 snapshots:
 
@@ -389,7 +432,29 @@ snapshots:
 
   fflate@0.8.3: {}
 
+  ignore@7.0.14: {}
+
+  kotlin-format@0.0.11:
+    dependencies:
+      ignore: 7.0.14
+
+  lint-staged@17.6.0:
+    dependencies:
+      picomatch: 4.0.7
+      string-argv: 0.3.2
+      tinyexec: 1.3.1
+    optionalDependencies:
+      yaml: 2.9.1
+
+  picomatch@4.0.7: {}
+
   regex-wasm@0.1.1: {}
+
+  simple-git-hooks@2.14.0: {}
+
+  string-argv@0.3.2: {}
+
+  tinyexec@1.3.1: {}
 
   typescript@7.0.2:
     optionalDependencies:
@@ -415,3 +480,6 @@ snapshots:
       '@typescript/typescript-win32-x64': 7.0.2
 
   undici-types@8.9.0: {}
+
+  yaml@2.9.1:
+    optional: true

@@ -42,7 +42,7 @@ matches[0]:miss
 普通分享日志不包含历史诊断；从诊断记录页分享时，日志 ZIP 附带选中的记录。开发者从 `matching-diagnostics/` 下对应采集目录取出 `diagnostic.json`，无需保持手机连接。CLI 可离线生成摘要：
 
 ```powershell
-pnpm app:tools matching-summary --input .local/diagnostics.json --output .local/diagnostics-summary.json
+pnpm app-tools matching-summary --input .local/diagnostics.json --output .local/diagnostics-summary.json
 ```
 
 摘要包含单次请求的结果与错误、最慢的 20 次运行、最近 20 条失败/取消记录、常见原因及最后的引擎/前台观察；不会重复输出订阅定义与模拟节点树。原始文件仍是完整证据，摘要会显示省略的原因组数和失败/取消记录数。UI 和 HTTP 导出均可读取，专用性能/手势测试报告不属于此格式。
@@ -57,19 +57,19 @@ pnpm app:tools matching-summary --input .local/diagnostics.json --output .local/
 
 ```powershell
 ./gradlew.bat :gkd-app:run --args=--test
-pnpm app:tools matching-debug --operation start
-pnpm app:tools matching-debug --operation readiness
+pnpm app-tools matching-debug --operation start
+pnpm app-tools matching-debug --operation readiness
 # 将上一步的 id 作为下列 SESSION
-pnpm app:tools matching-debug --operation status --session SESSION
-pnpm app:tools matching-debug --operation events --session SESSION --after 0
-pnpm app:tools matching-debug --operation watch --session SESSION --duration 10000
-pnpm app:tools matching-debug --operation run --session SESSION --input .local/request.json
-pnpm app:tools matching-debug --operation run-status --session SESSION --run example-1
-pnpm app:tools matching-debug --operation cancel --session SESSION --run example-1
-pnpm app:tools matching-debug --operation stop --session SESSION
-pnpm app:tools matching-debug --operation export --session SESSION --output .local/diagnostics.json
+pnpm app-tools matching-debug --operation status --session SESSION
+pnpm app-tools matching-debug --operation events --session SESSION --after 0
+pnpm app-tools matching-debug --operation watch --session SESSION --duration 10000
+pnpm app-tools matching-debug --operation run --session SESSION --input .local/request.json
+pnpm app-tools matching-debug --operation run-status --session SESSION --run example-1
+pnpm app-tools matching-debug --operation cancel --session SESSION --run example-1
+pnpm app-tools matching-debug --operation stop --session SESSION
+pnpm app-tools matching-debug --operation export --session SESSION --output .local/diagnostics.json
 # 或者一次完成有界采集、停止和导出
-pnpm app:tools matching-debug --operation capture --duration 20000 --output .local/diagnostics.json
+pnpm app-tools matching-debug --operation capture --duration 20000 --output .local/diagnostics.json
 ```
 
 运行同一请求 ID 和相同内容会返回原任务；同一 ID 改变内容会被拒绝。每个会话最多 100 个单次请求。输入通道忙时，单次任务报告失败，不覆盖正在执行的动作，不自动重放。`start` 不设置采集时限；`capture --duration` 仅让命令行等待指定时长后主动调用停止，`watch --duration` 仅控制订阅时间。会话没有自动停止时限，默认环形缓冲保留 2000 条事件；分页的 `gap` 和会话的 `dropped` 表示记录已被覆盖。
@@ -103,8 +103,8 @@ pnpm app:tools matching-debug --operation capture --duration 20000 --output .loc
 时序策略通过下列命令读取或整份替换，仅在当前进程生效：
 
 ```powershell
-pnpm app:tools matching-debug --operation policy
-pnpm app:tools matching-debug --operation policy --input .local/timing.json
+pnpm app-tools matching-debug --operation policy
+pnpm app-tools matching-debug --operation policy --input .local/timing.json
 ```
 
 策略包括内容事件合并、前台确认重试及等待窗口、根节点等待、后续查询间隔与窗口、页面稳定期、服务交接等待。新查询读取新策略；已经启动的等待不会因为修改参数自动重放。当前是可调参数策略，不是自动学习或自动调参。
@@ -112,7 +112,7 @@ pnpm app:tools matching-debug --operation policy --input .local/timing.json
 协议检查使用真实共享核心，覆盖仅匹配、重复请求、不同请求内容冲突、模拟动作取消收尾及详细选择器记录：
 
 ```powershell
-pnpm app:tools check-matching-debug
+pnpm app-tools check-matching-debug
 ```
 
 ## Debug 真机入口
@@ -123,14 +123,14 @@ pnpm app:tools check-matching-debug
 
 ```powershell
 # 汇总当前条件，不重启、不切页面、不修改自动化或匹配开关
-pnpm app:tools device-app-debug --serial DEVICE --attach --operation readiness
+pnpm app-tools device-app-debug --serial DEVICE --attach --operation readiness
 # 对当前现场进行 20 秒有界采集，退出时停止并导出本次会话
-pnpm app:tools device-matching-debug --serial DEVICE --attach --duration 20000 --output .local/live-diagnostics.json
+pnpm app-tools device-matching-debug --serial DEVICE --attach --duration 20000 --output .local/live-diagnostics.json
 # 分步采集；重复命令连接同一进程和服务
-pnpm app:tools device-matching-debug --serial DEVICE --attach --operation start
-pnpm app:tools device-matching-debug --serial DEVICE --attach --operation events --session SESSION
-pnpm app:tools device-matching-debug --serial DEVICE --attach --operation stop --session SESSION
-pnpm app:tools device-matching-debug --serial DEVICE --attach --operation export --session SESSION --output .local/live-diagnostics.json
+pnpm app-tools device-matching-debug --serial DEVICE --attach --operation start
+pnpm app-tools device-matching-debug --serial DEVICE --attach --operation events --session SESSION
+pnpm app-tools device-matching-debug --serial DEVICE --attach --operation stop --session SESSION
+pnpm app-tools device-matching-debug --serial DEVICE --attach --operation export --session SESSION --output .local/live-diagnostics.json
 ```
 
 如果用户已经在界面开启诊断，`readiness.session.id` 就是可观察或导出的会话 ID；直接使用 `events`、`watch`、`status` 或 `export`，不要再 `start`。新建会话在已有活动会话时会被拒绝，不会覆盖用户采集。`stop`、`cancel`、`run`、修改 `policy` 仍是显式操作；连接或读取状态本身不会执行它们。
@@ -160,9 +160,9 @@ pnpm app:tools device-matching-debug --serial DEVICE --attach --operation export
 
 ```powershell
 ./gradlew.bat :gkd-android:packageGkdDebug
-pnpm app:tools device-matching-debug --serial DEVICE --install --duration 20000 --output .local/device-diagnostics.json
+pnpm app-tools device-matching-debug --serial DEVICE --install --duration 20000 --output .local/device-diagnostics.json
 # 可选：采集期间提交给定规则；默认 execute=false
-pnpm app:tools device-matching-debug --serial DEVICE --input .local/request.json --duration 20000
+pnpm app-tools device-matching-debug --serial DEVICE --input .local/request.json --duration 20000
 ```
 
 工具沿用自动化暂停与恢复流程：记录开关和模式、停止进程、关闭自动化并退出自动化模式、启动 Debug 服务、通过 ADB 转发连接、启动诊断、可选单次请求、有限时间读取 SSE、停止并导出，最后关闭服务和端口转发并恢复本次修改的两个字段。恢复失败时保留 `.local/device-recovery/` 下按设备标识保存的记录。工具不会为了观察正常自动化而静默重新启用开关；正常自动化问题可直接在应用内开始采集。
@@ -174,10 +174,10 @@ CLI 详细模式与界面使用同一入口：在 `start`、`capture` 或 `devic
 此服务已由匹配专用入口扩展为应用级 Debug 入口，凭据文件为 `files/private-store/app-debug.json`。停止服务只结束它创建且仍为当前会话的匹配诊断，不结束用户之后在界面开启的会话。应用状态和应用列表直接读取生产仓库，不导出 Cookie 或完整设置。
 
 ```shell
-pnpm app:tools device-app-debug --serial DEVICE --operation app
-pnpm app:tools device-app-debug --serial DEVICE --operation catalog --output .local/app-catalog.json
-pnpm app:tools device-app-debug --serial DEVICE --operation foreground
-pnpm app:tools device-app-debug --serial DEVICE --operation capabilities
+pnpm app-tools device-app-debug --serial DEVICE --operation app
+pnpm app-tools device-app-debug --serial DEVICE --operation catalog --output .local/app-catalog.json
+pnpm app-tools device-app-debug --serial DEVICE --operation foreground
+pnpm app-tools device-app-debug --serial DEVICE --operation capabilities
 ```
 
 这些命令也会暂停并最终恢复自动化；首次启动尚未写入设置文件时，按生产存储契约使用默认设置。`foreground` 返回引擎已收到的观察，不发起额外 Binder 查询：`task` 是最近任务栈观察，`nodeAppId` 是最近节点观察，`confirmed` 是已确认交互界面，`pending` 是待确认候选，`reason` 是最近决定原因。它们不是同一时刻的系统原子快照；无特权任务栈来源时 `task` 可为空。`interactive`、`locked` 与 `serviceMode` 帮助区分熄屏、锁屏和服务不可用。
@@ -247,9 +247,9 @@ SSE 从同一有界缓冲读取，不直接订阅执行线程；客户端慢不�
 `query_started` 事件携带该次查询的 policy，参数变化记录为 policy_updated；session.policy 始终是会话开始时的参数。导出 runtime 是导出时快照，不是所有事件同一时刻的系统状态。Desktop 的 foreground=null 明确表示没有 Android 前台观察。
 
 ```shell
-pnpm app:tools matching-debug --operation engine
-pnpm app:tools matching-debug --operation policy --input .local/timing.json
-pnpm app:tools device-app-debug --serial DEVICE --operation engine
+pnpm app-tools matching-debug --operation engine
+pnpm app-tools matching-debug --operation policy --input .local/timing.json
+pnpm app-tools device-app-debug --serial DEVICE --operation engine
 ```
 
 参数写入前先开始诊断。页面不展示运行记录，完整证据从诊断文件或 HTTP 获取；停止采集后，已有单次任务处于 cancelling 时页面继续刷新到终态。设备采集命令收到 SIGINT/SIGTERM 后会取消流读取，随后停止服务、移除转发、恢复自动化字段；强制杀死进程或设备断开后可使用 `device-recovery` 恢复；新采集会先检查同一设备是否存在未完成恢复。
@@ -272,8 +272,8 @@ pnpm app:tools device-app-debug --serial DEVICE --operation engine
 恢复记录统一保存在 `.local/device-recovery/`，按 ADB 实际设备标识区分，并保存原采集目录与这次修改的字段。`capture-profile` 和设备诊断共用同一恢复流程：开始前发现同设备待恢复记录便停止，不会用当前暂停状态覆盖原值。
 
 ```shell
-pnpm app:tools device-recovery --serial DEVICE --operation status
-pnpm app:tools device-recovery --serial DEVICE --operation restore
+pnpm app-tools device-recovery --serial DEVICE --operation status
+pnpm app-tools device-recovery --serial DEVICE --operation restore
 ```
 
 设备重连后执行 `restore`：校验设备身份，停止应用，读取最新设置，仅合并 `enableAutomator`/`automatorMode`（原字段不存在时恢复为不存在），暂存传输成功后原子替换设备设置，读回核对并重启应用，最后删除恢复记录。中途断连或核对失败会保留记录，可再次执行；没有记录时返回 `restored=false`。它不覆盖整份旧配置。历史手工测试生成的旧 `automation-recovery.json` 仍是当时证据，不由新格式推测设备归属。
@@ -299,7 +299,7 @@ pnpm app:tools device-recovery --serial DEVICE --operation restore
 `simulation` 使用单次调试相同的完整 AppInfo/节点格式；以上空对象仅示意结构。模拟延迟和规则 `matchDelay` 必须为零，规则资格在测量期间应保持稳定。最多 200 次测量、100 次预热、20000 节点，15 秒超时，同一时间仅一个基准任务。
 
 ```shell
-pnpm app:tools matching-debug --operation benchmark --input .local/benchmark.json --output .local/benchmark-result.json
+pnpm app-tools matching-debug --operation benchmark --input .local/benchmark.json --output .local/benchmark-result.json
 ```
 
 三档 `off`/`flow`/`detailed` 使用相同规则和树，轮换执行顺序，返回中位/P95 纳秒、每次查询的节点适配器操作数、当前工作线程的分配字节（JVM 不支持时为 null）、匹配结果。结果或节点访问数不一致时失败，不把性能数据当成语义正确的证据。计数适配器仅在基准中存在，原始节点不会被逐节点包装，普通模拟查询没有计数开销。
@@ -311,8 +311,8 @@ pnpm app:tools matching-debug --operation benchmark --input .local/benchmark.jso
 Debug 服务提供 `POST /debug/android/benchmark`，复用真实 `A11yQueryContext` 和公共查询流程，只读取当前界面。请求沿用上面的 `request`，去掉 `simulation`，保持 `execute=false`，`matchDelay=0`；`iterations` 为 1～50（默认 10），`warmup` 为 0～10（默认 2，至少预热一次）。可选 `cacheModes` 默认包含 `Cold`、`Warm`、`RefreshRoot`，每种均轮换测量 off/flow/detailed 三档诊断。
 
 ```shell
-pnpm app:tools device-matching-benchmark --serial DEVICE --install --open-gkd --input .local/android-benchmark.json --output .local/android-result.json
-pnpm app:tools device-matching-benchmark --serial DEVICE --open-gkd --input .local/android-benchmark.json --output .local/android-traced-result.json --trace .local/android.perfetto-trace
+pnpm app-tools device-matching-benchmark --serial DEVICE --install --open-gkd --input .local/android-benchmark.json --output .local/android-result.json
+pnpm app-tools device-matching-benchmark --serial DEVICE --open-gkd --input .local/android-benchmark.json --output .local/android-traced-result.json --trace .local/android.perfetto-trace
 ```
 
 `--install` 使用已打包的 gkdDebug APK；`--open-gkd` 打开 GKD，等待实际确认前台为 GKD。省略它可测当前其他界面，规则的应用范围必须对应当前界面。开始前确认手机已解锁，测量时保持界面不变。CLI 保存恢复记录，先关闭自动化、退出自动化模式并关闭规则匹配，再临时启用无障碍；服务连接会将自动化开关改为 true，但匹配保持关闭。就绪检查同时等待有效服务、确认前台、应用目录加载。完成、失败和可处理的中断都恢复本次三个设置字段及 GKD 无障碍成员资格；保留期间其他设置和其他服务的变化。断连后的 `device-recovery restore` 也支持这些字段。若其他服务列表发生变化，不覆盖其当前全局无障碍开关。
@@ -333,7 +333,7 @@ pnpm app:tools device-matching-benchmark --serial DEVICE --open-gkd --input .loc
 
 ```shell
 python .local/tools/trace_processor query -f scripts/desktop/queries/android-benchmark.sql .local/android.perfetto-trace
-pnpm app:tools matching-binder-summary --input .local/android-benchmark.json --trace .local/android.perfetto-trace --output .local/android-binder-summary.json
+pnpm app-tools matching-binder-summary --input .local/android-benchmark.json --trace .local/android.perfetto-trace --output .local/android-binder-summary.json
 ```
 
 分析命令默认使用 `.local/tools/trace_processor` 官方 Python 启动器；可通过 `--trace-processor PATH` 指向下载好的 Windows 官方可执行文件。没有安装时不会自动下载。SQL 输出一个 JSON 报告列，CLI 将其转换为 JSON 文件，并把实测报告里的 Root/Refresh 调用数和查询次数与 trace 区间逐项核对。测量区间缺失、多进程混入、未结束区间/事务、跨区间事务、trace 错误/丢失或没有 Binder 证据均不能通过；校验失败仍保存报告并以非零状态退出。
@@ -345,10 +345,10 @@ SQL 仅统计 GKD Debug 主进程正式测量的同线程区间，并把嵌套�
 ## 无障碍连续滑动与取消验证
 
 ```shell
-pnpm app:tools device-gesture-check --serial DEVICE --install --output .local/gesture-check.json
-pnpm app:tools device-session-check --serial DEVICE --install --output .local/session-check/report.json
-pnpm app:tools device-session-check --serial DEVICE --backend privilege --output .local/session-privilege/report.json
-pnpm app:tools device-session-check --serial DEVICE --backend automation --output .local/session-automation/report.json
+pnpm app-tools device-gesture-check --serial DEVICE --install --output .local/gesture-check.json
+pnpm app-tools device-session-check --serial DEVICE --install --output .local/session-check/report.json
+pnpm app-tools device-session-check --serial DEVICE --backend privilege --output .local/session-privilege/report.json
+pnpm app-tools device-session-check --serial DEVICE --backend automation --output .local/session-automation/report.json
 ```
 
 该命令会实际执行无障碍滑动。它复用设备恢复流程：先记录开关与模式、关闭自动化及规则匹配、退出自动化模式，再临时启用无障碍。等待服务连接后打开 `li.gkd.app.development.GestureDebugActivity`，避免窗口事件早于服务连接而丢失；窗口的节点观察允许没有 Activity 名称，另用 ADB 核对实际 resumed Activity。测试界面消费触摸且没有可点击控件，记录真实 MotionEvent，不将协程终态当作抬手证据。Activity 实现位于 androidDebug，仅 Debug Manifest 注册，并要求 INTERACT_ACROSS_USERS_FULL 权限。
@@ -386,7 +386,7 @@ Android 13 的源码契约与真机数据均已检查：已完成的连续段仍
 离线分析无需启动 Desktop 或连接手机：
 
 ```shell
-pnpm app:tools matching-summary --input .local/capture.json --output .local/summary.json
+pnpm app-tools matching-summary --input .local/capture.json --output .local/summary.json
 ```
 
 摘要提供 `inputs`、包含调用详情与独立摘要的 `queryRecordings`、按查询完整耗时排序的 `slowestQueries`、合并查询内记录及异常事件并按 ID 去重的 `operations`、`slowestNodeCalls`、`operationsAtStop`、`openOperations`、`completedAfterStop` 和 `systemRecording.timeline`。`runDetails` 按 runId 关联事件序号、查询索引、系统步骤和操作 ID；请求通过 engineRunId 对应同一运行。仅剩请求终态的运行也保留关联条目，缺失的事件、查询、系统步骤和操作列表为空，不补造证据。规则定义通过原始包的 ruleSnapshots、ruleDefinitions 和 initialRules 查看。摘要不重新执行任何业务逻辑。
@@ -430,7 +430,7 @@ HTTP 导出、自动保存和日志压缩包统一使用 MatchDiagnosticCapture�
 调试服务通知停止与动作收尾可单独验证：
 
 ```shell
-pnpm app:tools device-service-stop-check --serial DEVICE --install --output .local/debug-service-stop.json
+pnpm app-tools device-service-stop-check --serial DEVICE --install --output .local/debug-service-stop.json
 ```
 
 此命令复用统一安装和设置恢复流程，关闭规则匹配后启用测试所需服务。默认检查无障碍输入；设备已连接特权服务时使用 `--backend privilege`，自动化模式使用 `--backend automation`，均先用短滑动确认实际输入后端。先识别「调试服务已开启」通知并点击其「停止」按钮，检查服务退出、HTTP 关闭、凭据删除和应用进程保留；再在同一进程重启调试服务，验证滑动进行中停止服务会取消诊断请求、释放触点、恢复时序策略并封口录制。动作阶段通过 ADB 停止同一服务，避免下拉通知栏改变前台界面而提前取消动作。最后导出诊断，执行新会话短滑动确认动作通道可复用，输出主报告、动作报告和 `*-service-stop-capture.json`。
@@ -487,7 +487,7 @@ Android 16 / 25060RK16C，现有 Debug APK `1.13.0-beta-2-fe6736f` 与本地构�
 
 ### 真机查询边界与拥塞检查
 
-`pnpm app:tools device-query-safety --serial DEVICE --install --output .local/query-safety/report.json` 使用当前 Debug APK 和临时 `li.gkd.a11y.fixture` 测试应用。工具先通过 `:gkd-a11y-fixture:assembleDebug` 构建测试 APK，与 GKD Debug 共用 buildSrc 中的签名配置逻辑及密钥，再复用自动化暂停/无障碍准备/恢复流程；测试应用与 GKD 分进程，只延迟测试应用自己的无障碍节点提供，不向生产引擎注入假异常或假诊断。已识别的 MIUI USB 安装提示可自动确认，其他界面仍需人工处理。
+`pnpm app-tools device-query-safety --serial DEVICE --install --output .local/query-safety/report.json` 使用当前 Debug APK 和临时 `li.gkd.a11y.fixture` 测试应用。工具先通过 `:gkd-a11y-fixture:assembleDebug` 构建测试 APK，与 GKD Debug 共用 buildSrc 中的签名配置逻辑及密钥，再复用自动化暂停/无障碍准备/恢复流程；测试应用与 GKD 分进程，只延迟测试应用自己的无障碍节点提供，不向生产引擎注入假异常或假诊断。已识别的 MIUI USB 安装提示可自动确认，其他界面仍需人工处理。
 
 测试包括正常命中/排除、513 个同级节点、超过 4096 个后代、内容事件突发与有界的节点响应延迟，以及恢复后的动作。断言同时检查单次请求结果和测试页面收到的真实 DOWN/UP；事件队列溢出和读取拥塞从生产诊断读取。各场景停止会话后导出原始 JSON，并生成同目录离线摘要。报告记录设备、GKD APK SHA-256 及测试应用的安装结果（installed / unchanged / updated）；已安装 GKD 与当前本地构建不一致时需使用 `--install` 更新。
 
@@ -495,11 +495,11 @@ Android 16 / 25060RK16C，现有 Debug APK `1.13.0-beta-2-fe6736f` 与本地构�
 
 ```sh
 # 连续执行、修复或重试；测试应用在命令之间保留
-pnpm app:tools device-query-safety --serial DEVICE --install --output .local/query-safety/first.json
-pnpm app:tools device-query-safety --serial DEVICE --output .local/query-safety/retry.json
+pnpm app-tools device-query-safety --serial DEVICE --install --output .local/query-safety/first.json
+pnpm app-tools device-query-safety --serial DEVICE --output .local/query-safety/retry.json
 # 整轮结束后统一清理；status 只读查看待清理应用
-pnpm app:tools device-test-apps --serial DEVICE --operation status
-pnpm app:tools device-test-apps --serial DEVICE --operation cleanup
+pnpm app-tools device-test-apps --serial DEVICE --operation status
+pnpm app-tools device-test-apps --serial DEVICE --operation cleanup
 ```
 
 本轮安装记录按设备保存在 `.local/device-test-apps/`，安装前先落盘，安装/卸载后核对真实设备状态。清理命令复用自动化暂停与恢复流程，只卸载本轮记录且 APK 哈希符合的应用；没有记录时不重启 GKD。未知来源的同包应用、被外部替换的 APK 不会被覆盖或删除。安装响应丢失、设备断连或卸载失败时保留记录，重连后可重试；清理完成前不要删除此目录。
@@ -518,7 +518,7 @@ pnpm app:tools device-test-apps --serial DEVICE --operation cleanup
 
 安装与清理入口覆盖：
 
-构建并更新已有 GKD Debug 可直接运行 `pnpm app:tools device-install --serial DEVICE`；省略 `--serial` 时顺序处理全部已连接且已授权的设备，跳过离线或未授权设备。构建只执行一次 `:gkd-android:assembleGkdDebug`，单台更新失败不影响其余设备，最终汇总失败。设备需已安装并初始化 GKD Debug，安装、弹窗确认及设置恢复继续复用公共流程。
+构建并更新已有 GKD Debug 可直接运行 `pnpm app-tools device-install --serial DEVICE`；省略 `--serial` 时顺序处理全部已连接且已授权的设备，跳过离线或未授权设备。构建只执行一次 `:gkd-android:assembleGkdDebug`，单台更新失败不影响其余设备，最终汇总失败。设备需已安装并初始化 GKD Debug，安装、弹窗确认及设置恢复继续复用公共流程。
 
 | 入口 | 安装、确认及收尾 |
 | --- | --- |
@@ -551,13 +551,13 @@ pnpm app:tools device-test-apps --serial DEVICE --operation cleanup
 
 ### 诊断页面与真机只读采集验证
 
-`pnpm app:tools device-diagnostic-page-check --serial DEVICE --apps com.ss.android.ugc.aweme --output .local/tests/diagnostic-page/douyin-records` 可验证开关、通知返回/停止、记录列表、文本预览和单条系统分享，并对指定应用执行三次 `execute: false` 的节点遍历。脚本不接受应用协议；目标应用应提前处于需要验证的页面。测试会保存并恢复自动化、匹配和无障碍配置。
+`pnpm app-tools device-diagnostic-page-check --serial DEVICE --apps com.ss.android.ugc.aweme --output .local/tests/diagnostic-page/douyin-records` 可验证开关、通知返回/停止、记录列表、文本预览和单条系统分享，并对指定应用执行三次 `execute: false` 的节点遍历。脚本不接受应用协议；目标应用应提前处于需要验证的页面。测试会保存并恢复自动化、匹配和无障碍配置。
 
 本轮真机证据位于 `.local/tests/diagnostic-page/douyin-records-verified/`。抖音处于首次隐私协议弹窗，三次查询分别约 71.6、59.4、45.8 ms，每次记录 49 次节点接口调用，均完成且无查询异常，不能代表正常信息流的大节点场景。即时现场没有事件覆盖；返回页面并操作通知后的最终文件保留 2000 条事件、覆盖 793 条旧事件，但三份查询调用记录仍完整。最终 JSON 约 10.4 MB，其中开始时配置约 8.5 MB。大文本预览有界读取，分享包仍含完整原始记录。
 
 ### 查询摘要与调用去重验证
 
-`pnpm app:tools device-diagnostic-performance --serial DEVICE --apps com.ss.android.ugc.aweme --output .local/tests/diagnostic-performance/douyin` 使用同一页面、同一只读完整遍历规则，以 Cold 应用缓存模式预热后交替执行 off/flow/detailed 各三次。flow 和 detailed 都启用查询记录，区别是条件解释；三档都使用生产节点读取线程。多轮 Debug benchmark 总预算为 120 秒，与用户采集无自动停止无关。节点接口计数不等于 Binder 事务数；活跃视频场景并非固定树快照。
+`pnpm app-tools device-diagnostic-performance --serial DEVICE --apps com.ss.android.ugc.aweme --output .local/tests/diagnostic-performance/douyin` 使用同一页面、同一只读完整遍历规则，以 Cold 应用缓存模式预热后交替执行 off/flow/detailed 各三次。flow 和 detailed 都启用查询记录，区别是条件解释；三档都使用生产节点读取线程。多轮 Debug benchmark 总预算为 120 秒，与用户采集无自动停止无关。节点接口计数不等于 Binder 事务数；活跃视频场景并非固定树快照。
 
 验证覆盖事件覆盖后的独立查询摘要、取消终态、停止/替换会话后物理读取晚到，以及离线摘要合并。事件容量、配置快照和保存队列不变，仍不在采集中持续落盘。`slowestRuns` 仍只报告有完整运行边界证据的总运行耗时，不用选择器耗时冒充运行总耗时。`attributeNodeCount` 从现有属性调用的节点引用去重得到，记录截断时不能当作完整树节点数。
 

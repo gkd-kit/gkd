@@ -303,18 +303,18 @@ Android 入口由统一 DebugService 承载；服务实现位于 androidMain，�
 
 ## 11 CLI 与用户排查流程
 
-沿用 `pnpm app:tools` 和根 scripts/desktop。命令示意：
+沿用 `pnpm app-tools` 和根 scripts/desktop。命令示意：
 
 ```text
-pnpm app:tools device debug start --serial <设备>
-pnpm app:tools debug start --rule <规则标识>
-pnpm app:tools debug match --session <会话>
-pnpm app:tools debug status --session <会话>
-pnpm app:tools debug events --session <会话> --after <序号>
-pnpm app:tools debug watch --session <会话> --duration 20s
-pnpm app:tools debug cancel --session <会话> --run <任务>
-pnpm app:tools debug export --session <会话>
-pnpm app:tools device debug stop --serial <设备>
+pnpm app-tools device debug start --serial <设备>
+pnpm app-tools debug start --rule <规则标识>
+pnpm app-tools debug match --session <会话>
+pnpm app-tools debug status --session <会话>
+pnpm app-tools debug events --session <会话> --after <序号>
+pnpm app-tools debug watch --session <会话> --duration 20s
+pnpm app-tools debug cancel --session <会话> --run <任务>
+pnpm app-tools debug export --session <会话>
+pnpm app-tools device debug stop --serial <设备>
 ```
 
 命令输出默认简短摘要，支持 JSON。watch 有时间上限，适合 AI 工具调用；常规排查使用状态查询和增量记录，不持续拉取整份日志。Desktop 与真机仅连接方式不同，诊断操作复用同一客户端。

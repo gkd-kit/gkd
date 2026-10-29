@@ -39,28 +39,28 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
 try {
   const command = positionals[0];
   if (values.help || !command) {
-    console.log(`pnpm app:tools capture-profile [--serial SERIAL] [--apps FILE] [--font DEVICE_PATH] [--install] [--screens] [--output DIR]
-pnpm app:tools services [--port 8888 | --connection FILE]
-pnpm app:tools check-subscription-http [--port 8888 | --connection FILE]
-pnpm app:tools check-matching-debug [--port 8888 | --connection FILE]
-pnpm app:tools device-diagnostic-performance --serial SERIAL --apps APP_ID [--output .local/tests/diagnostic-performance]
-pnpm app:tools device-diagnostic-page-check --serial SERIAL [--apps APP_ID] [--output .local/tests/diagnostic-page]
-pnpm app:tools service-start|service-stop --service Activity [--port 8888 | --connection FILE]
-pnpm app:tools service-event --service Activity --event Connected --attempt 1 [--reason TEXT] [--port 8888 | --connection FILE]
-pnpm app:tools matching-debug --operation readiness|start|capture|status|events|watch|stop|export|policy|engine|benchmark|run|run-status|cancel [--session ID] [--run ID] [--input JSON] [--duration 20000] [--detailed --rule ID] [--record-queries --rule ID] [--record-system] [--after SEQUENCE] [--output FILE]
-pnpm app:tools device-matching-debug --serial SERIAL [--attach | --install] [--operation capture|start|status|events|watch|stop|export|run|run-status|cancel] [--session ID] [--run ID] [--input JSON] [--duration 20000] [--output FILE] [--detailed --rule ID]
-pnpm app:tools matching-summary --input FILE [--output FILE]
-pnpm app:tools expression-corpus --input SUBSCRIPTIONS_DIR --output FILE
-pnpm app:tools matching-binder-summary --input BENCHMARK_JSON --trace TRACE --output JSON [--trace-processor PATH]
-pnpm app:tools device-app-debug --serial SERIAL --operation readiness|app|catalog|foreground|capabilities|engine [--attach | --install] [--output FILE]
-pnpm app:tools device-install [--serial SERIAL]
-pnpm app:tools device-recovery --serial SERIAL --operation status|restore
-pnpm app:tools device-matching-benchmark --serial SERIAL --input JSON [--install] [--open-gkd] [--output FILE] [--trace FILE]
-pnpm app:tools device-gesture-check --serial SERIAL [--install] [--output FILE]
-pnpm app:tools device-session-check --serial SERIAL [--backend accessibility|privilege|automation] [--install] [--output FILE]
-pnpm app:tools device-service-stop-check --serial SERIAL [--backend accessibility|privilege|automation] [--install] [--output FILE]
-pnpm app:tools device-query-safety --serial SERIAL [--install] [--output FILE]
-pnpm app:tools device-test-apps --serial SERIAL --operation status|cleanup
+    console.log(`pnpm app-tools capture-profile [--serial SERIAL] [--apps FILE] [--font DEVICE_PATH] [--install] [--screens] [--output DIR]
+pnpm app-tools services [--port 8888 | --connection FILE]
+pnpm app-tools check-subscription-http [--port 8888 | --connection FILE]
+pnpm app-tools check-matching-debug [--port 8888 | --connection FILE]
+pnpm app-tools device-diagnostic-performance --serial SERIAL --apps APP_ID [--output .local/tests/diagnostic-performance]
+pnpm app-tools device-diagnostic-page-check --serial SERIAL [--apps APP_ID] [--output .local/tests/diagnostic-page]
+pnpm app-tools service-start|service-stop --service Activity [--port 8888 | --connection FILE]
+pnpm app-tools service-event --service Activity --event Connected --attempt 1 [--reason TEXT] [--port 8888 | --connection FILE]
+pnpm app-tools matching-debug --operation readiness|start|capture|status|events|watch|stop|export|policy|engine|benchmark|run|run-status|cancel [--session ID] [--run ID] [--input JSON] [--duration 20000] [--detailed --rule ID] [--record-queries --rule ID] [--record-system] [--after SEQUENCE] [--output FILE]
+pnpm app-tools device-matching-debug --serial SERIAL [--attach | --install] [--operation capture|start|status|events|watch|stop|export|run|run-status|cancel] [--session ID] [--run ID] [--input JSON] [--duration 20000] [--output FILE] [--detailed --rule ID]
+pnpm app-tools matching-summary --input FILE [--output FILE]
+pnpm app-tools expression-corpus --input SUBSCRIPTIONS_DIR --output FILE
+pnpm app-tools matching-binder-summary --input BENCHMARK_JSON --trace TRACE --output JSON [--trace-processor PATH]
+pnpm app-tools device-app-debug --serial SERIAL --operation readiness|app|catalog|foreground|capabilities|engine [--attach | --install] [--output FILE]
+pnpm app-tools device-install [--serial SERIAL]
+pnpm app-tools device-recovery --serial SERIAL --operation status|restore
+pnpm app-tools device-matching-benchmark --serial SERIAL --input JSON [--install] [--open-gkd] [--output FILE] [--trace FILE]
+pnpm app-tools device-gesture-check --serial SERIAL [--install] [--output FILE]
+pnpm app-tools device-session-check --serial SERIAL [--backend accessibility|privilege|automation] [--install] [--output FILE]
+pnpm app-tools device-service-stop-check --serial SERIAL [--backend accessibility|privilege|automation] [--install] [--output FILE]
+pnpm app-tools device-query-safety --serial SERIAL [--install] [--output FILE]
+pnpm app-tools device-test-apps --serial SERIAL --operation status|cleanup
 
 Service commands require an isolated Desktop (--test). Services: Status, Button, Activity, Event, Track, Screenshot, Debug, Accessibility, Automation.
 Events: Authorized, Cancelled, Connected, Failed. Use the attempt returned by services.

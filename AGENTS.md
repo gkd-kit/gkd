@@ -64,7 +64,7 @@
 
 ## Desktop 运行时
 
-- 模拟配置、开发 HTTP 和工具不承担跨版本兼容，模型变更同步消费者，可重置，不增迁移/旧格式适配；生产数据兼容不受影响。开发工具统一 TypeScript、根 scripts/desktop 与 `pnpm app:tools`，复用公共 HTTP/控件逻辑，不另建同类 PowerShell/Python 脚本。
+- 模拟配置、开发 HTTP 和工具不承担跨版本兼容，模型变更同步消费者，可重置，不增迁移/旧格式适配；生产数据兼容不受影响。开发工具统一 TypeScript、根 scripts/desktop 与 `pnpm app-tools`，复用公共 HTTP/控件逻辑，不另建同类 PowerShell/Python 脚本。
 - 预览/控制窗口同进程，关闭控制窗口不退出 App 且可重新打开（F12）。模拟器为单一状态源，控件和 HTTP 同命令路径。系统栏由 jvmMain 窗口模拟层实时绘制，时间取当前时钟，系统栏/挖孔统一计算 Insets；不以静态或整页截图替代 UI，不把模拟网络/电量冒充真机。未实现内容如实标识，不宣称模拟成功。
 - 不支持仅针对具体动作，以非模态 Toast 显示“当前平台不支持”，不替代整页或伪造成功；编辑/列表/文件业务继续真实执行。用户明确要求的 priv-ui 模拟可修改 Desktop 授权/启动/停止状态，日志标记 simulation，不执行真实特权命令。
 - priv-ui 只用公开 PrivilegeScreen、状态/actions，禁用内部 renderer/模拟器或 INVISIBLE_MEMBER；页面及系统提示 Insets 分别注入，宿主模拟状态机与控制窗口特权可用状态同步。使用版本目录的远程稳定版，升级验证双端编译和实际页面。

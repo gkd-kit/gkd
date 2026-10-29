@@ -56,7 +56,7 @@ compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics", version.ref = "compose" }
 device = "com.github.getActivity:DeviceCompat:2.6"
 exp4j = "net.objecthunter:exp4j:0.4.8"
-expression = "li.songe:expression:0.1.0-SNAPSHOT"
+expression = "li.songe:expression:0.1.1"
 google-accompanist-drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.3"
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }

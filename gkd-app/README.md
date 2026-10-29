@@ -27,7 +27,7 @@ Desktop 启动时自动开启唯一调试服务，监听 `127.0.0.1:<httpServerP
 ./gradlew.bat :gkd-app:jvmTest
 pnpm type-check
 pnpm test
-pnpm app:tools --help
+pnpm app-tools --help
 ```
 
 共享逻辑、共享 UI 和 Desktop 修改只做相关 JVM 验证；涉及 Android 实现、依赖或构建链路时才执行相关 `gkd` 渠道验证。业务、持久化、协议和恢复行为保留自动测试；UI 默认使用人工或 HTTP 实际交互检查；仅为已发生、难以稳定人工复查的重要回归增加小范围自动测试，具体边界见 AGENTS.md。
@@ -60,9 +60,9 @@ ZIP 输出到 `.local/desktop-packages/gkd.win-<架构>.zip`。解压完整的 `
 
 ```powershell
 # 构建一次，再顺序更新全部已连接且已授权的设备
-pnpm app:tools device-install
+pnpm app-tools device-install
 # 只更新指定设备
-pnpm app:tools device-install --serial SERIAL
+pnpm app-tools device-install --serial SERIAL
 ```
 
 命令位于 `scripts/desktop`，执行 `:gkd-android:assembleGkdDebug` 后直接复用公共安装流程，不启动调试服务。省略 `--serial` 时跳过离线或未授权设备；单台更新失败会保留原因，继续其余设备，最后汇总失败。安装前暂停自动化，相同 APK 按 SHA-256 跳过，不同则覆盖更新；仅确认已核对身份的本次安装弹窗。每台设备结束时恢复并核对本次设置字段，GKD 本体不加入临时测试应用清理列表。此命令替代已删除的 `.local/install.ps1`。
@@ -73,13 +73,13 @@ pnpm app:tools device-install --serial SERIAL
 
 ```powershell
 ./gradlew.bat :gkd-android:assembleGkdDebug
-pnpm app:tools capture-profile --install --screens
+pnpm app-tools capture-profile --install --screens
 ./gradlew.bat :gkd-app:run
 ```
 
 工具位于根目录 `scripts/desktop`，支持 `--serial`、`--apps`、`--font`、`--install`、`--screens`、`--output`，不会自行构建 APK。省略 `--apps` 时使用设备导出的应用清单；默认字体路径为 `/system/fonts/MiSansVF.ttf`，其他设备通过 `--font` 指定。
 
-工具先记录自动化开关和运行模式，关闭自动化并确认后导出，最后仅恢复这两个字段并核对。中断或断连后的恢复记录位于 `.local/device-recovery/`；重新连接后运行 `pnpm app:tools device-recovery --serial SERIAL --operation restore`，仅恢复本次两个字段。新采集会跨采集目录检查同一设备的待恢复记录。资料校验、暂存及真机恢复成功后才替换目标 profile，失败保留原资料。
+工具先记录自动化开关和运行模式，关闭自动化并确认后导出，最后仅恢复这两个字段并核对。中断或断连后的恢复记录位于 `.local/device-recovery/`；重新连接后运行 `pnpm app-tools device-recovery --serial SERIAL --operation restore`，仅恢复本次两个字段。新采集会跨采集目录检查同一设备的待恢复记录。资料校验、暂存及真机恢复成功后才替换目标 profile，失败保留原资料。
 
 默认输出为日常 profile，包含设备尺寸、Insets、字体缩放、颜色、应用图标、订阅和初始设置。修改设备元数据后重启宿主，应用清单可在页面刷新。已有应用数据优先，重新导出不会清空数据库；profile 不复制数据库、规则统计或排序结果。字体和设备资料仅本地使用，不提交。
 
@@ -114,14 +114,14 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 工具默认读取日常会话 `.local/desktop/debug-server.json`；隔离宿主请使用启动日志中的连接文件，例如给以下命令追加 `--connection .local/tests/desktop/<会话>/debug-server.json`，也可显式指定 `--port 8888`：
 
 ```powershell
-pnpm app:tools services
+pnpm app-tools services
 # 检查运行中的真实订阅 HTTP 接口（仅 --test 宿主）：
-pnpm app:tools check-subscription-http
+pnpm app-tools check-subscription-http
 # 在控制窗口将界面服务的启动结果设为“手动完成”后：
-pnpm app:tools service-start --service Activity
+pnpm app-tools service-start --service Activity
 # 将 1 替换为启动输出中的 runtime.Activity.attempt：
-pnpm app:tools service-event --service Activity --event Connected --attempt 1
-pnpm app:tools service-stop --service Activity
+pnpm app-tools service-event --service Activity --event Connected --attempt 1
+pnpm app-tools service-stop --service Activity
 ```
 
 `check-subscription-http` 启动真实调试服务，验证订阅读写、开关、解析错误和持久化结果，报告写入当前隔离会话的 `reports/subscription-http.json`。所有接口使用同一端口，工具通过 `--connection` 读取或通过 `--port` 显式指定。检查会更新内存订阅作为类别配置样本，并在成功后删除本次新增的正式订阅规则。

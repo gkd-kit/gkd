@@ -57,7 +57,7 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 ## 数据读写与兼容
 
-订阅的坐标表达式在 commonMain 使用 `li.songe:expression:0.1.0-SNAPSHOT` 编译求值。`Expression.compile` 直接解析原始表达式，随后 `validateBindings` 静态检查变量白名单并拒绝所有函数调用，不执行计算；不再保留外层语法解析或字符串改写。不绑定任何函数，也不启用库的标准函数或常量集。支持范围如下，名称区分大小写：
+订阅的坐标表达式在 commonMain 使用 `li.songe:expression:0.1.1` 编译求值。`Expression.compile` 直接解析原始表达式，随后 `validateBindings` 静态检查变量白名单并拒绝所有函数调用，不执行计算；不再保留外层语法解析或字符串改写。不绑定任何函数，也不启用库的标准函数或常量集。支持范围如下，名称区分大小写：
 
 | 类型 | 支持范围 |
 | --- | --- |
@@ -73,7 +73,7 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 运行时除零/取余零保留 `DIVISION_BY_ZERO` 和源码区间；最终坐标转换成 Float 后拒绝 NaN、Infinity 和溢出。`PositionCalculationException` 在动作执行边界转为失败的 `ActionResult.coordinateError`，本次点击/长按/滑动在注入之前终止，不回退中心点或其他表达式，也不推进成功触发状态。只有未配置 `position` 时继续使用中心点，未配置滑动终点时继续使用起点。诊断开启时错误附带本次求值实际使用的变量（含同一次采样的 `random`），通过 `coordinate_calculation_failed` 事件及现有诊断导出链路输出；关闭诊断时不采集附加输入。
 
-`RuleExpressionCompatibilityTest` 对照本地订阅提取的脱敏表达式夹具、支持范围内的边界语法和固定随机种子生成的算式，验证数值、编译/求值错误阶段及算术错误语义；另验证错误码/源码区间、函数调用拒绝、静态校验与已移除特性的拒绝边界，同时报告模板编译和隔离求值的 JVM 耗时/分配量。夹具采集工具为 `pnpm app:tools expression-corpus --input SUBSCRIPTIONS_DIR --output FILE`，仅读取 JSON 订阅中的 position 和 swipeArg 起终点表达式；报告不含应用标识或节点内容。Android 另以 API 26/33 的 Robolectric 测试验证实际依赖变体与坐标计算；宿主基准不代表真机耗时。
+`RuleExpressionCompatibilityTest` 对照本地订阅提取的脱敏表达式夹具、支持范围内的边界语法和固定随机种子生成的算式，验证数值、编译/求值错误阶段及算术错误语义；另验证错误码/源码区间、函数调用拒绝、静态校验与已移除特性的拒绝边界，同时报告模板编译和隔离求值的 JVM 耗时/分配量。夹具采集工具为 `pnpm app-tools expression-corpus --input SUBSCRIPTIONS_DIR --output FILE`，仅读取 JSON 订阅中的 position 和 swipeArg 起终点表达式；报告不含应用标识或节点内容。Android 另以 API 26/33 的 Robolectric 测试验证实际依赖变体与坐标计算；宿主基准不代表真机耗时。
 
 | 数据 | 读取 | 写入与一致性 |
 | --- | --- | --- |
