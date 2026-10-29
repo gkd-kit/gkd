@@ -106,7 +106,6 @@ suspend fun benchmarkMatching(input: MatchBenchmarkRequest): MatchBenchmarkRepor
                         (ManagementFactory.getThreadMXBean() as? ThreadMXBean)?.takeIf {
                             it.isThreadAllocatedMemorySupported && it.isThreadAllocatedMemoryEnabled
                         }
-                    val thread = Thread.currentThread().id
                     val adapter =
                         CountingNodeAdapter(
                             SimulatedNodeAdapter(
@@ -138,7 +137,7 @@ suspend fun benchmarkMatching(input: MatchBenchmarkRequest): MatchBenchmarkRepor
                         repeat(3) { offset ->
                             val level = (round + offset) % 3
                             val beforeAccess = adapter.accesses
-                            val beforeBytes = bean?.getThreadAllocatedBytes(thread)
+                            val beforeBytes = bean?.getCurrentThreadAllocatedBytes()
                             val start = System.nanoTime()
                             val result =
                                 evaluateDebugRule(
@@ -151,7 +150,7 @@ suspend fun benchmarkMatching(input: MatchBenchmarkRequest): MatchBenchmarkRepor
                                 )
                             val elapsed = System.nanoTime() - start
                             val allocated = beforeBytes?.let {
-                                checkNotNull(bean).getThreadAllocatedBytes(thread) - it
+                                checkNotNull(bean).getCurrentThreadAllocatedBytes() - it
                             }
                             check(expected == null || expected == result) {
                                 "Query result changed during benchmark; use stable rule eligibility"
