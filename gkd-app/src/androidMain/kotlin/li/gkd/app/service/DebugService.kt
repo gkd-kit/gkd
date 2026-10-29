@@ -11,10 +11,12 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import li.gkd.app.app
+import li.gkd.app.META
 import li.gkd.app.appScope
 import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.currentDeviceInfo
+import li.gkd.app.development.AndroidServerDiagnostics
+import li.gkd.app.external.ExternalCalls
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.action.executeManualAction
 import li.gkd.app.network.AppLinks
@@ -34,79 +36,87 @@ import li.gkd.app.util.mapState
 import li.gkd.db.SubscriptionIds
 
 class DebugService : LifecycleHookService() {
-    private var diagnostics: DebugServerDiagnostics? = null
+    private var started = false
+    private var diagnostics: AndroidServerDiagnostics? = null
     val httpServerPortFlow by lazy {
         settings.mapState(lifecycleScope) { s -> s.httpServerPort }
     }
 
     init {
         useLogLifecycle()
-        useServicePresence(
-            stateFlow = isRunning,
-            name = Res.string.debug_service_compact_label.getSync(),
-        )
         useStopServiceReceiver()
         onDestroyed {
-            if (settings.value.autoClearMemorySubs) {
+            if (started && settings.value.autoClearMemorySubs) {
                 appScope.launchLogged(Dispatchers.IO) {
                     SubscriptionRepository.delete(SubscriptionIds.LOCAL_HTTP)
                 }
             }
         }
-        onDestroyed { diagnostics?.close() }
-        onCreated {
-            if (!NotificationCatalog.debug(httpServerPortFlow.value).startForeground())
-                return@onCreated
-            diagnostics =
-                app.applicationInfoWithMetadata.metaData?.getString("debugServerDiagnostics")?.let {
-                    Class.forName(it).getDeclaredConstructor().newInstance()
-                        as DebugServerDiagnostics
+        onDestroyed {
+            diagnostics?.close()
+            if (started) {
+                isRunning.value = false
+                ToastUtils.show(
+                    Res.string.service_stopped.getSync(
+                        Res.string.debug_service_compact_label.getSync(),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun startServer() {
+        if (!NotificationCatalog.debug(httpServerPortFlow.value).startForeground()) return
+        started = true
+        isRunning.value = true
+        ToastUtils.show(
+            Res.string.service_started.getSync(Res.string.debug_service_compact_label.getSync()),
+        )
+        diagnostics = if (META.debuggable) AndroidServerDiagnostics() else null
+        var startedOnce = false
+        lifecycleScope.launchLogged(Dispatchers.IO) {
+            httpServerPortFlow.collectLatest { port ->
+                if (!NetworkAddresses.isPortAvailable(port)) {
+                    ToastUtils.show(Res.string.debug_port_occupied.getSync(port))
+                    stopSelf()
+                    return@collectLatest
                 }
-            var startedOnce = false
-            lifecycleScope.launchLogged(Dispatchers.IO) {
-                httpServerPortFlow.collectLatest { port ->
-                    if (!NetworkAddresses.isPortAvailable(port)) {
-                        ToastUtils.show(Res.string.debug_port_occupied.getSync(port))
-                        stopSelf()
-                        return@collectLatest
-                    }
-                    val server = createServer(port, diagnostics)
+                val server = createServer(port, diagnostics)
+                try {
+                    server.start()
+                    diagnostics?.publish(port)
+                } catch (e: Exception) {
+                    server.stop()
+                    diagnostics?.unpublish()
+                    ToastUtils.show(
+                        Res.string.debug_service_start_failed.getSync(e.stackTraceToString()),
+                    )
+                    LogUtils.e("调试服务启动失败", e)
+                    stopSelf()
+                    return@collectLatest
+                }
+                httpServerFlow.value = server
+                val localNetworkIps =
                     try {
-                        server.start()
-                        diagnostics?.publish(port)
+                        NetworkAddresses.localIpv4Addresses()
                     } catch (e: Exception) {
-                        server.stop()
-                        diagnostics?.unpublish()
                         ToastUtils.show(
-                            Res.string.debug_service_start_failed.getSync(e.stackTraceToString()),
+                            Res.string.network_host_failed_prefix.getSync() + e.message,
                         )
-                        LogUtils.e("调试服务启动失败", e)
-                        stopSelf()
-                        return@collectLatest
+                        emptyList()
                     }
-                    httpServerFlow.value = server
-                    val localNetworkIps =
-                        try {
-                            NetworkAddresses.localIpv4Addresses()
-                        } catch (e: Exception) {
-                            ToastUtils.show(
-                                Res.string.network_host_failed_prefix.getSync() + e.message,
-                            )
-                            emptyList()
-                        }
-                    localNetworkIpsFlow.value = localNetworkIps
-                    NotificationCatalog.debug(port, localNetworkIps).startForeground()
-                    if (startedOnce) {
-                        ToastUtils.show(Res.string.debug_service_restart_success.getSync())
-                    }
-                    startedOnce = true
-                    try {
-                        awaitCancellation()
-                    } finally {
-                        diagnostics?.unpublish()
-                        httpServerFlow.compareAndSet(server, null)
-                        server.stop()
-                    }
+                localNetworkIpsFlow.value = localNetworkIps
+                NotificationCatalog.debug(port, localNetworkIps).startForeground()
+                if (startedOnce) {
+                    ToastUtils.show(Res.string.debug_service_restart_success.getSync())
+                }
+                startedOnce = true
+                try {
+                    awaitCancellation()
+                } finally {
+                    diagnostics?.unpublish()
+                    httpServerFlow.compareAndSet(server, null)
+                    server.stop()
                 }
             }
         }
@@ -114,6 +124,12 @@ class DebugService : LifecycleHookService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        if (!META.debuggable && !ExternalCalls.accepts(intent?.getStringExtra("token"))) {
+            ToastUtils.show(Res.string.external_calls_invalid_token.getSync(), forced = true)
+            if (!started) stopSelfResult(startId)
+            return START_NOT_STICKY
+        }
+        if (!started) startServer()
         return START_NOT_STICKY
     }
 
@@ -127,7 +143,10 @@ class DebugService : LifecycleHookService() {
 
         fun stop() = IntentUtils.stopService(DebugService::class)
 
-        fun start() = IntentUtils.startForegroundService(DebugService::class)
+        fun start() =
+            IntentUtils.startForegroundService(DebugService::class) {
+                putExtra("token", ExternalCalls.token())
+            }
     }
 }
 
@@ -140,7 +159,7 @@ suspend fun clearDebugSubscription() {
     }
 }
 
-private fun createServer(port: Int, diagnostics: DebugServerDiagnostics?) =
+private fun createServer(port: Int, diagnostics: AndroidServerDiagnostics?) =
     embeddedServer(CIO, port) {
         diagnostics?.configure(this)
         configureInspectionServer(

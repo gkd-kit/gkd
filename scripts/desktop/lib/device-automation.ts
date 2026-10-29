@@ -45,30 +45,6 @@ export async function enableDebugAccessibility(adb: Adb) {
   }
 }
 
-/** Explicit privileged tests, after withAutomationPaused has saved and verified the disabled baseline. */
-export async function prepareDebugPrivilegeMode(adb: Adb, directory: string, automation: boolean) {
-  const recovery = await automationRecoveryStatus(adb);
-  if (!recovery.record?.accessibility) throw new Error('Privileged testing requires saved settings and accessibility recovery');
-  const current = await readStore(adb);
-  if (current.enableMatch !== false || current.enableAutomator !== false || current.automatorMode !== 1) {
-    throw new Error('Pause automation and matching before selecting a privileged test mode');
-  }
-  if (automation) {
-    const services = serviceList(await readSecure(adb, 'enabled_accessibility_services'));
-    if (services.includes(accessibilityComponent)) {
-      await writeSecure(adb, 'enabled_accessibility_services', services.filter(s => s !== accessibilityComponent).join(':'));
-    }
-  }
-  // A surviving privileged server can reconnect and restart the owner while the
-  // paused baseline is being written. Stop that owner before selecting the mode.
-  await adb('shell', 'am', 'force-stop', packageName);
-  await writeStore(adb, { ...current, enableAutomator: true, automatorMode: automation ? 2 : 1 });
-  const configured = await readStore(adb);
-  if (configured.enableMatch !== false || configured.enableAutomator !== true || configured.automatorMode !== (automation ? 2 : 1)) {
-    throw new Error('Privileged diagnostic mode did not take effect');
-  }
-}
-
 async function restoreAccessibility(adb: Adb, saved: NonNullable<Recovery['accessibility']>) {
   const original = serviceList(saved.services);
   const current = serviceList(await readSecure(adb, 'enabled_accessibility_services'));

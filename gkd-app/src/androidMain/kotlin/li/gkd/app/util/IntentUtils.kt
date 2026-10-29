@@ -49,10 +49,11 @@ object IntentUtils {
     fun <T : Service> startForegroundService(
         clazz: KClass<T>,
         @CallSite loc: String = "",
+        configure: Intent.() -> Unit = {},
     ) {
         if (!PermissionStates.notification.checkOrToast(loc = loc)) return
         if (!PermissionStates.foregroundServiceSpecialUse.checkOrToast(loc = loc)) return
-        val intent = Intent(app, clazz.java)
+        val intent = Intent(app, clazz.java).apply(configure)
         try {
             app.startForegroundService(intent)
         } catch (e: Throwable) {

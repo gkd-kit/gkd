@@ -8,12 +8,11 @@ import java.security.SecureRandom
 import li.gkd.app.development.matching.matchDebugRoutes
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.matching.diagnostics.startDiagnosticCapture
-import li.gkd.app.service.DebugServerDiagnostics
 import li.gkd.app.storage.appStorage
 import org.json.JSONObject
 
-/** Loaded through Debug-only manifest metadata, once per DebugService lifetime. */
-class AndroidServerDiagnostics : DebugServerDiagnostics {
+/** Created only in debuggable builds, once per DebugService lifetime. */
+class AndroidServerDiagnostics : AutoCloseable {
     private val sessionLock = Any()
     @Volatile private var stopping = false
     private var ownedSession: String? = null
@@ -23,7 +22,7 @@ class AndroidServerDiagnostics : DebugServerDiagnostics {
     private val token =
         ByteArray(32).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
 
-    override fun configure(application: Application) {
+    fun configure(application: Application) {
         application.configureDebugAccess(token) { stopping }
         application.routing {
             get("/health") { call.respond(mapOf("status" to "ready")) }
@@ -56,14 +55,14 @@ class AndroidServerDiagnostics : DebugServerDiagnostics {
         if (cancel) MatchingRuntime.coordinator.stopDiagnostics(id)
     }
 
-    override fun publish(port: Int) =
+    fun publish(port: Int) =
         synchronized(sessionLock) {
             if (!stopping) {
                 credentials.writeText(JSONObject().put("port", port).put("token", token).toString())
             }
         }
 
-    override fun unpublish() {
+    fun unpublish() {
         synchronized(sessionLock) { credentials.delete() }
     }
 

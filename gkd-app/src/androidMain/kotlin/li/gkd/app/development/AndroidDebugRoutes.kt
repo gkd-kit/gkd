@@ -13,14 +13,6 @@ import li.gkd.app.matching.diagnostics.matchForegroundSnapshot
 
 /** Cached engine observations, not a new Binder query or a claim of an atomic OS snapshot. */
 fun Route.androidDebugRoutes() {
-    get("/debug/android/gesture-surface") { call.respond(GestureDebugSurface.snapshot()) }
-    post("/debug/android/gesture-surface/reset") {
-        try {
-            call.respond(GestureDebugSurface.reset())
-        } catch (error: IllegalStateException) {
-            call.respond(HttpStatusCode.Conflict, mapOf("error" to error.message))
-        }
-    }
     post("/debug/android/benchmark") {
         try {
             call.respond(benchmarkAndroidMatching(call.receive()))
@@ -59,8 +51,6 @@ fun Route.androidDebugRoutes() {
                 "/debug/policy",
                 "/debug/engine",
                 "/debug/android/benchmark",
-                "/debug/android/gesture-surface",
-                "/debug/android/gesture-surface/reset",
             ),
         )
     }

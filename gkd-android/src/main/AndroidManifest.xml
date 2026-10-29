@@ -155,7 +155,6 @@
         <service
             android:name="li.gkd.app.service.StatusService"
             android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
@@ -163,7 +162,7 @@
         </service>
         <service
             android:name="li.gkd.app.service.DebugService"
-            android:exported="false"
+            android:exported="true"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"

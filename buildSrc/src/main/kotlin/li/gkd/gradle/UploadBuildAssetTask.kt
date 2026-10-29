@@ -86,7 +86,7 @@ private data class BuildAssetGitMetadata(
 )
 
 private class BuildAssetApiClient(
-    private val authToken: String,
+    private val serverToken: String,
 ) : Closeable {
     private val client =
         HttpClient(OkHttp) {
@@ -123,7 +123,7 @@ private class BuildAssetApiClient(
     ) {
         val response =
             client.post(BUILD_ASSET_CREATE_URL) {
-                header(HttpHeaders.Authorization, "Bearer $authToken")
+                header(HttpHeaders.Authorization, "Bearer $serverToken")
                 contentType(ContentType.Application.Json)
                 setBody(
                     JsonOutput.toJson(
@@ -388,12 +388,12 @@ abstract class UploadBuildAssetTask : DefaultTask() {
 
     @get:Internal abstract val githubCookie: Property<String>
 
-    @get:Internal abstract val apiAuthToken: Property<String>
+    @get:Internal abstract val serverToken: Property<String>
 
     @TaskAction
     fun upload() {
         val cookie = githubCookie.get().trim()
-        val authToken = apiAuthToken.get().trim()
+        val serverToken = this.serverToken.get().trim()
         val resolvedBuildKey = buildKey.get()
         val gitMetadata =
             if (includeGitMetadata.get()) {
@@ -405,10 +405,10 @@ abstract class UploadBuildAssetTask : DefaultTask() {
                 null
             }
         require(cookie.isNotEmpty()) { "GitHub cookie must not be blank" }
-        require(authToken.isNotEmpty()) { "GKD_API_AUTH_TOKEN must not be blank" }
+        require(serverToken.isNotEmpty()) { "GKD_SERVER_TOKEN must not be blank" }
 
         val existingBuildAsset = runBlocking {
-            BuildAssetApiClient(authToken).use { apiClient ->
+            BuildAssetApiClient(serverToken).use { apiClient ->
                 apiClient.get(resolvedBuildKey)
             }
         }
@@ -419,7 +419,7 @@ abstract class UploadBuildAssetTask : DefaultTask() {
                         existingBuildAsset.tag != gitMetadata.tag)
             ) {
                 runBlocking {
-                    BuildAssetApiClient(authToken).use { apiClient ->
+                    BuildAssetApiClient(serverToken).use { apiClient ->
                         apiClient.create(
                             buildKey = resolvedBuildKey,
                             assetId = existingBuildAsset.assetId,
@@ -460,7 +460,7 @@ abstract class UploadBuildAssetTask : DefaultTask() {
                 GithubAssetUploader(cookie).use { uploader ->
                     uploader.upload(zipFile)
                 }
-            BuildAssetApiClient(authToken).use { apiClient ->
+            BuildAssetApiClient(serverToken).use { apiClient ->
                 apiClient.create(
                     buildKey = resolvedBuildKey,
                     assetId = uploadedAssetId,

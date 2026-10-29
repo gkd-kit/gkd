@@ -5,7 +5,6 @@ import { basename, dirname, join } from 'node:path';
 import { setTimeout as pause } from 'node:timers/promises';
 import { DesktopClient } from '../lib/desktop-client.ts';
 import type { Adb } from '../lib/device-automation.ts';
-import { checkAndroidGestures, type GestureBackend } from './check-android-gestures.ts';
 
 const packageName = 'li.songe.gkd.debug';
 const component = `${packageName}/li.gkd.app.service.DebugService`;
@@ -79,8 +78,8 @@ export function debugNotificationTarget(xml: string): NotificationTarget | null 
   return { kind, x, y };
 }
 
-/** Stop the transport without stopping the app, then inspect the original session after reconnecting. */
-export async function checkDebugServiceStop(adb: Adb, port: number, token: string, output: string, signal: AbortSignal, backend: GestureBackend) {
+/** Verify notification stop, transport cleanup and restart in the same app process. */
+export async function checkDebugServiceStop(adb: Adb, port: number, token: string, output: string, signal: AbortSignal) {
   await mkdir(dirname(output), { recursive: true });
   const client = new DesktopClient(port);
   const originalPid = (await adb('shell', 'pidof', packageName)).toString().trim();
@@ -169,16 +168,6 @@ export async function checkDebugServiceStop(adb: Adb, port: number, token: strin
       finally { await adb('shell', 'rm', '-f', xmlPath); }
     }
     await restart();
-    const actionsOutput = join(dirname(output), `${basename(output, '.json')}-actions.json`);
-    report.actions = await checkAndroidGestures(adb, port, token, actionsOutput, signal, true, backend, async () => {
-      try { await adb('shell', 'am', 'stopservice', '-n', component); }
-      catch (error) {
-        const result = error as { code?: number; stderr?: Buffer };
-        if (result.code !== 255 || result.stderr?.toString().trim() !== 'Service stopped') throw error;
-      }
-      await stopped('active-gesture');
-      return restart();
-    });
     report.verified = true;
     return { output, verified: true, stops: stops.length };
   } catch (error) { report.error = String(error); throw error; }

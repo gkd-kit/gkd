@@ -156,7 +156,7 @@ pnpm app-tools device-matching-debug --serial DEVICE --attach --operation export
 
 `reasons` 使用可检索代码：`service_not_effective`、`screen_not_interactive`、`foreground_pending`、`foreground_unknown`、`engine_not_attached`、`engine_busy`、`catalog_not_loaded`、`catalog_load_failed`、`screen_locked`、`rule_matching_enabled`、`diagnostic_session_active`。Desktop 的实时节点查询与 Android 基准返回 `live_nodes_unsupported`，不影响模拟查询或采集。已有目录在刷新失败后仍可使用，错误保留在 `catalog.error`；锁屏仅阻止基准，不直接阻止对已确认锁屏界面的查询；任务包与节点包不同不单独判错。
 
-就绪不保证目标规则存在、节点能读到、权限允许注入或动作必定成功。`liveQuery`/`androidBenchmark` 不预留通道，下一刻变忙时仍可能被实际执行拒绝。Android 基准和手势检查工具已使用此接口等待共同前提，再检查各自需要的目标页面。
+就绪不保证目标规则存在、节点能读到、权限允许注入或动作必定成功。`liveQuery`/`androidBenchmark` 不预留通道，下一刻变忙时仍可能被实际执行拒绝。Android 基准工具使用此接口等待共同前提，再检查目标页面。
 
 ### 准备受控测试
 
@@ -173,7 +173,7 @@ pnpm app-tools device-matching-debug --serial DEVICE --input .local/request.json
 
 CLI 详细模式与界面使用同一入口：在 `start`、`capture` 或 `device-matching-debug` 后添加 `--detailed --rule '订阅ID/类型/应用ID/分组key/规则key'`，记录各条选择器命中情况；未开启 `--record-system` 时，缺少规则标识会在建立会话前报错；`--detailed --record-system` 可省略 `--rule`，解释全部参与查询的规则。对已经创建会话的有界采集，Ctrl+C 或 SSE 失败仍会尝试停止并导出；停止失败也会继续尝试导出，同时保留原错误并以非零状态退出。成功写入后在标准错误输出打印 `Diagnostic export: 路径`。进程被强杀、服务断连或启动前失败无法保证导出；设备恢复记录仍按原流程保留。
 
-`li.gkd.app.service.DebugService` 统一承载浏览器接口 `/api/*` 和应用诊断 `/debug/*`，只监听用户配置的 `httpServerPort`（默认 8888）。Android 支持局域网连接；诊断接口和 `/health` 必须提供随机 Bearer token，旧浏览器接口保持原协议。诊断接入实现位于 `gkd-app/src/androidDebug`，由最终应用 Debug 源集编译并通过 Debug Manifest 元数据装配；Release 不包含该接入实现或注册诊断路由。Debug 构建允许 ADB 通过 `android.permission.INTERACT_ACROSS_USERS_FULL` 保护的同一服务入口启动；Release 服务不导出。每次服务启动生成 token，和实际端口一起写入私有目录的 `app-debug.json`，工具通过 `run-as` 读取，token 不输出到日志和诊断包。重复启动沿用现有监听与 token；修改端口会重启监听并更新凭据文件，工具需重新连接，采集会话继续。通知“停止”关闭统一监听、删除凭据、取消服务自有诊断会话，并按设置清理内存订阅；动作通过执行引擎完成取消收尾。
+`li.gkd.app.service.DebugService` 统一承载浏览器接口 `/api/*` 和应用诊断 `/debug/*`，只监听用户配置的 `httpServerPort`（默认 8888）。Android 支持局域网连接；诊断接口和 `/health` 必须提供随机 Bearer token，旧浏览器接口保持原协议。诊断接入实现位于 `gkd-app/src/androidMain`，由 DebugService 在 `META.debuggable` 为 true 时直接创建；Release 不创建诊断接入或注册诊断路由。Debug 和 Release 均导出同一服务入口。Debug 启动不校验 token；Release 要求 Intent 的 `token` 字段通过现有外部调用 token 校验，应用内部启动也携带该 token。缺失或错误 token 不会启动 HTTP，也不会关闭已运行服务；Release 诊断路由保持关闭。每次服务启动生成 token，和实际端口一起写入私有目录的 `app-debug.json`，工具通过 `run-as` 读取，token 不输出到日志和诊断包。重复启动沿用现有监听与 token；修改端口会重启监听并更新凭据文件，工具需重新连接，采集会话继续。通知“停止”关闭统一监听、删除凭据、取消服务自有诊断会话，并按设置清理内存订阅；动作通过执行引擎完成取消收尾。
 
 此服务已由匹配专用入口扩展为应用级 Debug 入口，凭据文件为 `files/private-store/app-debug.json`。停止服务只结束它创建且仍为当前会话的匹配诊断，不结束用户之后在界面开启的会话。应用状态和应用列表直接读取生产仓库，不导出 Cookie 或完整设置。
 
@@ -320,33 +320,6 @@ SQL 仅统计 GKD Debug 主进程正式测量的同线程区间，并把嵌套�
 
 测量共享生产执行通道，页面/服务变化或查询结果、目标节点变化会失败；同时检查根标识、包名和直接子节点数。实时树并非原子快照，相同标识也不证明所有节点属性不变。操作限时 120 秒，但已进入的同步 Binder 无法抢占，收尾完成才释放通道，因此不承诺 120 秒硬截止。`execute=true` 和模拟输入均返回 400，不执行任何手势。
 
-## 无障碍连续滑动与取消验证
-
-```shell
-pnpm app-tools device-gesture-check --serial DEVICE --install --output .local/gesture-check.json
-pnpm app-tools device-session-check --serial DEVICE --install --output .local/session-check/report.json
-pnpm app-tools device-session-check --serial DEVICE --backend privilege --output .local/session-privilege/report.json
-pnpm app-tools device-session-check --serial DEVICE --backend automation --output .local/session-automation/report.json
-```
-
-该命令会实际执行无障碍滑动。它复用设备恢复流程：先记录开关与模式、关闭自动化及规则匹配、退出自动化模式，再临时启用无障碍。等待服务连接后打开 `li.gkd.app.development.GestureDebugActivity`，避免窗口事件早于服务连接而丢失；窗口的节点观察允许没有 Activity 名称，另用 ADB 核对实际 resumed Activity。测试界面消费触摸且没有可点击控件，记录真实 MotionEvent，不将协程终态当作抬手证据。Activity 实现位于 androidDebug，仅 Debug Manifest 注册，并要求 INTERACT_ACROSS_USERS_FULL 权限。
-
-`device-session-check` 默认 `--backend accessibility`；`privilege` 使用无障碍查询与特权输入，`automation` 使用 UiAutomation 查询与特权输入。后两者会临时打开自动化开关，要求已有可用特权服务或应用已配置可用的自动启动方式；先打开主界面执行生产启动流程，再核对实际 serviceMode。基准及取消后的短滑动必须返回 `shell=true`，不能用无障碍回退冒充特权成功。特权取消检查 ACTION_CANCEL，无障碍连续手势取消检查 ACTION_UP。
-
-测试期间暂时关闭应用范围停服开关；自动化测试还会暂时移除 GKD 自身的“强制使用无障碍”范围项，避免模式被覆盖。恢复记录先落盘，结束或失败时仅恢复修改的字段及该范围项，保留其他应用范围变化；断连后可用 `device-recovery` 继续恢复。特权服务的主动重连可能在准备阶段重新拉起应用，因此选择最终模式前再次停止旧宿主，再从主界面启动并检查内存就绪状态。此受控命令会重启应用，保留现场的诊断仍使用 `--attach`。
-
-脚本通过原有诊断会话、生产规则解析/查询、ActionPerformer 与执行通道发起动作，不在 Debug 入口另写滑动算法；完整滑动必须返回 `shell=false`，以免把特权输入误作无障碍验证。`GET /debug/android/gesture-surface` 提供当前测试界面尺寸、事件和触点状态；`POST .../reset` 仅允许触点未按下时清除记录。最多保留 1024 个事件，覆盖数量单独返回，检查不接受记录丢失。普通应用窗口没有此事件采集。
-
-覆盖正常跨段滑动、首段取消、中途取消、原地保持、1 像素慢速位移、原地保持取消，以及每次取消后的下一次实际滑动。每个场景检查单个 DOWN/UP、相同 downTime、单指、无额外 DOWN/CANCEL；取消场景还检查没有继续到原终点、物理 UP 已到达和后续动作成功。停止/中断时先取消会话并等待执行通道收尾，再清理调试服务、转发和设置；收尾检查失败会保存错误，不宣称释放成功。
-
-命令同时开启系统诊断，检查真实触摸结果、取消收尾、实际查询和动作终态。导出保留原始证据，不再调用重放接口。
-
-生产实现的分段顺序和收尾位于 commonMain `continuousSwipe`，Android 仅创建/续接 StrokeDescription 并等待系统回调。中间段用 `willContinue=true`，最后一段为 false；取消时用同一 stroke 在当前位置续接 1 ms 原地结束段，不创建另一次点击。Android 会对坐标取整，取整后没有位移的中间段不再提交空续段，而使用可取消等待；初始静止段提前确认 DOWN 时也保留剩余时长。分段间 Binder/调度时间会增加整体时长，不承诺和参数毫秒数严格一致。
-
-Android 13 的源码契约与真机数据均已检查：已完成的连续段仍保持触点；空续段可能没有事件，不能用循环提交相同坐标维持长按。100 ms 是当前分段预算，不是物理取消的硬上限；系统回调、IPC 和线程调度仍可能延迟。API 从本项目 minSdk 26 起可用，但本轮运行验证仅覆盖 Android 13/M2012K11AC，其他版本、厂商及真实手指抢占仍需专项覆盖。原先约 3.7 秒等待的历史记录对应未分段实现。
-
-强制关闭无障碍服务可能丢失完成回调：Android 13 真机上，测试窗口收到 ACTION_CANCEL 后，执行任务仍等待应用未收到的回调。`engine.cancelling=true` 和请求的 `phase=cancelling` 表示已请求取消但尚未完成；就绪检查返回 `platform_cleanup_pending`，服务已断开时还返回 `service_disconnected_cleanup_unconfirmed`。页面和离线摘要解释这一状态。诊断包会保留 `sealed=false`，停止时也会保存当前现场；可先分享证据，持续无法恢复时可重启应用。重启清理本进程等待，不是原动作成功或物理触点释放的证明，也不自动重放动作。
-
 ## 实际节点访问、耗时与关联
 
 诊断页默认采集节点访问。CLI 的 `--record-queries --rule ID` 仅记录指定规则；`--record-system` 包含全部参与查询。关闭采集时不创建节点访问记录，不增加节点读取。
@@ -403,51 +376,13 @@ HTTP 导出、自动保存和日志压缩包统一使用 MatchDiagnosticCapture�
 
 匹配引擎的四个离线重放 HTTP/CLI 入口及 Android 能力声明已移除；`matching-summary` 直接分析导出的 JSON。生产状态机、选择器和业务测试继续保留。
 
-调试服务通知停止与动作收尾可单独验证：
+调试服务通知停止可单独验证：
 
 ```shell
 pnpm app-tools device-service-stop-check --serial DEVICE --install --output .local/debug-service-stop.json
 ```
 
-此命令复用统一安装和设置恢复流程，关闭规则匹配后启用测试所需服务。默认检查无障碍输入；设备已连接特权服务时使用 `--backend privilege`，自动化模式使用 `--backend automation`，均先用短滑动确认实际输入后端。先识别「调试服务已开启」通知并点击其「停止」按钮，检查服务退出、HTTP 关闭、凭据删除和应用进程保留；再在同一进程重启调试服务，验证滑动进行中停止服务会取消诊断请求、释放触点、恢复时序策略并封口录制。动作阶段通过 ADB 停止同一服务，避免下拉通知栏改变前台界面而提前取消动作。最后导出诊断，执行新会话短滑动确认动作通道可复用，输出主报告、动作报告和 `*-service-stop-capture.json`。
-
-## 诊断会话生命周期真机复验（2026-10-21）
-
-`device-session-check` 复用受控设备准备与恢复流程，在消费触摸的 Debug 页面上提交 6 秒无障碍滑动。分别在开始约 350 ms 后停止会话、让 2 秒会话自动过期，检查实际 UP、请求取消、通道释放、时序参数恢复和诊断导出。每种场景之后创建新会话，重复停止旧会话，再执行 250 ms 短滑动，检查旧会话不能取消新请求。输出主报告及两份 `*-capture.json`，可随后用 `matching-summary` 离线分析。
-
-当前 Android 13 / M2012K11AC、当前 Debug APK 验证结果：
-
-| 场景 | 停止边界 | 录制中取消到动作收尾 | 实际触摸 | 后续请求 |
-| --- | --- | --- | --- | --- |
-| 手动停止 | 请求 cancelling，通道仍占用，触点仍按下 | 34 ms | 一次 DOWN / UP，无 CANCEL；总触摸 414 ms；停止前采样到 UP 为 39 ms | 新会话短滑动 completed，shell=false |
-| 自动过期 | 请求 cancelling，通道仍占用，触点仍按下 | 100 ms | 一次 DOWN / UP，无 CANCEL；总触摸 2076 ms | 新会话短滑动 completed，shell=false |
-
-两份导出均为 v2、sealed=true、无 incomplete；每份包含 1 次查询、1 次取消动作、5 次规则状态观察。历史回放验收（该功能现已移除）中，真机和电脑端均 verified=true，回放不增加触摸事件或改变在线引擎。手动停止这份短采集未捕获公共输入事件，离线报告如实显示 inputs/not_captured；过期采集的公共输入也已验证通过，不把缺失输入冒充回放成功。
-
-本轮仅验证无障碍动作路径，不扩展此前特权、厂商矩阵结论。首次测试脚本对 JSON null 的断言已修正并完整重跑，应用代码未改。类型检查和 16 项工具测试通过；测试结束恢复 enableAutomator=false、automatorMode=2、enableMatch=true、原三个无障碍服务与全局开关 1。无残留 ADB 转发或设备恢复记录，崩溃缓冲区未发现 GKD 异常。
-
-证据位于 `.local/diagnostic-session-device/`：`final.json`、`final-stop-capture.json`、`final-expiry-capture.json`、`offline-stop.json`、`offline-expiry.json`；执行日志为 `.local/diagnostic-session-device-final.log`。电脑端隔离测试进程已关闭。
-
-## 特权与自动化会话真机复验（2026-10-22）
-
-Android 16 / 25060RK16C，现有 Debug APK `1.13.0-beta-2-fe6736f` 与本地构建的 SHA-256 一致；本轮未修改或重新安装应用代码。两种模式均先以 250 ms 滑动确认 `shell=true`，再提交 6 秒滑动，分别停止会话和等待 2 秒会话过期：
-
-| 查询 / 输入路径 | 场景 | 录制中取消到收尾 | 实际触摸总时长 | 收尾与后续动作 |
-| --- | --- | --- | --- | --- |
-| 无障碍 / 特权 | 停止 | 9 ms | 440 ms | CANCEL，后续短滑动成功 |
-| 无障碍 / 特权 | 过期 | 15 ms | 1941 ms | CANCEL，后续短滑动成功 |
-| UiAutomation / 特权 | 停止 | 9 ms | 452 ms | CANCEL，后续短滑动成功 |
-| UiAutomation / 特权 | 过期 | 28 ms | 1960 ms | CANCEL，后续短滑动成功 |
-
-四次请求均进入 cancelled，触点释放且未走到原终点，执行通道空闲，临时时序参数恢复；重复停止旧会话不影响新会话。取消后的短滑动均 completed、shell=true、正常 UP 并到达终点。时间来自本机单次录制，不是延迟保证；触摸总时长从真实 DOWN 到 CANCEL，过期时限从会话创建计时。
-
-四份导出均为 v2、sealed=true、无 incomplete，每份有一次查询、一次取消动作和五次规则状态观察。历史回放验收（该功能现已移除）为 verified=true，在线引擎和触摸事件未改变；四份文件在隔离 Desktop 中的查询及系统调度、动作生命周期回放也通过。自动化过期录制的公共输入回放通过，另外三份没有公共输入，报告明确标记 `not_captured`。离线回放不会重新执行 Binder 或注入触摸。
-
-首次检查暴露了测试工具的两处前提错误：特权取消应验证 CANCEL；应用范围停服及强制无障碍范围会干扰测试后端。已调整断言和临时设置恢复，并修正主动重连与离线设置之间的准备顺序。最终两种模式完整复验通过，类型检查及 17 项工具测试通过，新增测试覆盖范围项断连恢复、保留其他范围修改和原字段缺失。
-
-最终恢复 enableAutomator=true、automatorMode=2、enableMatch=true、enableBlockA11yAppList=true；GKD 原无障碍范围和匹配屏蔽项均保留，系统无障碍仅原小米截图服务、总开关 1。特权服务可用；准备/恢复期间发生过生产自动重启，最终 PID 26250，并非原 PID 12018。无残留 Debug 服务、ADB 转发或恢复记录，崩溃缓冲区未发现 GKD 异常；隔离 Desktop 进程已关闭。
-
-证据：`.local/android16-session-{privilege,automation}/` 中各有 `final.json`、两份 `final-*-capture.json` 和两份 `offline-*.json`；汇总为 `.local/android16-session-summary.json`，恢复核对为 `.local/android16-session-device-after.json`，工具验证为 `.local/android16-session-tools-final.log`。
+此命令复用统一安装和设置恢复流程，识别「调试服务已开启」通知并点击其「停止」按钮，检查服务退出、HTTP 关闭、凭据删除和应用进程保留，再验证同一进程内重启服务后生成新的有效凭据。
 
 ## 查询不完整与节点拥塞诊断
 
@@ -495,7 +430,7 @@ pnpm app-tools device-test-apps --serial DEVICE --operation cleanup
 | 入口 | 安装、确认及收尾 |
 | --- | --- |
 | `device-install [--serial SERIAL]` | 构建一次 gkdDebug，再逐台复用公共安装、弹窗确认及自动化暂停恢复流程，不启动调试服务；替代已删除的 `.local/install.ps1`，GKD 不进入临时应用清理名单 |
-| `device-app-debug`、`device-matching-debug`、`device-matching-benchmark`、`device-gesture-check`、`device-session-check`、`device-service-stop-check`、`device-query-safety` | 共用 `deviceMatchingDebug`，接入 `withInstallConfirmation`、`installApkIfChanged` 和 `withAutomationPaused`；`--attach` 不允许安装，也不重启现有进程 |
+| `device-app-debug`、`device-matching-debug`、`device-matching-benchmark`、`device-service-stop-check`、`device-query-safety` | 共用 `deviceMatchingDebug`，接入 `withInstallConfirmation`、`installApkIfChanged` 和 `withAutomationPaused`；`--attach` 不允许安装，也不重启现有进程 |
 | `capture-profile --install` | 使用相同的安装、确认和设置恢复函数；不安装额外测试应用 |
 | `device-query-safety` 的 fixture | 使用 `ensureDeviceTestApp` 记录本轮所有权；单次结束停止进程，整轮结束由 `device-test-apps cleanup` 卸载 |
 | `device-test-apps cleanup` / `device-recovery restore` | 分别完成本轮测试应用清理和中断后的设置恢复；不执行安装 |

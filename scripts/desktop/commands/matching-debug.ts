@@ -1,11 +1,10 @@
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { repositoryRoot } from '../lib/local-paths.ts';
-import { withAutomationPaused, enableDebugAccessibility, prepareDebugPrivilegeMode } from '../lib/device-automation.ts';
+import { withAutomationPaused, enableDebugAccessibility } from '../lib/device-automation.ts';
 import { DesktopClient } from '../lib/desktop-client.ts';
 import { request as httpRequest } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { checkAndroidGestures, type GestureBackend } from './check-android-gestures.ts';
 import { checkAndroidQuerySafety } from './check-android-query-safety.ts';
 import { checkDebugServiceStop } from './check-debug-service-stop.ts';
 import { buildAndroidQueryFixture } from '../lib/android-fixture-build.ts';
@@ -25,7 +24,6 @@ type Options = {
   recordQueries?: boolean;
   recordSystem?: boolean;
   attach?: boolean;
-  backend?: string;
 };
 
 async function request(base: string, path: string, token?: string, body?: unknown, timeoutMillis?: number) {
@@ -143,19 +141,15 @@ export async function matchingDebug(options: Options, token?: string): Promise<u
 
 /** Bounded device capture owns its forwarding and restores automation through the existing helper. */
 export async function deviceMatchingDebug(serial: string, options: Options) {
-  const backend = options.backend ?? 'accessibility';
-  if (!['accessibility', 'privilege', 'automation'].includes(backend)) throw new Error('Unknown session test backend');
-  if (options.backend && !['session-check', 'service-stop-check'].includes(options.operation)) throw new Error('--backend requires device-session-check or device-service-stop-check');
   if (options.detailed && !options.recordSystem && !options.rule?.trim()) throw new Error('--detailed requires --rule or --record-system');
   if (options.recordQueries && !options.recordSystem && !options.rule?.trim()) throw new Error('--record-queries requires --rule');
   const benchmark = options.operation === 'android-benchmark';
   const serviceStop = options.operation === 'service-stop-check';
-  const gestures = options.operation === 'gesture-check' || options.operation === 'session-check' || serviceStop;
   const querySafety = options.operation === 'query-safety';
-  if (options.attach && (options.install || options.openGkd || options.trace || benchmark || gestures || querySafety)) {
-    throw new Error('--attach cannot install, launch a page, run a benchmark/gesture test or change device preparation');
+  if (options.attach && (options.install || options.openGkd || options.trace || benchmark || serviceStop || querySafety)) {
+    throw new Error('--attach cannot install, launch a page, run a benchmark/service-stop check or change device preparation');
   }
-  if (!options.attach && !['capture', 'android-benchmark', 'gesture-check', 'session-check', 'service-stop-check', 'query-safety', 'app', 'catalog', 'foreground', 'capabilities', 'engine', 'readiness'].includes(options.operation)) {
+  if (!options.attach && !['capture', 'android-benchmark', 'service-stop-check', 'query-safety', 'app', 'catalog', 'foreground', 'capabilities', 'engine', 'readiness'].includes(options.operation)) {
     throw new Error('Use --attach for operations on an existing diagnostic session');
   }
   if (benchmark && !options.input) throw new Error('--input must contain an AndroidBenchmarkRequest JSON');
@@ -188,12 +182,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
         if (options.install) {
           console.log('GKD APK:', await installGkdDebug(adb));
         }
-        if (gestures && backend !== 'accessibility') {
-          await prepareDebugPrivilegeMode(adb, folder, backend === 'automation');
-          // MainActivity runs the normal saved privilege startup/reconnect flow.
-          await adb('shell', 'am', 'start', '-n', 'li.songe.gkd.debug/li.gkd.app.MainActivity');
-        }
-        if (benchmark || querySafety || (gestures && backend !== 'automation')) await enableDebugAccessibility(adb);
+        if (benchmark || querySafety) await enableDebugAccessibility(adb);
         // force-stop does not call onDestroy; discard the previous transport's credentials
         // before waiting for this startup to publish its own ready file.
         await adb('shell', 'run-as', 'li.songe.gkd.debug', 'rm', '-f', 'files/private-store/app-debug.json');
@@ -215,7 +204,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
         if (!Number.isInteger(localPort) || localPort <= 0) throw new Error('Invalid forwarded port');
         const unauthenticated = await new DesktopClient(localPort).response('health');
         if (unauthenticated.status !== 401) throw new Error('Debug transport must reject unauthenticated requests');
-        if (benchmark || gestures || querySafety) {
+        if (benchmark || querySafety) {
           // Launching the target before onServiceConnected loses its window event;
           // with matching disabled there may be no later event to confirm the page.
           const until = Date.now() + 15_000;
@@ -225,7 +214,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
             cancellation.signal.throwIfAborted();
             const state = await request(`http://127.0.0.1:${localPort}`, '/debug/readiness', credentials.token) as DebugReadiness;
             readiness = state;
-            if (state.runtime.foreground?.serviceMode === (backend === 'automation' ? 2 : 1) && state.runtime.foreground.serviceEffective) { effective = true; break; }
+            if (state.runtime.foreground?.serviceMode === 1 && state.runtime.foreground.serviceEffective) { effective = true; break; }
             await new Promise(resolve => setTimeout(resolve, 200));
           }
           if (!effective) throw new Error(`Requested service mode did not connect before launching the test surface: ${JSON.stringify(readiness)}`);
@@ -234,9 +223,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
         if (querySafety) return await checkAndroidQuerySafety(adb, localPort, credentials.token,
           queryOutput, cancellation.signal, queryFixture!);
         if (serviceStop) return await checkDebugServiceStop(adb, localPort, credentials.token,
-          options.output ?? join(folder, 'service-stop.json'), cancellation.signal, backend as GestureBackend);
-        if (gestures) return await checkAndroidGestures(adb, localPort, credentials.token,
-          options.output ?? join(folder, 'gestures.json'), cancellation.signal, options.operation === 'session-check', backend as GestureBackend);
+          options.output ?? join(folder, 'service-stop.json'), cancellation.signal);
         if (benchmark) {
           if (options.openGkd) await adb('shell', 'am', 'start', '-n', 'li.songe.gkd.debug/li.gkd.app.MainActivity');
           const readyUntil = Date.now() + 15_000;
@@ -293,7 +280,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
         }
         finally { if (localPort) await adb('forward', '--remove', `tcp:${localPort}`); }
       }
-    }, undefined, { accessibilityForDiagnostics: benchmark || gestures || querySafety, automationForDiagnostics: gestures && backend === 'automation' });
+    }, undefined, { accessibilityForDiagnostics: benchmark || querySafety });
   } finally {
     options.signal?.removeEventListener('abort', interrupt);
     process.off('SIGINT', interrupt); process.off('SIGTERM', interrupt);

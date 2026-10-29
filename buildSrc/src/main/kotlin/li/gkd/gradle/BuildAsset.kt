@@ -52,8 +52,8 @@ fun <AndroidComponentsT, VariantT : Any> Project.configureBuildAssets(
     )
 
     val githubCookie = buildProperty("GITHUB_COOKIE").orElse(buildProperty("GKD_GITHUB_COOKIE"))
-    val apiAuthToken = buildProperty("GKD_API_AUTH_TOKEN")
-    if (!githubCookie.isPresent || !apiAuthToken.isPresent) return
+    val serverToken = buildProperty("GKD_SERVER_TOKEN")
+    if (!githubCookie.isPresent || !serverToken.isPresent) return
 
     adapter.onVariants(
         androidComponents,
@@ -70,7 +70,7 @@ fun <AndroidComponentsT, VariantT : Any> Project.configureBuildAssets(
                         ),
                     generateSourcePaths = generateSourcePaths,
                     githubCookie = githubCookie,
-                    apiAuthToken = apiAuthToken,
+                    serverToken = serverToken,
                 )
             }
         },
@@ -82,7 +82,7 @@ private fun Project.registerBuildAssetUpload(
     uploadTaskName: String,
     generateSourcePaths: TaskProvider<GenerateSourcePathsTask>,
     githubCookie: Provider<String>,
-    apiAuthToken: Provider<String>,
+    serverToken: Provider<String>,
 ) {
     val buildGitInfo = this.gitInfo
     val variantBuildKey = releaseBuildKey(variant.flavor, buildGitInfo.commitId)
@@ -112,7 +112,7 @@ private fun Project.registerBuildAssetUpload(
             versionCode.set(variant.versionCode)
             versionName.set(variant.versionName)
             this.githubCookie.set(githubCookie)
-            this.apiAuthToken.set(apiAuthToken)
+            this.serverToken.set(serverToken)
         }
     val capitalizedVariantName = variant.name.replaceFirstChar(Char::uppercaseChar)
     val lifecycleTaskNames =

@@ -39,10 +39,6 @@ android {
         manifestPlaceholders["tagName"] = gitInfo.tagName.orEmpty()
     }
 
-    buildFeatures {
-        resValues = true
-    }
-
     val signing = project.getOrCreateSigningConfigs(signingConfigs)
 
     buildTypes {
@@ -67,18 +63,15 @@ android {
         create("gkd") {
             isDefault = true
             signingConfig = signing.gkd
-            resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
             signingConfig = signing.play
-            resValue("bool", "is_accessibility_tool", "false")
         }
         all {
             dimension = flavorDimensions.first()
             manifestPlaceholders["channel"] = name
         }
     }
-    sourceSets.getByName("debug").kotlin.srcDir("../gkd-app/src/androidDebug/kotlin")
 
     // https://github.com/LSPosed/AndroidHiddenApiBypass
     dependenciesInfo {

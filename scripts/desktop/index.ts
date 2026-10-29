@@ -28,7 +28,6 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
   'record-queries': { type: 'boolean' },
   'record-system': { type: 'boolean' },
   attach: { type: 'boolean' },
-  backend: { type: 'string' },
   port: { type: 'string' }, service: { type: 'string' },
   event: { type: 'string' }, attempt: { type: 'string' }, reason: { type: 'string' },
   connection: { type: 'string' },
@@ -56,9 +55,7 @@ pnpm app-tools device-app-debug --serial SERIAL --operation readiness|app|catalo
 pnpm app-tools device-install [--serial SERIAL]
 pnpm app-tools device-recovery --serial SERIAL --operation status|restore
 pnpm app-tools device-matching-benchmark --serial SERIAL --input JSON [--install] [--open-gkd] [--output FILE] [--trace FILE]
-pnpm app-tools device-gesture-check --serial SERIAL [--install] [--output FILE]
-pnpm app-tools device-session-check --serial SERIAL [--backend accessibility|privilege|automation] [--install] [--output FILE]
-pnpm app-tools device-service-stop-check --serial SERIAL [--backend accessibility|privilege|automation] [--install] [--output FILE]
+pnpm app-tools device-service-stop-check --serial SERIAL [--install] [--output FILE]
 pnpm app-tools device-query-safety --serial SERIAL [--install] [--output FILE]
 pnpm app-tools device-test-apps --serial SERIAL --operation status|cleanup
 
@@ -106,14 +103,14 @@ If recovery fails, keep .local/device-recovery and use device-recovery after rec
   else if (command === 'check-matching-debug') {
     console.log(await checkMatchingDebug(new DesktopClient(await resolveDesktopPort(values.port, values.connection))));
   }
-  else if (command === 'matching-debug' || command === 'device-matching-debug' || command === 'device-app-debug' || command === 'device-matching-benchmark' || command === 'device-gesture-check' || command === 'device-session-check' || command === 'device-service-stop-check' || command === 'device-query-safety') {
+  else if (command === 'matching-debug' || command === 'device-matching-debug' || command === 'device-app-debug' || command === 'device-matching-benchmark' || command === 'device-service-stop-check' || command === 'device-query-safety') {
     const duration = Number(values.duration);
     const port = command === 'matching-debug' ? await resolveDesktopPort(values.port, values.connection) : 8888;
     if (!Number.isInteger(duration) || duration < 1 || duration > 600000) throw new Error('Invalid duration');
     if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid port');
-    const options = { port, duration, operation: command === 'device-query-safety' ? 'query-safety' : command === 'device-matching-benchmark' ? 'android-benchmark' : command === 'device-gesture-check' ? 'gesture-check' : command === 'device-session-check' ? 'session-check' : command === 'device-service-stop-check' ? 'service-stop-check' :
+    const options = { port, duration, operation: command === 'device-query-safety' ? 'query-safety' : command === 'device-matching-benchmark' ? 'android-benchmark' : command === 'device-service-stop-check' ? 'service-stop-check' :
       values.operation ?? (command === 'device-matching-debug' ? 'capture' : command === 'device-app-debug' ? 'readiness' : 'status'), session: values.session,
-      after: values.after, rule: values.rule, detailed: values.detailed, recordQueries: values['record-queries'], recordSystem: values['record-system'], attach: values.attach, output: values.output, input: values.input, run: values.run, install: values.install, openGkd: values['open-gkd'], trace: values.trace, backend: values.backend };
+      after: values.after, rule: values.rule, detailed: values.detailed, recordQueries: values['record-queries'], recordSystem: values['record-system'], attach: values.attach, output: values.output, input: values.input, run: values.run, install: values.install, openGkd: values['open-gkd'], trace: values.trace };
     if (command !== 'matching-debug' && !values.serial) throw new Error('--serial is required');
     if (command === 'device-app-debug' && !['app', 'catalog', 'foreground', 'capabilities', 'engine', 'readiness'].includes(options.operation)) {
       throw new Error('Expected readiness, app, catalog, foreground, capabilities or engine');
