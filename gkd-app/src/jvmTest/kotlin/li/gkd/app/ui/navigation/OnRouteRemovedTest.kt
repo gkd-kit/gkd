@@ -107,20 +107,29 @@ private class NavigationComposition(scope: CoroutineScope) {
     val revision = mutableStateOf(0)
     val retained = mutableStateOf<NavEntry<AppNavEntry>?>(null)
     var displayed: NavEntry<AppNavEntry>? = null
-    private val frameClock = object : MonotonicFrameClock {
-        override suspend fun <R> withFrameNanos(onFrame: (Long) -> R): R {
-            yield()
-            return onFrame(System.nanoTime())
+    private val frameClock =
+        object : MonotonicFrameClock {
+            override suspend fun <R> withFrameNanos(onFrame: (Long) -> R): R {
+                yield()
+                return onFrame(System.nanoTime())
+            }
         }
-    }
     val recomposer = Recomposer(scope.coroutineContext + frameClock)
-    val composition = Composition(object : AbstractApplier<Unit>(Unit) {
-        override fun insertTopDown(index: Int, instance: Unit) = Unit
-        override fun insertBottomUp(index: Int, instance: Unit) = Unit
-        override fun remove(index: Int, count: Int) = Unit
-        override fun move(from: Int, to: Int, count: Int) = Unit
-        override fun onClear() = Unit
-    }, recomposer)
+    val composition =
+        Composition(
+            object : AbstractApplier<Unit>(Unit) {
+                override fun insertTopDown(index: Int, instance: Unit) = Unit
+
+                override fun insertBottomUp(index: Int, instance: Unit) = Unit
+
+                override fun remove(index: Int, count: Int) = Unit
+
+                override fun move(from: Int, to: Int, count: Int) = Unit
+
+                override fun onClear() = Unit
+            },
+            recomposer,
+        )
 
     init {
         scope.launch(frameClock) { recomposer.runRecomposeAndApplyChanges() }
@@ -128,21 +137,22 @@ private class NavigationComposition(scope: CoroutineScope) {
 
     @Composable
     fun Content() {
-        val entries = rememberDecoratedNavEntries(
-            stack,
-            listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberRouteRemovedNavEntryDecorator(),
-            ),
-        ) { entry ->
-            NavEntry(entry, contentKey = entry.id) {
-                val capturedRevision = revision.value
-                OnRouteRemoved {
-                    calls.add(entry.id)
-                    capturedRevisions.add(capturedRevision)
+        val entries =
+            rememberDecoratedNavEntries(
+                stack,
+                listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberRouteRemovedNavEntryDecorator(),
+                ),
+            ) { entry ->
+                NavEntry(entry, contentKey = entry.id) {
+                    val capturedRevision = revision.value
+                    OnRouteRemoved {
+                        calls.add(entry.id)
+                        capturedRevisions.add(capturedRevision)
+                    }
                 }
             }
-        }
         displayed = entries.last()
         val visible = listOfNotNull(displayed, retained.value).distinctBy { it.contentKey }
         visible.forEach { entry -> key(entry.contentKey) { entry.Content() } }

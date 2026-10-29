@@ -14,7 +14,8 @@ class ProxyUiAutomationConnection(
     private var mClient: IAccessibilityServiceClient? = null
     private var mIsShutdown = false
     private var mOwningUid = 0
-    private val serverInfo get() = privilegeContext.serverInfo
+    private val serverInfo
+        get() = privilegeContext.serverInfo
 
     override fun connect(
         client: IAccessibilityServiceClient?,
@@ -72,13 +73,17 @@ class ProxyUiAutomationConnection(
         val info = createUiAutomationServiceInfo()
         try {
             privilegeContext.registerUiTestAutomationService(
-                privilegeContext.serverLifecycleBinder, client, info, userId, flags,
+                privilegeContext.serverLifecycleBinder,
+                client,
+                info,
+                userId,
+                flags,
             )
             mClient = client
         } catch (re: RemoteException) {
             throw IllegalStateException(
-                "Error while registering UiTestAutomationService for "
-                        + "user " + userId + ".", re
+                "Error while registering UiTestAutomationService for " + "user " + userId + ".",
+                re,
             )
         }
     }

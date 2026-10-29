@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,7 +61,6 @@ import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.A11yEventLog
 import li.gkd.db.Db
-import kotlin.time.Duration.Companion.milliseconds
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
@@ -80,17 +80,17 @@ class EventService : OverlayWindowService(positionKey = "event") {
             GkIcon(
                 imageVector = GkIcons.ExpandContent,
                 contentDescription = Res.string.event_log_window_restore.getSync(),
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
-                    .semantics {
-                        onClick(label = Res.string.event_log_window_restore.getSync()) {
-                            minimized = false
-                            true
+                modifier =
+                    Modifier.clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
+                        .semantics {
+                            onClick(label = Res.string.event_log_window_restore.getSync()) {
+                                minimized = false
+                                true
+                            }
                         }
-                    }
-                    .size(40.dp)
-                    .padding(8.dp),
+                        .size(40.dp)
+                        .padding(8.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
             )
         } else {
@@ -99,19 +99,26 @@ class EventService : OverlayWindowService(positionKey = "event") {
                 LocalContentColor provides contentColorFor(bgColor),
             ) {
                 val latestEventId = eventLogs.lastOrNull()?.eventLog?.id ?: 0
-                val followState = rememberLazyListAutoFollowState(
-                    itemCount = eventLogs.size,
-                    latestItemKey = latestEventId,
-                )
+                val followState =
+                    rememberLazyListAutoFollowState(
+                        itemCount = eventLogs.size,
+                        latestItemKey = latestEventId,
+                    )
                 Column(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.small)
-                        .background(bgColor.copy(alpha = 0.9f))
-                        .width(256.dp)
-                        .padding(4.dp)
+                    modifier =
+                        Modifier.clip(MaterialTheme.shapes.small)
+                            .background(bgColor.copy(alpha = 0.9f))
+                            .width(256.dp)
+                            .padding(4.dp),
                 ) {
                     ClosableTitle(
-                        title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) Res.string.event_service_label.getSync() else Res.string.event_service_no_permission.getSync(),
+                        title =
+                            if (
+                                A11yService.isRunning.collectAsStateWithLifecycle().value ||
+                                    uiAutomationFlow.collectAsStateWithLifecycle().value != null
+                            )
+                                Res.string.event_service_label.getSync()
+                            else Res.string.event_service_no_permission.getSync(),
                         onMinimizeRequest = { minimized = true },
                         minimizeContentDescription = Res.string.event_log_window_minimize.getSync(),
                     )
@@ -120,9 +127,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                         LocalTextStyle provides textStyle,
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
+                            modifier = Modifier.fillMaxWidth().height(300.dp),
                         ) {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
@@ -134,17 +139,17 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                     GkEventLogOverlayCard(
                                         eventLog = it.eventLog,
                                         text = it.parsedText.getOrThrow(),
-                                        modifier = Modifier.padding(horizontal = 2.dp)
+                                        modifier = Modifier.padding(horizontal = 2.dp),
                                     )
                                 }
                             }
                             if (eventLogs.isNotEmpty() && !followState.isAutoFollowEnabled) {
-                                val count = (latestEventId - followState.pausedAtItemKey)
-                                    .coerceAtLeast(0)
+                                val count =
+                                    (latestEventId - followState.pausedAtItemKey).coerceAtLeast(0)
                                 Column(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .width(IntrinsicSize.Min),
+                                    modifier =
+                                        Modifier.align(Alignment.BottomEnd)
+                                            .width(IntrinsicSize.Min),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
                                     if (count > 0) {
@@ -165,12 +170,13 @@ class EventService : OverlayWindowService(positionKey = "event") {
 
     private val tempEventListFlow = MutableStateFlow(emptyList<A11yEventLog>())
 
-    private suspend fun flushEventLogs() = withContext(NonCancellable) {
-        val list = tempEventListFlow.getAndUpdate { emptyList() }
-        if (list.isNotEmpty()) {
-            Db.a11yEventLogDao.insert(list)
+    private suspend fun flushEventLogs() =
+        withContext(NonCancellable) {
+            val list = tempEventListFlow.getAndUpdate { emptyList() }
+            if (list.isNotEmpty()) {
+                Db.a11yEventLogDao.insert(list)
+            }
         }
-    }
 
     init {
         useLogLifecycle()
@@ -231,6 +237,5 @@ class EventService : OverlayWindowService(positionKey = "event") {
         }
 
         fun stop() = IntentUtils.stopService(EventService::class)
-
     }
 }

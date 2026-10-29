@@ -45,10 +45,10 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp as ComposeLerp
 import kotlinx.coroutines.launch
 import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.util.lerp as ComposeLerp
 
 // ---------------------------------------------------------------------------
 // Dimension constants  (inlined from SwitchTokens / M3 spec)
@@ -57,13 +57,13 @@ import androidx.compose.ui.util.lerp as ComposeLerp
 private val TrackWidth = 52.dp
 private val TrackHeight = 32.dp
 private val TrackOutlineWidth = 2.dp
-private val ThumbDiameter = 24.dp          // selected handle width
-private val UncheckedThumbDiameter = 16.dp        // unselected handle width
+private val ThumbDiameter = 24.dp // selected handle width
+private val UncheckedThumbDiameter = 16.dp // unselected handle width
 private val PressedHandleWidth = 28.dp
 private val StateLayerSize = 40.dp
 private val ThumbPadding = (TrackHeight - ThumbDiameter) / 2
 
-///** Icon size to use for [thumbContent] */
+/// ** Icon size to use for [thumbContent] */
 val TriStateSwitchIconSize = 16.dp
 
 private val DefaultAnimationSpec: FiniteAnimationSpec<Float> =
@@ -78,20 +78,21 @@ private val SnapSpecInstance = SnapSpec<Float>()
 /**
  * A three-state Material3-style switch.
  *
- * | [checked] value | Visual state  | Thumb position  |
- * |-----------------|---------------|-----------------|
- * | `true`          | ON            | End             |
- * | `null`          | Indeterminate | Center          |
- * | `false`         | OFF           | Start           |
+ * | [checked] value | Visual state  | Thumb position |
+ * |-----------------|---------------|----------------|
+ * | `true`          | ON            | End            |
+ * | `null`          | Indeterminate | Center         |
+ * | `false`         | OFF           | Start          |
  *
- * @param checked         `true` = on, `false` = off, `null` = indeterminate.
- * @param onCheckedChange Callback when the switch is clicked.  Receives the *next* logical state:
- *                        `false→null`, `null→true`, `true→false` (cycle).
- *                        Pass `null` to make the switch non-interactive.
- * @param modifier        Modifier applied to this composable.
- * @param thumbContent    Optional content drawn inside the thumb (expected size [TriStateSwitchIconSize]).
- * @param enabled         When `false` the switch is non-interactive and visually dimmed.
- * @param colors          [GkTriStateSwitchColors] controlling the switch appearance.
+ * @param checked `true` = on, `false` = off, `null` = indeterminate.
+ * @param onCheckedChange Callback when the switch is clicked. Receives the *next* logical state:
+ *   `false→null`, `null→true`, `true→false` (cycle). Pass `null` to make the switch
+ *   non-interactive.
+ * @param modifier Modifier applied to this composable.
+ * @param thumbContent Optional content drawn inside the thumb (expected size
+ *   [TriStateSwitchIconSize]).
+ * @param enabled When `false` the switch is non-interactive and visually dimmed.
+ * @param colors [GkTriStateSwitchColors] controlling the switch appearance.
  * @param interactionSource Optional hoisted [MutableInteractionSource].
  */
 @Composable
@@ -108,26 +109,29 @@ private fun TriStateSwitch(
     @Suppress("NAME_SHADOWING")
     val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
 
-    val description = stateDescription ?: when (checked) {
-        true -> stringResource(Res.string.action_turn_on)
-        false -> stringResource(Res.string.action_close)
-        null -> stringResource(Res.string.setting_follow)
-    }
+    val description =
+        stateDescription
+            ?: when (checked) {
+                true -> stringResource(Res.string.action_turn_on)
+                false -> stringResource(Res.string.action_close)
+                null -> stringResource(Res.string.setting_follow)
+            }
     val toggleableModifier =
         if (onCheckedChange != null) {
             // Cycle: false → null → true → false
-            val nextState: Boolean? = when (checked) {
-                false -> null
-                null -> true
-                true -> false
-            }
-            val toggleableState = when (checked) {
-                true -> ToggleableState.On
-                false -> ToggleableState.Off
-                null -> ToggleableState.Indeterminate
-            }
-            Modifier
-                .minimumInteractiveComponentSize()
+            val nextState: Boolean? =
+                when (checked) {
+                    false -> null
+                    null -> true
+                    true -> false
+                }
+            val toggleableState =
+                when (checked) {
+                    true -> ToggleableState.On
+                    false -> ToggleableState.Off
+                    null -> ToggleableState.Indeterminate
+                }
+            Modifier.minimumInteractiveComponentSize()
                 .semantics {
                     this.stateDescription = description
                 }
@@ -144,10 +148,11 @@ private fun TriStateSwitch(
         }
 
     TriStateSwitchImpl(
-        modifier = modifier
-            .then(toggleableModifier)
-            .wrapContentSize(Alignment.Center)
-            .requiredSize(TrackWidth, TrackHeight),
+        modifier =
+            modifier
+                .then(toggleableModifier)
+                .wrapContentSize(Alignment.Center)
+                .requiredSize(TrackWidth, TrackHeight),
         checked = checked,
         enabled = enabled,
         colors = colors,
@@ -180,23 +185,23 @@ private fun TriStateSwitchImpl(
     Box(
         modifier
             .border(TrackOutlineWidth, borderColor, trackShape)
-            .background(trackColor, trackShape)
+            .background(trackColor, trackShape),
     ) {
         Box(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .then(
-                    TriStateThumbElement(
-                        interactionSource = interactionSource,
-                        checked = checked,
-                        animationSpec = DefaultAnimationSpec,
+            modifier =
+                Modifier.align(Alignment.CenterStart)
+                    .then(
+                        TriStateThumbElement(
+                            interactionSource = interactionSource,
+                            checked = checked,
+                            animationSpec = DefaultAnimationSpec,
+                        ),
                     )
-                )
-                .indication(
-                    interactionSource = interactionSource,
-                    indication = ripple(bounded = false, radius = StateLayerSize / 2),
-                )
-                .background(thumbColor, thumbShape),
+                    .indication(
+                        interactionSource = interactionSource,
+                        indication = ripple(bounded = false, radius = StateLayerSize / 2),
+                    )
+                    .background(thumbColor, thumbShape),
             contentAlignment = Alignment.Center,
         ) {
             if (thumbContent != null) {
@@ -244,7 +249,8 @@ private class TriStateThumbNode(
     var animationSpec: FiniteAnimationSpec<Float>,
 ) : Modifier.Node(), LayoutModifierNode {
 
-    override val shouldAutoInvalidate: Boolean get() = false
+    override val shouldAutoInvalidate: Boolean
+        get() = false
 
     private var isPressed = false
     private var offsetAnim: Animatable<Float, AnimationVector1D>? = null
@@ -276,20 +282,22 @@ private class TriStateThumbNode(
     ): MeasureResult {
         val hasContent =
             measurable.maxIntrinsicHeight(constraints.maxWidth) != 0 &&
-                    measurable.maxIntrinsicWidth(constraints.maxHeight) != 0
+                measurable.maxIntrinsicWidth(constraints.maxHeight) != 0
 
         // Target thumb size
-        val size = when {
-            isPressed -> PressedHandleWidth.toPx()
-            hasContent || checked == true -> ThumbDiameter.toPx()
-            checked == null -> ComposeLerp(
-                UncheckedThumbDiameter.toPx(),
-                ThumbDiameter.toPx(),
-                0.5f
-            )
+        val size =
+            when {
+                isPressed -> PressedHandleWidth.toPx()
+                hasContent || checked == true -> ThumbDiameter.toPx()
+                checked == null ->
+                    ComposeLerp(
+                        UncheckedThumbDiameter.toPx(),
+                        ThumbDiameter.toPx(),
+                        0.5f,
+                    )
 
-            else /* false */ -> UncheckedThumbDiameter.toPx()
-        }
+                else /* false */ -> UncheckedThumbDiameter.toPx()
+            }
 
         val actualSize = (sizeAnim?.value ?: size).toInt()
         val placeable = measurable.measure(Constraints.fixed(actualSize, actualSize))
@@ -301,14 +309,15 @@ private class TriStateThumbNode(
         val maxBound = thumbPathLength.toPx()
         val midBound = (minBound + maxBound) / 2f
 
-        val offset = when {
-            isPressed && checked == true -> maxBound - TrackOutlineWidth.toPx()
-            isPressed && checked == false -> TrackOutlineWidth.toPx()
-            isPressed && checked == null -> midBound
-            checked == true -> maxBound
-            checked == null -> midBound
-            else -> minBound
-        }
+        val offset =
+            when {
+                isPressed && checked == true -> maxBound - TrackOutlineWidth.toPx()
+                isPressed && checked == false -> TrackOutlineWidth.toPx()
+                isPressed && checked == null -> midBound
+                checked == true -> maxBound
+                checked == null -> midBound
+                else -> minBound
+            }
 
         // Animate size
         if (sizeAnim?.targetValue != size) {
@@ -353,33 +362,33 @@ object GkTriStateSwitchDefaults {
     /**
      * Creates a [GkTriStateSwitchColors] using Material3 color-scheme values.
      *
-     * The **indeterminate** colors are derived by linearly interpolating (50 %) between the
-     * checked and unchecked colors so the visual midpoint looks natural.
+     * The **indeterminate** colors are derived by linearly interpolating (50 %) between the checked
+     * and unchecked colors so the visual midpoint looks natural.
      *
-     * @param checkedThumbColor              Thumb color when enabled + checked.
-     * @param checkedTrackColor              Track color when enabled + checked.
-     * @param checkedBorderColor             Border color when enabled + checked.
-     * @param checkedIconColor               Icon color when enabled + checked.
-     * @param uncheckedThumbColor            Thumb color when enabled + unchecked.
-     * @param uncheckedTrackColor            Track color when enabled + unchecked.
-     * @param uncheckedBorderColor           Border color when enabled + unchecked.
-     * @param uncheckedIconColor             Icon color when enabled + unchecked.
-     * @param indeterminateThumbColor        Thumb color when enabled + indeterminate (`null`).
-     * @param indeterminateTrackColor        Track color when enabled + indeterminate.
-     * @param indeterminateBorderColor       Border color when enabled + indeterminate.
-     * @param indeterminateIconColor         Icon color when enabled + indeterminate.
-     * @param disabledCheckedThumbColor      Thumb color when disabled + checked.
-     * @param disabledCheckedTrackColor      Track color when disabled + checked.
-     * @param disabledCheckedBorderColor     Border color when disabled + checked.
-     * @param disabledCheckedIconColor       Icon color when disabled + checked.
-     * @param disabledUncheckedThumbColor    Thumb color when disabled + unchecked.
-     * @param disabledUncheckedTrackColor    Track color when disabled + unchecked.
-     * @param disabledUncheckedBorderColor   Border color when disabled + unchecked.
-     * @param disabledUncheckedIconColor     Icon color when disabled + unchecked.
-     * @param disabledIndeterminateThumbColor  Thumb color when disabled + indeterminate.
-     * @param disabledIndeterminateTrackColor  Track color when disabled + indeterminate.
+     * @param checkedThumbColor Thumb color when enabled + checked.
+     * @param checkedTrackColor Track color when enabled + checked.
+     * @param checkedBorderColor Border color when enabled + checked.
+     * @param checkedIconColor Icon color when enabled + checked.
+     * @param uncheckedThumbColor Thumb color when enabled + unchecked.
+     * @param uncheckedTrackColor Track color when enabled + unchecked.
+     * @param uncheckedBorderColor Border color when enabled + unchecked.
+     * @param uncheckedIconColor Icon color when enabled + unchecked.
+     * @param indeterminateThumbColor Thumb color when enabled + indeterminate (`null`).
+     * @param indeterminateTrackColor Track color when enabled + indeterminate.
+     * @param indeterminateBorderColor Border color when enabled + indeterminate.
+     * @param indeterminateIconColor Icon color when enabled + indeterminate.
+     * @param disabledCheckedThumbColor Thumb color when disabled + checked.
+     * @param disabledCheckedTrackColor Track color when disabled + checked.
+     * @param disabledCheckedBorderColor Border color when disabled + checked.
+     * @param disabledCheckedIconColor Icon color when disabled + checked.
+     * @param disabledUncheckedThumbColor Thumb color when disabled + unchecked.
+     * @param disabledUncheckedTrackColor Track color when disabled + unchecked.
+     * @param disabledUncheckedBorderColor Border color when disabled + unchecked.
+     * @param disabledUncheckedIconColor Icon color when disabled + unchecked.
+     * @param disabledIndeterminateThumbColor Thumb color when disabled + indeterminate.
+     * @param disabledIndeterminateTrackColor Track color when disabled + indeterminate.
      * @param disabledIndeterminateBorderColor Border color when disabled + indeterminate.
-     * @param disabledIndeterminateIconColor   Icon color when disabled + indeterminate.
+     * @param disabledIndeterminateIconColor Icon color when disabled + indeterminate.
      */
     @Composable
     fun colors(
@@ -430,55 +439,60 @@ object GkTriStateSwitchDefaults {
                 .copy(alpha = 0.38f)
                 .compositeOver(MaterialTheme.colorScheme.surface),
         // --- disabled indeterminate ---
-        disabledIndeterminateThumbColor: Color = lerp(
-            disabledUncheckedThumbColor,
-            disabledCheckedThumbColor,
-            0.5f
-        ),
-        disabledIndeterminateTrackColor: Color = lerp(
-            disabledUncheckedTrackColor,
-            disabledCheckedTrackColor,
-            0.5f
-        ),
-        disabledIndeterminateBorderColor: Color = lerp(
-            disabledUncheckedBorderColor,
-            disabledCheckedBorderColor,
-            0.5f
-        ),
-        disabledIndeterminateIconColor: Color = lerp(
-            disabledUncheckedIconColor,
-            disabledCheckedIconColor,
-            0.5f
-        ),
-    ): GkTriStateSwitchColors = GkTriStateSwitchColors(
-        checkedThumbColor = checkedThumbColor,
-        checkedTrackColor = checkedTrackColor,
-        checkedBorderColor = checkedBorderColor,
-        checkedIconColor = checkedIconColor,
-        uncheckedThumbColor = uncheckedThumbColor,
-        uncheckedTrackColor = uncheckedTrackColor,
-        uncheckedBorderColor = uncheckedBorderColor,
-        uncheckedIconColor = uncheckedIconColor,
-        indeterminateThumbColor = indeterminateThumbColor,
-        indeterminateTrackColor = indeterminateTrackColor,
-        indeterminateBorderColor = indeterminateBorderColor,
-        indeterminateIconColor = indeterminateIconColor,
-        disabledCheckedThumbColor = disabledCheckedThumbColor,
-        disabledCheckedTrackColor = disabledCheckedTrackColor,
-        disabledCheckedBorderColor = disabledCheckedBorderColor,
-        disabledCheckedIconColor = disabledCheckedIconColor,
-        disabledUncheckedThumbColor = disabledUncheckedThumbColor,
-        disabledUncheckedTrackColor = disabledUncheckedTrackColor,
-        disabledUncheckedBorderColor = disabledUncheckedBorderColor,
-        disabledUncheckedIconColor = disabledUncheckedIconColor,
-        disabledIndeterminateThumbColor = disabledIndeterminateThumbColor,
-        disabledIndeterminateTrackColor = disabledIndeterminateTrackColor,
-        disabledIndeterminateBorderColor = disabledIndeterminateBorderColor,
-        disabledIndeterminateIconColor = disabledIndeterminateIconColor,
-    )
+        disabledIndeterminateThumbColor: Color =
+            lerp(
+                disabledUncheckedThumbColor,
+                disabledCheckedThumbColor,
+                0.5f,
+            ),
+        disabledIndeterminateTrackColor: Color =
+            lerp(
+                disabledUncheckedTrackColor,
+                disabledCheckedTrackColor,
+                0.5f,
+            ),
+        disabledIndeterminateBorderColor: Color =
+            lerp(
+                disabledUncheckedBorderColor,
+                disabledCheckedBorderColor,
+                0.5f,
+            ),
+        disabledIndeterminateIconColor: Color =
+            lerp(
+                disabledUncheckedIconColor,
+                disabledCheckedIconColor,
+                0.5f,
+            ),
+    ): GkTriStateSwitchColors =
+        GkTriStateSwitchColors(
+            checkedThumbColor = checkedThumbColor,
+            checkedTrackColor = checkedTrackColor,
+            checkedBorderColor = checkedBorderColor,
+            checkedIconColor = checkedIconColor,
+            uncheckedThumbColor = uncheckedThumbColor,
+            uncheckedTrackColor = uncheckedTrackColor,
+            uncheckedBorderColor = uncheckedBorderColor,
+            uncheckedIconColor = uncheckedIconColor,
+            indeterminateThumbColor = indeterminateThumbColor,
+            indeterminateTrackColor = indeterminateTrackColor,
+            indeterminateBorderColor = indeterminateBorderColor,
+            indeterminateIconColor = indeterminateIconColor,
+            disabledCheckedThumbColor = disabledCheckedThumbColor,
+            disabledCheckedTrackColor = disabledCheckedTrackColor,
+            disabledCheckedBorderColor = disabledCheckedBorderColor,
+            disabledCheckedIconColor = disabledCheckedIconColor,
+            disabledUncheckedThumbColor = disabledUncheckedThumbColor,
+            disabledUncheckedTrackColor = disabledUncheckedTrackColor,
+            disabledUncheckedBorderColor = disabledUncheckedBorderColor,
+            disabledUncheckedIconColor = disabledUncheckedIconColor,
+            disabledIndeterminateThumbColor = disabledIndeterminateThumbColor,
+            disabledIndeterminateTrackColor = disabledIndeterminateTrackColor,
+            disabledIndeterminateBorderColor = disabledIndeterminateBorderColor,
+            disabledIndeterminateIconColor = disabledIndeterminateIconColor,
+        )
 
     /** Icon size to use for `thumbContent`. */
-//    val IconSize = TriStateSwitchIconSize
+    //    val IconSize = TriStateSwitchIconSize
 }
 
 /**
@@ -513,7 +527,9 @@ class GkTriStateSwitchColors(
     val disabledIndeterminateBorderColor: Color,
     val disabledIndeterminateIconColor: Color,
 ) {
-    /** Returns a copy overriding only the supplied parameters (Color.Unspecified = keep original). */
+    /**
+     * Returns a copy overriding only the supplied parameters (Color.Unspecified = keep original).
+     */
     fun copy(
         checkedThumbColor: Color = this.checkedThumbColor,
         checkedTrackColor: Color = this.checkedTrackColor,
@@ -539,108 +555,121 @@ class GkTriStateSwitchColors(
         disabledIndeterminateTrackColor: Color = this.disabledIndeterminateTrackColor,
         disabledIndeterminateBorderColor: Color = this.disabledIndeterminateBorderColor,
         disabledIndeterminateIconColor: Color = this.disabledIndeterminateIconColor,
-    ) = GkTriStateSwitchColors(
-        checkedThumbColor = checkedThumbColor,
-        checkedTrackColor = checkedTrackColor,
-        checkedBorderColor = checkedBorderColor,
-        checkedIconColor = checkedIconColor,
-        uncheckedThumbColor = uncheckedThumbColor,
-        uncheckedTrackColor = uncheckedTrackColor,
-        uncheckedBorderColor = uncheckedBorderColor,
-        uncheckedIconColor = uncheckedIconColor,
-        indeterminateThumbColor = indeterminateThumbColor,
-        indeterminateTrackColor = indeterminateTrackColor,
-        indeterminateBorderColor = indeterminateBorderColor,
-        indeterminateIconColor = indeterminateIconColor,
-        disabledCheckedThumbColor = disabledCheckedThumbColor,
-        disabledCheckedTrackColor = disabledCheckedTrackColor,
-        disabledCheckedBorderColor = disabledCheckedBorderColor,
-        disabledCheckedIconColor = disabledCheckedIconColor,
-        disabledUncheckedThumbColor = disabledUncheckedThumbColor,
-        disabledUncheckedTrackColor = disabledUncheckedTrackColor,
-        disabledUncheckedBorderColor = disabledUncheckedBorderColor,
-        disabledUncheckedIconColor = disabledUncheckedIconColor,
-        disabledIndeterminateThumbColor = disabledIndeterminateThumbColor,
-        disabledIndeterminateTrackColor = disabledIndeterminateTrackColor,
-        disabledIndeterminateBorderColor = disabledIndeterminateBorderColor,
-        disabledIndeterminateIconColor = disabledIndeterminateIconColor,
-    )
+    ) =
+        GkTriStateSwitchColors(
+            checkedThumbColor = checkedThumbColor,
+            checkedTrackColor = checkedTrackColor,
+            checkedBorderColor = checkedBorderColor,
+            checkedIconColor = checkedIconColor,
+            uncheckedThumbColor = uncheckedThumbColor,
+            uncheckedTrackColor = uncheckedTrackColor,
+            uncheckedBorderColor = uncheckedBorderColor,
+            uncheckedIconColor = uncheckedIconColor,
+            indeterminateThumbColor = indeterminateThumbColor,
+            indeterminateTrackColor = indeterminateTrackColor,
+            indeterminateBorderColor = indeterminateBorderColor,
+            indeterminateIconColor = indeterminateIconColor,
+            disabledCheckedThumbColor = disabledCheckedThumbColor,
+            disabledCheckedTrackColor = disabledCheckedTrackColor,
+            disabledCheckedBorderColor = disabledCheckedBorderColor,
+            disabledCheckedIconColor = disabledCheckedIconColor,
+            disabledUncheckedThumbColor = disabledUncheckedThumbColor,
+            disabledUncheckedTrackColor = disabledUncheckedTrackColor,
+            disabledUncheckedBorderColor = disabledUncheckedBorderColor,
+            disabledUncheckedIconColor = disabledUncheckedIconColor,
+            disabledIndeterminateThumbColor = disabledIndeterminateThumbColor,
+            disabledIndeterminateTrackColor = disabledIndeterminateTrackColor,
+            disabledIndeterminateBorderColor = disabledIndeterminateBorderColor,
+            disabledIndeterminateIconColor = disabledIndeterminateIconColor,
+        )
 
     @Stable
     fun thumbColor(enabled: Boolean, checked: Boolean?): Color =
-        if (enabled) when (checked) {
-            true -> checkedThumbColor
-            false -> uncheckedThumbColor
-            null -> indeterminateThumbColor
-        } else when (checked) {
-            true -> disabledCheckedThumbColor
-            false -> disabledUncheckedThumbColor
-            null -> disabledIndeterminateThumbColor
-        }
+        if (enabled)
+            when (checked) {
+                true -> checkedThumbColor
+                false -> uncheckedThumbColor
+                null -> indeterminateThumbColor
+            }
+        else
+            when (checked) {
+                true -> disabledCheckedThumbColor
+                false -> disabledUncheckedThumbColor
+                null -> disabledIndeterminateThumbColor
+            }
 
     @Stable
     fun trackColor(enabled: Boolean, checked: Boolean?): Color =
-        if (enabled) when (checked) {
-            true -> checkedTrackColor
-            false -> uncheckedTrackColor
-            null -> indeterminateTrackColor
-        } else when (checked) {
-            true -> disabledCheckedTrackColor
-            false -> disabledUncheckedTrackColor
-            null -> disabledIndeterminateTrackColor
-        }
+        if (enabled)
+            when (checked) {
+                true -> checkedTrackColor
+                false -> uncheckedTrackColor
+                null -> indeterminateTrackColor
+            }
+        else
+            when (checked) {
+                true -> disabledCheckedTrackColor
+                false -> disabledUncheckedTrackColor
+                null -> disabledIndeterminateTrackColor
+            }
 
     @Stable
     fun borderColor(enabled: Boolean, checked: Boolean?): Color =
-        if (enabled) when (checked) {
-            true -> checkedBorderColor
-            false -> uncheckedBorderColor
-            null -> indeterminateBorderColor
-        } else when (checked) {
-            true -> disabledCheckedBorderColor
-            false -> disabledUncheckedBorderColor
-            null -> disabledIndeterminateBorderColor
-        }
+        if (enabled)
+            when (checked) {
+                true -> checkedBorderColor
+                false -> uncheckedBorderColor
+                null -> indeterminateBorderColor
+            }
+        else
+            when (checked) {
+                true -> disabledCheckedBorderColor
+                false -> disabledUncheckedBorderColor
+                null -> disabledIndeterminateBorderColor
+            }
 
     @Stable
     fun iconColor(enabled: Boolean, checked: Boolean?): Color =
-        if (enabled) when (checked) {
-            true -> checkedIconColor
-            false -> uncheckedIconColor
-            null -> indeterminateIconColor
-        } else when (checked) {
-            true -> disabledCheckedIconColor
-            false -> disabledUncheckedIconColor
-            null -> disabledIndeterminateIconColor
-        }
+        if (enabled)
+            when (checked) {
+                true -> checkedIconColor
+                false -> uncheckedIconColor
+                null -> indeterminateIconColor
+            }
+        else
+            when (checked) {
+                true -> disabledCheckedIconColor
+                false -> disabledUncheckedIconColor
+                null -> disabledIndeterminateIconColor
+            }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is GkTriStateSwitchColors) return false
         return checkedThumbColor == other.checkedThumbColor &&
-                checkedTrackColor == other.checkedTrackColor &&
-                checkedBorderColor == other.checkedBorderColor &&
-                checkedIconColor == other.checkedIconColor &&
-                uncheckedThumbColor == other.uncheckedThumbColor &&
-                uncheckedTrackColor == other.uncheckedTrackColor &&
-                uncheckedBorderColor == other.uncheckedBorderColor &&
-                uncheckedIconColor == other.uncheckedIconColor &&
-                indeterminateThumbColor == other.indeterminateThumbColor &&
-                indeterminateTrackColor == other.indeterminateTrackColor &&
-                indeterminateBorderColor == other.indeterminateBorderColor &&
-                indeterminateIconColor == other.indeterminateIconColor &&
-                disabledCheckedThumbColor == other.disabledCheckedThumbColor &&
-                disabledCheckedTrackColor == other.disabledCheckedTrackColor &&
-                disabledCheckedBorderColor == other.disabledCheckedBorderColor &&
-                disabledCheckedIconColor == other.disabledCheckedIconColor &&
-                disabledUncheckedThumbColor == other.disabledUncheckedThumbColor &&
-                disabledUncheckedTrackColor == other.disabledUncheckedTrackColor &&
-                disabledUncheckedBorderColor == other.disabledUncheckedBorderColor &&
-                disabledUncheckedIconColor == other.disabledUncheckedIconColor &&
-                disabledIndeterminateThumbColor == other.disabledIndeterminateThumbColor &&
-                disabledIndeterminateTrackColor == other.disabledIndeterminateTrackColor &&
-                disabledIndeterminateBorderColor == other.disabledIndeterminateBorderColor &&
-                disabledIndeterminateIconColor == other.disabledIndeterminateIconColor
+            checkedTrackColor == other.checkedTrackColor &&
+            checkedBorderColor == other.checkedBorderColor &&
+            checkedIconColor == other.checkedIconColor &&
+            uncheckedThumbColor == other.uncheckedThumbColor &&
+            uncheckedTrackColor == other.uncheckedTrackColor &&
+            uncheckedBorderColor == other.uncheckedBorderColor &&
+            uncheckedIconColor == other.uncheckedIconColor &&
+            indeterminateThumbColor == other.indeterminateThumbColor &&
+            indeterminateTrackColor == other.indeterminateTrackColor &&
+            indeterminateBorderColor == other.indeterminateBorderColor &&
+            indeterminateIconColor == other.indeterminateIconColor &&
+            disabledCheckedThumbColor == other.disabledCheckedThumbColor &&
+            disabledCheckedTrackColor == other.disabledCheckedTrackColor &&
+            disabledCheckedBorderColor == other.disabledCheckedBorderColor &&
+            disabledCheckedIconColor == other.disabledCheckedIconColor &&
+            disabledUncheckedThumbColor == other.disabledUncheckedThumbColor &&
+            disabledUncheckedTrackColor == other.disabledUncheckedTrackColor &&
+            disabledUncheckedBorderColor == other.disabledUncheckedBorderColor &&
+            disabledUncheckedIconColor == other.disabledUncheckedIconColor &&
+            disabledIndeterminateThumbColor == other.disabledIndeterminateThumbColor &&
+            disabledIndeterminateTrackColor == other.disabledIndeterminateTrackColor &&
+            disabledIndeterminateBorderColor == other.disabledIndeterminateBorderColor &&
+            disabledIndeterminateIconColor == other.disabledIndeterminateIconColor
     }
 
     override fun hashCode(): Int {
@@ -683,15 +712,16 @@ fun GkTriStateSwitch(
     colors: GkTriStateSwitchColors = GkTriStateSwitchDefaults.colors(),
     interactionSource: MutableInteractionSource? = null,
     stateDescription: String? = null,
-) = key(key) {
-    TriStateSwitch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = modifier,
-        thumbContent = thumbContent,
-        enabled = enabled,
-        colors = colors,
-        interactionSource = interactionSource,
-        stateDescription = stateDescription,
-    )
-}
+) =
+    key(key) {
+        TriStateSwitch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = modifier,
+            thumbContent = thumbContent,
+            enabled = enabled,
+            colors = colors,
+            interactionSource = interactionSource,
+            stateDescription = stateDescription,
+        )
+    }

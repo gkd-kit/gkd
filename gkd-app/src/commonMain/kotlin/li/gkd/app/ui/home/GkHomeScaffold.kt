@@ -17,21 +17,24 @@ val LocalHomeNavigationInsets = staticCompositionLocalOf<WindowInsets?> { null }
 fun GkHomeScaffold(
     page: ScaffoldExt,
     selectedTab: BottomNavItem,
-    onSelectTab: (BottomNavItem) -> Unit
+    onSelectTab: (BottomNavItem) -> Unit,
 ) {
     GkScaffold(
-        modifier = page.modifier, topBar = page.topBar,
+        modifier = page.modifier,
+        topBar = page.topBar,
         floatingActionButton = page.floatingActionButton,
         bottomBar = {
             NavigationBar(
-                windowInsets = LocalHomeNavigationInsets.current
-                    ?: NavigationBarDefaults.windowInsets
+                windowInsets =
+                    LocalHomeNavigationInsets.current ?: NavigationBarDefaults.windowInsets,
             ) {
                 BottomNavItem.allSubObjects.forEach { item ->
                     NavigationBarItem(
-                        selected = item == selectedTab, onClick = { onSelectTab(item) },
+                        selected = item == selectedTab,
+                        onClick = { onSelectTab(item) },
                         icon = { GkIcon(item.icon, contentDescription = null) },
-                        label = { Text(item.label) })
+                        label = { Text(item.label) },
+                    )
                 }
             }
         },

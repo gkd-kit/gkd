@@ -18,12 +18,13 @@ class AppIdListEditorTest {
         var fail = true
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
-        val editor = AppIdListEditor({ ids }) {
-            if (fail) throw IOException("disk full")
-            entered.complete(Unit)
-            release.await()
-            ids = it
-        }
+        val editor =
+            AppIdListEditor({ ids }) {
+                if (fail) throw IOException("disk full")
+                entered.complete(Unit)
+                release.await()
+                ids = it
+            }
         val state = AppListEditorState()
         editor.startEditing(state)
         state.setText("test.saved")
@@ -42,7 +43,12 @@ class AppIdListEditorTest {
         assertTrue(state.state.value.editing)
         assertEquals(0, feedback)
         fail = false
-        val saving = launch { editor.save(state) { changed -> assertTrue(changed); feedback++ } }
+        val saving = launch {
+            editor.save(state) { changed ->
+                assertTrue(changed)
+                feedback++
+            }
+        }
         runCurrent()
         entered.await()
         state.setText("test.newer")

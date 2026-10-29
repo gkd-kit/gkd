@@ -7,15 +7,15 @@ import java.net.InetSocketAddress
 import java.net.URI
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.storage.appStorage
 
@@ -27,7 +27,8 @@ suspend fun assertUpdateClient(directory: File) {
     val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     server.createContext("/version.json") { request ->
         val body =
-            """{"versionCode":2,"versionName":"2","downloadUrl":"gkd.apk","fileSize":${bytes.size}}""".toByteArray()
+            """{"versionCode":2,"versionName":"2","downloadUrl":"gkd.apk","fileSize":${bytes.size}}"""
+                .toByteArray()
         request.responseHeaders.add("Content-Type", "application/json")
         request.sendResponseHeaders(200, body.size.toLong())
         request.responseBody.use { it.write(body) }
@@ -58,21 +59,30 @@ suspend fun assertUpdateClient(directory: File) {
         // HTTP error bodies must fail before creating an installable-looking APK.
         for (status in listOf(403, 404, 503)) {
             val failedFile = directory.resolve("error-$status.apk")
-            val error = assertFailsWith<ResponseException> {
-                UpdateClient.download(URI(url).resolve("/error-$status").toString(), failedFile, 0) {}
-            }
+            val error =
+                assertFailsWith<ResponseException> {
+                    UpdateClient.download(
+                        URI(url).resolve("/error-$status").toString(),
+                        failedFile,
+                        0,
+                    ) {}
+                }
             assertEquals(status, error.response.status.value)
             assertEquals("HTTP $status", networkFailureSummary(error))
             assertFalse(failedFile.exists())
-            val fetchError = assertFailsWith<ResponseException> {
-                UpdateClient.fetch(URI(url).resolve("/error-$status").toString())
-            }
+            val fetchError =
+                assertFailsWith<ResponseException> {
+                    UpdateClient.fetch(URI(url).resolve("/error-$status").toString())
+                }
             assertEquals("HTTP $status", networkFailureSummary(fetchError))
             logNetworkFailure("http-status-log-check-$status", fetchError)
         }
         val version = UpdateClient.fetch(url)
         assertEquals(NewVersion(2, "2", "gkd.apk", bytes.size.toLong()), version)
-        logNetworkFailure("transport-log-check", java.net.UnknownHostException("secret-host-log-check"))
+        logNetworkFailure(
+            "transport-log-check",
+            java.net.UnknownHostException("secret-host-log-check"),
+        )
         logNetworkFailure("storage-log-check", java.io.IOException("disk-log-check"))
         LogUtils.flush()
         val logText = appStorage().log.listFiles().orEmpty().joinToString("\n") { it.readText() }
@@ -84,16 +94,23 @@ suspend fun assertUpdateClient(directory: File) {
         UpdateClient.download(
             URI(url).resolve(version.downloadUrl).toString(),
             file,
-            version.fileSize
-        ) { progress = it }
+            version.fileSize,
+        ) {
+            progress = it
+        }
         assertTrue(bytes.contentEquals(file.readBytes()))
         assertEquals(1f, progress)
         // The first half must reach disk while the server is still withholding the second half.
         coroutineScope {
             val streamedFile = directory.resolve("stream.apk")
-            val download = async(Dispatchers.IO) {
-                UpdateClient.download(URI(url).resolve("/stream.apk").toString(), streamedFile, bytes.size.toLong()) {}
-            }
+            val download =
+                async(Dispatchers.IO) {
+                    UpdateClient.download(
+                        URI(url).resolve("/stream.apk").toString(),
+                        streamedFile,
+                        bytes.size.toLong(),
+                    ) {}
+                }
             try {
                 withTimeout(5_000) {
                     while (streamedFile.length() == 0L) delay(10)

@@ -38,7 +38,7 @@ import kotlinx.coroutines.delay
 data class PermissionPromptContent(
     val title: String,
     val message: String,
-    val displayDelayMillis: Long = 500L
+    val displayDelayMillis: Long = 500L,
 )
 
 @Composable
@@ -70,12 +70,13 @@ fun GkPermissionPrompt(requestedPrompt: PermissionPromptContent?, modifier: Modi
     val currentPrompt = displayedPrompt
     if (currentPrompt != null) {
         Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
             AnimatedVisibility(
@@ -92,10 +93,8 @@ fun GkPermissionPrompt(requestedPrompt: PermissionPromptContent?, modifier: Modi
 @Composable
 private fun PromptCard(prompt: PermissionPromptContent) {
     Surface(
-        modifier = Modifier
-            .widthIn(max = 560.dp)
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {
+        modifier =
+            Modifier.widthIn(max = 560.dp).fillMaxWidth().semantics(mergeDescendants = true) {
                 liveRegion = LiveRegionMode.Polite
             },
         shape = MaterialTheme.shapes.medium,

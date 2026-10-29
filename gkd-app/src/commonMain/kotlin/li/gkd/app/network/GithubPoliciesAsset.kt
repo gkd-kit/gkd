@@ -2,7 +2,6 @@ package li.gkd.app.network
 
 import kotlinx.serialization.Serializable
 
-
 @Serializable
 data class GithubPoliciesAsset(
     val id: Int,

@@ -1,11 +1,10 @@
 package li.gkd.app.util
 
-import li.gkd.app.logging.LogUtils
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.gkd.app.app.applicationScope
+import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 object ToastUtils {

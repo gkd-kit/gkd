@@ -12,7 +12,8 @@ public enum class JsSelectorTypeKind {
 }
 
 @JsExport
-public class JsSelectorType internal constructor(
+public class JsSelectorType
+internal constructor(
     internal val core: SelectorType,
 ) {
     public val name: String
@@ -24,16 +25,18 @@ public class JsSelectorTypeModelBuilder {
     private val core = SelectorTypeModelBuilder()
 
     public fun type(kind: JsSelectorTypeKind, objectName: String? = null): JsSelectorType {
-        val selectorTypeKind = when (kind) {
-            JsSelectorTypeKind.Boolean -> SelectorTypeKind.BooleanType
-            JsSelectorTypeKind.Int -> SelectorTypeKind.IntType
-            JsSelectorTypeKind.String -> SelectorTypeKind.StringType
-            JsSelectorTypeKind.Object -> SelectorTypeKind.ObjectType(
-                checkNotNull(objectName?.takeIf { it.isNotBlank() }) {
-                    "Object type requires a non-empty name"
-                },
-            )
-        }
+        val selectorTypeKind =
+            when (kind) {
+                JsSelectorTypeKind.Boolean -> SelectorTypeKind.BooleanType
+                JsSelectorTypeKind.Int -> SelectorTypeKind.IntType
+                JsSelectorTypeKind.String -> SelectorTypeKind.StringType
+                JsSelectorTypeKind.Object ->
+                    SelectorTypeKind.ObjectType(
+                        checkNotNull(objectName?.takeIf { it.isNotBlank() }) {
+                            "Object type requires a non-empty name"
+                        },
+                    )
+            }
         return JsSelectorType(core.type(selectorTypeKind))
     }
 
@@ -56,6 +59,5 @@ public class JsSelectorTypeModelBuilder {
         return this
     }
 
-    public fun build(globalType: JsSelectorType): SelectorTypeModel =
-        core.build(globalType.core)
+    public fun build(globalType: JsSelectorType): SelectorTypeModel = core.build(globalType.core)
 }

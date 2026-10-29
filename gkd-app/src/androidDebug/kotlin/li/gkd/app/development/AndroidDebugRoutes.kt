@@ -1,6 +1,5 @@
 package li.gkd.app.development
 
-import li.gkd.app.matching.diagnostics.matchForegroundSnapshot
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -10,35 +9,59 @@ import io.ktor.server.routing.post
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import li.gkd.app.development.matching.benchmarkAndroidMatching
+import li.gkd.app.matching.diagnostics.matchForegroundSnapshot
 
 /** Cached engine observations, not a new Binder query or a claim of an atomic OS snapshot. */
 fun Route.androidDebugRoutes() {
     get("/debug/android/gesture-surface") { call.respond(GestureDebugSurface.snapshot()) }
     post("/debug/android/gesture-surface/reset") {
-        try { call.respond(GestureDebugSurface.reset()) }
-        catch (error: IllegalStateException) { call.respond(HttpStatusCode.Conflict, mapOf("error" to error.message)) }
+        try {
+            call.respond(GestureDebugSurface.reset())
+        } catch (error: IllegalStateException) {
+            call.respond(HttpStatusCode.Conflict, mapOf("error" to error.message))
+        }
     }
     post("/debug/android/benchmark") {
         try {
             call.respond(benchmarkAndroidMatching(call.receive()))
         } catch (error: TimeoutCancellationException) {
-            call.respond(HttpStatusCode.RequestTimeout, mapOf("error" to "Benchmark deadline exceeded; in-flight Binder cleanup has completed"))
+            call.respond(
+                HttpStatusCode.RequestTimeout,
+                mapOf(
+                    "error" to
+                        "Benchmark deadline exceeded; in-flight Binder cleanup has completed",
+                ),
+            )
         } catch (error: IllegalArgumentException) {
-            call.respond(HttpStatusCode.BadRequest, mapOf("error" to (error.message ?: "Invalid benchmark request")))
+            call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf("error" to (error.message ?: "Invalid benchmark request")),
+            )
         } catch (error: IllegalStateException) {
             if (error is CancellationException) throw error
-            call.respond(HttpStatusCode.Conflict, mapOf("error" to (error.message ?: "Benchmark unavailable")))
+            call.respond(
+                HttpStatusCode.Conflict,
+                mapOf("error" to (error.message ?: "Benchmark unavailable")),
+            )
         }
     }
     get("/debug/android/foreground") {
         call.respond(requireNotNull(matchForegroundSnapshot()))
     }
     get("/debug/capabilities") {
-        call.respond(listOf(
-            "/debug/app", "/debug/app/catalog", "/debug/readiness", "/debug/android/foreground",
-            "/debug/sessions", "/debug/policy", "/debug/engine",
-            "/debug/android/benchmark",
-            "/debug/android/gesture-surface", "/debug/android/gesture-surface/reset",
-        ))
+        call.respond(
+            listOf(
+                "/debug/app",
+                "/debug/app/catalog",
+                "/debug/readiness",
+                "/debug/android/foreground",
+                "/debug/sessions",
+                "/debug/policy",
+                "/debug/engine",
+                "/debug/android/benchmark",
+                "/debug/android/gesture-surface",
+                "/debug/android/gesture-surface/reset",
+            ),
+        )
     }
 }

@@ -1,5 +1,7 @@
 package li.gkd.app.snapshot
 
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -12,12 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.IOException
-import java.util.concurrent.CountDownLatch
 
 class SnapshotDirectoryTransactionTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder(TestFiles.root)
+    @get:Rule val temporaryFolder = TemporaryFolder(TestFiles.root)
 
     @Test
     fun commitPublishesCompleteDirectory() = runBlocking {
@@ -132,18 +131,19 @@ class SnapshotDirectoryTransactionTest {
         val writeStarted = CountDownLatch(1)
         val finishWrite = CountDownLatch(1)
         var published = false
-        val task = async(Dispatchers.Default) {
-            commitSnapshotDirectory(
-                layout = SnapshotFileLayout(root),
-                id = 123,
-                write = { files ->
-                    files.snapshotFile.writeText("partial")
-                    writeStarted.countDown()
-                    finishWrite.await()
-                },
-                publish = { published = true },
-            )
-        }
+        val task =
+            async(Dispatchers.Default) {
+                commitSnapshotDirectory(
+                    layout = SnapshotFileLayout(root),
+                    id = 123,
+                    write = { files ->
+                        files.snapshotFile.writeText("partial")
+                        writeStarted.countDown()
+                        finishWrite.await()
+                    },
+                    publish = { published = true },
+                )
+            }
 
         writeStarted.await()
         task.cancel()

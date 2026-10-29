@@ -17,35 +17,25 @@ fun GkShareLogDialog(
     onDismiss: () -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
-    onUpload: () -> Unit
+    onUpload: () -> Unit,
 ) {
     GkDialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
-            val modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            val modifier = Modifier.fillMaxWidth().padding(16.dp)
             Text(
                 text = stringResource(Res.string.action_share),
-                modifier = Modifier
-                    .clickable(onClick = onShare)
-                    .then(modifier),
+                modifier = Modifier.clickable(onClick = onShare).then(modifier),
             )
             Text(
                 text = stringResource(Res.string.action_save_to_downloads),
-                modifier = Modifier
-                    .clickable(onClick = onSave)
-                    .then(modifier),
+                modifier = Modifier.clickable(onClick = onSave).then(modifier),
             )
             Text(
                 text = stringResource(Res.string.upload_generate_link),
-                modifier = Modifier
-                    .clickable(onClick = onUpload)
-                    .then(modifier),
+                modifier = Modifier.clickable(onClick = onUpload).then(modifier),
             )
         }
     }

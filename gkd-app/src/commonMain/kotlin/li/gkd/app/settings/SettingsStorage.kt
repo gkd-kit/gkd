@@ -1,10 +1,11 @@
 package li.gkd.app.settings
 
-import li.gkd.app.logging.LogUtils
 import java.util.UUID
+import li.gkd.app.logging.LogUtils
 
 interface SettingsStorage {
     fun read(filename: String): String?
+
     fun writeAtomically(filename: String, text: String)
 
     /** Preserve unreadable input before allowing a later write to replace it. */

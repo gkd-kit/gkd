@@ -45,40 +45,45 @@ import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.copyText
 
-class ActivityService : OverlayWindowService(
-    positionKey = "activity"
-) {
+class ActivityService :
+    OverlayWindowService(
+        positionKey = "activity",
+    ) {
     private val activityOkFlow by lazy {
         combine(A11yService.isRunning, privilegeContextFlow) { a, b ->
-            a || b != null
-        }.stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
+                a || b != null
+            }
+            .stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
     }
 
     @Composable
     override fun ComposeContent() {
         val bgColor = MaterialTheme.colorScheme.surface
         Column(
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.small)
-                .background(bgColor.copy(alpha = 0.9f))
-                .width(IntrinsicSize.Max)
-                .padding(4.dp)
+            modifier =
+                Modifier.clip(MaterialTheme.shapes.small)
+                    .background(bgColor.copy(alpha = 0.9f))
+                    .width(IntrinsicSize.Max)
+                    .padding(4.dp),
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                val topActivity by topActivityFlow.collectAsStateWithLifecycle(initialValue = currentTopActivity)
+                val topActivity by
+                    topActivityFlow.collectAsStateWithLifecycle(initialValue = currentTopActivity)
                 val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
-                    title = if (hasAuth) Res.string.activity_record_service.getSync() else Res.string.activity_record_service_no_permission.getSync()
+                    title =
+                        if (hasAuth) Res.string.activity_record_service.getSync()
+                        else Res.string.activity_record_service_no_permission.getSync(),
                 )
                 if (hasAuth) {
                     Box {
                         Column(
-                            modifier = Modifier.padding(start = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp),
                         ) {
                             RowText(text = topActivity.appId)
                             RowText(
                                 text = topActivity.shortActivityId,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.secondary,
                             )
                         }
                         if (topActivity.number > 0) {
@@ -86,11 +91,11 @@ class ActivityService : OverlayWindowService(
                                 text = topActivity.number.toString(),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .zIndex(1f)
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .padding(end = 4.dp),
+                                modifier =
+                                    Modifier.align(Alignment.TopEnd)
+                                        .zIndex(1f)
+                                        .clip(MaterialTheme.shapes.extraSmall)
+                                        .padding(end = 4.dp),
                             )
                         }
                     }
@@ -138,7 +143,6 @@ class ActivityService : OverlayWindowService(
         }
 
         fun stop() = IntentUtils.stopService(ActivityService::class)
-
     }
 }
 
@@ -150,12 +154,14 @@ private fun RowText(text: String?, color: Color = Color.Unspecified) {
             Spacer(modifier = Modifier.width(4.dp))
             GkIcon(
                 imageVector = GkIcons.ContentCopy,
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = {
-                        copyText(text)
-                    })
-                    .iconTextSize(),
+                modifier =
+                    Modifier.clip(MaterialTheme.shapes.extraSmall)
+                        .clickable(
+                            onClick = {
+                                copyText(text)
+                            },
+                        )
+                        .iconTextSize(),
             )
         }
     }

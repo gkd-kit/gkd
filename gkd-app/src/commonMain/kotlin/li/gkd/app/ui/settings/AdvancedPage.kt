@@ -16,11 +16,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.remember
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -28,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -48,6 +49,7 @@ import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotSettingsRoute
@@ -59,8 +61,6 @@ import li.gkd.app.ui.style.titleItemPadding
 import li.gkd.app.util.Constants
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.stringResource
-import li.gkd.app.matching.MatchingRuntime
-import li.gkd.app.ui.navigation.MatchDebugRoute
 
 @Composable
 fun AdvancedPage(
@@ -92,7 +92,7 @@ fun AdvancedPage(
                     onClick = {
                         vm.setShowTrackNotice(false)
                         host.setTrackServiceEnabled(true)
-                    }
+                    },
                 ) {
                     Text(stringResource(Res.string.action_continue))
                 }
@@ -170,7 +170,9 @@ fun AdvancedPage(
     ) { contentPadding ->
         Column(
             modifier =
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(contentPadding)
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding),
         ) {
             AdvancedSectionTitle(
                 stringResource(Res.string.advanced_background_running),
@@ -224,7 +226,9 @@ fun AdvancedPage(
                 title = stringResource(Res.string.track_overlay),
                 subtitle = stringResource(Res.string.track_overlay_description),
                 checked = trackServiceRunning,
-                onCheckedChange = { if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false) },
+                onCheckedChange = {
+                    if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false)
+                },
             )
             GkSettingItem(
                 title = stringResource(Res.string.external_calls_title),
@@ -339,7 +343,7 @@ private fun DebugServiceItem(
                         top = itemVerticalPadding,
                         end = itemHorizontalPadding,
                         bottom = itemVerticalPadding,
-                    )
+                    ),
         ) {
             GkTextSwitch(
                 modifier = Modifier.fillMaxWidth(),
@@ -375,10 +379,16 @@ private fun DebugServiceItem(
                         top = 0.dp,
                         end = itemHorizontalPadding,
                         bottom = itemVerticalPadding,
-                    )
+                    ),
             ) {
                 serverAddresses.forEach { host ->
-                    addressItem(host, stringResource(if (host == Constants.loopbackHost) Res.string.network_local_device else Res.string.network_lan))
+                    addressItem(
+                        host,
+                        stringResource(
+                            if (host == Constants.loopbackHost) Res.string.network_local_device
+                            else Res.string.network_lan,
+                        ),
+                    )
                 }
             }
         }
@@ -433,12 +443,17 @@ private fun EditHttpPortDialog(
 private fun DiagnosticSettings(vm: AdvancedViewModel) {
     val main = MainViewModel.requireCurrent()
     val diagnostics = MatchingRuntime.coordinator.diagnostics
-    val control = remember(diagnostics) {
-        diagnostics.state.map { it?.id to (it?.active == true) }.distinctUntilChanged()
-    }
-    val current by control.collectAsStateWithLifecycle(initialValue = diagnostics.state.value.let {
-        it?.id to (it?.active == true)
-    })
+    val control =
+        remember(diagnostics) {
+            diagnostics.state.map { it?.id to (it?.active == true) }.distinctUntilChanged()
+        }
+    val current by
+        control.collectAsStateWithLifecycle(
+            initialValue =
+                diagnostics.state.value.let {
+                    it?.id to (it?.active == true)
+                },
+        )
     GkTextSwitch(
         title = stringResource(Res.string.match_debug_collect),
         subtitle = stringResource(Res.string.match_debug_intro),

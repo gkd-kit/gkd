@@ -10,9 +10,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import li.gkd.app.DesktopSession
 import li.gkd.app.GkDesktopBackHandler
 import li.gkd.app.ui.component.GkDialog
-import li.gkd.app.DesktopSession
 
 actual typealias UiHost = DesktopSession
 
@@ -21,7 +21,8 @@ actual fun GkBackHandler(
     enabled: Boolean,
     onBack: () -> Unit,
 ) {
-    val visible = LocalNavAnimatedContentScope.current.transition.targetState == EnterExitState.Visible
+    val visible =
+        LocalNavAnimatedContentScope.current.transition.targetState == EnterExitState.Visible
     GkDesktopBackHandler(enabled = enabled && visible, onBack = onBack)
 }
 
@@ -33,13 +34,15 @@ actual fun GkFullscreenDialog(
     GkDesktopBackHandler(onBack = onDismiss)
     GkDialog(onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
-            Modifier.fillMaxSize()
-        ) { content() }
+            Modifier.fillMaxSize(),
+        ) {
+            content()
+        }
     }
 }
 
-@Composable
-actual fun inputInsets(): Modifier = Modifier
+@Composable actual fun inputInsets(): Modifier = Modifier
+
 actual fun UiHost.hideIme(): Boolean = this.state.dismissIme()
 
 @Composable
@@ -51,7 +54,7 @@ actual fun UiHost.GkSystemBars(visible: Boolean) {
             state.simulatorCommand {
                 state.simulator.updateAndroid {
                     it.copy(
-                        statusBarVisible = old
+                        statusBarVisible = old,
                     )
                 }
             }
@@ -61,7 +64,7 @@ actual fun UiHost.GkSystemBars(visible: Boolean) {
         state.simulatorCommand {
             state.simulator.updateAndroid {
                 it.copy(
-                    statusBarVisible = visible
+                    statusBarVisible = visible,
                 )
             }
         }

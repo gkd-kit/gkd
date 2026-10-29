@@ -1,16 +1,5 @@
 package li.gkd.app
 
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
-import li.gkd.app.app.AppInfoRepository
-import li.gkd.app.model.AppInfo
-import li.gkd.app.model.AppInventory
-import li.gkd.app.model.AppUser
-import li.gkd.app.storage.appStorage
-import li.gkd.app.logging.LogUtils
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
@@ -20,6 +9,17 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.logging.LogUtils
+import li.gkd.app.model.AppInfo
+import li.gkd.app.model.AppInventory
+import li.gkd.app.model.AppUser
+import li.gkd.app.storage.appStorage
 
 class DesktopAppCatalogTest {
     suspend fun profileReloadUsesSharedSelectionAndRecoversFromCorruptFile(directory: File) {
@@ -28,12 +28,13 @@ class DesktopAppCatalogTest {
             val file = directory.resolve("apps.json")
             val main = AppInfo("same", "primary", 1, "1", false, 1, false, 7)
             val hidden = main.copy(id = "hidden", hidden = true)
-            val inventory = AppInventory(
-                7,
-                listOf(main, hidden),
-                listOf(AppUser(10, "work")),
-                listOf(main.copy(userId = 10))
-            )
+            val inventory =
+                AppInventory(
+                    7,
+                    listOf(main, hidden),
+                    listOf(AppUser(10, "work")),
+                    listOf(main.copy(userId = 10)),
+                )
             file.writeText(Json.encodeToString(inventory))
             val repository = AppInfoRepository
             repository.refresh()
@@ -45,12 +46,13 @@ class DesktopAppCatalogTest {
             file.writeText(
                 Json.encodeToString(
                     inventory.copy(
-                        apps = listOf(
-                            main.copy(name = "package-updated"),
-                            hidden
-                        )
-                    )
-                )
+                        apps =
+                            listOf(
+                                main.copy(name = "package-updated"),
+                                hidden,
+                            ),
+                    ),
+                ),
             )
             repository.packagesChanged(setOf("same"), source = "catalog-test.same.broadcast")
             delay(1_000)
@@ -63,22 +65,36 @@ class DesktopAppCatalogTest {
             repository.packagesChanged(setOf("same"), source = "catalog-test.same.launcher")
             repository.packagesChanged(setOf("same"), source = "catalog-test.same.launcher")
             repository.packagesChanged(setOf("hidden"), source = "catalog-test.hidden.broadcast")
-            withTimeout(2_000) { repository.state.first { it.snapshot?.apps?.get("same")?.name == "package-updated" } }
+            withTimeout(2_000) {
+                repository.state.first { it.snapshot?.apps?.get("same")?.name == "package-updated" }
+            }
             // Snapshot publication precedes the completion log; wait for that log too.
             var completionLog: String? = null
             withTimeout(2_000) {
                 do {
                     LogUtils.flush()
-                    completionLog = appStorage().log.listFiles().orEmpty()
-                        .filter { it.extension == "log" }.joinToString("\n") { it.readText() }
-                        .split("\n\n").singleOrNull {
-                            it.contains("应用列表更新完成") && it.contains("catalog-test.same.broadcast")
-                        }
+                    completionLog =
+                        appStorage()
+                            .log
+                            .listFiles()
+                            .orEmpty()
+                            .filter { it.extension == "log" }
+                            .joinToString("\n") { it.readText() }
+                            .split("\n\n")
+                            .singleOrNull {
+                                it.contains("应用列表更新完成") &&
+                                    it.contains("catalog-test.same.broadcast")
+                            }
                     if (completionLog == null) delay(25)
                 } while (completionLog == null)
             }
             val updateLog = assertNotNull(completionLog)
-            assertTrue(updateLog.contains("same=[catalog-test.same.broadcast, catalog-test.same.launcher]"), updateLog)
+            assertTrue(
+                updateLog.contains(
+                    "same=[catalog-test.same.broadcast, catalog-test.same.launcher]",
+                ),
+                updateLog,
+            )
             assertTrue(updateLog.contains("hidden=[catalog-test.hidden.broadcast]"), updateLog)
             file.writeText("{broken")
             assertFails { repository.refresh() }
@@ -87,14 +103,15 @@ class DesktopAppCatalogTest {
             file.writeText(
                 Json.encodeToString(
                     inventory.copy(
-                        apps = listOf(
-                            main.copy(
-                                name = "renamed",
-                                mtime = 2
-                            )
-                        )
-                    )
-                )
+                        apps =
+                            listOf(
+                                main.copy(
+                                    name = "renamed",
+                                    mtime = 2,
+                                ),
+                            ),
+                    ),
+                ),
             )
             repository.refresh()
             assertEquals("renamed", repository.snapshot!!.apps.getValue("same").name)
@@ -110,18 +127,24 @@ class DesktopAppCatalogTest {
 
     @Test
     fun unrelatedPermissionChangesDoNotRefreshOrInvalidateCatalogQuery() = runTest {
-        val root = File(System.getProperty("gkd.projectRoot", "..")).resolve(".local/tests/desktop")
-            .apply { mkdirs() }
+        val root =
+            File(System.getProperty("gkd.projectRoot", ".."))
+                .resolve(".local/tests/desktop")
+                .apply { mkdirs() }
         val directory = Files.createTempDirectory(root.toPath(), "catalog-permissions-").toFile()
         try {
             val simulator = SimulatorStore()
             var refreshes = 0
             simulator.onAppCatalogChanged = { refreshes++ }
             val query = DesktopAppCatalog(simulator, directory).open()
-            simulator.update { it.copy(permissions = it.permissions.copy(ignoreBatteryOptimizations = true)) }
+            simulator.update {
+                it.copy(permissions = it.permissions.copy(ignoreBatteryOptimizations = true))
+            }
             assertEquals(0, refreshes)
             assertTrue(query.isCurrent())
-            simulator.update { it.copy(permissions = it.permissions.copy(canQueryPackages = false)) }
+            simulator.update {
+                it.copy(permissions = it.permissions.copy(canQueryPackages = false))
+            }
             assertEquals(1, refreshes)
             assertFalse(query.isCurrent())
         } finally {

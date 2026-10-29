@@ -23,10 +23,23 @@ object RuntimeRecordStore {
         database.withWriteTransaction {
             database.actionLogDao().insert(record)
             val stats = database.ruleTriggerStatsDao()
-            stats.insertIfAbsent(RuleTriggerStats(
-                record.subsId, record.groupType, record.groupKey, record.appId, 0, record.ctime,
-            ))
-            stats.increment(record.subsId, record.groupType, record.groupKey, record.appId, record.ctime)
+            stats.insertIfAbsent(
+                RuleTriggerStats(
+                    record.subsId,
+                    record.groupType,
+                    record.groupKey,
+                    record.appId,
+                    0,
+                    record.ctime,
+                ),
+            )
+            stats.increment(
+                record.subsId,
+                record.groupType,
+                record.groupKey,
+                record.appId,
+                record.ctime,
+            )
             if (trim) database.actionLogDao().deleteKeepLatest()
         }
     }

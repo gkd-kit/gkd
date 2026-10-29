@@ -35,22 +35,26 @@ private val rocketParts: List<ImageVector>
         val original = Icons.Outlined.RocketLaunch
         val path = original.root[0] as VectorPath
         val bodyStart = path.pathData.indices.filter { path.pathData[it] is PathNode.MoveTo }[2]
-        _rocketParts = listOf(
-            path.pathData.take(bodyStart),
-            path.pathData.drop(bodyStart)
-        ).mapIndexed { index, nodes ->
-            ImageVector.Builder(
-                name = "RocketPart$index",
-                defaultWidth = original.defaultWidth,
-                defaultHeight = original.defaultHeight,
-                viewportWidth = original.viewportWidth,
-                viewportHeight = original.viewportHeight,
-            ).addPath(
-                pathData = nodes,
-                fill = SolidColor(Color.Black),
-                pathFillType = path.pathFillType
-            ).build()
-        }
+        _rocketParts =
+            listOf(
+                    path.pathData.take(bodyStart),
+                    path.pathData.drop(bodyStart),
+                )
+                .mapIndexed { index, nodes ->
+                    ImageVector.Builder(
+                            name = "RocketPart$index",
+                            defaultWidth = original.defaultWidth,
+                            defaultHeight = original.defaultHeight,
+                            viewportWidth = original.viewportWidth,
+                            viewportHeight = original.viewportHeight,
+                        )
+                        .addPath(
+                            pathData = nodes,
+                            fill = SolidColor(Color.Black),
+                            pathFillType = path.pathFillType,
+                        )
+                        .build()
+                }
         return _rocketParts!!
     }
 
@@ -66,23 +70,30 @@ fun GkAnimatedRocketIcon(
     Box(modifier.size(24.dp).semantics { this.contentDescription = contentDescription }) {
         if (active) {
             val transition = rememberInfiniteTransition(label = "Rocket")
-            val progress = transition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    tween(1000, easing = Easing { ((1.0 - cos(PI * it)) / 2.0).toFloat() }),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-                label = "Rocket drift",
-            )
+            val progress =
+                transition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            tween(1000, easing = Easing { ((1.0 - cos(PI * it)) / 2.0).toFloat() }),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "Rocket drift",
+                )
             rocketParts.forEachIndexed { index, vector ->
                 Icon(
-                    vector, contentDescription = null, tint = tint,
-                    modifier = Modifier.size(24.dp).graphicsLayer {
-                        val distance = (if (index == 0) -0.6.dp else 0.4.dp).toPx() * progress.value
-                        translationX = distance
-                        translationY = -distance
-                    })
+                    vector,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier =
+                        Modifier.size(24.dp).graphicsLayer {
+                            val distance =
+                                (if (index == 0) -0.6.dp else 0.4.dp).toPx() * progress.value
+                            translationX = distance
+                            translationY = -distance
+                        },
+                )
             }
         } else {
             Icon(Icons.Outlined.RocketLaunch, contentDescription = null, tint = tint)

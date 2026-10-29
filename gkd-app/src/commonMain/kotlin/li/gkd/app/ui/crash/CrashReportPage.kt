@@ -24,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +46,7 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.share.noRippleClickable
 import li.gkd.app.ui.style.itemHorizontalPadding
@@ -72,12 +72,12 @@ fun CrashReportPage() {
                         title =
                             getString(
                                 if (record == null) Res.string.crash_reports_clear
-                                else Res.string.crash_report_delete
+                                else Res.string.crash_report_delete,
                             ),
                         text =
                             getString(
                                 if (record == null) Res.string.crash_reports_clear_confirmation
-                                else Res.string.crash_report_delete_confirmation
+                                else Res.string.crash_report_delete_confirmation,
                             ),
                         error = true,
                     )
@@ -167,7 +167,7 @@ fun CrashReportPage() {
             item(key = "crash-report-footer") {
                 if (crashDataList.isEmpty() && records !is Loadable.Loading) {
                     GkEmptyState(
-                        text = stringResource(Res.string.crash_reports_empty)
+                        text = stringResource(Res.string.crash_reports_empty),
                     )
                 }
                 GkPageBottomSpace()

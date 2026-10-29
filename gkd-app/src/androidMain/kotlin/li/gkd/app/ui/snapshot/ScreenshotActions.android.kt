@@ -17,12 +17,15 @@ actual fun UiHost.setScreenshotServiceEnabled(enabled: Boolean) {
             ScreenshotService.stop()
             return@launchUi
         }
-        if (!mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.notification)) {
+        if (
+            !mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.notification)
+        ) {
             return@launchUi
         }
-        val activityResult = mainVm.androidState.activityResults.startActivity(
-            app.mediaProjectionManager.createScreenCaptureIntent(),
-        )
+        val activityResult =
+            mainVm.androidState.activityResults.startActivity(
+                app.mediaProjectionManager.createScreenCaptureIntent(),
+            )
         val intent = activityResult.data
         if (activityResult.resultCode == Activity.RESULT_OK && intent != null) {
             ScreenshotService.start(intent)
@@ -35,5 +38,6 @@ actual fun screenshotServiceRunning() =
     ScreenshotService.isRunning.collectAsStateWithLifecycle().value
 
 actual fun nativeScreenshotAvailable() = AndroidTarget.R
+
 actual suspend fun UiHost.ensureSnapshotSavePermission() =
     mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)

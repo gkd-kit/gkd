@@ -16,13 +16,18 @@ class PermissionStateTest {
         val started = java.util.concurrent.CountDownLatch(1)
         val release = java.util.concurrent.CountDownLatch(1)
         val checks = java.util.concurrent.atomic.AtomicInteger()
-        val permission = PermissionState("notification", Res.string.permission_notifications, {
-            if (checks.incrementAndGet() == 1) {
-                started.countDown()
-                check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
-                false
-            } else true
-        })
+        val permission =
+            PermissionState(
+                "notification",
+                Res.string.permission_notifications,
+                {
+                    if (checks.incrementAndGet() == 1) {
+                        started.countDown()
+                        check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                        false
+                    } else true
+                },
+            )
         val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
         try {
             val pending = executor.submit<Boolean> { permission.updateAndGet() }
@@ -42,10 +47,15 @@ class PermissionStateTest {
     @Test
     fun uncheckedStateIsUnknownAndReadingDiagnosticsDoesNotRunChecks() {
         var reads = 0
-        val permission = PermissionState("notification", Res.string.permission_notifications, {
-            reads++
-            false
-        })
+        val permission =
+            PermissionState(
+                "notification",
+                Res.string.permission_notifications,
+                {
+                    reads++
+                    false
+                },
+            )
         assertNull(permission.lastCheck)
         assertEquals(0, reads)
         assertFalse(permission.updateAndGet())
@@ -57,10 +67,15 @@ class PermissionStateTest {
     @Test
     fun failedCheckPreservesCauseAndPreviousBusinessStateThenRecovers() {
         var failure: Exception? = null
-        val permission = PermissionState("notification", Res.string.permission_notifications, {
-            failure?.let { throw it }
-            true
-        })
+        val permission =
+            PermissionState(
+                "notification",
+                Res.string.permission_notifications,
+                {
+                    failure?.let { throw it }
+                    true
+                },
+            )
         assertTrue(permission.updateAndGet())
         val previous = permission.lastCheck
         val error = SecurityException("cannot read permission")

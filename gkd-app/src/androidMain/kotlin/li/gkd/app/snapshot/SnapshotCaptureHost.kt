@@ -24,6 +24,7 @@ import li.gkd.app.data.currentDeviceInfo
 import li.gkd.app.error.displayMessage
 import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.AndroidAutomationSessions
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.model.ComplexSnapshot
@@ -37,7 +38,6 @@ import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.snapshot.platform.encodeSnapshotScreenshot
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.BarUtils
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
@@ -45,7 +45,8 @@ import li.gkd.app.util.px
 import org.jetbrains.compose.resources.getString
 
 object SnapshotCaptureHost {
-    val isCapturing: Boolean get() = SnapshotCaptureRepository.isCapturing
+    val isCapturing: Boolean
+        get() = SnapshotCaptureRepository.isCapturing
 
     private class ScreenResult(
         val bytes: ByteArray,
@@ -56,22 +57,23 @@ object SnapshotCaptureHost {
         val screenSize = ScreenUtils.getSize()
         val bitmap = createBitmap(screenSize.width, screenSize.height)
         try {
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textSize = 32.sp.px
-                color = Color.BLUE
-                textAlign = Paint.Align.CENTER
-            }
+            val paint =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize = 32.sp.px
+                    color = Color.BLUE
+                    textAlign = Paint.Align.CENTER
+                }
             val canvas = Canvas(bitmap)
-            val lines = listOf(
-                Res.string.screenshot_frame_missing.getSync(),
-                Res.string.screenshot_replace_manually.getSync()
-            )
+            val lines =
+                listOf(
+                    Res.string.screenshot_frame_missing.getSync(),
+                    Res.string.screenshot_replace_manually.getSync(),
+                )
             lines.forEachIndexed { index, line ->
                 canvas.drawText(
                     line,
                     bitmap.width / 2f,
-                    (bitmap.height / 2f) +
-                            (index - lines.size / 2f) * (paint.textSize + 4.sp.px),
+                    (bitmap.height / 2f) + (index - lines.size / 2f) * (paint.textSize + 4.sp.px),
                     paint,
                 )
             }
@@ -123,23 +125,26 @@ object SnapshotCaptureHost {
 
         val size = 64
         val scaled = bitmap.scale(size, size, false)
-        val softwareBitmap = if (scaled.config == Bitmap.Config.HARDWARE) {
-            val copy = try {
-                scaled.copy(Bitmap.Config.ARGB_8888, false)
+        val softwareBitmap =
+            if (scaled.config == Bitmap.Config.HARDWARE) {
+                val copy =
+                    try {
+                        scaled.copy(Bitmap.Config.ARGB_8888, false)
+                    } finally {
+                        scaled.recycleIfTemporary()
+                    }
+                copy ?: return false
+            } else {
+                scaled
+            }
+        val pixels =
+            try {
+                IntArray(size * size).also {
+                    softwareBitmap.getPixels(it, 0, size, 0, 0, size, size)
+                }
             } finally {
-                scaled.recycleIfTemporary()
+                softwareBitmap.recycleIfTemporary()
             }
-            copy ?: return false
-        } else {
-            scaled
-        }
-        val pixels = try {
-            IntArray(size * size).also {
-                softwareBitmap.getPixels(it, 0, size, 0, 0, size, size)
-            }
-        } finally {
-            softwareBitmap.recycleIfTemporary()
-        }
         val ignoredEdge = (size * 0.08).toInt()
         var sum = 0.0
         var sumSq = 0.0
@@ -167,9 +172,13 @@ object SnapshotCaptureHost {
     }
 
     private suspend fun resolveActivityId(appId: String): String? {
-        privilegeContextFlow.value?.run {
-            topCpn()?.className
-        }?.let { return it }
+        privilegeContextFlow.value
+            ?.run {
+                topCpn()?.className
+            }
+            ?.let {
+                return it
+            }
         var topActivity = currentTopActivity
         var waited = 0L
         while (topActivity.appId != appId && waited < 2000) {
@@ -201,65 +210,71 @@ object SnapshotCaptureHost {
         // 自动化模式先检查窗口标志，命中后跳过特权截图，避免无意义的等待。
         val checkSecureBeforeCapture =
             automatorMode == AutomatorMode.Automation && AndroidTarget.UPSIDE_DOWN_CAKE
-        val focusedWindowSecure = if (checkSecureBeforeCapture) {
-            queryFocusedWindowSecure(appId)
-        } else {
-            null
-        }
-        val a11yScreenshot = if (focusedWindowSecure == true) {
-            null
-        } else {
-            try {
-                AndroidAutomationSessions.screenshot()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                LogUtils.e("无障碍截图失败", e)
+        val focusedWindowSecure =
+            if (checkSecureBeforeCapture) {
+                queryFocusedWindowSecure(appId)
+            } else {
                 null
             }
-        }
+        val a11yScreenshot =
+            if (focusedWindowSecure == true) {
+                null
+            } else {
+                try {
+                    AndroidAutomationSessions.screenshot()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    LogUtils.e("无障碍截图失败", e)
+                    null
+                }
+            }
         val rawPicture = a11yScreenshot ?: ScreenshotService.screenshot()
         var ownedBitmap = rawPicture
         try {
-            val (bitmap, status) = when {
-                rawPicture == null && focusedWindowSecure == true -> {
-                    createBlankScreenshotBitmap() to SnapshotScreenshotStatus.LikelyProtected
-                }
-
-                rawPicture == null -> {
-                    createMissingScreenshotBitmap() to SnapshotScreenshotStatus.Unavailable
-                }
-
-                looksLikeBlankScreenshot(rawPicture) -> {
-                    val secure = if (checkSecureBeforeCapture) {
-                        focusedWindowSecure
-                    } else {
-                        queryFocusedWindowSecure(appId)
+            val (bitmap, status) =
+                when {
+                    rawPicture == null && focusedWindowSecure == true -> {
+                        createBlankScreenshotBitmap() to SnapshotScreenshotStatus.LikelyProtected
                     }
-                    val status = if (secure == false) {
-                        SnapshotScreenshotStatus.Captured
-                    } else {
-                        SnapshotScreenshotStatus.LikelyProtected
-                    }
-                    rawPicture to status
-                }
 
-                else -> {
-                    rawPicture to SnapshotScreenshotStatus.Captured
+                    rawPicture == null -> {
+                        createMissingScreenshotBitmap() to SnapshotScreenshotStatus.Unavailable
+                    }
+
+                    looksLikeBlankScreenshot(rawPicture) -> {
+                        val secure =
+                            if (checkSecureBeforeCapture) {
+                                focusedWindowSecure
+                            } else {
+                                queryFocusedWindowSecure(appId)
+                            }
+                        val status =
+                            if (secure == false) {
+                                SnapshotScreenshotStatus.Captured
+                            } else {
+                                SnapshotScreenshotStatus.LikelyProtected
+                            }
+                        rawPicture to status
+                    }
+
+                    else -> {
+                        rawPicture to SnapshotScreenshotStatus.Captured
+                    }
                 }
-            }
             ownedBitmap = bitmap
-            val processedBitmap = if (
-                status == SnapshotScreenshotStatus.Captured &&
-                hideStatusBar &&
-                (forcedCropStatusBar || BarUtils.isStatusVisible() == true)
-            ) {
-                cropStatusBar(bitmap).also { cropped ->
-                    if (cropped !== bitmap) bitmap.recycle()
+            val processedBitmap =
+                if (
+                    status == SnapshotScreenshotStatus.Captured &&
+                        hideStatusBar &&
+                        (forcedCropStatusBar || BarUtils.isStatusVisible() == true)
+                ) {
+                    cropStatusBar(bitmap).also { cropped ->
+                        if (cropped !== bitmap) bitmap.recycle()
+                    }
+                } else {
+                    bitmap
                 }
-            } else {
-                bitmap
-            }
             ownedBitmap = processedBitmap
             return ScreenResult(processedBitmap.encodeSnapshotScreenshot(), status)
         } finally {
@@ -267,83 +282,98 @@ object SnapshotCaptureHost {
         }
     }
 
-    suspend fun capture(forcedCropStatusBar: Boolean = false): SnapshotCaptureOutcome<ComplexSnapshot> {
-        val service = AndroidAutomationSessions.service
-            ?: throw InspectionException(InspectionFailure.AccessibilityAuthorizationRequired)
+    suspend fun capture(
+        forcedCropStatusBar: Boolean = false,
+    ): SnapshotCaptureOutcome<ComplexSnapshot> {
+        val service =
+            AndroidAutomationSessions.service
+                ?: throw InspectionException(InspectionFailure.AccessibilityAuthorizationRequired)
         val settings = settings.value
-        val outcome = SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
-            val rootNode = AndroidAutomationSessions.getRoot(service)
-                ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
-            val appId = rootNode.packageName.toString()
-            val screenSize = ScreenUtils.getSize()
-            val isLandscape = ScreenUtils.isLandscape()
-            coroutineScope {
-                val nodes = async(Dispatchers.IO) { captureNodeInfoList(rootNode) }
-                val activityId = async(Dispatchers.IO) { resolveActivityId(appId) }
-                val screenshot = async(Dispatchers.Default) {
-                    captureScreen(
-                        appId,
-                        service.mode,
-                        forcedCropStatusBar,
-                        settings.hideSnapshotStatusBar,
+        val outcome =
+            SnapshotCaptureRepository.capture(settings.autoSaveSnapshotToDownloads) {
+                val rootNode =
+                    AndroidAutomationSessions.getRoot(service)
+                        ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
+                val appId = rootNode.packageName.toString()
+                val screenSize = ScreenUtils.getSize()
+                val isLandscape = ScreenUtils.isLandscape()
+                coroutineScope {
+                    val nodes = async(Dispatchers.IO) { captureNodeInfoList(rootNode) }
+                    val activityId = async(Dispatchers.IO) { resolveActivityId(appId) }
+                    val screenshot =
+                        async(Dispatchers.Default) {
+                            captureScreen(
+                                appId,
+                                service.mode,
+                                forcedCropStatusBar,
+                                settings.hideSnapshotStatusBar,
+                            )
+                        }
+                    val screen = screenshot.await()
+                    SnapshotCaptureInput(
+                        appId = appId,
+                        activityId = activityId.await(),
+                        screenSize = screenSize,
+                        isLandscape = isLandscape,
+                        nodes = nodes.await(),
+                        appInfo = AppInfoRepository.snapshot?.apps?.get(appId),
+                        gkdAppInfo = selfAppInfo,
+                        device = currentDeviceInfo(),
+                        screenshot = screen.bytes,
+                        screenshotStatus = screen.status,
                     )
                 }
-                val screen = screenshot.await()
-                SnapshotCaptureInput(
-                    appId = appId,
-                    activityId = activityId.await(),
-                    screenSize = screenSize,
-                    isLandscape = isLandscape,
-                    nodes = nodes.await(),
-                    appInfo = AppInfoRepository.snapshot?.apps?.get(appId),
-                    gkdAppInfo = selfAppInfo,
-                    device = currentDeviceInfo(),
-                    screenshot = screen.bytes,
-                    screenshotStatus = screen.status,
-                )
             }
-        }
-        val captured = when (outcome) {
-            SnapshotCaptureOutcome.Busy -> {
-                ToastUtils.show(getString(Res.string.snapshot_save_in_progress), forced = true)
-                return SnapshotCaptureOutcome.Busy
+        val captured =
+            when (outcome) {
+                SnapshotCaptureOutcome.Busy -> {
+                    ToastUtils.show(getString(Res.string.snapshot_save_in_progress), forced = true)
+                    return SnapshotCaptureOutcome.Busy
+                }
+                is SnapshotCaptureOutcome.Captured -> outcome.value
             }
-            is SnapshotCaptureOutcome.Captured -> outcome.value
-        }
         val snapshot = captured.snapshot
-        val exportDetail = when (val exported = captured.autoExport) {
-            SnapshotAutoExportResult.Disabled -> null
-            SnapshotAutoExportResult.PermissionDenied ->
-                getString(Res.string.snapshot_auto_export_permission_denied)
+        val exportDetail =
+            when (val exported = captured.autoExport) {
+                SnapshotAutoExportResult.Disabled -> null
+                SnapshotAutoExportResult.PermissionDenied ->
+                    getString(Res.string.snapshot_auto_export_permission_denied)
 
-            is SnapshotAutoExportResult.Completed -> when (exported.result) {
-                is PlatformResult.Success -> null
-                PlatformResult.Unsupported -> getString(Res.string.platform_action_unsupported)
-            }
+                is SnapshotAutoExportResult.Completed ->
+                    when (exported.result) {
+                        is PlatformResult.Success -> null
+                        PlatformResult.Unsupported ->
+                            getString(Res.string.platform_action_unsupported)
+                    }
 
-            is SnapshotAutoExportResult.Failed -> {
-                LogUtils.e("自动保存快照至下载失败", exported.cause)
-                getString(
-                    Res.string.snapshot_auto_export_failed,
-                    exported.cause.displayMessage()
-                )
+                is SnapshotAutoExportResult.Failed -> {
+                    LogUtils.e("自动保存快照至下载失败", exported.cause)
+                    getString(
+                        Res.string.snapshot_auto_export_failed,
+                        exported.cause.displayMessage(),
+                    )
+                }
             }
-        }
-        val detail = listOfNotNull(captured.screenshotStatus.detailText(), exportDetail)
-            .joinToString(" · ").takeIf { it.isNotEmpty() }
+        val detail =
+            listOfNotNull(captured.screenshotStatus.detailText(), exportDetail)
+                .joinToString(" · ")
+                .takeIf { it.isNotEmpty() }
         // Notification delivery does not change the already committed capture / HTTP result.
         try {
             NotificationCatalog.snapshotSaved(
-                appName = snapshot.appInfo?.name ?: snapshot.appId,
-                activityId = getShowActivityId(snapshot.appId, snapshot.activityId),
-                screenshotStatus = captured.screenshotStatus,
-                savedToDownloads = (captured.autoExport as? SnapshotAutoExportResult.Completed)
-                    ?.result is PlatformResult.Success,
-                exportDetail = exportDetail,
-            ).post()
+                    appName = snapshot.appInfo?.name ?: snapshot.appId,
+                    activityId = getShowActivityId(snapshot.appId, snapshot.activityId),
+                    screenshotStatus = captured.screenshotStatus,
+                    savedToDownloads =
+                        (captured.autoExport as? SnapshotAutoExportResult.Completed)?.result
+                            is PlatformResult.Success,
+                    exportDetail = exportDetail,
+                )
+                .post()
             ToastUtils.show(
                 if (detail == null) getString(Res.string.snapshot_saved)
-                else getString(Res.string.snapshot_saved_warning, detail), forced = true
+                else getString(Res.string.snapshot_saved_warning, detail),
+                forced = true,
             )
         } catch (e: CancellationException) {
             throw e

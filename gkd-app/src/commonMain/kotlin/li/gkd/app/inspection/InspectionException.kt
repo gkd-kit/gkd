@@ -12,7 +12,10 @@ enum class InspectionFailure(val errorCode: String, val messageResource: StringR
     InvalidSelector("INVALID_SELECTOR", Res.string.selector_invalid),
     SelectorTypeError("INVALID_SELECTOR", Res.string.selector_type_error),
     AccessibilityUnavailable("ACCESSIBILITY_UNAVAILABLE", Res.string.service_not_connected),
-    AccessibilityAuthorizationRequired("ACCESSIBILITY_UNAVAILABLE", Res.string.service_unavailable_authorize),
+    AccessibilityAuthorizationRequired(
+        "ACCESSIBILITY_UNAVAILABLE",
+        Res.string.service_unavailable_authorize,
+    ),
     ScreenNodesUnavailable("SCREEN_NODES_UNAVAILABLE", Res.string.screen_nodes_unavailable),
     SnapshotNodesUnavailable("SCREEN_NODES_UNAVAILABLE", Res.string.snapshot_app_a11y_missing),
     TargetNodeNotFound("TARGET_NODE_NOT_FOUND", Res.string.selector_node_not_found),
@@ -24,10 +27,15 @@ class InspectionException(
     val detail: String? = null,
     cause: Throwable? = null,
 ) : Exception(reason.name, cause), BusinessError {
-    override val errorCode: String get() = reason.errorCode
+    override val errorCode: String
+        get() = reason.errorCode
+
     override val errorMessage: ErrorMessage
-        get() = ErrorMessage.Resource(
-            reason.messageResource,
-            if (reason == InspectionFailure.SelectorTypeError) listOf(ErrorMessage.Text(detail.orEmpty())) else emptyList(),
-        )
+        get() =
+            ErrorMessage.Resource(
+                reason.messageResource,
+                if (reason == InspectionFailure.SelectorTypeError)
+                    listOf(ErrorMessage.Text(detail.orEmpty()))
+                else emptyList(),
+            )
 }

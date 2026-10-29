@@ -25,6 +25,7 @@ class MatchOperationStatisticsRecorder {
         var nanos = 0L
         var slowest = first.copy(recording = null, arguments = emptyList())
     }
+
     private val totals = linkedMapOf<Pair<String, String?>, Total>()
     private var completed = 0L
     private var omitted = 0L
@@ -32,12 +33,18 @@ class MatchOperationStatisticsRecorder {
     fun record(operation: MatchOperation) {
         val duration = checkNotNull(operation.durationNanos)
         completed++
-        val rule = operation.rule.takeIf { operation.name == "Query" || operation.name == "SelectorQuery" }
+        val rule =
+            operation.rule.takeIf { operation.name == "Query" || operation.name == "SelectorQuery" }
         val key = operation.name to rule
-        val total = totals[key] ?: run {
-            if (totals.size == 128) { omitted++; return }
-            Total(operation).also { totals[key] = it }
-        }
+        val total =
+            totals[key]
+                ?: run {
+                    if (totals.size == 128) {
+                        omitted++
+                        return
+                    }
+                    Total(operation).also { totals[key] = it }
+                }
         total.count++
         total.nanos += duration
         if (duration > checkNotNull(total.slowest.durationNanos)) {
@@ -45,7 +52,12 @@ class MatchOperationStatisticsRecorder {
         }
     }
 
-    fun snapshot() = MatchOperationStatistics(completed, omitted, totals.map { (key, total) ->
-        MatchOperationTotal(key.first, key.second, total.count, total.nanos, total.slowest)
-    })
+    fun snapshot() =
+        MatchOperationStatistics(
+            completed,
+            omitted,
+            totals.map { (key, total) ->
+                MatchOperationTotal(key.first, key.second, total.count, total.nanos, total.slowest)
+            },
+        )
 }

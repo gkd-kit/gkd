@@ -17,9 +17,11 @@ class AndroidServerDiagnostics : DebugServerDiagnostics {
     private val sessionLock = Any()
     @Volatile private var stopping = false
     private var ownedSession: String? = null
-    private val credentials get() = appStorage().privateStore.resolve("app-debug.json")
-    private val token = ByteArray(32).also { SecureRandom().nextBytes(it) }
-        .joinToString("") { "%02x".format(it) }
+    private val credentials
+        get() = appStorage().privateStore.resolve("app-debug.json")
+
+    private val token =
+        ByteArray(32).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
 
     override fun configure(application: Application) {
         application.configureDebugAccess(token) { stopping }
@@ -27,36 +29,50 @@ class AndroidServerDiagnostics : DebugServerDiagnostics {
             get("/health") { call.respond(mapOf("status" to "ready")) }
             appDebugRoutes()
             androidDebugRoutes()
-            matchDebugRoutes(onSessionStarted = ::onSessionStarted, startCapture = { request ->
-                startDiagnosticCapture(request.detailed, request.ruleFilter,
-                    request.recordQueries, request.recordSystem)
-            })
+            matchDebugRoutes(
+                onSessionStarted = ::onSessionStarted,
+                startCapture = { request ->
+                    startDiagnosticCapture(
+                        request.detailed,
+                        request.ruleFilter,
+                        request.recordQueries,
+                        request.recordSystem,
+                    )
+                },
+            )
         }
     }
 
     private fun onSessionStarted(id: String) {
-        val cancel = synchronized(sessionLock) {
-            if (stopping) true else { ownedSession = id; false }
-        }
+        val cancel =
+            synchronized(sessionLock) {
+                if (stopping) true
+                else {
+                    ownedSession = id
+                    false
+                }
+            }
         // A request can finish creating its session while the service is stopping.
         if (cancel) MatchingRuntime.coordinator.stopDiagnostics(id)
     }
 
-    override fun publish(port: Int) = synchronized(sessionLock) {
-        if (!stopping) {
-            credentials.writeText(JSONObject().put("port", port).put("token", token).toString())
+    override fun publish(port: Int) =
+        synchronized(sessionLock) {
+            if (!stopping) {
+                credentials.writeText(JSONObject().put("port", port).put("token", token).toString())
+            }
         }
-    }
 
     override fun unpublish() {
         synchronized(sessionLock) { credentials.delete() }
     }
 
     override fun close() {
-        val session = synchronized(sessionLock) {
-            stopping = true
-            ownedSession.also { ownedSession = null }
-        }
+        val session =
+            synchronized(sessionLock) {
+                stopping = true
+                ownedSession.also { ownedSession = null }
+            }
         try {
             session?.let { MatchingRuntime.coordinator.stopDiagnostics(it) }
         } finally {

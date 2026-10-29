@@ -11,13 +11,13 @@ import androidx.compose.animation.togetherWith
 
 fun <S : Comparable<S>> AnimatedContentTransitionScope<S>.getUpDownTransform(): ContentTransform {
     return if (targetState > initialState) {
-        slideInVertically { height -> height } + fadeIn() togetherWith
+            slideInVertically { height -> height } + fadeIn() togetherWith
                 slideOutVertically { height -> -height } + fadeOut()
-    } else {
-        slideInVertically { height -> -height } + fadeIn() togetherWith
+        } else {
+            slideInVertically { height -> -height } + fadeIn() togetherWith
                 slideOutVertically { height -> height } + fadeOut()
-    }.using(
-        SizeTransform(clip = false)
-    )
+        }
+        .using(
+            SizeTransform(clip = false),
+        )
 }
-

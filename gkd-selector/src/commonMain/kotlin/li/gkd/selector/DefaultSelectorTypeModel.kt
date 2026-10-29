@@ -23,76 +23,78 @@ private fun buildDefaultSelectorTypeModel(webField: Boolean): SelectorTypeModel 
     val contextType = builder.type(SelectorTypeKind.ObjectType("context"))
     val globalType = builder.type(SelectorTypeKind.ObjectType("global"))
 
-    val builtinTypes = BuiltinTypeSet(
-        booleanType = booleanType,
-        intType = intType,
-        stringType = stringType,
-        contextType = contextType,
-        nodeType = nodeType,
-    )
+    val builtinTypes =
+        BuiltinTypeSet(
+            booleanType = booleanType,
+            intType = intType,
+            stringType = stringType,
+            contextType = contextType,
+            nodeType = nodeType,
+        )
     builder.methods(booleanType, BuiltinMembers.methodInfos(BuiltinScope.Boolean, builtinTypes))
     builder.methods(intType, BuiltinMembers.methodInfos(BuiltinScope.Int, builtinTypes))
     builder.properties(
-        stringType, listOf(
+        stringType,
+        listOf(
             SelectorProperty("length", intType),
-        )
+        ),
     )
     builder.methods(stringType, BuiltinMembers.methodInfos(BuiltinScope.String, builtinTypes))
-    val nodeProps = (if (webField) {
+    val nodeProps =
+        (if (webField) {
+            listOf(
+                SelectorProperty("_id", intType),
+                SelectorProperty("_pid", intType),
+            )
+        } else {
+            emptyList()
+        }) +
+            listOf(
+                SelectorProperty("id", stringType),
+                SelectorProperty("vid", stringType),
+                SelectorProperty("name", stringType),
+                SelectorProperty("text", stringType),
+                SelectorProperty("desc", stringType),
+                SelectorProperty("clickable", booleanType),
+                SelectorProperty("focusable", booleanType),
+                SelectorProperty("checkable", booleanType),
+                SelectorProperty("checked", booleanType),
+                SelectorProperty("editable", booleanType),
+                SelectorProperty("longClickable", booleanType),
+                SelectorProperty("visibleToUser", booleanType),
+                SelectorProperty("left", intType),
+                SelectorProperty("top", intType),
+                SelectorProperty("right", intType),
+                SelectorProperty("bottom", intType),
+                SelectorProperty("width", intType),
+                SelectorProperty("height", intType),
+                SelectorProperty("childCount", intType),
+                SelectorProperty("index", intType),
+                SelectorProperty("depth", intType),
+                SelectorProperty("parent", nodeType),
+            )
+    val nodeMethods =
         listOf(
-            SelectorProperty("_id", intType),
-            SelectorProperty("_pid", intType),
+            SelectorMethod("getChild", nodeType, listOf(intType)),
         )
-    } else {
-        emptyList()
-    }) + listOf(
-        SelectorProperty("id", stringType),
-        SelectorProperty("vid", stringType),
-        SelectorProperty("name", stringType),
-        SelectorProperty("text", stringType),
-        SelectorProperty("desc", stringType),
-
-        SelectorProperty("clickable", booleanType),
-        SelectorProperty("focusable", booleanType),
-        SelectorProperty("checkable", booleanType),
-        SelectorProperty("checked", booleanType),
-        SelectorProperty("editable", booleanType),
-        SelectorProperty("longClickable", booleanType),
-        SelectorProperty("visibleToUser", booleanType),
-
-        SelectorProperty("left", intType),
-        SelectorProperty("top", intType),
-        SelectorProperty("right", intType),
-        SelectorProperty("bottom", intType),
-        SelectorProperty("width", intType),
-        SelectorProperty("height", intType),
-
-        SelectorProperty("childCount", intType),
-        SelectorProperty("index", intType),
-        SelectorProperty("depth", intType),
-
-        SelectorProperty("parent", nodeType),
-    )
-    val nodeMethods = listOf(
-        SelectorMethod("getChild", nodeType, listOf(intType)),
-    )
     builder.properties(nodeType, nodeProps)
     builder.methods(nodeType, nodeMethods)
     builder.methods(
         contextType,
-        nodeMethods +
-                BuiltinMembers.methodInfos(BuiltinScope.Context, builtinTypes),
+        nodeMethods + BuiltinMembers.methodInfos(BuiltinScope.Context, builtinTypes),
     )
-    val contextProps = nodeProps + listOf(
-        SelectorProperty("prev", contextType),
-        SelectorProperty("current", nodeType),
-    )
+    val contextProps =
+        nodeProps +
+            listOf(
+                SelectorProperty("prev", contextType),
+                SelectorProperty("current", nodeType),
+            )
     builder.properties(contextType, contextProps)
     builder.methods(
         globalType,
         nodeMethods +
-                BuiltinMembers.methodInfos(BuiltinScope.Context, builtinTypes) +
-                BuiltinMembers.methodInfos(BuiltinScope.Global, builtinTypes),
+            BuiltinMembers.methodInfos(BuiltinScope.Context, builtinTypes) +
+            BuiltinMembers.methodInfos(BuiltinScope.Global, builtinTypes),
     )
     builder.properties(globalType, contextProps)
     return builder.build(globalType)

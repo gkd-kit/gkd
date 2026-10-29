@@ -15,8 +15,9 @@ fun rememberAppearance(): androidx.compose.runtime.State<AppearanceState> {
             .distinctUntilChanged()
     }
     return appearance.collectAsStateWithLifecycle(
-        initialValue = SettingsRepository.settings.value.let {
-            AppearanceState(it.enableDarkTheme, it.enableDynamicColor)
-        },
+        initialValue =
+            SettingsRepository.settings.value.let {
+                AppearanceState(it.enableDarkTheme, it.enableDynamicColor)
+            },
     )
 }

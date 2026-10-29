@@ -34,18 +34,19 @@ fun GkLazyCopyableText(
 ) {
     val chunkRanges = remember(text.text) { buildTextChunkRanges(text.text) }
     GkCopyIconOverlay(
-        onCopy = onCopy, textToCopy = textToCopy,
+        onCopy = onCopy,
+        textToCopy = textToCopy,
         copyIconVisible = true,
         contentColor = contentColor,
-        modifier = modifier.defaultMinSize(
-            minHeight = LocalMinimumInteractiveComponentSize.current,
-        ),
+        modifier =
+            modifier.defaultMinSize(
+                minHeight = LocalMinimumInteractiveComponentSize.current,
+            ),
     ) {
         SelectionContainer {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .run {
+                modifier =
+                    Modifier.fillMaxWidth().run {
                         if (textContentDescription == null) {
                             this
                         } else {
@@ -60,9 +61,10 @@ fun GkLazyCopyableText(
                     items = chunkRanges,
                     key = { it.first },
                 ) { range ->
-                    val chunk = remember(text, range) {
-                        text.subSequence(range.first, range.last + 1)
-                    }
+                    val chunk =
+                        remember(text, range) {
+                            text.subSequence(range.first, range.last + 1)
+                        }
                     BasicText(
                         text = chunk,
                         modifier = Modifier.fillMaxWidth(),
@@ -81,8 +83,8 @@ private fun buildTextChunkRanges(text: String): List<IntRange> {
     text.forEachIndexed { index, char ->
         if (
             char == '\n' &&
-            index < text.lastIndex &&
-            index + 1 - chunkStart >= LAZY_TEXT_TARGET_CHUNK_SIZE
+                index < text.lastIndex &&
+                index + 1 - chunkStart >= LAZY_TEXT_TARGET_CHUNK_SIZE
         ) {
             // The item boundary represents this newline. Keeping it in the preceding BasicText
             // would add an extra empty visual line before the next item.

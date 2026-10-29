@@ -27,14 +27,12 @@ data class ActivityLog(
     @Dao
     @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
     interface ActivityLogDao {
-        @Insert
-        suspend fun insert(vararg objects: ActivityLog): List<Long>
+        @Insert suspend fun insert(vararg objects: ActivityLog): List<Long>
 
         @Query("SELECT * FROM activity_log ORDER BY ctime DESC ")
         fun pagingSource(): PagingSource<Int, ActivityLog>
 
-        @Query("SELECT COUNT(*) FROM activity_log")
-        fun count(): Flow<Int>
+        @Query("SELECT COUNT(*) FROM activity_log") fun count(): Flow<Int>
 
         @Query(
             """
@@ -45,14 +43,13 @@ data class ActivityLog(
                     ORDER BY ctime DESC
                     LIMIT 1 OFFSET 500
                 )
-        """
+        """,
         )
         suspend fun deleteKeepLatest(): Int
     }
 
-
     @DeleteTable.Entries(
-        DeleteTable(tableName = "activity_log")
+        DeleteTable(tableName = "activity_log"),
     )
     class ActivityLogV2Spec : AutoMigrationSpec
 }

@@ -18,8 +18,9 @@ object PrivilegeOwnerLifecycle {
     fun prepareAppRestart() {
         runCatching {
             Privilege.prepareOwnerRestart(APP_RESTART_PASSIVE_TIMEOUT_MILLIS)
-        }.onFailure { error ->
-            LogUtils.e("prepare owner restart failed", error)
         }
+            .onFailure { error ->
+                LogUtils.e("prepare owner restart failed", error)
+            }
     }
 }

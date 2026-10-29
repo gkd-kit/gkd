@@ -8,14 +8,22 @@ import li.gkd.app.rule.ResolvedGlobalGroup
 import li.gkd.app.rule.RuleSummary
 
 @Serializable
-data class MatchRuleIndex(val subscriptionId: Long, val subscriptionVersion: Int, val rules: List<String>)
+data class MatchRuleIndex(
+    val subscriptionId: Long,
+    val subscriptionVersion: Int,
+    val rules: List<String>,
+)
 
 fun RuleSummary.diagnosticIndex(): List<MatchRuleIndex> =
-    (globalRules + appIdToRules.values.flatten()).groupBy { it.g.subscription }.map { (subscription, rules) ->
-        MatchRuleIndex(subscription.id, subscription.version, rules.map { it.matchIdentity() })
-    }
+    (globalRules + appIdToRules.values.flatten())
+        .groupBy { it.g.subscription }
+        .map { (subscription, rules) ->
+            MatchRuleIndex(subscription.id, subscription.version, rules.map { it.matchIdentity() })
+        }
 
-/** Candidates explain filtering; definitions cover selected rules and their execution dependencies. */
+/**
+ * Candidates explain filtering; definitions cover selected rules and their execution dependencies.
+ */
 @Serializable
 data class MatchRuleSnapshot(
     val id: Long,
@@ -41,7 +49,10 @@ data class MatchRuleDefinition(
     val dependencies: List<String>,
 )
 
-fun ForegroundRuleSnapshot.diagnosticSnapshot(id: Long, register: (MatchRuleDefinition) -> Long): MatchRuleSnapshot {
+fun ForegroundRuleSnapshot.diagnosticSnapshot(
+    id: Long,
+    register: (MatchRuleDefinition) -> Long,
+): MatchRuleSnapshot {
     val definitions = currentRules.toMutableSet()
     val pending = ArrayDeque(currentRules)
     while (pending.isNotEmpty()) {
@@ -49,39 +60,58 @@ fun ForegroundRuleSnapshot.diagnosticSnapshot(id: Long, register: (MatchRuleDefi
             if (definitions.add(it)) pending.addLast(it)
         }
     }
-    return MatchRuleSnapshot(id, topActivity.appId, topActivity.activityId, blockMatch, ruleAvailability,
-        (appRules + ruleSummary.globalRules).map { it.matchIdentity() }, currentRules.map { it.matchIdentity() },
+    return MatchRuleSnapshot(
+        id,
+        topActivity.appId,
+        topActivity.activityId,
+        blockMatch,
+        ruleAvailability,
+        (appRules + ruleSummary.globalRules).map { it.matchIdentity() },
+        currentRules.map { it.matchIdentity() },
         definitions.map { rule ->
             val group = rule.g
             val raw = group.group.cacheJsonObject
             val parameters = rule.parameters
-            register(MatchRuleDefinition(rule.matchIdentity(), group.subscription.version,
-                JsonObject(raw.filterKeys { it != "rules" && it !in diagnosticExampleFields }),
-                JsonObject(raw.getValue("rules").jsonArray[rule.index].jsonObject.filterKeys { it !in diagnosticExampleFields }),
-                buildJsonObject {
-                    put("actionCd", parameters.actionCd)
-                    put("actionMaximum", parameters.actionMaximum?.let(::JsonPrimitive) ?: JsonNull)
-                    put("matchDelay", parameters.matchDelay)
-                    put("actionDelay", parameters.actionDelay)
-                    put("matchTime", parameters.matchTime?.let(::JsonPrimitive) ?: JsonNull)
-                    put("forcedTime", parameters.forcedTime)
-                    put("resetMatch", parameters.resetMatchType.value)
-                    put("fastQuery", parameters.matchOptions.fastQuery)
-                    put("matchRoot", parameters.matchRoot)
-                    put("order", parameters.order)
-                    put("priorityTime", parameters.priorityTime)
-                    put("priorityActionMaximum", parameters.priorityActionMaximum)
-                }, group.config?.exclude,
-                (group as? ResolvedGlobalGroup)?.matchAnyApp,
-                (group as? ResolvedGlobalGroup)?.groupExcludeAppIds ?: emptySet(),
-                rule.executionDependencies().map { it.matchIdentity() }))
-        })
+            register(
+                MatchRuleDefinition(
+                    rule.matchIdentity(),
+                    group.subscription.version,
+                    JsonObject(raw.filterKeys { it != "rules" && it !in diagnosticExampleFields }),
+                    JsonObject(
+                        raw.getValue("rules").jsonArray[rule.index].jsonObject.filterKeys {
+                            it !in diagnosticExampleFields
+                        },
+                    ),
+                    buildJsonObject {
+                        put("actionCd", parameters.actionCd)
+                        put(
+                            "actionMaximum",
+                            parameters.actionMaximum?.let(::JsonPrimitive) ?: JsonNull,
+                        )
+                        put("matchDelay", parameters.matchDelay)
+                        put("actionDelay", parameters.actionDelay)
+                        put("matchTime", parameters.matchTime?.let(::JsonPrimitive) ?: JsonNull)
+                        put("forcedTime", parameters.forcedTime)
+                        put("resetMatch", parameters.resetMatchType.value)
+                        put("fastQuery", parameters.matchOptions.fastQuery)
+                        put("matchRoot", parameters.matchRoot)
+                        put("order", parameters.order)
+                        put("priorityTime", parameters.priorityTime)
+                        put("priorityActionMaximum", parameters.priorityActionMaximum)
+                    },
+                    group.config?.exclude,
+                    (group as? ResolvedGlobalGroup)?.matchAnyApp,
+                    (group as? ResolvedGlobalGroup)?.groupExcludeAppIds ?: emptySet(),
+                    rule.executionDependencies().map { it.matchIdentity() },
+                ),
+            )
+        },
+    )
 }
 
 private val diagnosticExampleFields = setOf("snapshotUrls", "excludeSnapshotUrls", "exampleUrls")
 
-@Serializable
-data class MatchEntrySummary(val source: String, val reason: String, val count: Long)
+@Serializable data class MatchEntrySummary(val source: String, val reason: String, val count: Long)
 
 @Serializable
 data class MatchDiagnosticCapture(
@@ -90,7 +120,8 @@ data class MatchDiagnosticCapture(
     val ruleSnapshots: List<MatchRuleSnapshot>,
     val droppedRuleSnapshots: Long,
     val entries: List<MatchEntrySummary>,
-    val scope: String = "foreground_candidate_ids_and_selected_definitions; optional_recorded_selector_access; optional_scheduler_rules_action_lifecycle; observed_evidence_only",
+    val scope: String =
+        "foreground_candidate_ids_and_selected_definitions; optional_recorded_selector_access; optional_scheduler_rules_action_lifecycle; observed_evidence_only",
     val queryRecordings: List<MatchQueryRecording> = emptyList(),
     val droppedQueryRecordings: Long = 0,
     val systemRecording: MatchSystemRecording? = null,

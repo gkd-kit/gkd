@@ -37,5 +37,6 @@ class ActionToastViewModel : BaseViewModel() {
             systemStyle.value != initial.useSystemToast ||
             text.value != initial.actionToast
 
-    suspend fun save() = SettingsRepository.saveActionToast(enabled.value, systemStyle.value, text.value)
+    suspend fun save() =
+        SettingsRepository.saveActionToast(enabled.value, systemStyle.value, text.value)
 }

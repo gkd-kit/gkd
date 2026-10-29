@@ -25,27 +25,30 @@ class PermissionRequests(
 ) : PermissionRequester {
     private val coordinator = PermissionRequestCoordinator()
     private val hostCommands = PermissionHostCommands()
-    private val content = PermissionRequestContent(
-        coordinator = coordinator,
-        updateHostState = ::updateHostState,
-        detachHost = ::detachHost,
-    )
+    private val content =
+        PermissionRequestContent(
+            coordinator = coordinator,
+            updateHostState = ::updateHostState,
+            detachHost = ::detachHost,
+        )
     private val hostInteractive = MutableStateFlow(false)
     private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val foregroundRefreshJob = refreshScope.launch {
         hostInteractive.collectLatest { interactive ->
             if (interactive) {
                 coroutineScope {
-                    PermissionStates.all.filter {
-                        it.recheckPolicy !== PermissionRecheckPolicy.Immediate
-                    }.forEach { permissionState ->
-                        launch {
-                            permissionState.recheckPolicy.awaitGranted(
-                                hostInteractive,
-                                permissionState::refresh,
-                            )
+                    PermissionStates.all
+                        .filter {
+                            it.recheckPolicy !== PermissionRecheckPolicy.Immediate
                         }
-                    }
+                        .forEach { permissionState ->
+                            launch {
+                                permissionState.recheckPolicy.awaitGranted(
+                                    hostInteractive,
+                                    permissionState::refresh,
+                                )
+                            }
+                        }
                 }
             }
         }
@@ -60,64 +63,73 @@ class PermissionRequests(
     }
 
     override suspend fun ensurePermissions(vararg permissions: AppPermission): Boolean =
-        ensurePermissions(*permissions.map { permission ->
-            when (permission) {
-                AppPermission.LocalNetwork -> PermissionStates.localNetwork
-                AppPermission.IgnoreBatteryOptimizations -> PermissionStates.ignoreBatteryOptimizations
-                AppPermission.QueryPackages -> PermissionStates.queryPackages
-            }
-        }.toTypedArray())
+        ensurePermissions(
+            *permissions
+                .map { permission ->
+                    when (permission) {
+                        AppPermission.LocalNetwork -> PermissionStates.localNetwork
+                        AppPermission.IgnoreBatteryOptimizations ->
+                            PermissionStates.ignoreBatteryOptimizations
+                        AppPermission.QueryPackages -> PermissionStates.queryPackages
+                    }
+                }
+                .toTypedArray(),
+        )
 
     suspend fun ensurePermissions(
         vararg permissionStates: PermissionState,
-    ): Boolean = withContext(Dispatchers.Main.immediate) {
-        if (disposed) return@withContext false
-        requestMutex.withLock {
-            if (disposed) return@withLock false
-            val requestJob = currentCoroutineContext().job
-            activeRequestJob = requestJob
-            try {
-                for (permissionState in permissionStates) {
-                    if (permissionState.refresh()) continue
-                    val permission = permissionState.permission
-                    if (permission == null) {
-                        val resolution = permissionState.resolution ?: return@withLock false
-                        if (coordinator.awaitResolution(permissionState)) {
-                            if (resolution.navigateToPrivilegeService) {
-                                navigateToPrivilegeService()
+    ): Boolean =
+        withContext(Dispatchers.Main.immediate) {
+            if (disposed) return@withContext false
+            requestMutex.withLock {
+                if (disposed) return@withLock false
+                val requestJob = currentCoroutineContext().job
+                activeRequestJob = requestJob
+                try {
+                    for (permissionState in permissionStates) {
+                        if (permissionState.refresh()) continue
+                        val permission = permissionState.permission
+                        if (permission == null) {
+                            val resolution = permissionState.resolution ?: return@withLock false
+                            if (coordinator.awaitResolution(permissionState)) {
+                                if (resolution.navigateToPrivilegeService) {
+                                    navigateToPrivilegeService()
+                                }
                             }
+                            return@withLock false
                         }
-                        return@withLock false
+                        hostCommands.requestPermission(
+                            permission = permission,
+                            prompt =
+                                PermissionPrompt(
+                                    title =
+                                        getString(
+                                            Res.string.permission_request_progress,
+                                            permissionState.name,
+                                        ),
+                                    message =
+                                        checkNotNull(permissionState.purpose) {
+                                            "${permissionState.name} 缺少权限请求说明"
+                                        },
+                                ),
+                        )
+                        if (refreshAfterReturn(permissionState)) continue
+                        if (!coordinator.awaitResolution(permissionState)) {
+                            return@withLock false
+                        }
+                        hostCommands.openPermissionSettings(permission)
+                        if (!refreshAfterReturn(permissionState)) {
+                            return@withLock false
+                        }
                     }
-                    hostCommands.requestPermission(
-                        permission = permission,
-                        prompt = PermissionPrompt(
-                            title = getString(
-                                Res.string.permission_request_progress,
-                                permissionState.name
-                            ),
-                            message = checkNotNull(permissionState.purpose) {
-                                "${permissionState.name} 缺少权限请求说明"
-                            },
-                        ),
-                    )
-                    if (refreshAfterReturn(permissionState)) continue
-                    if (!coordinator.awaitResolution(permissionState)) {
-                        return@withLock false
+                    true
+                } finally {
+                    if (activeRequestJob === requestJob) {
+                        activeRequestJob = null
                     }
-                    hostCommands.openPermissionSettings(permission)
-                    if (!refreshAfterReturn(permissionState)) {
-                        return@withLock false
-                    }
-                }
-                true
-            } finally {
-                if (activeRequestJob === requestJob) {
-                    activeRequestJob = null
                 }
             }
         }
-    }
 
     private suspend fun refreshAfterReturn(permissionState: PermissionState): Boolean =
         permissionState.recheckPolicy.awaitGranted(hostInteractive, permissionState::refresh)

@@ -33,7 +33,7 @@ fun GkFilterIconButton(
                 Modifier.align(Alignment.TopEnd)
                     .padding(8.dp)
                     .size(6.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
             )
         }
     }

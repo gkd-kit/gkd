@@ -30,23 +30,25 @@ private fun CustomIconButton(
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
     interactionSource: MutableInteractionSource? = null,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Box(
         modifier =
             modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(color = colors.run { if (enabled) containerColor else disabledContainerColor })
+                .background(
+                    color = colors.run { if (enabled) containerColor else disabledContainerColor },
+                )
                 .clickable(
                     onClick = onClick,
                     onClickLabel = onClickLabel,
                     enabled = enabled,
                     role = Role.Button,
                     interactionSource = interactionSource,
-                    indication = ripple(bounded = false, radius = size / 2)
+                    indication = ripple(bounded = false, radius = size / 2),
                 ),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         val contentColor = colors.run { if (enabled) contentColor else disabledContentColor }
         CompositionLocalProvider(LocalContentColor provides contentColor, content = content)
@@ -62,19 +64,20 @@ fun GkSizedIconButton(
     imageVector: ImageVector,
     contentDescription: String? = null,
     tint: Color = LocalContentColor.current,
-) = GkTooltipIconButtonBox(
-    contentDescription = contentDescription,
-) {
-    CustomIconButton(
-        size = size,
-        onClickLabel = onClickLabel,
-        onClick = onClick,
+) =
+    GkTooltipIconButtonBox(
+        contentDescription = contentDescription,
     ) {
-        GkIcon(
-            modifier = Modifier.size(iconSize),
-            imageVector = imageVector,
-            contentDescription = contentDescription,
-            tint = tint,
-        )
+        CustomIconButton(
+            size = size,
+            onClickLabel = onClickLabel,
+            onClick = onClick,
+        ) {
+            GkIcon(
+                modifier = Modifier.size(iconSize),
+                imageVector = imageVector,
+                contentDescription = contentDescription,
+                tint = tint,
+            )
+        }
     }
-}

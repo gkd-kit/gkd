@@ -1,9 +1,5 @@
 package li.gkd.app.matching.diagnostics
 
-import li.gkd.app.matching.MatchScheduleCommandType
-
-import li.gkd.app.matching.query.MatchNodeReadFailure
-
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -15,24 +11,25 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import li.gkd.app.matching.ForegroundRuleSnapshot
 import li.gkd.app.matching.MatchCoordinator
+import li.gkd.app.matching.MatchScheduleCheckpoint
+import li.gkd.app.matching.MatchScheduleCommand
+import li.gkd.app.matching.MatchScheduleCommandType
+import li.gkd.app.matching.MatchScheduledRun
+import li.gkd.app.matching.MatchWork
 import li.gkd.app.matching.RuleAvailability
-import li.gkd.app.rule.RuleRuntime
+import li.gkd.app.matching.input.MatchEventKey
+import li.gkd.app.matching.input.MatchEventKind
 import li.gkd.app.matching.input.MatchTimingPolicy
+import li.gkd.app.matching.query.MatchNodeReadFailure
+import li.gkd.app.model.ActionResult
 import li.gkd.app.model.AppInfo
+import li.gkd.app.model.GkdAction
+import li.gkd.app.rule.RuleRuntime
 import li.gkd.app.rule.RuleSummaryBuilder
 import li.gkd.app.rule.TopActivity
-import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
-import li.gkd.app.matching.MatchScheduleCheckpoint
-import li.gkd.app.matching.MatchScheduleCommand
-import li.gkd.app.matching.MatchScheduledRun
-import li.gkd.app.matching.MatchWork
-import li.gkd.app.matching.input.MatchEventKey
-import li.gkd.app.matching.input.MatchEventKind
-import li.gkd.app.model.ActionResult
-import li.gkd.app.model.GkdAction
 
 class MatchDiagnosticsTest {
     @Test
@@ -41,7 +38,13 @@ class MatchDiagnosticsTest {
         val diagnostics = MatchDiagnostics(nanoTime = { nanos })
         val session = diagnostics.start(MatchTimingPolicy(), capacity = 10)
         repeat(40) { index ->
-            val operation = diagnostics.beginOperation("SelectorQuery", index.toLong(), "rule", recording = MatchQueryEvidence())
+            val operation =
+                diagnostics.beginOperation(
+                    "SelectorQuery",
+                    index.toLong(),
+                    "rule",
+                    recording = MatchQueryEvidence(),
+                )
             nanos += (index + 1) * 1_000L
             diagnostics.endOperation(operation, "not_matched")
         }
@@ -56,14 +59,22 @@ class MatchDiagnosticsTest {
         assertEquals(39L, stats.totals.single().slowest.runId)
         assertEquals(null, stats.totals.single().slowest.recording)
         assertTrue(capture.events.none { it.operation != null })
-        assertEquals(capture, Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)))
+        assertEquals(
+            capture,
+            Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)),
+        )
     }
 
     @Test
     fun operationStatisticsBoundsRuleGroupsButKeepsCountingExistingGroups() {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy())
-        repeat(130) { diagnostics.endOperation(diagnostics.beginOperation("Query", rule = "rule-$it"), "not_matched") }
+        repeat(130) {
+            diagnostics.endOperation(
+                diagnostics.beginOperation("Query", rule = "rule-$it"),
+                "not_matched",
+            )
+        }
         diagnostics.endOperation(diagnostics.beginOperation("Query", rule = "rule-0"), "matched")
         val stats = diagnostics.export(session.id).operationStatistics!!
         assertEquals(131L, stats.completed)
@@ -86,8 +97,12 @@ class MatchDiagnosticsTest {
         diagnostics.stop(session.id)
         assertEquals("after", work.match(rule) { "after" })
         assertEquals(result, work.performAction(rule) { result })
-        val operations = diagnostics.export(session.id).events.mapNotNull { it.operation }
-            .filter { it.durationNanos != null }
+        val operations =
+            diagnostics
+                .export(session.id)
+                .events
+                .mapNotNull { it.operation }
+                .filter { it.durationNanos != null }
         assertEquals(listOf("Query", "Action"), operations.map { it.name })
         assertTrue(operations.all { it.runId == 42L && it.rule == rule.matchIdentity() })
         assertEquals(listOf("matched", "success"), operations.map { it.outcome })
@@ -107,14 +122,18 @@ class MatchDiagnosticsTest {
         val last = diagnostics.read(session.id, second.cursor, 5)
         assertTrue(last.trackingComplete)
         assertFalse(last.hasMore)
-        assertEquals((1L..12L).toList(), (first.events + second.events + last.events).map { it.sequence })
+        assertEquals(
+            (1L..12L).toList(),
+            (first.events + second.events + last.events).map { it.sequence },
+        )
     }
 
     @Test
     fun lateCallsKeepOriginalClockAndRemainReadableAcrossCompletedSessionHistory() {
         var nanos = 1_000L
         val saved = mutableListOf<MatchDiagnosticCapture>()
-        val diagnostics = MatchDiagnostics(nanoTime = { nanos }, onStoppedCapture = { saved.add(it) })
+        val diagnostics =
+            MatchDiagnostics(nanoTime = { nanos }, onStoppedCapture = { saved.add(it) })
         val first = diagnostics.start(MatchTimingPolicy())
         val operation = diagnostics.beginOperation("NodeRead:Root", 7)!!
         diagnostics.stop(first.id)
@@ -136,7 +155,10 @@ class MatchDiagnosticsTest {
         assertEquals(19_000L, after.events.single().operation!!.durationNanos)
         assertEquals(first.id, saved.single().session.id)
         assertEquals(1L, saved.single().operationStatistics!!.completed)
-        assertEquals(19_000L, saved.single().operationStatistics!!.totals.single().totalDurationNanos)
+        assertEquals(
+            19_000L,
+            saved.single().operationStatistics!!.totals.single().totalDurationNanos,
+        )
         diagnostics.endOperation(operation, "returned")
         assertEquals(1L, diagnostics.export(first.id).operationStatistics!!.completed)
         assertEquals(0L, diagnostics.export(next.id).operationStatistics!!.completed)
@@ -144,31 +166,40 @@ class MatchDiagnosticsTest {
     }
 
     @kotlin.test.Test
-    fun actionApiTimingKeepsItsParentAcrossDispatcherChanges() = kotlinx.coroutines.test.runTest {
-        val clock = java.util.concurrent.atomic.AtomicLong(0)
-        val diagnostics = MatchDiagnostics(nanoTime = clock::get, wallTime = { 0 })
-        val session = diagnostics.start(MatchTimingPolicy())
-        val work = MatchWork(42, MatchTimingPolicy(), diagnostics) { true }
-        val result = work.performAction(GkdAction("*", action = "click")) {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                observeActionOperation("PlatformClick") {
-                    clock.addAndGet(5_000_000)
-                    ActionResult("click", true)
+    fun actionApiTimingKeepsItsParentAcrossDispatcherChanges() =
+        kotlinx.coroutines.test.runTest {
+            val clock = java.util.concurrent.atomic.AtomicLong(0)
+            val diagnostics = MatchDiagnostics(nanoTime = clock::get, wallTime = { 0 })
+            val session = diagnostics.start(MatchTimingPolicy())
+            val work = MatchWork(42, MatchTimingPolicy(), diagnostics) { true }
+            val result =
+                work.performAction(GkdAction("*", action = "click")) {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                        observeActionOperation("PlatformClick") {
+                            clock.addAndGet(5_000_000)
+                            ActionResult("click", true)
+                        }
+                    }
                 }
-            }
+            assertTrue(result.result)
+            val operations =
+                diagnostics
+                    .export(session.id)
+                    .events
+                    .mapNotNull { it.operation }
+                    .filter { it.durationNanos != null }
+            val action = operations.single { it.name == "Action" }
+            val api = operations.single { it.name == "PlatformClick" }
+            assertEquals(action.id, api.parentOperationId)
+            assertEquals(42L, api.runId)
+            assertEquals("manual", api.rule)
+            assertEquals(5_000_000L, api.durationNanos)
         }
-        assertTrue(result.result)
-        val operations = diagnostics.export(session.id).events.mapNotNull { it.operation }.filter { it.durationNanos != null }
-        val action = operations.single { it.name == "Action" }
-        val api = operations.single { it.name == "PlatformClick" }
-        assertEquals(action.id, api.parentOperationId)
-        assertEquals(42L, api.runId)
-        assertEquals("manual", api.rule)
-        assertEquals(5_000_000L, api.durationNanos)
-    }
+
     @Test
     fun initialIndexContainsEnabledRuleIdsWithoutSubscriptionDefinitions() = runTest {
-        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+        val coordinator =
+            MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
         try {
             val snapshot = activity()
             coordinator.updateRules(snapshot)
@@ -179,16 +210,30 @@ class MatchDiagnosticsTest {
             assertEquals(1, capture.initialRules.single().subscriptionVersion)
             assertFalse(Json.encodeToString(capture).contains("initialConfiguration"))
             coordinator.stopDiagnostics(session.id)
-            assertEquals(capture.initialRules, coordinator.exportDiagnostics(session.id).initialRules)
-        } finally { coordinator.close() }
+            assertEquals(
+                capture.initialRules,
+                coordinator.exportDiagnostics(session.id).initialRules,
+            )
+        } finally {
+            coordinator.close()
+        }
     }
 
     @Test
     fun systemCaptureKeepsRecentQueriesAndReportsEvictionIncludingLateCleanup() {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), detailed = true, recordSystem = true)
-        fun query(id: Long) = MatchQueryRecording(id, "rule", MatchSelectorPlan(listOf("*")),
-            MatchRecordedValue(MatchRecordedValueType.Null), emptyList(), null, null, null)
+        fun query(id: Long) =
+            MatchQueryRecording(
+                id,
+                "rule",
+                MatchSelectorPlan(listOf("*")),
+                MatchRecordedValue(MatchRecordedValueType.Null),
+                emptyList(),
+                null,
+                null,
+                null,
+            )
         repeat(40) {
             assertTrue(diagnostics.shouldRecordQuery(session.id))
             diagnostics.registerQuery(session.id, MatchQueryEvidence(query(it.toLong())))
@@ -200,7 +245,10 @@ class MatchDiagnosticsTest {
         val capture = diagnostics.export(session.id)
         assertEquals((9L..40L).toList(), capture.queryRecordings.map { it.runId })
         assertEquals(9L, capture.droppedQueryRecordings)
-        assertEquals(capture, Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)))
+        assertEquals(
+            capture,
+            Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)),
+        )
         val next = diagnostics.start(MatchTimingPolicy(), recordSystem = true)
         diagnostics.registerQuery(session.id, MatchQueryEvidence(query(41)))
         assertTrue(diagnostics.export(next.id).queryRecordings.isEmpty())
@@ -225,8 +273,10 @@ class MatchDiagnosticsTest {
     fun sessionFollowsSystemCleanupAndExportPreservesSteps() {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), recordSystem = true)
-        val active = MatchScheduleCheckpoint(
-            active = MatchScheduledRun(1, 1, 0))
+        val active =
+            MatchScheduleCheckpoint(
+                active = MatchScheduledRun(1, 1, 0),
+            )
         val recorder = MatchSystemRecorder(active, 0)
         diagnostics.systemRecorder = recorder
         diagnostics.stop(session.id)
@@ -234,7 +284,12 @@ class MatchDiagnosticsTest {
         assertTrue(diagnostics.session(session.id).systemFinalizing)
         assertFalse(diagnostics.export(session.id).systemRecording!!.sealed)
         val finished = active.copy(active = null)
-        recorder.append(MatchScheduleCommand(MatchScheduleCommandType.Finish, run = 1), 20, emptyList(), finished)
+        recorder.append(
+            MatchScheduleCommand(MatchScheduleCommandType.Finish, run = 1),
+            20,
+            emptyList(),
+            finished,
+        )
         assertFalse(diagnostics.session(session.id).systemFinalizing)
         val capture = diagnostics.export(session.id)
         assertEquals(1, capture.systemRecording!!.steps.size)
@@ -244,20 +299,29 @@ class MatchDiagnosticsTest {
 
     @Test
     fun disabledObservationNeverReadsClocksAndPreservesResultsAndErrors() {
-        val diagnostics = MatchDiagnostics(nanoTime = { error("Unexpected clock") }, wallTime = { error("Unexpected clock") })
+        val diagnostics =
+            MatchDiagnostics(
+                nanoTime = { error("Unexpected clock") },
+                wallTime = { error("Unexpected clock") },
+            )
         val result = Any()
         kotlin.test.assertSame(result, diagnostics.observeOperation("Child") { result })
         val failure = IllegalStateException("original")
-        kotlin.test.assertSame(failure, kotlin.test.assertFailsWith<IllegalStateException> {
-            diagnostics.observeOperation("Child") { throw failure }
-        })
+        kotlin.test.assertSame(
+            failure,
+            kotlin.test.assertFailsWith<IllegalStateException> {
+                diagnostics.observeOperation("Child") { throw failure }
+            },
+        )
         assertEquals(null, diagnostics.beginOperation("Root"))
         diagnostics.nodeReadPressure(MatchNodeReadFailure.Timeout, 1, 4)
         diagnostics.entry("event_queue", "event_queue_overflow")
         assertEquals(null, diagnostics.state.value)
     }
 
-    /** Calendar changes affect log timestamps only, never measured durations or queue/read details. */
+    /**
+     * Calendar changes affect log timestamps only, never measured durations or queue/read details.
+     */
     @Test
     fun elapsedDiagnosticsSurviveWallClockJumpsAndExportPressure() {
         var nanos = 0L
@@ -274,11 +338,23 @@ class MatchDiagnosticsTest {
         nanos = 200_000_000
         diagnostics.endOperation(read, "returned")
         val capture = diagnostics.export(session.id)
-        assertEquals(100_000_000L, capture.events.single { it.nodePressure != null }.nodePressure!!.oldestObservedReadNanos)
-        assertEquals(1, capture.events.single { it.nodePressure != null }.nodePressure!!.observedReads)
+        assertEquals(
+            100_000_000L,
+            capture.events
+                .single { it.nodePressure != null }
+                .nodePressure!!
+                .oldestObservedReadNanos,
+        )
+        assertEquals(
+            1,
+            capture.events.single { it.nodePressure != null }.nodePressure!!.observedReads,
+        )
         assertEquals(drop, capture.events.single { it.eventDrop != null }.eventDrop)
         assertEquals(200_000_000L, capture.events.last().operation!!.durationNanos)
-        assertEquals(capture, Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)))
+        assertEquals(
+            capture,
+            Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)),
+        )
         assertEquals(1L, capture.entries.single { it.reason == "event_queue_overflow" }.count)
     }
 
@@ -311,8 +387,18 @@ class MatchDiagnosticsTest {
         assertEquals(nanos, completed.events.last().operation!!.durationNanos)
         val next = diagnostics.start(MatchTimingPolicy())
         diagnostics.endOperation(open, "returned")
-        assertEquals(null, diagnostics.beginOperation("OldChild", parentOperationId = open.id, sessionId = session.id))
-        assertEquals("result", diagnostics.observeOperation("OldAction", sessionId = session.id) { "result" })
+        assertEquals(
+            null,
+            diagnostics.beginOperation(
+                "OldChild",
+                parentOperationId = open.id,
+                sessionId = session.id,
+            ),
+        )
+        assertEquals(
+            "result",
+            diagnostics.observeOperation("OldAction", sessionId = session.id) { "result" },
+        )
         assertTrue(diagnostics.export(next.id).events.isEmpty())
         assertTrue(diagnostics.state.value!!.openOperations.isEmpty())
     }
@@ -322,25 +408,43 @@ class MatchDiagnosticsTest {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy())
         val failure = IllegalArgumentException("original")
-        kotlin.test.assertSame(failure, kotlin.test.assertFailsWith<IllegalArgumentException> {
-            diagnostics.observeOperation("Refresh") { throw failure }
-        })
-        assertEquals(failure.toString(), diagnostics.export(session.id).events.last().operation!!.outcome)
+        kotlin.test.assertSame(
+            failure,
+            kotlin.test.assertFailsWith<IllegalArgumentException> {
+                diagnostics.observeOperation("Refresh") { throw failure }
+            },
+        )
+        assertEquals(
+            failure.toString(),
+            diagnostics.export(session.id).events.last().operation!!.outcome,
+        )
         repeat(129) { diagnostics.beginOperation("Child") }
         assertEquals(128, diagnostics.state.value!!.openOperations.size)
         assertEquals(1L, diagnostics.state.value!!.omittedOperations)
     }
 
-    private fun activity(version: Int = 1, blocked: Boolean = false, delay: Int = 150): ForegroundRuleSnapshot {
-        val raw = RawSubscriptionParser.parse("""{id:1,name:'Test',version:$version,apps:[{id:'app.test',groups:[
+    private fun activity(
+        version: Int = 1,
+        blocked: Boolean = false,
+        delay: Int = 150,
+    ): ForegroundRuleSnapshot {
+        val raw =
+            RawSubscriptionParser.parse(
+                """{id:1,name:'Test',version:$version,apps:[{id:'app.test',groups:[
             {key:1,name:'Current',scopeKeys:[2],actionDelay:$delay,rules:[{key:1,matches:'*',actionCdKey:2},
                 {key:3,activityIds:['Unused'],matches:'[text="UNUSED_DEFINITION_${"x".repeat(10000)}"]'}]},
             {key:2,name:'Dependency',activityIds:['Other'],rules:[{key:2,matches:'[text="$version"]'}]}
-        ]}]}""")
-        val summary = RuleSummaryBuilder.build(RuleRuntime(),
-            listOf(UsedSubsEntry(SubsItem(1, enable = true, order = 0), raw)),
-            mapOf("app.test" to AppInfo("app.test", "Test", 1, "1", false, 0, false, 0)),
-            emptyList(), emptyList(), emptyList())
+        ]}]}""",
+            )
+        val summary =
+            RuleSummaryBuilder.build(
+                RuleRuntime(),
+                listOf(UsedSubsEntry(SubsItem(1, enable = true, order = 0), raw)),
+                mapOf("app.test" to AppInfo("app.test", "Test", 1, "1", false, 0, false, 0)),
+                emptyList(),
+                emptyList(),
+                emptyList(),
+            )
         return ForegroundRuleSnapshot(TopActivity("app.test", "Current"), blocked, summary)
     }
 
@@ -357,13 +461,24 @@ class MatchDiagnosticsTest {
         val first = capture.ruleSnapshots.first()
         assertEquals(3, first.candidates.size)
         assertEquals(1, first.selected.size)
-        assertEquals(listOf("1/2/app.test/2/2"), capture.ruleDefinitions.getValue(first.definitions.first()).dependencies)
+        assertEquals(
+            listOf("1/2/app.test/2/2"),
+            capture.ruleDefinitions.getValue(first.definitions.first()).dependencies,
+        )
         assertTrue(capture.ruleSnapshots.last().selected.isEmpty())
         assertTrue(capture.ruleSnapshots.last().blockMatch)
         val restored = Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture))
         assertEquals(capture, restored)
-        assertEquals(1, restored.ruleDefinitions.getValue(first.definitions.first()).subscriptionVersion)
-        assertTrue(restored.ruleDefinitions.getValue(first.definitions.first()).group.containsKey("actionDelay"))
+        assertEquals(
+            1,
+            restored.ruleDefinitions.getValue(first.definitions.first()).subscriptionVersion,
+        )
+        assertTrue(
+            restored.ruleDefinitions
+                .getValue(first.definitions.first())
+                .group
+                .containsKey("actionDelay"),
+        )
     }
 
     @Test
@@ -378,18 +493,27 @@ class MatchDiagnosticsTest {
         assertTrue(first.ruleDefinitions.values.all { "rules" !in it.group })
         assertFalse(Json.encodeToString(first).contains("UNUSED_DEFINITION"))
         assertTrue(Json.encodeToString(first).length < 10000)
-        val selected = first.ruleDefinitions.getValue(first.ruleSnapshots.first().definitions.first())
+        val selected =
+            first.ruleDefinitions.getValue(first.ruleSnapshots.first().definitions.first())
         assertEquals("150", selected.effective.getValue("actionDelay").toString())
         diagnostics.captureRules(activity(2))
         val updated = diagnostics.export(session.id)
         assertEquals(4, updated.ruleDefinitions.size)
         assertTrue(updated.ruleSnapshots.last().definitions.none { it in first.ruleDefinitions })
-        assertEquals(setOf(1, 2), updated.ruleDefinitions.values.map { it.subscriptionVersion }.toSet())
-        assertEquals(updated, Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(updated)))
+        assertEquals(
+            setOf(1, 2),
+            updated.ruleDefinitions.values.map { it.subscriptionVersion }.toSet(),
+        )
+        assertEquals(
+            updated,
+            Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(updated)),
+        )
         repeat(16) { diagnostics.captureRules(activity(3, blocked = true)) }
         val bounded = diagnostics.export(session.id)
         assertTrue(bounded.ruleDefinitions.isEmpty())
-        assertTrue(bounded.ruleSnapshots.all { it.definitions.isEmpty() && it.candidates.isNotEmpty() })
+        assertTrue(
+            bounded.ruleSnapshots.all { it.definitions.isEmpty() && it.candidates.isNotEmpty() },
+        )
     }
 
     @Test
@@ -399,9 +523,13 @@ class MatchDiagnosticsTest {
         diagnostics.captureRules(activity(delay = 150))
         diagnostics.captureRules(activity(delay = 300))
         val capture = diagnostics.export(session.id)
-        val selected = capture.ruleSnapshots.map { capture.ruleDefinitions.getValue(it.definitions.first()) }
+        val selected =
+            capture.ruleSnapshots.map { capture.ruleDefinitions.getValue(it.definitions.first()) }
         assertEquals(listOf(1, 1), selected.map { it.subscriptionVersion })
-        assertEquals(listOf("150", "300"), selected.map { it.effective.getValue("actionDelay").toString() })
+        assertEquals(
+            listOf("150", "300"),
+            selected.map { it.effective.getValue("actionDelay").toString() },
+        )
         assertEquals(3, capture.ruleDefinitions.size)
     }
 
@@ -431,20 +559,26 @@ class MatchDiagnosticsTest {
     fun loadingFailureAndLoadedEmptyKeepDistinctCaptureReasons() {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy())
-        for (availability in listOf(RuleAvailability.Loading, RuleAvailability.Failed, RuleAvailability.Ready)) {
-            val snapshot = ForegroundRuleSnapshot(blockMatch = false, ruleAvailability = availability)
+        for (availability in
+            listOf(RuleAvailability.Loading, RuleAvailability.Failed, RuleAvailability.Ready)) {
+            val snapshot =
+                ForegroundRuleSnapshot(blockMatch = false, ruleAvailability = availability)
             diagnostics.captureRules(snapshot)
             diagnostics.entry("query_request", snapshot.emptyReason)
         }
         val capture = diagnostics.export(session.id)
-        assertEquals(listOf("rules_loading", "rules_load_failed", "no_rules_for_activity"), capture.entries.map { it.reason })
+        assertEquals(
+            listOf("rules_loading", "rules_load_failed", "no_rules_for_activity"),
+            capture.entries.map { it.reason },
+        )
         assertTrue(capture.ruleSnapshots.all { it.selected.isEmpty() })
         assertEquals(3, capture.ruleSnapshots.map { it.availability }.distinct().size)
     }
 
     @Test
     fun sessionStartedWhileBlockedExportsRulesWithoutWaitingForAQuery() = runTest {
-        val coordinator = MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
+        val coordinator =
+            MatchCoordinator(this, StandardTestDispatcher(testScheduler), onFailure = { throw it })
         try {
             coordinator.updateRules(activity(blocked = true))
             assertEquals(null, coordinator.diagnostics.state.value)
@@ -457,6 +591,8 @@ class MatchDiagnosticsTest {
             runCurrent()
             assertFalse(coordinator.snapshot().queryPending)
             assertEquals(2L, coordinator.diagnostics.export(session.id).entries.single().count)
-        } finally { coordinator.close() }
+        } finally {
+            coordinator.close()
+        }
     }
 }

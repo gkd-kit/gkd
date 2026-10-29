@@ -34,20 +34,26 @@ object CategoryPolicy {
         name: String,
         description: String,
     ): SubscriptionEditResult<RawSubscription> {
-        validateEdit(subscription, categoryKey, name)?.let { return SubscriptionEditResult.Rejected(it) }
-        val trimmedName = name.trim()
-        val category = if (categoryKey == null) {
-            val maxKey = subscription.categories.maxOfOrNull { it.key } ?: -1
-            RawSubscription.RawCategory(maxKey + 1, trimmedName, null, null)
-        } else {
-            subscription.categories.first { it.key == categoryKey }
+        validateEdit(subscription, categoryKey, name)?.let {
+            return SubscriptionEditResult.Rejected(it)
         }
-        return SubscriptionEditResult.Success(subscription.edit {
-            putCategory(
-                category.copy(
-                    name = trimmedName,
-                    desc = description.trim().ifEmpty { null })
-            )
-        })
+        val trimmedName = name.trim()
+        val category =
+            if (categoryKey == null) {
+                val maxKey = subscription.categories.maxOfOrNull { it.key } ?: -1
+                RawSubscription.RawCategory(maxKey + 1, trimmedName, null, null)
+            } else {
+                subscription.categories.first { it.key == categoryKey }
+            }
+        return SubscriptionEditResult.Success(
+            subscription.edit {
+                putCategory(
+                    category.copy(
+                        name = trimmedName,
+                        desc = description.trim().ifEmpty { null },
+                    ),
+                )
+            },
+        )
     }
 }

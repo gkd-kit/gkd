@@ -6,14 +6,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
-import li.gkd.app.META
 import kotlin.reflect.KClass
+import li.gkd.app.META
 
-class StopServiceReceiver(private val service: Service, private val onStop: () -> Unit = { service.stopSelf() }) : BroadcastReceiver(), AutoCloseable {
+class StopServiceReceiver(
+    private val service: Service,
+    private val onStop: () -> Unit = { service.stopSelf() },
+) : BroadcastReceiver(), AutoCloseable {
     private var registered = false
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == STOP_ACTION && intent.getStringExtra(STOP_ACTION) == service.javaClass.name) {
+        if (
+            intent.action == STOP_ACTION &&
+                intent.getStringExtra(STOP_ACTION) == service.javaClass.name
+        ) {
             onStop()
         }
     }
@@ -39,10 +45,11 @@ class StopServiceReceiver(private val service: Service, private val onStop: () -
     companion object {
         private val STOP_ACTION by lazy { META.appId + ".STOP_SERVICE" }
 
-        fun getIntent(clazz: KClass<out Service>) = Intent().apply {
-            action = STOP_ACTION
-            putExtra(STOP_ACTION, clazz.java.name)
-            setPackage(META.appId)
-        }
+        fun getIntent(clazz: KClass<out Service>) =
+            Intent().apply {
+                action = STOP_ACTION
+                putExtra(STOP_ACTION, clazz.java.name)
+                setPackage(META.appId)
+            }
     }
 }

@@ -17,11 +17,12 @@ fun Modifier.animateListItem(
     return scope.run {
         animateItem(
             fadeInSpec = spring(stiffness = Spring.StiffnessMediumLow),
-            placementSpec = spring(
-                stiffness = Spring.StiffnessMediumLow,
-                visibilityThreshold = IntOffset.VisibilityThreshold
-            ),
-            fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow)
+            placementSpec =
+                spring(
+                    stiffness = Spring.StiffnessMediumLow,
+                    visibilityThreshold = IntOffset.VisibilityThreshold,
+                ),
+            fadeOutSpec = spring(stiffness = Spring.StiffnessMediumLow),
         )
     }
 }

@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
 inline fun GkMenuGroupCard(inTop: Boolean = false, title: String, content: @Composable () -> Unit) {
     Text(
         text = title,
-        modifier = Modifier
-            .padding(MenuDefaults.DropdownMenuItemContentPadding)
-            .padding(top = if (inTop) 0.dp else 8.dp, bottom = 4.dp),
+        modifier =
+            Modifier.padding(MenuDefaults.DropdownMenuItemContentPadding)
+                .padding(top = if (inTop) 0.dp else 8.dp, bottom = 4.dp),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
     )
@@ -36,12 +36,14 @@ fun GkMenuItemCheckbox(
 ) {
     val colors = MenuDefaults.itemColors()
     // Theme colors already animate in GkTheme; reset only the local color animation.
-    val textColor by key(MaterialTheme.colorScheme.primary) {
-        animateColorAsState(
-            targetValue = if (enabled) colors.textColor else colors.disabledTextColor,
-            animationSpec = tween(180), label = "menuCheckboxTextColor",
-        )
-    }
+    val textColor by
+        key(MaterialTheme.colorScheme.primary) {
+            animateColorAsState(
+                targetValue = if (enabled) colors.textColor else colors.disabledTextColor,
+                animationSpec = tween(180),
+                label = "menuCheckboxTextColor",
+            )
+        }
     DropdownMenuItem(
         text = { Text(text = text) },
         trailingIcon = {

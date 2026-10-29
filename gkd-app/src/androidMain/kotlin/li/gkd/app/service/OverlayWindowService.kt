@@ -63,6 +63,7 @@ import li.gkd.app.util.px
 import org.jetbrains.compose.resources.stringResource
 
 private var tempShareContext: ShareContext? = null
+
 private fun acquireShareContext(): ShareContextLease {
     val shareContext = tempShareContext ?: ShareContext().apply { tempShareContext = this }
     shareContext.count++
@@ -125,14 +126,15 @@ abstract class OverlayWindowService(
         lifecycleScope.launch { resizeFlow.emit(Unit) }
     }
 
-    private val registryController = SavedStateRegistryController.create(this).apply {
-        performAttach()
-        performRestore(null)
-    }
-    override val savedStateRegistry get() = registryController.savedStateRegistry
+    private val registryController =
+        SavedStateRegistryController.create(this).apply {
+            performAttach()
+            performRestore(null)
+        }
+    override val savedStateRegistry
+        get() = registryController.savedStateRegistry
 
-    @Composable
-    abstract fun ComposeContent()
+    @Composable abstract fun ComposeContent()
 
     @Composable
     fun ClosableTitle(
@@ -149,20 +151,22 @@ abstract class OverlayWindowService(
                 GkIcon(
                     imageVector = GkIcons.CollapseContent,
                     contentDescription = minimizeContentDescription,
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClick = onMinimizeRequest)
-                        .iconTextSize(),
+                    modifier =
+                        Modifier.clip(MaterialTheme.shapes.extraSmall)
+                            .clickable(onClick = onMinimizeRequest)
+                            .iconTextSize(),
                 )
             }
             GkIcon(
                 imageVector = GkIcons.Close,
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = {
-                        stopSelf()
-                    })
-                    .iconTextSize()
+                modifier =
+                    Modifier.clip(MaterialTheme.shapes.extraSmall)
+                        .clickable(
+                            onClick = {
+                                stopSelf()
+                            },
+                        )
+                        .iconTextSize(),
             )
         }
     }
@@ -180,9 +184,10 @@ abstract class OverlayWindowService(
             setContent {
                 AppTheme(invertedTheme = true) {
                     Box(
-                        modifier = Modifier.drawWithContent {
-                            if (!shareContext.overlayContentHidden) drawContent()
-                        },
+                        modifier =
+                            Modifier.drawWithContent {
+                                if (!shareContext.overlayContentHidden) drawContent()
+                            },
                     ) {
                         ComposeContent()
                     }
@@ -204,23 +209,25 @@ abstract class OverlayWindowService(
         }
     }
 
-    private suspend fun awaitOverlayContentHidden() =
-        suspendCancellableCoroutine { continuation ->
-            val afterFrame = Runnable {
-                if (continuation.isActive) continuation.resume(Unit)
-            }
-            val onFrame = Runnable {
-                if (continuation.isActive) view.post(afterFrame)
-            }
-            continuation.invokeOnCancellation {
-                view.removeCallbacks(onFrame)
-                view.removeCallbacks(afterFrame)
-            }
-            view.postOnAnimation(onFrame)
+    private suspend fun awaitOverlayContentHidden() = suspendCancellableCoroutine { continuation ->
+        val afterFrame = Runnable {
+            if (continuation.isActive) continuation.resume(Unit)
         }
+        val onFrame = Runnable {
+            if (continuation.isActive) view.post(afterFrame)
+        }
+        continuation.invokeOnCancellation {
+            view.removeCallbacks(onFrame)
+            view.removeCallbacks(afterFrame)
+        }
+        view.postOnAnimation(onFrame)
+    }
 
-    private val minMargin get() = 10.dp.px.toInt()
-    private val defaultPosition get() = listOf(minMargin, BarUtils.getStatusHeight())
+    private val minMargin
+        get() = 10.dp.px.toInt()
+
+    private val defaultPosition
+        get() = listOf(minMargin, BarUtils.getStatusHeight())
 
     private lateinit var shareContext: ShareContext
 
@@ -232,7 +239,7 @@ abstract class OverlayWindowService(
                 } else {
                     defaultPosition
                 }
-            }
+            },
         )
     }
 
@@ -258,20 +265,22 @@ abstract class OverlayWindowService(
     private fun attachView() {
         val marginX = minMargin
         val marginY = minMargin
-        val layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            windowAnimations = android.R.style.Animation_Dialog
-            gravity = Gravity.START or Gravity.TOP
-            x = positionFlow.value.first()
-            y = positionFlow.value.last()
-        }
+        val layoutParams =
+            WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT,
+                )
+                .apply {
+                    windowAnimations = android.R.style.Animation_Dialog
+                    gravity = Gravity.START or Gravity.TOP
+                    x = positionFlow.value.first()
+                    y = positionFlow.value.last()
+                }
         var screenSize = ScreenUtils.getSize()
         var paramsXy = layoutParams.x to layoutParams.y
         var positionAnimator: ValueAnimator? = null
@@ -279,28 +288,30 @@ abstract class OverlayWindowService(
         val fixLimitXy = {
             screenSize = ScreenUtils.getSize()
             val x = layoutParams.x.coerceIn(marginX, screenSize.width - view.width - marginX)
-            val y = layoutParams.y.coerceIn(
-                marginY,
-                screenSize.height - view.height - marginY
-            )
+            val y =
+                layoutParams.y.coerceIn(
+                    marginY,
+                    screenSize.height - view.height - marginY,
+                )
             if (x != layoutParams.x || y != layoutParams.y) {
                 positionFlow.value = listOf(x, y)
                 savePosition()
                 val startX = layoutParams.x
                 val startY = layoutParams.y
                 positionAnimator?.cancel()
-                val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                    duration = 300
-                    addUpdateListener { animator ->
-                        val fraction = animator.animatedValue as Float
-                        layoutParams.x = (startX + (x - startX) * fraction).toInt()
-                        layoutParams.y = (startY + (y - startY) * fraction).toInt()
-                        app.windowManager.updateViewLayout(view, layoutParams)
+                val animator =
+                    ValueAnimator.ofFloat(0f, 1f).apply {
+                        duration = 300
+                        addUpdateListener { animator ->
+                            val fraction = animator.animatedValue as Float
+                            layoutParams.x = (startX + (x - startX) * fraction).toInt()
+                            layoutParams.y = (startY + (y - startY) * fraction).toInt()
+                            app.windowManager.updateViewLayout(view, layoutParams)
+                        }
+                        doOnEnd {
+                            positionAnimator = null
+                        }
                     }
-                    doOnEnd {
-                        positionAnimator = null
-                    }
-                }
                 positionAnimator = animator
                 animator.start()
             }
@@ -344,11 +355,13 @@ abstract class OverlayWindowService(
                         }
                         val x = dx + paramsXy.first
                         val y = dy + paramsXy.second
-                        layoutParams.x = x.coerceIn(marginX, screenSize.width - view.width - marginX)
-                        layoutParams.y = y.coerceIn(
-                            marginY,
-                            screenSize.height - view.height - marginY
-                        )
+                        layoutParams.x =
+                            x.coerceIn(marginX, screenSize.width - view.width - marginX)
+                        layoutParams.y =
+                            y.coerceIn(
+                                marginY,
+                                screenSize.height - view.height - marginY,
+                            )
                         positionFlow.value = listOf(layoutParams.x, layoutParams.y)
                         app.windowManager.updateViewLayout(view, layoutParams)
                         if (isDragging) {
@@ -362,7 +375,11 @@ abstract class OverlayWindowService(
                 MotionEvent.ACTION_UP -> {
                     savePosition()
                     val gapTime = event.eventTime - event.downTime
-                    if (viewClickEnabled && !isDragging && gapTime <= ViewConfiguration.getTapTimeout()) {
+                    if (
+                        viewClickEnabled &&
+                            !isDragging &&
+                            gapTime <= ViewConfiguration.getTapTimeout()
+                    ) {
                         onClickView()
                     }
                     downXy = null
@@ -384,5 +401,4 @@ abstract class OverlayWindowService(
         }
         app.windowManager.addView(view, layoutParams)
     }
-
 }

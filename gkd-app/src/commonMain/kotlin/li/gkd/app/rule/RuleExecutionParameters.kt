@@ -5,7 +5,8 @@ import li.gkd.selector.MatchOptions
 
 /** Effective execution configuration; compiled selectors and mutable state live separately. */
 @ConsistentCopyVisibility
-data class RuleExecutionParameters private constructor(
+data class RuleExecutionParameters
+private constructor(
     val matches: List<String>,
     val anyMatches: List<String>,
     val excludeMatches: List<String>,
@@ -30,7 +31,10 @@ data class RuleExecutionParameters private constructor(
     val priorityActionMaximum: Int,
 ) : RawSubscription.LocationProps {
     companion object {
-        fun resolve(rule: RawSubscription.RawRuleProps, group: RawSubscription.RawGroupProps): RuleExecutionParameters {
+        fun resolve(
+            rule: RawSubscription.RawRuleProps,
+            group: RawSubscription.RawGroupProps,
+        ): RuleExecutionParameters {
             val actionCdKey = rule.actionCdKey ?: group.actionCdKey
             val actionMaximumKey = rule.actionMaximumKey ?: group.actionMaximumKey
             val resetMatch = rule.resetMatch ?: group.resetMatch
@@ -43,8 +47,9 @@ data class RuleExecutionParameters private constructor(
                 position = rule.position,
                 swipeArg = rule.swipeArg,
                 preKeys = rule.preKeys.orEmpty().toSet(),
-                resetMatchType = ResetMatchType.allSubObject.find { it.value == resetMatch }
-                    ?: ResetMatchType.Activity,
+                resetMatchType =
+                    ResetMatchType.allSubObject.find { it.value == resetMatch }
+                        ?: ResetMatchType.Activity,
                 matchDelay = rule.matchDelay ?: group.matchDelay ?: 0L,
                 actionDelay = rule.actionDelay ?: group.actionDelay ?: 0L,
                 matchTime = rule.matchTime ?: group.matchTime,
@@ -53,15 +58,23 @@ data class RuleExecutionParameters private constructor(
                 matchRoot = rule.matchRoot ?: group.matchRoot ?: false,
                 order = rule.order ?: group.order ?: 0,
                 actionCdKey = actionCdKey,
-                actionCd = rule.actionCd ?: actionCdKey?.let { key ->
-                    group.rules.find { it.key == key }?.actionCd
-                } ?: group.actionCd ?: 1000L,
+                actionCd =
+                    rule.actionCd
+                        ?: actionCdKey?.let { key ->
+                            group.rules.find { it.key == key }?.actionCd
+                        }
+                        ?: group.actionCd
+                        ?: 1000L,
                 actionMaximumKey = actionMaximumKey,
-                actionMaximum = rule.actionMaximum ?: actionMaximumKey?.let { key ->
-                    group.rules.find { it.key == key }?.actionMaximum
-                } ?: group.actionMaximum,
+                actionMaximum =
+                    rule.actionMaximum
+                        ?: actionMaximumKey?.let { key ->
+                            group.rules.find { it.key == key }?.actionMaximum
+                        }
+                        ?: group.actionMaximum,
                 priorityTime = rule.priorityTime ?: group.priorityTime ?: 0L,
-                priorityActionMaximum = rule.priorityActionMaximum ?: group.priorityActionMaximum ?: 1,
+                priorityActionMaximum =
+                    rule.priorityActionMaximum ?: group.priorityActionMaximum ?: 1,
             )
         }
     }

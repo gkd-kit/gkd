@@ -9,18 +9,25 @@ import kotlinx.serialization.json.Json
 
 object NetworkClients {
     private val sharedClient = lazy { create() }
-    val client: HttpClient get() = sharedClient.value
+    val client: HttpClient
+        get() = sharedClient.value
+
     fun close() {
         if (sharedClient.isInitialized()) sharedClient.value.close()
     }
 
-    private fun create() = HttpClient(OkHttp) {
-        install(ContentNegotiation) {
-            json(
-                Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true },
-                ContentType.Any
-            )
+    private fun create() =
+        HttpClient(OkHttp) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        explicitNulls = false
+                        encodeDefaults = true
+                    },
+                    ContentType.Any,
+                )
+            }
+            engine { clientCacheSize = 0 }
         }
-        engine { clientCacheSize = 0 }
-    }
 }

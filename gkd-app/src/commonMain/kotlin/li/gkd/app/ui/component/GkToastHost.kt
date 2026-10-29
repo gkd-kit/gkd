@@ -28,11 +28,13 @@ import kotlinx.coroutines.delay
 class ToastState {
     var message by mutableStateOf<String?>(null)
         private set
+
     var revision by mutableLongStateOf(0)
         private set
 
     fun show(text: String) {
-        message = text; revision++
+        message = text
+        revision++
     }
 
     fun dismiss(expectedRevision: Long) {
@@ -43,7 +45,8 @@ class ToastState {
 /** A non-modal overlay: it neither takes focus nor consumes pointer input. */
 @Composable
 fun GkToastHost(
-    state: ToastState, modifier: Modifier = Modifier,
+    state: ToastState,
+    modifier: Modifier = Modifier,
     overlayHost: @Composable (@Composable () -> Unit) -> Unit = { content ->
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) { content() }
     },
@@ -53,26 +56,30 @@ fun GkToastHost(
     if (state.message != null) displayedMessage = state.message.orEmpty()
     LaunchedEffect(revision, state.message) {
         if (state.message != null) {
-            delay(2500); state.dismiss(revision)
+            delay(2500)
+            state.dismiss(revision)
         }
     }
     val visible = remember { MutableTransitionState(false) }
     visible.targetState = state.message != null
-    if (visible.currentState || visible.targetState) overlayHost {
-        AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut()) {
-            Box(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 48.dp)
-                    .background(
-                        MaterialTheme.colorScheme.inverseSurface,
-                        MaterialTheme.shapes.extraLarge
+    if (visible.currentState || visible.targetState)
+        overlayHost {
+            AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut()) {
+                Box(
+                    modifier =
+                        Modifier.padding(horizontal = 24.dp, vertical = 48.dp)
+                            .background(
+                                MaterialTheme.colorScheme.inverseSurface,
+                                MaterialTheme.shapes.extraLarge,
+                            )
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                ) {
+                    Text(
+                        displayedMessage,
+                        Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
                     )
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-            ) {
-                Text(
-                    displayedMessage, Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.inverseOnSurface
-                )
+                }
             }
         }
-    }
 }

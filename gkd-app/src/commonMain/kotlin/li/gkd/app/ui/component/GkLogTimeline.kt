@@ -88,15 +88,18 @@ fun <T : Any> GkLogTimeline(
                             dateChanged,
                             appIcon,
                             appName,
-                            onClick = onOpenApp?.let { open -> { open(id) } })
+                            onClick = onOpenApp?.let { open -> { open(id) } },
+                        )
                     }
                 }
                 val precedingItem = previousItem.takeUnless { appChanged }
-                if (contextHeader != null &&
-                    (precedingItem == null || contextChanged?.invoke(
-                        precedingItem,
-                        preview
-                    ) == true)
+                if (
+                    contextHeader != null &&
+                        (precedingItem == null ||
+                            contextChanged?.invoke(
+                                precedingItem,
+                                preview,
+                            ) == true)
                 ) {
                     val contextKey = "context:${key(preview)}"
                     currentContext?.let { contexts[contextKey] = it }
@@ -126,15 +129,17 @@ fun GkLogTimeText(time: Long) {
     val formatted = time.format("HH:mm:ss.SSS")
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     Text(
-        text = buildAnnotatedString {
-            append(formatted.dropLast(4))
-            withStyle(SpanStyle(color = color.copy(alpha = 0.65f))) {
-                append(formatted.takeLast(4))
-            }
-        },
-        style = MaterialTheme.typography.labelMedium.copy(
-            fontFeatureSettings = TABULAR_NUMBERS_FONT_FEATURE,
-        ),
+        text =
+            buildAnnotatedString {
+                append(formatted.dropLast(4))
+                withStyle(SpanStyle(color = color.copy(alpha = 0.65f))) {
+                    append(formatted.takeLast(4))
+                }
+            },
+        style =
+            MaterialTheme.typography.labelMedium.copy(
+                fontFeatureSettings = TABULAR_NUMBERS_FONT_FEATURE,
+            ),
         color = color,
         softWrap = false,
         maxLines = 1,
@@ -165,37 +170,41 @@ private fun GkLogDateHeader(
     appContexts: Map<Any, GkLogAppContext>,
     appLabel: @Composable (String) -> String,
 ) {
-    val appId by remember(dateKey, listState, appContexts) {
-        derivedStateOf {
-            val layout = listState.layoutInfo
-            val header = layout.visibleItemsInfo.find { it.key == dateKey }
-            if (header == null || header.offset > layout.viewportStartOffset) {
-                null
-            } else {
-                val headerBottom = header.offset + header.size
-                val first = layout.visibleItemsInfo
-                    .filter {
-                        it.key != dateKey && it.offset + it.size > headerBottom &&
-                                it.offset < layout.viewportEndOffset
-                    }
-                    .minByOrNull { it.index }
-                val context = first?.let { appContexts[it.key] }
-                val appHeader = layout.visibleItemsInfo.find { it.key == context?.headerKey }
-                if (context?.dateKey == dateKey &&
-                    (appHeader == null || appHeader.offset + appHeader.size <= headerBottom)
-                ) {
-                    context.appId
-                } else {
+    val appId by
+        remember(dateKey, listState, appContexts) {
+            derivedStateOf {
+                val layout = listState.layoutInfo
+                val header = layout.visibleItemsInfo.find { it.key == dateKey }
+                if (header == null || header.offset > layout.viewportStartOffset) {
                     null
+                } else {
+                    val headerBottom = header.offset + header.size
+                    val first =
+                        layout.visibleItemsInfo
+                            .filter {
+                                it.key != dateKey &&
+                                    it.offset + it.size > headerBottom &&
+                                    it.offset < layout.viewportEndOffset
+                            }
+                            .minByOrNull { it.index }
+                    val context = first?.let { appContexts[it.key] }
+                    val appHeader = layout.visibleItemsInfo.find { it.key == context?.headerKey }
+                    if (
+                        context?.dateKey == dateKey &&
+                            (appHeader == null || appHeader.offset + appHeader.size <= headerBottom)
+                    ) {
+                        context.appId
+                    } else {
+                        null
+                    }
                 }
             }
         }
-    }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(start = 24.dp, end = itemHorizontalPadding, top = 8.dp, bottom = 8.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(start = 24.dp, end = itemHorizontalPadding, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -234,24 +243,24 @@ private fun GkLogAppHeader(
     onClick: (() -> Unit)? = null,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .gkLogTimelineRail(MaterialTheme.colorScheme.outlineVariant)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(
-                start = 16.dp,
-                end = itemHorizontalPadding,
-                top = if (firstInDate) 0.dp else 12.dp,
-                bottom = 0.dp,
-            ),
+        modifier =
+            Modifier.fillMaxWidth()
+                .gkLogTimelineRail(MaterialTheme.colorScheme.outlineVariant)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(
+                    start = 16.dp,
+                    end = itemHorizontalPadding,
+                    top = if (firstInDate) 0.dp else 12.dp,
+                    bottom = 0.dp,
+                ),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
+            modifier =
+                Modifier.size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface),
             contentAlignment = Alignment.Center,
         ) {
             appIcon(appId)

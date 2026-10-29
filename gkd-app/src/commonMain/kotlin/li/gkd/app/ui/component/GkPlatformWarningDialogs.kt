@@ -22,7 +22,13 @@ fun GkPlatformWarningDialogs(
         }
     }
     if (restrictedWarning && !a11yRunning && !privilegePage) {
-        GkRestrictedSettingsDialog({ dismissRestricted(); openPrivilege() }, dismissRestricted)
+        GkRestrictedSettingsDialog(
+            {
+                dismissRestricted()
+                openPrivilege()
+            },
+            dismissRestricted,
+        )
     }
     if (automationOccupied) GkAutomationOccupiedDialog(dismissOccupied)
 }

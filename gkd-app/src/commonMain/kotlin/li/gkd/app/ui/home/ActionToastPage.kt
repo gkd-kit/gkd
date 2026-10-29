@@ -36,8 +36,8 @@ import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkSwitch
 import li.gkd.app.ui.component.GkTemplateVariableRow
 import li.gkd.app.ui.navigation.GkEditor
-import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.page.EditorSaveResult
+import li.gkd.app.ui.page.EditorSession
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
 import li.gkd.app.ui.util.ActionToastTemplate

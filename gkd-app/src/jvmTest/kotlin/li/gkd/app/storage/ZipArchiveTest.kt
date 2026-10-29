@@ -1,19 +1,19 @@
 package li.gkd.app.storage
 
-import li.gkd.app.testing.TestFiles
-
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
-import org.junit.Test
 import java.io.IOException
 import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+import li.gkd.app.testing.TestFiles
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
+import org.junit.Test
 
 class ZipArchiveTest {
-    private val archive get() = ZipArchive
+    private val archive
+        get() = ZipArchive
 
     @Test
     fun zipOmitsEmptyDirectoryTreesButPreservesEmptyFilesWhenRequested() {
@@ -27,13 +27,24 @@ class ZipArchiveTest {
             val zipFile = directory.resolve("output.zip")
             archive.zipFiles(listOf(crash, log), zipFile, includeEmptyDirectories = false)
             ZipFile(zipFile).use { zip ->
-                assertEquals(setOf("log/empty.txt", "log/event.txt"), zip.entries().asSequence().map { it.name }.toSet())
+                assertEquals(
+                    setOf("log/empty.txt", "log/event.txt"),
+                    zip.entries().asSequence().map { it.name }.toSet(),
+                )
                 assertEquals(0L, zip.getEntry("log/empty.txt").size)
-                assertEquals("event", zip.getInputStream(zip.getEntry("log/event.txt")).bufferedReader().use { it.readText() })
+                assertEquals(
+                    "event",
+                    zip.getInputStream(zip.getEntry("log/event.txt")).bufferedReader().use {
+                        it.readText()
+                    },
+                )
             }
             archive.zipFiles(listOf(crash), zipFile)
             ZipFile(zipFile).use { zip ->
-                assertEquals(listOf("crash/temp/nested/"), zip.entries().asSequence().map { it.name }.toList())
+                assertEquals(
+                    listOf("crash/temp/nested/"),
+                    zip.entries().asSequence().map { it.name }.toList(),
+                )
             }
         } finally {
             directory.deleteRecursively()

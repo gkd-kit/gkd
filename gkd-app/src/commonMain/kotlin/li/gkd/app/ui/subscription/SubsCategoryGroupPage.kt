@@ -1,6 +1,5 @@
 package li.gkd.app.ui.subscription
 
-import li.gkd.app.rule.toRuleGroupTarget
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,9 +12,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleGroupTarget
@@ -37,14 +37,13 @@ import li.gkd.app.ui.component.GkRuleListHeader
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.GkTwoLineText
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.SubsAppGroupListRoute
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
-import li.gkd.app.app.AppSort
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.ListPlaceholder
@@ -71,13 +70,21 @@ fun SubsCategoryGroupPage(
     GkSubscriptionPageContent(
         vm.uiState,
         onBack = mainVm.navigator::pop,
-        retainContent = retainForRemoval
+        retainContent = retainForRemoval,
     ) { state ->
         val subs = state.subscription
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val category = state.category
         val sortedApps =
-            remember(state.apps, appMap, settings, state.appActionOrder, state.triggerStats, visitOrder, blockApps) {
+            remember(
+                state.apps,
+                appMap,
+                settings,
+                state.appActionOrder,
+                state.triggerStats,
+                visitOrder,
+                blockApps,
+            ) {
                 filterSubsApps(
                     apps = state.apps,
                     appMap = appMap,
@@ -91,26 +98,34 @@ fun SubsCategoryGroupPage(
                     triggerCounts = state.triggerStats.byApp.mapValues { it.value.count },
                 )
             }
-        val controls = remember(state, environment) {
-            state.apps.flatMap { app ->
-                app.groups.map { group ->
-                    (app.id to group.key) to environment.resolve(
-                        subs,
-                        group,
-                        app.id,
-                        state.configs,
-                        configIndex
-                    )
-                }
-            }.toMap()
-        }
+        val controls =
+            remember(state, environment) {
+                state.apps
+                    .flatMap { app ->
+                        app.groups.map { group ->
+                            (app.id to group.key) to
+                                environment.resolve(
+                                    subs,
+                                    group,
+                                    app.id,
+                                    state.configs,
+                                    configIndex,
+                                )
+                        }
+                    }
+                    .toMap()
+            }
         val apps = sortedApps
-        val visibleTargets = remember(apps, subs.id) {
-            apps.flatMap { app -> app.groups.map { RuleGroupTarget.App(subs.id, app.id, it.key) } }
-        }
-        val selectableTargets = remember(visibleTargets) {
-            visibleTargets.toSet()
-        }
+        val visibleTargets =
+            remember(apps, subs.id) {
+                apps.flatMap { app ->
+                    app.groups.map { RuleGroupTarget.App(subs.id, app.id, it.key) }
+                }
+            }
+        val selectableTargets =
+            remember(visibleTargets) {
+                visibleTargets.toSet()
+            }
         val selection = vm.selection
         val selectionSnapshot by selection.state.collectAsStateWithLifecycle()
         val selected = selectionSnapshot.selectedKeys intersect selectableTargets
@@ -121,40 +136,50 @@ fun SubsCategoryGroupPage(
         fun updateGroups(
             targets: Set<RuleGroupTarget.App>,
             enabled: Boolean?,
-            entireCategory: Boolean = false
+            entireCategory: Boolean = false,
         ) {
             val request = vm.prepareSwitches(state, targets)
             vm.scope.launchUi {
                 if (enabled == null) {
                     val scopeLabel =
-                        if (entireCategory) getString(Res.string.category_all_scope) else getString(
-                            Res.string.selection_scope
-                        )
+                        if (entireCategory) getString(Res.string.category_all_scope)
+                        else
+                            getString(
+                                Res.string.selection_scope,
+                            )
                     val changedCount =
                         request.expected.values.count { it != RuleSetting.FollowDefault }
                     val unchangedCount = request.expected.size - changedCount
-                    if (!mainVm.dialogRequests.confirm(
+                    if (
+                        !mainVm.dialogRequests.confirm(
                             title = getString(Res.string.rule_clear_custom_settings),
-                            text = getString(
-                                Res.string.category_clear_settings_confirmation,
-                                scopeLabel,
-                                targets.size.toString(),
-                                if (entireCategory) getString(Res.string.category_scope_includes_hidden) else getString(
-                                    Res.string.category_scope_selected_only
-                                )
-                            ) +
-                                    "\n\n" + if (unchangedCount > 0)
+                            text =
                                 getString(
-                                    Res.string.rule_switch_expected_counts,
-                                    changedCount.toString(),
-                                    unchangedCount.toString()
-                                )
-                            else getString(
-                                Res.string.rule_switch_expected_changed_count,
-                                changedCount.toString()
-                            ),
+                                    Res.string.category_clear_settings_confirmation,
+                                    scopeLabel,
+                                    targets.size.toString(),
+                                    if (entireCategory)
+                                        getString(Res.string.category_scope_includes_hidden)
+                                    else
+                                        getString(
+                                            Res.string.category_scope_selected_only,
+                                        ),
+                                ) +
+                                    "\n\n" +
+                                    if (unchangedCount > 0)
+                                        getString(
+                                            Res.string.rule_switch_expected_counts,
+                                            changedCount.toString(),
+                                            unchangedCount.toString(),
+                                        )
+                                    else
+                                        getString(
+                                            Res.string.rule_switch_expected_changed_count,
+                                            changedCount.toString(),
+                                        ),
                         )
-                    ) return@launchUi
+                    )
+                        return@launchUi
                 }
                 val result = vm.applySwitches(request, RuleSetting.from(enabled))
                 if (enabled == null) {
@@ -162,10 +187,11 @@ fun SubsCategoryGroupPage(
                         result.failureMessage()
                             ?: if (result.restricted > 0)
                                 getString(
-                                    Res.string.rule_switch_restricted_count_suffix,
-                                    result.restricted.toString()
-                                ).trimStart('；')
-                            else getString(Res.string.update_success)
+                                        Res.string.rule_switch_restricted_count_suffix,
+                                        result.restricted.toString(),
+                                    )
+                                    .trimStart('；')
+                            else getString(Res.string.update_success),
                     )
                 } else {
                     ToastUtils.show(result.description())
@@ -182,12 +208,21 @@ fun SubsCategoryGroupPage(
                     onNavigateBack = mainVm.navigator::pop,
                     scrollBehavior = scroll.scrollBehavior,
                     onTitleClick = scroll::resetScroll,
-                    title = { GkTwoLineText(title = subs.name, subtitle = category?.name ?: stringResource(Res.string.rule_category_uncategorized)) },
+                    title = {
+                        GkTwoLineText(
+                            title = subs.name,
+                            subtitle =
+                                category?.name
+                                    ?: stringResource(Res.string.rule_category_uncategorized),
+                        )
+                    },
                     actions = { selectedMode ->
                         if (selectedMode) {
                             GkMultiSelectionActions(
                                 selectionSnapshot.selectedKeys,
-                                selectableTargets, selection::selectAll, selection::invert,
+                                selectableTargets,
+                                selection::selectAll,
+                                selection::invert,
                             ) { dismiss ->
                                 GkBatchActionMenuItem(
                                     stringResource(Res.string.action_turn_on),
@@ -200,11 +235,12 @@ fun SubsCategoryGroupPage(
                                     { updateGroups(selected, false) },
                                 )
                                 GkBatchActionMenuItem(
-                                    stringResource(Res.string.settings_reset_default), dismiss,
+                                    stringResource(Res.string.settings_reset_default),
+                                    dismiss,
                                     {
                                         updateGroups(
                                             selected intersect state.overrideTargets,
-                                            null
+                                            null,
                                         )
                                     },
                                     selected.any { it in state.overrideTargets },
@@ -215,10 +251,12 @@ fun SubsCategoryGroupPage(
                                 GkFilterIconButton(
                                     filtered = visibleTargets.size < state.targets.size,
                                     contentDescription = stringResource(Res.string.app_sort_filter),
-                                    onClick = { vm.setShowFilter(true) })
+                                    onClick = { vm.setShowFilter(true) },
+                                )
                                 DropdownMenu(
                                     expanded = showFilter,
-                                    onDismissRequest = { vm.setShowFilter(false) }) {
+                                    onDismissRequest = { vm.setShowFilter(false) },
+                                ) {
                                     GkAppFilterContent(
                                         sort = settings.subsCategorySort,
                                         groupType = settings.subsCategoryGroupType,
@@ -233,7 +271,8 @@ fun SubsCategoryGroupPage(
                                 GkIconButton(
                                     imageVector = GkIcons.MoreVert,
                                     contentDescription = stringResource(Res.string.more_actions),
-                                    onClick = { vm.setShowActions(true) })
+                                    onClick = { vm.setShowActions(true) },
+                                )
                             }
                         }
                     },
@@ -253,8 +292,8 @@ fun SubsCategoryGroupPage(
                                 mainVm.navigator.navigate(
                                     SubsAppGroupListRoute(
                                         subs.id,
-                                        app.id
-                                    )
+                                        app.id,
+                                    ),
                                 )
                             },
                         ) {
@@ -280,8 +319,9 @@ fun SubsCategoryGroupPage(
                             onSettingChange = { setting ->
                                 val request = vm.prepareSwitches(state, setOf(target))
                                 vm.scope.launchUi {
-                                    vm.applySwitches(request, setting)
-                                        .failureMessage()?.let { ToastUtils.show(it) }
+                                    vm.applySwitches(request, setting).failureMessage()?.let {
+                                        ToastUtils.show(it)
+                                    }
                                 }
                             },
                             isSelectedMode = selectionSnapshot.active,
@@ -294,9 +334,13 @@ fun SubsCategoryGroupPage(
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     if (apps.isEmpty()) {
                         GkEmptyState(
-                            text = if (state.targets.isEmpty()) stringResource(Res.string.category_groups_empty) else stringResource(
-                                Res.string.rule_groups_no_filter_matches
-                            ),
+                            text =
+                                if (state.targets.isEmpty())
+                                    stringResource(Res.string.category_groups_empty)
+                                else
+                                    stringResource(
+                                        Res.string.rule_groups_no_filter_matches,
+                                    ),
                         )
                     }
                     GkPageBottomSpace()
@@ -315,7 +359,7 @@ fun SubsCategoryGroupPage(
                         vm.setCategorySetting(
                             subs,
                             setting,
-                            state.setting
+                            state.setting,
                         )
                     }
                 },
@@ -324,31 +368,32 @@ fun SubsCategoryGroupPage(
                     updateGroups(state.overrideTargets, null, entireCategory = true)
                 },
                 onEdit = {
-                    vm.setShowActions(false); mainVm.navigator.navigate(
-                    CategoryEditorRoute(
-                        subs.id,
-                        category.key
+                    vm.setShowActions(false)
+                    mainVm.navigator.navigate(
+                        CategoryEditorRoute(
+                            subs.id,
+                            category.key,
+                        ),
                     )
-                )
                 },
                 onDelete = {
                     mainVm.confirmDelete(
                         Res.string.category_delete.getSync(),
                         Res.string.category_delete_confirmation.getSync(
                             category.name,
-                            state.targets.size.toString()
+                            state.targets.size.toString(),
                         ),
                         { setOf(DeletionTarget.Category(subs.id, category.key)) },
                         {
                             vm.setShowActions(false)
                             retainForRemoval = true
-                        }) {
+                        },
+                    ) {
                         vm.deleteCategory(subs)
                         ToastUtils.show(getString(Res.string.delete_success))
                     }
                 },
             )
         }
-
     }
 }

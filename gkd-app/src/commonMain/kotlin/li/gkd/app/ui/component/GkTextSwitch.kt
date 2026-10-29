@@ -38,16 +38,19 @@ fun GkTextSwitch(
     onClickLabel: String? = stringResource(Res.string.switch_state_description, title),
 ) {
     val description =
-        title + if (checked) stringResource(Res.string.turned_on) else stringResource(Res.string.turned_off)
-    val topModifier = if (onClick != null) {
-        modifier.clickable(enabled = enabled, onClick = onClick, onClickLabel = onClickLabel)
-    } else {
-        modifier
-    }
+        title +
+            if (checked) stringResource(Res.string.turned_on)
+            else stringResource(Res.string.turned_off)
+    val topModifier =
+        if (onClick != null) {
+            modifier.clickable(enabled = enabled, onClick = onClick, onClickLabel = onClickLabel)
+        } else {
+            modifier
+        }
     Row(
         modifier = if (paddingDisabled) topModifier else topModifier.itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -66,17 +69,22 @@ fun GkTextSwitch(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = suffix, style = MaterialTheme.typography.bodyMedium.run {
-                                if (suffixUnderline) {
-                                    copy(textDecoration = TextDecoration.Underline)
-                                } else {
-                                    this
-                                }
-                            },
+                            text = suffix,
+                            style =
+                                MaterialTheme.typography.bodyMedium.run {
+                                    if (suffixUnderline) {
+                                        copy(textDecoration = TextDecoration.Underline)
+                                    } else {
+                                        this
+                                    }
+                                },
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = if (onSuffixClick != null) Modifier.clickable(
-                                onClick = onSuffixClick,
-                            ) else Modifier
+                            modifier =
+                                if (onSuffixClick != null)
+                                    Modifier.clickable(
+                                        onClick = onSuffixClick,
+                                    )
+                                else Modifier,
                         )
                     }
                 } else {
@@ -93,9 +101,10 @@ fun GkTextSwitch(
             checked = checked,
             enabled = enabled,
             onCheckedChange = onCheckedChange,
-            modifier = Modifier.semantics {
-                this.stateDescription = description
-            }
+            modifier =
+                Modifier.semantics {
+                    this.stateDescription = description
+                },
         )
     }
 }

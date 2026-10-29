@@ -22,6 +22,7 @@ plugins {
 }
 
 rootProject.name = "gkd"
+
 include(
     ":gkd-android",
     ":gkd-a11y-fixture",

@@ -12,11 +12,9 @@ import org.gradle.api.tasks.TaskProvider
 
 @CacheableTask
 abstract class GenerateSourcePathsTask : DefaultTask() {
-    @get:Input
-    abstract val sourcePaths: ListProperty<String>
+    @get:Input abstract val sourcePaths: ListProperty<String>
 
-    @get:OutputDirectory
-    abstract val outputDirectory: DirectoryProperty
+    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
 
     @TaskAction
     fun generate() {
@@ -27,33 +25,38 @@ abstract class GenerateSourcePathsTask : DefaultTask() {
         require(paths.none { '\r' in it || '\n' in it || '\\' in it }) {
             "Kotlin source paths must be single-line repository-relative paths"
         }
-        outputDirectory.file("source-paths.txt").get().asFile.writeText(
-            paths.joinToString(separator = "\n", postfix = "\n"),
-            Charsets.UTF_8,
-        )
+        outputDirectory
+            .file("source-paths.txt")
+            .get()
+            .asFile
+            .writeText(
+                paths.joinToString(separator = "\n", postfix = "\n"),
+                Charsets.UTF_8,
+            )
     }
 }
 
 fun Project.registerSourcePathsTask(commitId: String): TaskProvider<GenerateSourcePathsTask> {
-    val trackedKotlinSourcePaths = providers.of(GitOutputValueSource::class.java) {
-        parameters.repositoryDirectory.set(rootProject.layout.projectDirectory)
-        parameters.arguments.set(
-            listOf(
-                "ls-tree",
-                "-r",
-                "-z",
-                "--name-only",
-                commitId,
-            ),
-        )
-    }.map { output ->
-        // This index is packaged with Android builds; include only their production source sets.
-        val androidSourcePath = Regex("gkd-[^/]+/src/(main|commonMain|androidMain)/.+\\.kt")
-        output
-            .split('\u0000')
-            .filter(androidSourcePath::matches)
-            .sorted()
-    }
+    val trackedKotlinSourcePaths =
+        providers
+            .of(GitOutputValueSource::class.java) {
+                parameters.repositoryDirectory.set(rootProject.layout.projectDirectory)
+                parameters.arguments.set(
+                    listOf(
+                        "ls-tree",
+                        "-r",
+                        "-z",
+                        "--name-only",
+                        commitId,
+                    ),
+                )
+            }
+            .map { output ->
+                // This index is packaged with Android builds; include only their production source
+                // sets.
+                val androidSourcePath = Regex("gkd-[^/]+/src/(main|commonMain|androidMain)/.+\\.kt")
+                output.split('\u0000').filter(androidSourcePath::matches).sorted()
+            }
     val generatedAssetsDirectory = layout.buildDirectory.dir("generated/assets/sourcePaths")
     return tasks.register("generateSourcePaths", GenerateSourcePathsTask::class.java) {
         sourcePaths.set(trackedKotlinSourcePaths)

@@ -12,8 +12,14 @@ class NetworkFailureLoggingTest {
     @Test
     fun transportFailuresOmitSensitiveMessagesWhileDiskAndUnknownFailuresKeepDiagnostics() {
         assertEquals("network timeout", networkFailureSummary(SocketTimeoutException("secret URL")))
-        assertEquals("DNS resolution failed", networkFailureSummary(UnknownHostException("private host")))
-        assertEquals("TLS SSLHandshakeException", networkFailureSummary(SSLHandshakeException("certificate detail")))
+        assertEquals(
+            "DNS resolution failed",
+            networkFailureSummary(UnknownHostException("private host")),
+        )
+        assertEquals(
+            "TLS SSLHandshakeException",
+            networkFailureSummary(SSLHandshakeException("certificate detail")),
+        )
         assertNull(networkFailureSummary(IOException("disk write failed")))
         assertNull(networkFailureSummary(IllegalStateException("unexpected state")))
     }

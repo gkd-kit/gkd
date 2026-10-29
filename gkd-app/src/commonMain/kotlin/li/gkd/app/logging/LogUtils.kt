@@ -8,7 +8,8 @@ object LogUtils {
     private val lock = Any()
     private val writer = lazy { FileLogWriter(appStorage().log, logMetadata()) }
     private var closed = false
-    val debugEnabled: Boolean get() = META.debuggable
+    val debugEnabled: Boolean
+        get() = META.debuggable
 
     fun d(
         vararg args: Any?,
@@ -47,7 +48,9 @@ object LogUtils {
         write(LogLevel.ERROR, args, loc, tag)
     }
 
-    /** Build expensive details only when Debug logging is enabled; snapshot on the caller thread. */
+    /**
+     * Build expensive details only when Debug logging is enabled; snapshot on the caller thread.
+     */
     fun d(
         @CallSite loc: String = "",
         @CallSite("{file}") fileName: String = "",
@@ -64,39 +67,48 @@ object LogUtils {
         val texts = args.map(::formatLogValue)
         synchronized(lock) {
             if (closed || META.debuggable || level >= LogLevel.WARN) {
-                writePlatformLog(level, tag, buildString {
-                    append("$thread, $location")
-                    texts.forEachIndexed { index, text ->
-                        append(if (texts.size == 1) "\n" else "\n[$index]: ")
-                        append(text)
-                    }
-                })
+                writePlatformLog(
+                    level,
+                    tag,
+                    buildString {
+                        append("$thread, $location")
+                        texts.forEachIndexed { index, text ->
+                            append(if (texts.size == 1) "\n" else "\n[$index]: ")
+                            append(text)
+                        }
+                    },
+                )
             }
-            if (!closed) writer.value.append(tag, thread, location, texts, System.currentTimeMillis(), level)
+            if (!closed)
+                writer.value.append(tag, thread, location, texts, System.currentTimeMillis(), level)
         }
     }
 
-    fun status() = synchronized(lock) { if (writer.isInitialized()) writer.value.status() else null }
+    fun status() =
+        synchronized(lock) { if (writer.isInitialized()) writer.value.status() else null }
 
     fun flush() {
-        val current = synchronized(lock) { if (!closed && writer.isInitialized()) writer.value else null }
+        val current =
+            synchronized(lock) { if (!closed && writer.isInitialized()) writer.value else null }
         current?.flush()
     }
 
     fun copyLogs(target: java.io.File) {
-        val current = synchronized(lock) {
-            check(!closed) { "Log writer is closed" }
-            writer.value
-        }
+        val current =
+            synchronized(lock) {
+                check(!closed) { "Log writer is closed" }
+                writer.value
+            }
         current.copyTo(target)
     }
 
     fun close() {
-        val current = synchronized(lock) {
-            if (closed) return
-            closed = true
-            if (writer.isInitialized()) writer.value else null
-        }
+        val current =
+            synchronized(lock) {
+                if (closed) return
+                closed = true
+                if (writer.isInitialized()) writer.value else null
+            }
         current?.close()
     }
 }

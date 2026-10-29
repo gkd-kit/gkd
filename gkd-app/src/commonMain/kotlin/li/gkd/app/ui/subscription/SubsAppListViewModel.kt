@@ -1,23 +1,23 @@
 package li.gkd.app.ui.subscription
 
-import li.gkd.app.record.TriggerStats
-import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import li.gkd.app.app.AppSort
+import li.gkd.app.record.TriggerStats
 import li.gkd.app.rule.RuleGroupConfigService
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchRequest
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.RawSubscription
+import li.gkd.app.ui.component.MultiSelectionState
 import li.gkd.app.ui.navigation.SubsAppListRoute
-import li.gkd.app.app.AppSort
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.db.Db
+import li.gkd.db.RuleGroupType
 import li.gkd.db.SubscriptionConfigSnapshot
 import li.gkd.db.SubscriptionConfigStore
-import li.gkd.db.RuleGroupType
 
 data class SubsAppListUiState(
     val subscription: RawSubscription,
@@ -45,16 +45,24 @@ class SubsAppListViewModel(
         showSearchBar.value = value
     }
 
-
-    val uiState = RequiredSubscription(route.subsItemId, scope).buildUiState { subscription ->
-        combine(
-            SubscriptionConfigStore.observe(),
-            Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId),
-            Db.ruleTriggerStatsDao.observe(subsId = route.subsItemId, groupType = RuleGroupType.App)
-        ) { configs, ids, records ->
-            SubsAppListUiState(subscription, configs, ids.mapIndexed { i, id -> id to i }.toMap(), TriggerStats(records))
+    val uiState =
+        RequiredSubscription(route.subsItemId, scope).buildUiState { subscription ->
+            combine(
+                SubscriptionConfigStore.observe(),
+                Db.actionLogDao.queryLatestUniqueAppIds(route.subsItemId),
+                Db.ruleTriggerStatsDao.observe(
+                    subsId = route.subsItemId,
+                    groupType = RuleGroupType.App,
+                ),
+            ) { configs, ids, records ->
+                SubsAppListUiState(
+                    subscription,
+                    configs,
+                    ids.mapIndexed { i, id -> id to i }.toMap(),
+                    TriggerStats(records),
+                )
+            }
         }
-    }
 
     fun setSortType(value: AppSort) {
         SettingsRepository.updateSettings { it.copy(subsAppSort = value.value) }
@@ -71,7 +79,8 @@ class SubsAppListViewModel(
     fun prepareSwitches(state: SubsAppListUiState, appIds: Set<String>): RuleSwitchRequest =
         RuleGroupConfigService.prepare(
             appIds.map { RuleSwitchTarget.App(route.subsItemId, it) },
-            listOf(state.subscription), state.configs
+            listOf(state.subscription),
+            state.configs,
         )
 
     suspend fun applySwitches(request: RuleSwitchRequest, setting: RuleSetting) =

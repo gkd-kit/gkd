@@ -6,10 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
+import li.gkd.app.MainActivity
 import li.gkd.app.ui.androidState
 import li.gkd.app.ui.navigation.GkAppNavigation
 import li.gkd.app.ui.style.AppTheme
-import li.gkd.app.MainActivity
 
 @Composable
 fun AppRoot() {
@@ -20,9 +20,7 @@ fun AppRoot() {
             GkAppNavigation(host = activity)
             AppOverlayHost()
             mainVm.androidState.permissionRequests.Render(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .zIndex(1f),
+                modifier = Modifier.align(Alignment.TopCenter).zIndex(1f),
             )
         }
     }

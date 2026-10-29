@@ -2,11 +2,11 @@ package li.gkd.app.data
 
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlin.system.measureTimeMillis
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.query.MAX_CHILD_SIZE
 import li.gkd.app.model.NodeInfo
 import li.gkd.app.resources.*
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 
 private data class TempNodeData(
@@ -25,6 +25,7 @@ private data class TempNodeData(
             field = value
             idQfInit = true
         }
+
     var textQfInit = false
     var textQf: Boolean? = null
         set(value) {
@@ -56,11 +57,17 @@ fun captureNodeInfoList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             times++
             val node = stack.removeAt(stack.lastIndex)
             node.id = times - 1
-            val children = getChildren(node.node).mapIndexed { i, child ->
-                TempNodeData(
-                    child, node, i, node.depth + 1
-                )
-            }.toList()
+            val children =
+                getChildren(node.node)
+                    .mapIndexed { i, child ->
+                        TempNodeData(
+                            child,
+                            node,
+                            i,
+                            node.depth + 1,
+                        )
+                    }
+                    .toList()
             node.children = children
             nodes.add(node)
             repeat(children.size) { i ->
@@ -86,20 +93,21 @@ fun captureNodeInfoList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             val id = n.attr.id
             val text = n.attr.text
             if (!n.idQfInit && !id.isNullOrEmpty()) {
-                n.idQf = (idQfCache[id]
-                    ?: root.findAccessibilityNodeInfosByViewId(id)).apply {
-                    idQfCache[id] = this
-                }
-                    .any { t -> t == n.node }
-
+                n.idQf =
+                    (idQfCache[id] ?: root.findAccessibilityNodeInfosByViewId(id))
+                        .apply {
+                            idQfCache[id] = this
+                        }
+                        .any { t -> t == n.node }
             }
 
             if (!n.textQfInit && !text.isNullOrEmpty()) {
-                n.textQf = (textQfCache[text]
-                    ?: root.findAccessibilityNodeInfosByText(text)).apply {
-                    textQfCache[text] = this
-                }
-                    .any { t -> t == n.node }
+                n.textQf =
+                    (textQfCache[text] ?: root.findAccessibilityNodeInfosByText(text))
+                        .apply {
+                            textQfCache[text] = this
+                        }
+                        .any { t -> t == n.node }
             }
 
             if (n.idQf == true && n.textQf == true) {
@@ -209,7 +217,7 @@ fun captureNodeInfoList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             pid = n.parent?.id ?: -1,
             idQf = n.idQf,
             textQf = n.textQf,
-            attr = n.attr
+            attr = n.attr,
         )
     }
 }

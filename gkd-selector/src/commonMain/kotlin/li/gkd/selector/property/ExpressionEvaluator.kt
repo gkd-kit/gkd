@@ -54,10 +54,11 @@ internal inline fun PropertyExpression.evaluateUsing(
 
                 is LogicalExpression -> {
                     if (frame.state == 0) {
-                        val shortCircuited = when (expression.operator) {
-                            LogicalOperator.And -> !result
-                            LogicalOperator.Or -> result
-                        }
+                        val shortCircuited =
+                            when (expression.operator) {
+                                LogicalOperator.And -> !result
+                                LogicalOperator.Or -> result
+                            }
                         if (shortCircuited) {
                             logical(expression, result, expression.right)
                             stack.removeAt(stack.lastIndex)
@@ -113,12 +114,12 @@ internal fun PropertyExpression.usesPreviousContext(): Boolean {
     val stack = mutableListOf(this)
     while (stack.isNotEmpty()) {
         when (val expression = stack.removeAt(stack.lastIndex)) {
-            is ComparisonExpression -> if (
-                expression.left.usesPreviousContext() ||
-                expression.right.usesPreviousContext()
-            ) {
-                return true
-            }
+            is ComparisonExpression ->
+                if (
+                    expression.left.usesPreviousContext() || expression.right.usesPreviousContext()
+                ) {
+                    return true
+                }
 
             is NotExpression -> stack.add(expression.expression)
             is LogicalExpression -> {
@@ -135,18 +136,17 @@ private fun ValueExpression.usesPreviousContext(): Boolean {
     while (stack.isNotEmpty()) {
         when (val expression = stack.removeAt(stack.lastIndex)) {
             is ValueExpression.LiteralExpression -> Unit
-            is ValueExpression.Identifier -> if (
-                expression.role == ValueExpression.IdentifierRole.Previous
-            ) {
-                return true
-            }
+            is ValueExpression.Identifier ->
+                if (expression.role == ValueExpression.IdentifierRole.Previous) {
+                    return true
+                }
 
             is ValueExpression.MemberExpression -> stack.add(expression.object0)
             is ValueExpression.CallExpression -> {
                 val callee = expression.callee
                 if (
                     (callee is ValueExpression.Identifier && callee.name == "getPrev") ||
-                    (callee is ValueExpression.MemberExpression && callee.property == "getPrev")
+                        (callee is ValueExpression.MemberExpression && callee.property == "getPrev")
                 ) {
                     return true
                 }

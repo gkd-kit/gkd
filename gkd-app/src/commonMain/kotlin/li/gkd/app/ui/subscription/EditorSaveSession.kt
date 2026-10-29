@@ -11,7 +11,9 @@ class EditorSaveSession<T>(private val isSuccess: (T) -> Boolean = { true }) {
     private var saved: Saved<T>? = null
 
     suspend fun save(action: suspend () -> T): T = mutex.withLock {
-        saved?.let { return@withLock it.value }
+        saved?.let {
+            return@withLock it.value
+        }
         action().also { if (isSuccess(it)) saved = Saved(it) }
     }
 }

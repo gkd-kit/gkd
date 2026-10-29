@@ -1,46 +1,55 @@
 package li.gkd.app.record
 
-import li.gkd.app.META
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertFalse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
-import li.gkd.db.Db
-import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertFalse
+import li.gkd.app.META
 import li.gkd.app.app.launcherAppIdFlow
+import li.gkd.db.Db
 
 /** Queries and fault injection use the real isolated application database. */
 suspend fun assertRuntimeRecords(database: File) = coroutineScope {
     BundledSQLiteDriver().open(database.absolutePath).use { connection ->
-        // Room also writes its invalidation bookkeeping; use SQLite lock waiting on this test connection.
+        // Room also writes its invalidation bookkeeping; use SQLite lock waiting on this test
+        // connection.
         connection.prepare("PRAGMA busy_timeout = 5000").use { it.step() }
         fun sql(text: String) {
             connection.prepare(text).use { it.step() }
         }
 
         fun count(table: String): Long =
-            connection.prepare("SELECT COUNT(*) FROM $table").use { it.step(); it.getLong(0) }
+            connection.prepare("SELECT COUNT(*) FROM $table").use {
+                it.step()
+                it.getLong(0)
+            }
 
         fun visit(id: String): Long =
             connection.prepare("SELECT last_visit_time FROM app_last_visit WHERE app_id = ?").use {
-                it.bindText(1, id); check(it.step()); it.getLong(0)
+                it.bindText(1, id)
+                check(it.step())
+                it.getLong(0)
             }
 
         fun clear() {
             listOf(
-                "app_last_visit",
-                "activity_log",
-                "action_log"
-            ).forEach { sql("DELETE FROM $it") }
+                    "app_last_visit",
+                    "activity_log",
+                    "action_log",
+                )
+                .forEach { sql("DELETE FROM $it") }
         }
 
         suspend fun failure(table: String, block: suspend () -> Unit) {
-            sql("CREATE TRIGGER test_record_failure BEFORE INSERT ON $table BEGIN SELECT RAISE(FAIL, 'record failure'); END")
+            sql(
+                "CREATE TRIGGER test_record_failure BEFORE INSERT ON $table BEGIN SELECT RAISE(FAIL, 'record failure'); END",
+            )
             try {
                 block()
             } finally {
@@ -71,8 +80,8 @@ suspend fun assertRuntimeRecords(database: File) = coroutineScope {
                         AppVisitInput(
                             "a",
                             "b",
-                            10
-                        )
+                            10,
+                        ),
                     )
                 }
             }
@@ -103,14 +112,16 @@ suspend fun assertRuntimeRecords(database: File) = coroutineScope {
 
             clear()
             val concurrent = RuntimeRecordRepository
-            (0 until 205).map { async(Dispatchers.Default) { concurrent.recordAction(action(it)) } }
+            (0 until 205)
+                .map { async(Dispatchers.Default) { concurrent.recordAction(action(it)) } }
                 .awaitAll()
             assertEquals(
                 (0 until 205).toSet(),
-                Db.actionLogDao.query().first().map { it.ruleIndex }.toSet()
+                Db.actionLogDao.query().first().map { it.ruleIndex }.toSet(),
             )
             assertEquals(205, count("action_log"))
-            // The 600th process-wide committed action triggers retention; failed writes must not advance the count.
+            // The 600th process-wide committed action triggers retention; failed writes must not
+            // advance the count.
             for (i in 205 until 597) concurrent.recordAction(action(i))
             failure("action_log") { assertFails { concurrent.recordAction(action(597)) } }
             assertEquals(597, count("action_log"))

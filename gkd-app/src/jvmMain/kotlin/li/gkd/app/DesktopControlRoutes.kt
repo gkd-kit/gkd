@@ -30,8 +30,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.AppInventory
-import li.gkd.app.window.DesktopWindowGeometry
 import li.gkd.app.snapshot.SnapshotCaptureOutcome
+import li.gkd.app.window.DesktopWindowGeometry
 
 private object Edt : CoroutineDispatcher() {
     override fun isDispatchNeeded(context: CoroutineContext) =
@@ -55,8 +55,7 @@ data class UiNode(
     val bounds: UiBounds? = null,
 )
 
-@Serializable
-data class UiBounds(val x: Int, val y: Int, val width: Int, val height: Int)
+@Serializable data class UiBounds(val x: Int, val y: Int, val width: Int, val height: Int)
 
 @Serializable
 data class UiAction(
@@ -76,9 +75,17 @@ data class UiAction(
 
 @Serializable
 data class DesktopWindowSnapshot(
-    val customFrame: Boolean, val x: Int, val y: Int, val width: Int, val height: Int,
-    val contentX: Int, val contentY: Int, val contentWidth: Int, val contentHeight: Int,
-    val minimized: Boolean, val maximized: Boolean,
+    val customFrame: Boolean,
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
+    val contentX: Int,
+    val contentY: Int,
+    val contentWidth: Int,
+    val contentHeight: Int,
+    val minimized: Boolean,
+    val maximized: Boolean,
 )
 
 @Serializable
@@ -98,29 +105,32 @@ fun Route.desktopControlRoutes(
     controlsWindow: () -> ComposeWindow?,
     hostKey: (String) -> Boolean,
 ) {
-    fun target(id: String): ComposeWindow = when (id) {
-        "app" -> window
-        "controls" -> requireNotNull(controlsWindow()) { "Control window is closed" }
-        else -> throw IllegalArgumentException("Unknown window: $id")
-    }
+    fun target(id: String): ComposeWindow =
+        when (id) {
+            "app" -> window
+            "controls" -> requireNotNull(controlsWindow()) { "Control window is closed" }
+            else -> throw IllegalArgumentException("Unknown window: $id")
+        }
 
-    val windowNodes =
-        mutableMapOf<String, MutableMap<String, Pair<AccessibleContext, String?>>>()
+    val windowNodes = mutableMapOf<String, MutableMap<String, Pair<AccessibleContext, String?>>>()
     get("/input-status") {
-        call.respond(withContext(Edt) {
-            mapOf(
-                "activations" to DesktopTestWindows.activations,
-                "focusedWindows" to Window.getWindows().count { it.isFocused },
-                "focusableWindows" to Window.getWindows()
-                    .count { it.isShowing && it.isFocusableWindow })
-        })
+        call.respond(
+            withContext(Edt) {
+                mapOf(
+                    "activations" to DesktopTestWindows.activations,
+                    "focusedWindows" to Window.getWindows().count { it.isFocused },
+                    "focusableWindows" to
+                        Window.getWindows().count { it.isShowing && it.isFocusableWindow },
+                )
+            },
+        )
     }
     get("/scenarios") {
         call.respond(
             mapOf(
                 "pages" to DesktopState.pages,
-                "variants" to DesktopState.variants
-            )
+                "variants" to DesktopState.variants,
+            ),
         )
     }
     get("/state") { call.respond(withContext(Edt) { state.snapshot() }) }
@@ -128,10 +138,11 @@ fun Route.desktopControlRoutes(
         val catalog = AppInfoRepository.state.value
         call.respond(
             DesktopCatalogSnapshot(
-                catalog.snapshot?.inventory, catalog.refreshing,
+                catalog.snapshot?.inventory,
+                catalog.refreshing,
                 catalog.failure?.message,
                 DesktopStorage.profile.absolutePath.takeIf { DesktopStorage.isolated },
-            )
+            ),
         )
     }
     post("/snapshot-capture/replay") {
@@ -141,9 +152,11 @@ fun Route.desktopControlRoutes(
             awaitFrame()
             when (result) {
                 is SnapshotCaptureOutcome.Captured -> call.respond(result.value)
-                SnapshotCaptureOutcome.Busy -> call.respond(
-                    io.ktor.http.HttpStatusCode.Conflict, mapOf("error" to "SNAPSHOT_CAPTURE_BUSY"),
-                )
+                SnapshotCaptureOutcome.Busy ->
+                    call.respond(
+                        io.ktor.http.HttpStatusCode.Conflict,
+                        mapOf("error" to "SNAPSHOT_CAPTURE_BUSY"),
+                    )
             }
         }
     }
@@ -188,24 +201,26 @@ fun Route.desktopControlRoutes(
     }
     get("/window") {
         call.validated {
-            call.respond(withContext(Edt) {
-                val host = target(call.request.queryParameters["window"] ?: "app")
-                val frame = DesktopWindowGeometry.contentBounds(host, true)
-                val content = DesktopWindowGeometry.contentBounds(host)
-                DesktopWindowSnapshot(
-                    DesktopWindowGeometry.isCustom(host),
-                    frame.x,
-                    frame.y,
-                    frame.width,
-                    frame.height,
-                    content.x - frame.x,
-                    content.y - frame.y,
-                    content.width,
-                    content.height,
-                    host.extendedState and Frame.ICONIFIED != 0,
-                    host.extendedState and Frame.MAXIMIZED_BOTH == Frame.MAXIMIZED_BOTH
-                )
-            })
+            call.respond(
+                withContext(Edt) {
+                    val host = target(call.request.queryParameters["window"] ?: "app")
+                    val frame = DesktopWindowGeometry.contentBounds(host, true)
+                    val content = DesktopWindowGeometry.contentBounds(host)
+                    DesktopWindowSnapshot(
+                        DesktopWindowGeometry.isCustom(host),
+                        frame.x,
+                        frame.y,
+                        frame.width,
+                        frame.height,
+                        content.x - frame.x,
+                        content.y - frame.y,
+                        content.width,
+                        content.height,
+                        host.extendedState and Frame.ICONIFIED != 0,
+                        host.extendedState and Frame.MAXIMIZED_BOTH == Frame.MAXIMIZED_BOTH,
+                    )
+                },
+            )
         }
     }
     post("/scenario") {
@@ -226,73 +241,105 @@ fun Route.desktopControlRoutes(
     }
     get("/semantics") {
         call.validated {
-            call.respond(withContext(Edt) {
-                val windowId = call.request.queryParameters["window"] ?: "app"
-                val host = target(windowId)
-                val nodes = mutableMapOf<String, Pair<AccessibleContext, String?>>()
-                windowNodes[windowId] = nodes
-                val receiver = activeWindow(host)
-                readNode(
-                    receiver.accessibleContext,
-                    "root",
-                    0,
-                    nodes,
-                    DesktopWindowGeometry.contentBounds(receiver).location
-                )
-            })
+            call.respond(
+                withContext(Edt) {
+                    val windowId = call.request.queryParameters["window"] ?: "app"
+                    val host = target(windowId)
+                    val nodes = mutableMapOf<String, Pair<AccessibleContext, String?>>()
+                    windowNodes[windowId] = nodes
+                    val receiver = activeWindow(host)
+                    readNode(
+                        receiver.accessibleContext,
+                        "root",
+                        0,
+                        nodes,
+                        DesktopWindowGeometry.contentBounds(receiver).location,
+                    )
+                },
+            )
         }
     }
     post("/action") {
         call.validated {
             val request = call.receive<UiAction>()
             when (request.type) {
-                "close-window" -> withContext(Edt) {
-                    require(request.window == "controls") { "Only the controls window can be closed through this endpoint" }
-                    val host = target(request.window)
-                    host.dispatchEvent(
-                        WindowEvent(
-                            host,
-                            WindowEvent.WINDOW_CLOSING
+                "close-window" ->
+                    withContext(Edt) {
+                        require(request.window == "controls") {
+                            "Only the controls window can be closed through this endpoint"
+                        }
+                        val host = target(request.window)
+                        host.dispatchEvent(
+                            WindowEvent(
+                                host,
+                                WindowEvent.WINDOW_CLOSING,
+                            ),
                         )
-                    )
-                }
-
-                "invoke", "text" -> withContext(Edt) {
-                    val context = findNode(
-                        activeWindow(target(request.window)).accessibleContext,
-                        requireNotNull(request.node)
-                    )
-                    val snapshot = windowNodes[request.window]?.get(request.node)
-                    require(snapshot?.first === context && snapshot.second == context.accessibleName) {
-                        "Stale node path; read /desktop/semantics again"
                     }
-                    require(context.accessibleStateSet.contains(AccessibleState.ENABLED)) { "Node is disabled" }
-                    if (request.type == "text") {
-                        val editable =
-                            requireNotNull(context.accessibleEditableText) { "Node is not editable" }
-                        editable.setTextContents(request.text)
-                    } else {
-                        val action =
-                            requireNotNull(context.accessibleAction) { "Node has no actions" }
-                        require(request.action in 0 until action.accessibleActionCount)
-                        require(action.doAccessibleAction(request.action)) { "Action was rejected" }
-                    }
-                }
 
-                "nativeKey" -> throw IllegalArgumentException("Native input requires an isolated desktop; system input is disabled")
-                "click", "rightClick", "doubleClick", "longClick", "drag", "hover", "scroll", "key" -> withContext(
-                    Edt
-                ) {
-                    val host = target(request.window)
-                    val receiver = activeWindow(host, includeNonFocusable = false)
-                    if (request.type == "key") {
-                        if (receiver === host && request.window == "app" && hostKey(
-                                request.key
+                "invoke",
+                "text" ->
+                    withContext(Edt) {
+                        val context =
+                            findNode(
+                                activeWindow(target(request.window)).accessibleContext,
+                                requireNotNull(request.node),
                             )
-                        ) Unit
-                        else DesktopInput.key(receiver, request.key)
-                    } else DesktopInput.pointer(receiver, request)
-                }
+                        val snapshot = windowNodes[request.window]?.get(request.node)
+                        require(
+                            snapshot?.first === context &&
+                                snapshot.second == context.accessibleName,
+                        ) {
+                            "Stale node path; read /desktop/semantics again"
+                        }
+                        require(context.accessibleStateSet.contains(AccessibleState.ENABLED)) {
+                            "Node is disabled"
+                        }
+                        if (request.type == "text") {
+                            val editable =
+                                requireNotNull(context.accessibleEditableText) {
+                                    "Node is not editable"
+                                }
+                            editable.setTextContents(request.text)
+                        } else {
+                            val action =
+                                requireNotNull(context.accessibleAction) { "Node has no actions" }
+                            require(request.action in 0 until action.accessibleActionCount)
+                            require(action.doAccessibleAction(request.action)) {
+                                "Action was rejected"
+                            }
+                        }
+                    }
+
+                "nativeKey" ->
+                    throw IllegalArgumentException(
+                        "Native input requires an isolated desktop; system input is disabled",
+                    )
+                "click",
+                "rightClick",
+                "doubleClick",
+                "longClick",
+                "drag",
+                "hover",
+                "scroll",
+                "key" ->
+                    withContext(
+                        Edt,
+                    ) {
+                        val host = target(request.window)
+                        val receiver = activeWindow(host, includeNonFocusable = false)
+                        if (request.type == "key") {
+                            if (
+                                receiver === host &&
+                                    request.window == "app" &&
+                                    hostKey(
+                                        request.key,
+                                    )
+                            )
+                                Unit
+                            else DesktopInput.key(receiver, request.key)
+                        } else DesktopInput.pointer(receiver, request)
+                    }
 
                 else -> throw IllegalArgumentException("Unknown action")
             }
@@ -302,36 +349,44 @@ fun Route.desktopControlRoutes(
     }
     get("/screenshot") {
         call.validated {
-            val host = withContext(Edt) {
-                target(
-                    call.request.queryParameters["window"] ?: "app"
-                )
+            val host =
+                withContext(Edt) {
+                    target(
+                        call.request.queryParameters["window"] ?: "app",
+                    )
+                }
+            require(call.request.queryParameters["activate"] != "true") {
+                "Screenshot activation is disabled"
             }
-            require(call.request.queryParameters["activate"] != "true") { "Screenshot activation is disabled" }
             awaitFrame()
             val area = call.request.queryParameters["area"] ?: "content"
             val mode = call.request.queryParameters["mode"] ?: "compose"
             require(area == "content" || area == "frame")
             require(mode == "compose" || mode == "screen")
-            val picture = if (mode == "compose") withContext(Edt) {
-                DesktopCapture.compose(host, area == "frame")
-            } else {
-                val bounds = withContext(Edt) {
-                    DesktopWindowGeometry.contentBounds(
-                        host,
-                        area == "frame"
-                    )
+            val picture =
+                if (mode == "compose")
+                    withContext(Edt) {
+                        DesktopCapture.compose(host, area == "frame")
+                    }
+                else {
+                    val bounds =
+                        withContext(Edt) {
+                            DesktopWindowGeometry.contentBounds(
+                                host,
+                                area == "frame",
+                            )
+                        }
+                    Toolkit.getDefaultToolkit().sync()
+                    Robot().createScreenCapture(bounds)
                 }
-                Toolkit.getDefaultToolkit().sync()
-                Robot().createScreenCapture(bounds)
-            }
-            val bytes = ByteArrayOutputStream().use {
-                check(ImageIO.write(picture, "png", it))
-                it.toByteArray()
-            }
+            val bytes =
+                ByteArrayOutputStream().use {
+                    check(ImageIO.write(picture, "png", it))
+                    it.toByteArray()
+                }
             call.response.headers.append(
                 "X-GKD-Capture",
-                if (mode == "compose") "compose-recording" else "screen"
+                if (mode == "compose") "compose-recording" else "screen",
             )
             call.respondBytes(bytes, ContentType.Image.PNG)
         }
@@ -346,57 +401,68 @@ private suspend fun ApplicationCall.validated(block: suspend () -> Unit) {
     } catch (e: IOException) {
         respond(
             HttpStatusCode.InternalServerError,
-            mapOf("error" to (e.message ?: "Simulator storage unavailable"))
+            mapOf("error" to (e.message ?: "Simulator storage unavailable")),
         )
     }
 }
 
 private fun readNode(
-    context: AccessibleContext, path: String, depth: Int,
+    context: AccessibleContext,
+    path: String,
+    depth: Int,
     nodes: MutableMap<String, Pair<AccessibleContext, String?>>,
     origin: Point,
 ): UiNode {
     nodes[path] = context to context.accessibleName
     val action = context.accessibleAction
     return UiNode(
-        path, context.accessibleName, context.accessibleRole.toDisplayString(Locale.ROOT),
+        path,
+        context.accessibleName,
+        context.accessibleRole.toDisplayString(Locale.ROOT),
         context.accessibleStateSet.contains(AccessibleState.ENABLED),
         context.accessibleEditableText != null,
         context.accessibleStateSet.toArray().map { it.toDisplayString(Locale.ROOT) },
-        (0 until (action?.accessibleActionCount
-            ?: 0)).map { action!!.getAccessibleActionDescription(it).orEmpty() },
-        if (depth >= 32) emptyList() else (0 until context.accessibleChildrenCount).mapNotNull { index ->
-            context.getAccessibleChild(index)?.accessibleContext?.let {
-                readNode(
-                    it,
-                    "$path/$index",
-                    depth + 1,
-                    nodes,
-                    origin
-                )
-            }
+        (0 until (action?.accessibleActionCount ?: 0)).map {
+            action!!.getAccessibleActionDescription(it).orEmpty()
         },
+        if (depth >= 32) emptyList()
+        else
+            (0 until context.accessibleChildrenCount).mapNotNull { index ->
+                context.getAccessibleChild(index)?.accessibleContext?.let {
+                    readNode(
+                        it,
+                        "$path/$index",
+                        depth + 1,
+                        nodes,
+                        origin,
+                    )
+                }
+            },
         context.accessibleEditableText?.let { editable ->
             runCatching {
                 editable.getTextRange(
                     0,
-                    editable.charCount.coerceAtMost(100_000)
+                    editable.charCount.coerceAtMost(100_000),
                 )
-            }.getOrNull()
+            }
+                .getOrNull()
         },
         context.accessibleComponent?.let { component ->
             runCatching {
                 val position = component.locationOnScreen
                 val size = component.size
                 UiBounds(position.x - origin.x, position.y - origin.y, size.width, size.height)
-            }.getOrNull()
-        })
+            }
+                .getOrNull()
+        },
+    )
 }
 
 private fun activeWindow(window: Window, includeNonFocusable: Boolean = true): Window =
-    window.ownedWindows.lastOrNull {
-        it.isVisible && (includeNonFocusable || it.focusableWindowState)
-    }
+    window.ownedWindows
+        .lastOrNull {
+            it.isVisible && (includeNonFocusable || it.focusableWindowState)
+        }
         ?.let { activeWindow(it, includeNonFocusable) } ?: window
 
 private fun findNode(root: AccessibleContext, path: String): AccessibleContext {
@@ -404,7 +470,11 @@ private fun findNode(root: AccessibleContext, path: String): AccessibleContext {
     require(parts.first() == "root") { "Invalid node path" }
     return parts.drop(1).fold(root) { context, part ->
         val index = requireNotNull(part.toIntOrNull()) { "Invalid node index" }
-        require(index in 0 until context.accessibleChildrenCount) { "Stale node path; read /desktop/semantics again" }
-        requireNotNull(context.getAccessibleChild(index)?.accessibleContext) { "Stale node path; read /desktop/semantics again" }
+        require(index in 0 until context.accessibleChildrenCount) {
+            "Stale node path; read /desktop/semantics again"
+        }
+        requireNotNull(context.getAccessibleChild(index)?.accessibleContext) {
+            "Stale node path; read /desktop/semantics again"
+        }
     }
 }

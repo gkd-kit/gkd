@@ -32,14 +32,17 @@ fun GkSnapshotShareProgress(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress.completed.toFloat() / progress.total,
-        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
-        label = "snapshotShareProgress",
-    )
+    val animatedProgress by
+        animateFloatAsState(
+            targetValue = progress.completed.toFloat() / progress.total,
+            animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+            label = "snapshotShareProgress",
+        )
     Surface(
-        modifier = modifier.fillMaxWidth()
-            .padding(horizontal = GkSnapshotShareProgressDefaults.HorizontalPadding),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = GkSnapshotShareProgressDefaults.HorizontalPadding),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shadowElevation = 3.dp,
@@ -66,10 +69,12 @@ fun GkSnapshotShareProgress(
                 modifier = Modifier.fillMaxWidth().height(4.dp),
             )
             Text(
-                text = stringResource(
-                    Res.string.progress_fraction,
-                    progress.completed.toString(), progress.total.toString(),
-                ),
+                text =
+                    stringResource(
+                        Res.string.progress_fraction,
+                        progress.completed.toString(),
+                        progress.total.toString(),
+                    ),
                 modifier = Modifier.align(Alignment.End),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

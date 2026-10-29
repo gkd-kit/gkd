@@ -2,12 +2,12 @@ package li.gkd.app.ui.settings
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import li.gkd.app.app.AppSort
 import li.gkd.app.platform.requestAutomatorRestart
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.home.scopeAppSource
-import li.gkd.app.app.AppSort
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.getString
@@ -23,10 +23,11 @@ class BlockA11yAppListViewModel : BaseViewModel() {
     }
 
     val uiState = scopeAppSource.stateLoadable()
-    private val editor = AppIdListEditor(
-        { SettingsRepository.blockA11yAppList.value },
-        SettingsRepository::saveBlockA11yAppList
-    )
+    private val editor =
+        AppIdListEditor(
+            { SettingsRepository.blockA11yAppList.value },
+            SettingsRepository::saveBlockA11yAppList,
+        )
 
     fun startEditing() {
         editorState.closeSearch(::setSearchStr)
@@ -35,10 +36,12 @@ class BlockA11yAppListViewModel : BaseViewModel() {
 
     suspend fun closeEditor() {
         editor.close(editorState) {
-            MainViewModel.requireCurrent().dialogRequests.confirm(
-                title = getString(Res.string.notice_title),
-                text = getString(Res.string.edit_discard_confirmation),
-            )
+            MainViewModel.requireCurrent()
+                .dialogRequests
+                .confirm(
+                    title = getString(Res.string.notice_title),
+                    text = getString(Res.string.edit_discard_confirmation),
+                )
         }
     }
 
@@ -49,7 +52,9 @@ class BlockA11yAppListViewModel : BaseViewModel() {
 
     suspend fun saveEditor() {
         editor.save(editorState) { changed ->
-            ToastUtils.show(getString(if (changed) Res.string.update_success else Res.string.unchanged))
+            ToastUtils.show(
+                getString(if (changed) Res.string.update_success else Res.string.unchanged),
+            )
         }
     }
 
@@ -66,7 +71,9 @@ class BlockA11yAppListViewModel : BaseViewModel() {
     }
 
     fun toggleFollowMatchList() {
-        SettingsRepository.updateSettings { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
+        SettingsRepository.updateSettings {
+            it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch)
+        }
         requestAutomatorRestart()
     }
 }

@@ -10,27 +10,37 @@ class SubscriptionException(
     val reason: SubscriptionFailureReason,
     val arguments: List<String> = emptyList(),
     cause: Throwable? = null,
-) : IllegalStateException(
-    reason.name + if (arguments.isEmpty()) "" else arguments.joinToString(prefix = ": "),
-    cause,
-), BusinessError {
+) :
+    IllegalStateException(
+        reason.name + if (arguments.isEmpty()) "" else arguments.joinToString(prefix = ": "),
+        cause,
+    ),
+    BusinessError {
     private val inputParseError: SubscriptionParseException?
-        get() = if (reason == SubscriptionFailureReason.RuleInvalidDetail) cause as? SubscriptionParseException else null
+        get() =
+            if (reason == SubscriptionFailureReason.RuleInvalidDetail)
+                cause as? SubscriptionParseException
+            else null
 
     override val errorCode: String
-        get() = when {
-            inputParseError != null || reason == SubscriptionFailureReason.FormatInvalidDetail -> "INVALID_SUBSCRIPTION"
-            reason == SubscriptionFailureReason.SelectorInvalidDetail -> "INVALID_SELECTOR"
-            else -> reason.name
-        }
+        get() =
+            when {
+                inputParseError != null ||
+                    reason == SubscriptionFailureReason.FormatInvalidDetail ->
+                    "INVALID_SUBSCRIPTION"
+                reason == SubscriptionFailureReason.SelectorInvalidDetail -> "INVALID_SELECTOR"
+                else -> reason.name
+            }
 
     override val errorPath: String?
-        get() = inputParseError?.path ?: (cause as? PositionCalculationException)?.errorPath
-            ?: when (reason) {
-                SubscriptionFailureReason.FormatInvalidDetail -> "$"
-                SubscriptionFailureReason.RuleInvalidVersionPattern -> arguments.firstOrNull()
-                else -> null
-            }
+        get() =
+            inputParseError?.path
+                ?: (cause as? PositionCalculationException)?.errorPath
+                ?: when (reason) {
+                    SubscriptionFailureReason.FormatInvalidDetail -> "$"
+                    SubscriptionFailureReason.RuleInvalidVersionPattern -> arguments.firstOrNull()
+                    else -> null
+                }
 
     override val errorMessage: ErrorMessage
         get() {
@@ -43,7 +53,10 @@ class SubscriptionException(
                 }
             }
             return if (detail == null) {
-                ErrorMessage.Resource(reason.messageResource, arguments.map { ErrorMessage.Text(it) })
+                ErrorMessage.Resource(
+                    reason.messageResource,
+                    arguments.map { ErrorMessage.Text(it) },
+                )
             } else {
                 subscriptionFailureMessage(reason, arguments, detail)
             }
@@ -56,10 +69,11 @@ fun subscriptionFailureMessage(
     detail: ErrorMessage,
 ): ErrorMessage {
     if (reason == SubscriptionFailureReason.RuleInvalidPosition) return detail
-    val embedsDetail = reason == SubscriptionFailureReason.RuleInvalidDetail ||
-        reason == SubscriptionFailureReason.FormatInvalidDetail
-    val parameters = arguments.map { ErrorMessage.Text(it) } +
-        if (embedsDetail) listOf(detail) else emptyList()
+    val embedsDetail =
+        reason == SubscriptionFailureReason.RuleInvalidDetail ||
+            reason == SubscriptionFailureReason.FormatInvalidDetail
+    val parameters =
+        arguments.map { ErrorMessage.Text(it) } + if (embedsDetail) listOf(detail) else emptyList()
     val text = ErrorMessage.Resource(reason.messageResource, parameters)
     return if (embedsDetail) text else ErrorMessage.WithDetail(text, detail)
 }

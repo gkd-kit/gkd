@@ -38,7 +38,7 @@ internal class ParserCursor(
     fun readLiteral(value: String): Boolean {
         if (
             source.startsWith(value, index) &&
-            !source.getOrNull(index + value.length).isOneOf(IDENTIFIER_PART_CHARS)
+                !source.getOrNull(index + value.length).isOneOf(IDENTIFIER_PART_CHARS)
         ) {
             index += value.length
             return true
@@ -58,10 +58,11 @@ internal class ParserCursor(
             return 0
         }
         while (current.isOneOf(DIGIT_CHARS)) index++
-        return source.substring(start, index).toIntOrNull() ?: run {
-            index = start
-            errorExpected("32-bit integer")
-        }
+        return source.substring(start, index).toIntOrNull()
+            ?: run {
+                index = start
+                errorExpected("32-bit integer")
+            }
     }
 
     fun readInt(): Int {
@@ -77,10 +78,11 @@ internal class ParserCursor(
             return 0
         }
         while (current.isOneOf(DIGIT_CHARS)) index++
-        return source.substring(start, index).toIntOrNull() ?: run {
-            index = start
-            errorExpected("32-bit integer")
-        }
+        return source.substring(start, index).toIntOrNull()
+            ?: run {
+                index = start
+                errorExpected("32-bit integer")
+            }
     }
 
     fun readString(): String {
@@ -107,10 +109,11 @@ internal class ParserCursor(
 
     fun errorExpected(
         expected: String,
-        range: SourceRange = SourceRange(
-            start = index,
-            end = if (index < source.length) index + 1 else index,
-        ),
+        range: SourceRange =
+            SourceRange(
+                start = index,
+                end = if (index < source.length) index + 1 else index,
+            ),
         detail: String? = null,
     ): Nothing {
         throw SelectorSyntaxException(
@@ -129,10 +132,11 @@ private fun Char?.toDisplayText(): String {
         '\r' -> "\\r"
         '\t' -> "\\t"
         '\b' -> "\\b"
-        else -> if (code in 0x0000..0x001F || isWhitespace()) {
-            "\\u" + code.toString(16).padStart(4, '0')
-        } else {
-            toString()
-        }
+        else ->
+            if (code in 0x0000..0x001F || isWhitespace()) {
+                "\\u" + code.toString(16).padStart(4, '0')
+            } else {
+                toString()
+            }
     }
 }

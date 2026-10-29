@@ -25,38 +25,56 @@ fun GkPermissionRestrictionDialog(
 ) {
     val adbRestricted = privilegeAvailable && capabilities?.restricted == true
     val appRestricted = !privilegeAvailable && appRestrictions.isNotEmpty()
-    val items = buildList<StringResource> {
-        if (adbRestricted) {
-            if (!capabilities.injectEvents) add(Res.string.restriction_adb_input)
-            if (!capabilities.grantRuntimePermissions) add(Res.string.restriction_adb_grant)
-            if (!capabilities.writeSecureSettings) add(Res.string.restriction_adb_secure)
-            if (!capabilities.updateAppOps) add(Res.string.restriction_adb_app_ops)
-        } else if (appRestricted) {
-            addAll(appRestrictions.map { it.descriptionResource })
+    val items =
+        buildList<StringResource> {
+            if (adbRestricted) {
+                if (!capabilities.injectEvents) add(Res.string.restriction_adb_input)
+                if (!capabilities.grantRuntimePermissions) add(Res.string.restriction_adb_grant)
+                if (!capabilities.writeSecureSettings) add(Res.string.restriction_adb_secure)
+                if (!capabilities.updateAppOps) add(Res.string.restriction_adb_app_ops)
+            } else if (appRestricted) {
+                addAll(appRestrictions.map { it.descriptionResource })
+            }
         }
-    }
     GkAlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(stringResource(when {
-                adbRestricted -> Res.string.adb_permission_restricted
-                appRestricted -> Res.string.app_permission_restricted
-                else -> Res.string.privilege_service_required
-            }))
+            Text(
+                stringResource(
+                    when {
+                        adbRestricted -> Res.string.adb_permission_restricted
+                        appRestricted -> Res.string.app_permission_restricted
+                        else -> Res.string.privilege_service_required
+                    },
+                ),
+            )
         },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(when {
-                    adbRestricted -> Res.string.restriction_adb_intro
-                    appRestricted -> Res.string.restriction_app_intro
-                    privilegeAvailable && capabilities == null -> Res.string.privilege_permissions_unverified
-                    else -> Res.string.automation_privilege_required_description
-                }))
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    stringResource(
+                        when {
+                            adbRestricted -> Res.string.restriction_adb_intro
+                            appRestricted -> Res.string.restriction_app_intro
+                            privilegeAvailable && capabilities == null ->
+                                Res.string.privilege_permissions_unverified
+                            else -> Res.string.automation_privilege_required_description
+                        },
+                    ),
+                )
                 if (items.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items.forEach { Text("• " + stringResource(it)) }
                     }
-                    Text(stringResource(if (adbRestricted) Res.string.restriction_adb_footer else Res.string.restriction_app_footer))
+                    Text(
+                        stringResource(
+                            if (adbRestricted) Res.string.restriction_adb_footer
+                            else Res.string.restriction_app_footer,
+                        ),
+                    )
                 }
             }
         },
@@ -64,10 +82,14 @@ fun GkPermissionRestrictionDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onDismiss()
-                onPrivilege()
-            }) { Text(stringResource(Res.string.restriction_details_go)) }
+            TextButton(
+                onClick = {
+                    onDismiss()
+                    onPrivilege()
+                },
+            ) {
+                Text(stringResource(Res.string.restriction_details_go))
+            }
         },
     )
 }

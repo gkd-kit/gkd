@@ -1,13 +1,13 @@
 package li.gkd.app.backup
 
 import java.util.zip.ZipFile
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionJson
 import li.gkd.app.subscription.SubscriptionPersistence
@@ -44,13 +44,16 @@ suspend fun assertBackupSnapshotConsistency() = coroutineScope {
         val archive = withTimeout(5_000) { export.await() }
         try {
             ZipFile(archive).use { zip ->
-                val configuration = zip.getInputStream(zip.getEntry("db.json")).bufferedReader().use {
-                    BackupFormat.decode(it.readText())
-                }
-                val subscription = zip.getInputStream(zip.getEntry("subscription/${original.id}.json"))
-                    .bufferedReader().use {
-                        SubscriptionJson.json.decodeFromString<RawSubscription>(it.readText())
+                val configuration =
+                    zip.getInputStream(zip.getEntry("db.json")).bufferedReader().use {
+                        BackupFormat.decode(it.readText())
                     }
+                val subscription =
+                    zip.getInputStream(zip.getEntry("subscription/${original.id}.json"))
+                        .bufferedReader()
+                        .use {
+                            SubscriptionJson.json.decodeFromString<RawSubscription>(it.readText())
+                        }
                 assertEquals(101, configuration.subsItems.single { it.id == original.id }.order)
                 assertEquals(
                     SubscriptionJson.json.encodeToString(updated),

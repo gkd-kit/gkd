@@ -15,19 +15,27 @@ fun GkEditorDialogs(
     onDiscard: () -> Unit,
 ) {
     when (dialog) {
-        EditorDialog.Discard -> GkAlertDialog(
-            onDismissRequest = onDismissDialog,
-            title = { Text(stringResource(Res.string.notice_title)) },
-            text = { Text(stringResource(Res.string.edit_discard_confirmation)) },
-            confirmButton = {
-                TextButton(onClick = { onDismissDialog(); onDiscard() }) {
-                    Text(stringResource(Res.string.action_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissDialog) { Text(stringResource(Res.string.action_cancel)) }
-            },
-        )
+        EditorDialog.Discard ->
+            GkAlertDialog(
+                onDismissRequest = onDismissDialog,
+                title = { Text(stringResource(Res.string.notice_title)) },
+                text = { Text(stringResource(Res.string.edit_discard_confirmation)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onDismissDialog()
+                            onDiscard()
+                        },
+                    ) {
+                        Text(stringResource(Res.string.action_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismissDialog) {
+                        Text(stringResource(Res.string.action_cancel))
+                    }
+                },
+            )
         is EditorDialog.Error -> EditorErrorDialog(dialog.cause.messageResource(), onDismissDialog)
         is EditorDialog.Rejected -> EditorErrorDialog(dialog.message, onDismissDialog)
         null -> Unit

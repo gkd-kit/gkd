@@ -49,4 +49,3 @@ fun String.isValidActivityId(): Boolean {
     }
     return true
 }
-

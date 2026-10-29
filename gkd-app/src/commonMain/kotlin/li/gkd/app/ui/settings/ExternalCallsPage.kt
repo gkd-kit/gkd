@@ -1,8 +1,8 @@
 package li.gkd.app.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +17,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -26,13 +25,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.external.externalSnapshotCommand
 import li.gkd.app.resources.*
 import li.gkd.app.ui.MainViewModel
-import li.gkd.app.ui.component.GkCopyableText
 import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkCopyableText
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.stringResource
 
@@ -63,7 +63,9 @@ fun ExternalCallsPage() {
             )
         },
     ) { contentPadding ->
-        Column(Modifier.fillMaxSize().padding(contentPadding).verticalScroll(rememberScrollState())) {
+        Column(
+            Modifier.fillMaxSize().padding(contentPadding).verticalScroll(rememberScrollState()),
+        ) {
             Text(
                 stringResource(Res.string.external_calls_notice),
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -73,7 +75,10 @@ fun ExternalCallsPage() {
             val command = externalSnapshotCommand(token)
             OutlinedCard(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(Res.string.external_calls_snapshot), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(Res.string.external_calls_snapshot),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                     Text(
                         stringResource(Res.string.external_calls_snapshot_hint),
                         style = MaterialTheme.typography.bodySmall,
@@ -86,8 +91,17 @@ fun ExternalCallsPage() {
                     ) {
                         GkCopyableText(
                             text = AnnotatedString(command),
-                            contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 48.dp, bottom = 12.dp),
-                            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                            contentPadding =
+                                PaddingValues(
+                                    start = 12.dp,
+                                    top = 12.dp,
+                                    end = 48.dp,
+                                    bottom = 12.dp,
+                                ),
+                            textStyle =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                ),
                             onCopy = ::copyText,
                         )
                     }
@@ -110,8 +124,17 @@ fun ExternalCallsPage() {
                     ) {
                         GkCopyableText(
                             text = AnnotatedString(token),
-                            contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 48.dp, bottom = 12.dp),
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                            contentPadding =
+                                PaddingValues(
+                                    start = 12.dp,
+                                    top = 12.dp,
+                                    end = 48.dp,
+                                    bottom = 12.dp,
+                                ),
+                            textStyle =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                ),
                             onCopy = ::copyText,
                         )
                     }

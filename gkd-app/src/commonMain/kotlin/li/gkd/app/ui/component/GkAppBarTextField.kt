@@ -26,9 +26,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
-/**
- * https://stackoverflow.com/questions/73664765
- */
+/** https://stackoverflow.com/questions/73664765 */
 @Composable
 fun GkAppBarTextField(
     value: String,
@@ -41,16 +39,19 @@ fun GkAppBarTextField(
     val interactionSource = remember { MutableInteractionSource() }
 
     // make sure there is no background color in the decoration box
-    val colors = TextFieldDefaults.colors(
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        disabledContainerColor = Color.Transparent,
-        focusedIndicatorColor = Color.Transparent,
-        unfocusedIndicatorColor = Color.Transparent,
-    )
+    val colors =
+        TextFieldDefaults.colors(
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+        )
 
-    val mergedTextStyle = LocalTextStyle.current.merge(MaterialTheme.typography.titleMedium)
-        .merge(color = LocalContentColor.current)
+    val mergedTextStyle =
+        LocalTextStyle.current
+            .merge(MaterialTheme.typography.titleMedium)
+            .merge(color = LocalContentColor.current)
 
     // set the correct cursor position when this composable is first initialized
     var textFieldValue by remember {
@@ -65,16 +66,17 @@ fun GkAppBarTextField(
             // remove newlines to avoid strange layout issues, and also because singleLine=true
             onValueChange(it.text.replace("\n", ""))
         },
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(32.dp)
-            .indicatorLine(
-                enabled = true,
-                isError = false,
-                interactionSource = interactionSource,
-                colors = colors
-            ),
-//                .focusRequester(focusRequester),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(32.dp)
+                .indicatorLine(
+                    enabled = true,
+                    isError = false,
+                    interactionSource = interactionSource,
+                    colors = colors,
+                ),
+        //                .focusRequester(focusRequester),
         textStyle = mergedTextStyle,
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         keyboardOptions = keyboardOptions,

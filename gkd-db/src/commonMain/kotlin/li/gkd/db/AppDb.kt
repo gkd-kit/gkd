@@ -11,50 +11,62 @@ import androidx.room3.migration.AutoMigrationSpec
 
 @Database(
     version = 18,
-    entities = [
-        SubsItem::class,
-        Snapshot::class,
-        SubsAppGroupConfig::class,
-        SubsGlobalGroupConfig::class,
-        SubsCategoryConfig::class,
-        ActionLog::class,
-        RuleTriggerStats::class,
-        ActivityLog::class,
-        SubsAppConfig::class,
-        AppLastVisit::class,
-        A11yEventLog::class,
-    ],
-    autoMigrations = [
-        AutoMigration(from = 1, to = 2),
-        AutoMigration(from = 2, to = 3),
-        AutoMigration(from = 3, to = 4),
-        AutoMigration(from = 4, to = 5),
-        AutoMigration(from = 5, to = 6),
-        AutoMigration(from = 6, to = 7),
-        AutoMigration(from = 7, to = 8, spec = ActivityLog.ActivityLogV2Spec::class),
-        AutoMigration(from = 8, to = 9, spec = ActionLog.ActionLogSpec::class),
-        AutoMigration(from = 9, to = 10, spec = Migration9To10Spec::class),
-        AutoMigration(from = 10, to = 11, spec = Migration10To11Spec::class),
-        AutoMigration(from = 11, to = 12),
-        AutoMigration(from = 12, to = 13),
-        AutoMigration(from = 13, to = 14),
-        AutoMigration(from = 15, to = 16, spec = Migration15To16Spec::class),
-        AutoMigration(from = 16, to = 17),
-        AutoMigration(from = 17, to = 18),
-    ]
+    entities =
+        [
+            SubsItem::class,
+            Snapshot::class,
+            SubsAppGroupConfig::class,
+            SubsGlobalGroupConfig::class,
+            SubsCategoryConfig::class,
+            ActionLog::class,
+            RuleTriggerStats::class,
+            ActivityLog::class,
+            SubsAppConfig::class,
+            AppLastVisit::class,
+            A11yEventLog::class,
+        ],
+    autoMigrations =
+        [
+            AutoMigration(from = 1, to = 2),
+            AutoMigration(from = 2, to = 3),
+            AutoMigration(from = 3, to = 4),
+            AutoMigration(from = 4, to = 5),
+            AutoMigration(from = 5, to = 6),
+            AutoMigration(from = 6, to = 7),
+            AutoMigration(from = 7, to = 8, spec = ActivityLog.ActivityLogV2Spec::class),
+            AutoMigration(from = 8, to = 9, spec = ActionLog.ActionLogSpec::class),
+            AutoMigration(from = 9, to = 10, spec = Migration9To10Spec::class),
+            AutoMigration(from = 10, to = 11, spec = Migration10To11Spec::class),
+            AutoMigration(from = 11, to = 12),
+            AutoMigration(from = 12, to = 13),
+            AutoMigration(from = 13, to = 14),
+            AutoMigration(from = 15, to = 16, spec = Migration15To16Spec::class),
+            AutoMigration(from = 16, to = 17),
+            AutoMigration(from = 17, to = 18),
+        ],
 )
 @ConstructedBy(AppDbConstructor::class)
 abstract class AppDb : RoomDatabase() {
     abstract fun subsItemDao(): SubsItem.SubsItemDao
+
     abstract fun snapshotDao(): Snapshot.SnapshotDao
+
     abstract fun subsAppGroupConfigDao(): SubsAppGroupConfig.SubsAppGroupConfigDao
+
     abstract fun subsGlobalGroupConfigDao(): SubsGlobalGroupConfig.SubsGlobalGroupConfigDao
+
     abstract fun subsAppConfigDao(): SubsAppConfig.SubsAppConfigDao
+
     abstract fun subsCategoryConfigDao(): SubsCategoryConfig.SubsCategoryConfigDao
+
     abstract fun actionLogDao(): ActionLog.ActionLogDao
+
     abstract fun ruleTriggerStatsDao(): RuleTriggerStatsDao
+
     abstract fun activityLogDao(): ActivityLog.ActivityLogDao
+
     abstract fun appLastVisitDao(): AppLastVisit.AppLastVisitDao
+
     abstract fun a11yEventLogDao(): A11yEventLog.A11yEventLogDao
 }
 
@@ -66,25 +78,25 @@ internal expect object AppDbConstructor : RoomDatabaseConstructor<AppDb> {
 @RenameColumn(
     tableName = "subs_config",
     fromColumnName = "subs_item_id",
-    toColumnName = "subs_id"
+    toColumnName = "subs_id",
 )
 @RenameColumn(
     tableName = "category_config",
     fromColumnName = "subs_item_id",
-    toColumnName = "subs_id"
+    toColumnName = "subs_id",
 )
 class Migration9To10Spec : AutoMigrationSpec
 
 @DeleteColumn(
     tableName = "snapshot",
-    columnName = "app_name"
+    columnName = "app_name",
 )
 @DeleteColumn(
     tableName = "snapshot",
-    columnName = "app_version_code"
+    columnName = "app_version_code",
 )
 @DeleteColumn(
     tableName = "snapshot",
-    columnName = "app_version_name"
+    columnName = "app_version_name",
 )
 class Migration10To11Spec : AutoMigrationSpec

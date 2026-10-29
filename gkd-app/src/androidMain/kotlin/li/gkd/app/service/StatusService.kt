@@ -2,6 +2,7 @@ package li.gkd.app.service
 
 import android.view.WindowManager
 import androidx.lifecycle.lifecycleScope
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -28,11 +29,11 @@ import li.gkd.app.settings.SettingsRepository.actionCount
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.util.IntentUtils
 import org.jetbrains.compose.resources.getString
-import kotlin.time.Duration.Companion.milliseconds
 
 class StatusService : LifecycleHookService() {
 
     private val a11yServiceEnabledFlow by lazy { useA11yServiceEnabledFlow(lifecycleScope) }
+
     private suspend fun statusTriple(): Triple<String, String, String?> {
         val abRunning = A11yService.isRunning.value
         val automationRunning = uiAutomationFlow.value != null
@@ -40,35 +41,45 @@ class StatusService : LifecycleHookService() {
         val ruleSummary = SubscriptionState.ruleSummaryFlow.value
         val count = actionCount.value
         val privilegeServiceStatus = privilegeServiceStatusFlow.value
-        val title = if (store.useCustomNotifText) {
-            store.customNotifTitle.replaceNotificationTemplate(ruleSummary, count)
-        } else {
-            META.appName
-        }
+        val title =
+            if (store.useCustomNotifText) {
+                store.customNotifTitle.replaceNotificationTemplate(ruleSummary, count)
+            } else {
+                META.appName
+            }
         return if (PermissionStates.appOpsRestrictedFlow.value) {
             Triple(title, getString(Res.string.permission_restricted_reauthorize), "gkd://page/3")
         } else if (privilegeServiceStatus == PrivilegeServiceStatus.DisconnectedDesired) {
             Triple(title, getString(Res.string.privilege_service_connection_lost), "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
             if (currentAppUseA11y) {
-                val text = if (a11yServiceEnabledFlow.value) {
-                    getString(Res.string.a11y_fault)
-                } else if (PermissionStates.writeSecureSettings.updateAndGet()) {
-                    if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
-                        val name =
-                            AppInfoRepository.snapshot?.apps?.get(topAppIdFlow.value)?.name
-                                ?: topAppIdFlow.value
-                        getString(Res.string.service_partially_disabled_detail, name)
+                val text =
+                    if (a11yServiceEnabledFlow.value) {
+                        getString(Res.string.a11y_fault)
+                    } else if (PermissionStates.writeSecureSettings.updateAndGet()) {
+                        if (
+                            store.enableAutomator &&
+                                store.enableBlockA11yAppList &&
+                                a11yPartDisabledFlow.value
+                        ) {
+                            val name =
+                                AppInfoRepository.snapshot?.apps?.get(topAppIdFlow.value)?.name
+                                    ?: topAppIdFlow.value
+                            getString(Res.string.service_partially_disabled_detail, name)
+                        } else {
+                            getString(Res.string.a11y_stopped)
+                        }
                     } else {
-                        getString(Res.string.a11y_stopped)
+                        getString(Res.string.a11y_unauthorized)
                     }
-                } else {
-                    getString(Res.string.a11y_unauthorized)
-                }
                 Triple(title, text, defaultStatusNotification.uri)
             } else {
                 val text =
-                    if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
+                    if (
+                        store.enableAutomator &&
+                            store.enableBlockA11yAppList &&
+                            a11yPartDisabledFlow.value
+                    ) {
                         val name =
                             AppInfoRepository.snapshot?.apps?.get(topAppIdFlow.value)?.name
                                 ?: topAppIdFlow.value
@@ -84,7 +95,7 @@ class StatusService : LifecycleHookService() {
             Triple(
                 title,
                 store.customNotifText.replaceNotificationTemplate(ruleSummary, count),
-                defaultStatusNotification.uri
+                defaultStatusNotification.uri,
             )
         } else {
             Triple(title, RuleSummary.statusText(ruleSummary, count), defaultStatusNotification.uri)
@@ -101,54 +112,58 @@ class StatusService : LifecycleHookService() {
             if (!defaultStatusNotification.startForeground()) return@onCreated
             lifecycleScope.launch {
                 combine(
-                    A11yService.isRunning,
-                    KeepAliveOverlayCoordinator.accessibilityAttached,
-                    settings.map { it.enableStatusOverlay }.distinctUntilChanged(),
-                ) { a11yRunning, a11yOverlayAttached, overlayEnabled ->
-                    Triple(a11yRunning, a11yOverlayAttached, overlayEnabled)
-                }.distinctUntilChanged().collectLatest {
-                    val (a11yRunning, a11yOverlayAttached, overlayEnabled) = it
-                    if (!overlayEnabled) {
-                        KeepAliveOverlayCoordinator.release(
-                            source = KeepAliveOverlayCoordinator.Source.Status,
-                            owner = this@StatusService,
-                        )
-                    } else if (a11yRunning && a11yOverlayAttached) {
-                        KeepAliveOverlayCoordinator.releaseAfterHandoff(
-                            source = KeepAliveOverlayCoordinator.Source.Status,
-                            owner = this@StatusService,
-                        )
-                    } else {
-                        KeepAliveOverlayCoordinator.acquire(
-                            source = KeepAliveOverlayCoordinator.Source.Status,
-                            owner = this@StatusService,
-                            context = this@StatusService,
-                            windowType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                        )
+                        A11yService.isRunning,
+                        KeepAliveOverlayCoordinator.accessibilityAttached,
+                        settings.map { it.enableStatusOverlay }.distinctUntilChanged(),
+                    ) { a11yRunning, a11yOverlayAttached, overlayEnabled ->
+                        Triple(a11yRunning, a11yOverlayAttached, overlayEnabled)
                     }
-                }
+                    .distinctUntilChanged()
+                    .collectLatest {
+                        val (a11yRunning, a11yOverlayAttached, overlayEnabled) = it
+                        if (!overlayEnabled) {
+                            KeepAliveOverlayCoordinator.release(
+                                source = KeepAliveOverlayCoordinator.Source.Status,
+                                owner = this@StatusService,
+                            )
+                        } else if (a11yRunning && a11yOverlayAttached) {
+                            KeepAliveOverlayCoordinator.releaseAfterHandoff(
+                                source = KeepAliveOverlayCoordinator.Source.Status,
+                                owner = this@StatusService,
+                            )
+                        } else {
+                            KeepAliveOverlayCoordinator.acquire(
+                                source = KeepAliveOverlayCoordinator.Source.Status,
+                                owner = this@StatusService,
+                                context = this@StatusService,
+                                windowType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                            )
+                        }
+                    }
             }
             lifecycleScope.launch {
                 combine(
-                    A11yService.isRunning,
-                    uiAutomationFlow,
-                    settings,
-                    SubscriptionState.ruleSummaryFlow,
-                    privilegeServiceStatusFlow,
-                    a11yServiceEnabledFlow,
-                    PermissionStates.writeSecureSettings.stateFlow,
-                    PermissionStates.appOpsRestrictedFlow,
-                    topAppIdFlow,
-                    actionCount.debounce(1000L.milliseconds),
-                ) {
-                    statusTriple()
-                }.collect {
-                    NotificationCatalog.status(
-                        title = it.first,
-                        text = it.second,
-                        uri = it.third,
-                    ).startForeground()
-                }
+                        A11yService.isRunning,
+                        uiAutomationFlow,
+                        settings,
+                        SubscriptionState.ruleSummaryFlow,
+                        privilegeServiceStatusFlow,
+                        a11yServiceEnabledFlow,
+                        PermissionStates.writeSecureSettings.stateFlow,
+                        PermissionStates.appOpsRestrictedFlow,
+                        topAppIdFlow,
+                        actionCount.debounce(1000L.milliseconds),
+                    ) {
+                        statusTriple()
+                    }
+                    .collect {
+                        NotificationCatalog.status(
+                                title = it.first,
+                                text = it.second,
+                                uri = it.third,
+                            )
+                            .startForeground()
+                    }
             }
         }
         onDestroyed {
@@ -164,14 +179,18 @@ class StatusService : LifecycleHookService() {
             field = MutableStateFlow(false)
 
         val needRestart
-            get() = settings.value.enableStatusService
-                    && !isRunning.value
-                    && PermissionStates.notification.updateAndGet()
-                    && PermissionStates.foregroundServiceSpecialUse.updateAndGet()
+            get() =
+                settings.value.enableStatusService &&
+                    !isRunning.value &&
+                    PermissionStates.notification.updateAndGet() &&
+                    PermissionStates.foregroundServiceSpecialUse.updateAndGet()
 
         fun start() = IntentUtils.startForegroundService(StatusService::class)
+
         fun stop() = IntentUtils.stopService(StatusService::class)
+
         private var lastAutoStart = 0L
+
         fun autoStart() {
             if (System.currentTimeMillis() - lastAutoStart < 1000) return
             // 重启自动打开通知栏状态服务

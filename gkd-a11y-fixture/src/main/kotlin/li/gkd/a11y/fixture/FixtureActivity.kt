@@ -47,11 +47,12 @@ class FixtureActivity : Activity() {
 
             "burst" -> {
                 val count = intent.getIntExtra("events", 600).coerceIn(1, 2000)
-                blockedUntil = SystemClock.uptimeMillis() +
-                    intent.getIntExtra("stall", 0).coerceIn(0, 4500)
+                blockedUntil =
+                    SystemClock.uptimeMillis() + intent.getIntExtra("stall", 0).coerceIn(0, 4500)
                 val manager = getSystemService(AccessibilityManager::class.java)
                 repeat(count) { index ->
-                    val event = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)
+                    val event =
+                        AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)
                     event.packageName = packageName
                     // Different batch keys keep the production consumer from collapsing the burst.
                     event.className = "FixtureEvent$index"
@@ -74,42 +75,49 @@ class FixtureActivity : Activity() {
         reads = 0
         sent = 0
         blockedUntil = 0L
-        val root = object : FrameLayout(this) {
-            override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
-                beforeRead()
-                super.onInitializeAccessibilityNodeInfo(info)
+        val root =
+            object : FrameLayout(this) {
+                override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+                    beforeRead()
+                    super.onInitializeAccessibilityNodeInfo(info)
+                }
             }
-        }
         root.setBackgroundColor(Color.DKGRAY)
         root.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
         root.contentDescription = "fixture-tree"
         repeat(groups) { group ->
-            val parent = if (groups > 1) {
-                FrameLayout(this).apply {
-                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-                    contentDescription = "group-$group"
-                    root.addView(this, FrameLayout.LayoutParams(-1, -1))
-                }
-            } else {
-                root
-            }
-            repeat(children) { child ->
-                val node = object : View(this) {
-                    override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
-                        beforeRead()
-                        super.onInitializeAccessibilityNodeInfo(info)
+            val parent =
+                if (groups > 1) {
+                    FrameLayout(this).apply {
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+                        contentDescription = "group-$group"
+                        root.addView(this, FrameLayout.LayoutParams(-1, -1))
                     }
-                }
-                node.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-                node.contentDescription = if (forbidden && group == groups - 1 && child == children - 1) {
-                    "forbidden"
                 } else {
-                    "safe-$group-$child"
+                    root
                 }
-                val params = FrameLayout.LayoutParams(2, 2).apply {
-                    leftMargin = 4 + (child % 24) * 4
-                    topMargin = 4 + (child / 24) * 4
-                }
+            repeat(children) { child ->
+                val node =
+                    object : View(this) {
+                        override fun onInitializeAccessibilityNodeInfo(
+                            info: AccessibilityNodeInfo,
+                        ) {
+                            beforeRead()
+                            super.onInitializeAccessibilityNodeInfo(info)
+                        }
+                    }
+                node.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+                node.contentDescription =
+                    if (forbidden && group == groups - 1 && child == children - 1) {
+                        "forbidden"
+                    } else {
+                        "safe-$group-$child"
+                    }
+                val params =
+                    FrameLayout.LayoutParams(2, 2).apply {
+                        leftMargin = 4 + (child % 24) * 4
+                        topMargin = 4 + (child / 24) * 4
+                    }
                 parent.addView(node, params)
                 eventSource = node
             }
@@ -135,16 +143,17 @@ class FixtureActivity : Activity() {
     }
 
     private fun save() {
-        val json = JSONObject()
-            .put("scenario", scenario)
-            .put("children", children)
-            .put("groups", groups)
-            .put("downs", downs)
-            .put("ups", ups)
-            .put("nodeReads", reads)
-            .put("eventsSent", sent)
-            .put("blockedUntil", blockedUntil)
-            .put("now", SystemClock.uptimeMillis())
+        val json =
+            JSONObject()
+                .put("scenario", scenario)
+                .put("children", children)
+                .put("groups", groups)
+                .put("downs", downs)
+                .put("ups", ups)
+                .put("nodeReads", reads)
+                .put("eventsSent", sent)
+                .put("blockedUntil", blockedUntil)
+                .put("now", SystemClock.uptimeMillis())
         val pending = File(filesDir, "state.pending")
         pending.writeText(json.toString())
         check(pending.renameTo(File(filesDir, "state.json"))) { "Cannot publish fixture state" }

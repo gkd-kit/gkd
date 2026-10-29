@@ -30,8 +30,8 @@ public enum class SelectorTokenScope {
 
 @JsExport
 /**
- * A tolerant lexical token covering `start` (inclusive) to `end` (exclusive).
- * [scope] provides the coarse syntax context needed by context-sensitive highlighters.
+ * A tolerant lexical token covering `start` (inclusive) to `end` (exclusive). [scope] provides the
+ * coarse syntax context needed by context-sensitive highlighters.
  */
 public data class SelectorToken(
     val kind: SelectorTokenKind,

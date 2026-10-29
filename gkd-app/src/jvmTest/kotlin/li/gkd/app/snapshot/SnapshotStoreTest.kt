@@ -1,28 +1,29 @@
 package li.gkd.app.snapshot
 
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import li.gkd.app.storage.AppStorageLayout
-import li.gkd.db.Db
-import li.gkd.db.Snapshot
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import li.gkd.app.storage.AppStorageLayout
+import li.gkd.db.Db
+import li.gkd.db.Snapshot
 
 class SnapshotStoreTest(private val layout: AppStorageLayout) {
     fun runAll() = runBlocking {
         val snapshot = Snapshot(1, "app.id", null, 1, 1, false)
         Db.snapshotDao.insert(snapshot)
         val directory = layout.snapshot.resolve("1").apply { mkdirs() }
-        val screenshot = directory.resolve("1.png")
-            .apply {
+        val screenshot =
+            directory.resolve("1.png").apply {
                 javax.imageio.ImageIO.write(
                     java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_RGB),
-                    "png", this,
+                    "png",
+                    this,
                 )
                 check(setLastModified(10_000))
             }
@@ -36,7 +37,10 @@ class SnapshotStoreTest(private val layout: AppStorageLayout) {
                     assertTrue(first.parentFile != second.parentFile)
                     assertTrue(first.isFile && second.isFile)
                     java.util.zip.ZipFile(second).use { zip ->
-                        assertEquals("{}", zip.getInputStream(zip.getEntry("1.json")).reader().readText())
+                        assertEquals(
+                            "{}",
+                            zip.getInputStream(zip.getEntry("1.json")).reader().readText(),
+                        )
                     }
                 } finally {
                     SnapshotStore.deleteArchive(second)
@@ -71,7 +75,10 @@ class SnapshotStoreTest(private val layout: AppStorageLayout) {
 suspend fun withSnapshotDbFailure(database: File, event: String, block: suspend () -> Unit) {
     require(event in setOf("INSERT", "DELETE"))
     BundledSQLiteDriver().open(database.absolutePath).use { connection ->
-        connection.prepare("CREATE TRIGGER test_snapshot_failure BEFORE $event ON snapshot BEGIN SELECT RAISE(FAIL, 'test database failure'); END")
+        connection
+            .prepare(
+                "CREATE TRIGGER test_snapshot_failure BEFORE $event ON snapshot BEGIN SELECT RAISE(FAIL, 'test database failure'); END",
+            )
             .use { it.step() }
         try {
             block()

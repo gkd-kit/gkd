@@ -20,14 +20,16 @@ fun GkHomeHost(state: HomeState, page: @Composable (BottomNavItem) -> ScaffoldEx
 fun ResetPageScrollOnRequest(
     state: HomeState,
     tab: BottomNavItem,
-    reset: suspend () -> Unit
+    reset: suspend () -> Unit,
 ) {
     val request by state.scrollResetRequest.collectAsStateWithLifecycle()
     val currentReset by rememberUpdatedState(reset)
     LaunchedEffect(request) {
-        request?.takeIf { it.navItem == tab }?.let {
-            currentReset()
-            state.consumeScrollReset(it)
-        }
+        request
+            ?.takeIf { it.navItem == tab }
+            ?.let {
+                currentReset()
+                state.consumeScrollReset(it)
+            }
     }
 }

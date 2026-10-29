@@ -2,8 +2,8 @@ package li.gkd.app.matching.diagnostics
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
-import li.gkd.app.model.AppInfo
 import li.gkd.app.model.ActionResult
+import li.gkd.app.model.AppInfo
 
 @Serializable
 data class MatchSimulatedNode(

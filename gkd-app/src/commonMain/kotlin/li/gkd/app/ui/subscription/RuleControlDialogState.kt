@@ -7,10 +7,10 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleGroupConfigService
-import li.gkd.app.rule.explainControl
+import li.gkd.app.rule.RuleGroupPolicy
 import li.gkd.app.rule.RuleGroupTarget
+import li.gkd.app.rule.explainControl
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
@@ -32,9 +32,11 @@ class RuleControlDialogState {
     fun dismissForDeletion(targets: Set<DeletionTarget>) {
         val request = requestFlow.value ?: return
         val target = request.target
-        if (DeletionTarget.Subscription(target.subsId) in targets ||
-            (target is RuleGroupTarget.App && DeletionTarget.App(target.subsId, target.appId) in targets) ||
-            DeletionTarget.Group(target.subsId, target.appId, target.groupKey) in targets
+        if (
+            DeletionTarget.Subscription(target.subsId) in targets ||
+                (target is RuleGroupTarget.App &&
+                    DeletionTarget.App(target.subsId, target.appId) in targets) ||
+                DeletionTarget.Group(target.subsId, target.appId, target.groupKey) in targets
         ) {
             dismiss(request)
         }
@@ -47,13 +49,20 @@ class RuleControlDialogState {
             key(current) {
                 val target = current.target
                 val environment = rememberRuleControlEnvironment()
-                val subscriptions by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
+                val subscriptions by
+                    SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
                 val subscription = subscriptions.value?.subscriptions?.get(target.subsId)
-                val group = when (target) {
-                    is RuleGroupTarget.App -> subscription?.apps?.find { it.id == target.appId }
-                        ?.groups?.find { it.key == target.groupKey }
-                    is RuleGroupTarget.Global -> subscription?.globalGroups?.find { it.key == target.groupKey }
-                }
+                val group =
+                    when (target) {
+                        is RuleGroupTarget.App ->
+                            subscription
+                                ?.apps
+                                ?.find { it.id == target.appId }
+                                ?.groups
+                                ?.find { it.key == target.groupKey }
+                        is RuleGroupTarget.Global ->
+                            subscription?.globalGroups?.find { it.key == target.groupKey }
+                    }
                 val configurationFlow =
                     remember(target) { RuleGroupConfigService.groupConfiguration(target) }
                 val configuration by configurationFlow.collectAsStateWithLifecycle(null)
@@ -64,15 +73,21 @@ class RuleControlDialogState {
                 }
                 val snapshot = configuration?.snapshot
                 if (!missing && subscription != null && group != null && snapshot != null) {
-                    val control = environment.resolve(subscription, group, target.pageAppId, snapshot)
+                    val control =
+                        environment.resolve(subscription, group, target.pageAppId, snapshot)
                     GkRuleControlDialog(
                         subscription = subscription,
                         group = group,
                         appId = target.pageAppId,
                         control = control,
-                        explanation = RuleGroupPolicy.explainControl(
-                            subscription, group, target.pageAppId, snapshot, control,
-                        ),
+                        explanation =
+                            RuleGroupPolicy.explainControl(
+                                subscription,
+                                group,
+                                target.pageAppId,
+                                snapshot,
+                                control,
+                            ),
                         onDismissRequest = { dismiss(current) },
                     )
                 }

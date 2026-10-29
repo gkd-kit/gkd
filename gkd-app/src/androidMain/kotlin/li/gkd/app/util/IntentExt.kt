@@ -1,10 +1,9 @@
 package li.gkd.app.util
 
-import li.gkd.app.logging.LogUtils
-
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.resources.*
 import li.songe.codeorigin.CallSite
 
@@ -17,16 +16,18 @@ fun Context.tryStartActivity(
     } catch (e: Exception) {
         LogUtils.e("tryStartActivity", e, loc = loc)
         ToastUtils.show(
-            Res.string.intent_launch_failed_prefix.getSync() + (e.message
-                ?: e.stackTraceToString()), loc = ""
+            Res.string.intent_launch_failed_prefix.getSync() +
+                (e.message ?: e.stackTraceToString()),
+            loc = "",
         )
     }
 }
 
 val Intent.extraCptName: ComponentName?
-    get() = if (AndroidTarget.TIRAMISU) {
-        getParcelableExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
-    } else {
-        @Suppress("DEPRECATION")
-        getParcelableExtra(Intent.EXTRA_COMPONENT_NAME) as? ComponentName?
-    }
+    get() =
+        if (AndroidTarget.TIRAMISU) {
+            getParcelableExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            getParcelableExtra(Intent.EXTRA_COMPONENT_NAME) as? ComponentName?
+        }

@@ -28,10 +28,11 @@ class RuleGroupSourcesTest {
         val events = CopyOnWriteArrayList<Loadable<RuleGroupSnapshot>>()
         val job = launch {
             RuleGroupSources.observe(
-                subscriptions,
-                environment,
-                configs
-            ).collect { events.add(it) }
+                    subscriptions,
+                    environment,
+                    configs,
+                )
+                .collect { events.add(it) }
         }
         try {
             subscriptions.value = Loadable.Ready(SubscriptionSnapshot())
@@ -39,7 +40,13 @@ class RuleGroupSourcesTest {
             assertTrue(events.isEmpty(), "No complete database snapshot has arrived")
             configs.emit(SubscriptionConfigSnapshot())
             withTimeout(5000) { while (events.none { it is Loadable.Ready }) delay(5) }
-            assertTrue(assertIs<Loadable.Ready<RuleGroupSnapshot>>(events.last()).value.groups.globalGroups.isEmpty())
+            assertTrue(
+                assertIs<Loadable.Ready<RuleGroupSnapshot>>(events.last())
+                    .value
+                    .groups
+                    .globalGroups
+                    .isEmpty(),
+            )
             val error = IllegalStateException("cannot read subscriptions")
             subscriptions.value = Loadable.Failure(error)
             withTimeout(5000) { while (events.last() !is Loadable.Failure) delay(5) }
@@ -55,10 +62,11 @@ class RuleGroupSourcesTest {
 
     @Test
     fun ruleOverridesReferencedCooldownAndGroupFallbackRemainDistinct() {
-        val sub = RawSubscriptionParser.parse(
-            """{"id":1,"name":"test","version":1,"apps":[{"id":"test.app","groups":[{"key":1,"name":"group","actionCd":900,"matchDelay":20,"rules":[{"key":1,"matches":"*","actionCd":300},{"key":2,"matches":"*","actionCdKey":1},{"key":3,"matches":"*","actionCdKey":99,"matchDelay":0}]}]}]}""",
-            json5 = false
-        )
+        val sub =
+            RawSubscriptionParser.parse(
+                """{"id":1,"name":"test","version":1,"apps":[{"id":"test.app","groups":[{"key":1,"name":"group","actionCd":900,"matchDelay":20,"rules":[{"key":1,"matches":"*","actionCd":300},{"key":2,"matches":"*","actionCdKey":1},{"key":3,"matches":"*","actionCdKey":99,"matchDelay":0}]}]}]}""",
+                json5 = false,
+            )
         val group = sub.apps.single().groups.single()
         val linked = RuleExecutionParameters.resolve(group.rules[1], group)
         assertEquals(300L, linked.actionCd)

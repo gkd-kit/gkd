@@ -8,8 +8,11 @@ data class TopActivity(
     val activityId: String? = null,
     val number: Int = 0,
 ) {
-    val shortActivityId: String? get() = ActivityNames.getShowActivityId(appId, activityId)
+    val shortActivityId: String?
+        get() = ActivityNames.getShowActivityId(appId, activityId)
+
     fun format(): String = "$appId/$shortActivityId/$number"
+
     fun sameAs(appId: String, activityId: String?): Boolean =
         this.appId == appId && this.activityId == activityId
 }

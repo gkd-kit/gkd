@@ -6,9 +6,9 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.atomicfu.atomic
 import li.gkd.app.META
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.updateTopActivity
-import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 private val visibleActivityCount = atomic(0)
@@ -47,5 +47,4 @@ private class MainActivityLifecycleObserver(
         LogUtils.i("MainActivity::onStop", loc = logLoc)
         visibleActivityCount.decrementAndGet()
     }
-
 }

@@ -11,4 +11,3 @@ data class EditorSession(
     val onSave: suspend () -> EditorSaveResult,
     val titleContent: @Composable () -> Unit = { Text(title) },
 )
-

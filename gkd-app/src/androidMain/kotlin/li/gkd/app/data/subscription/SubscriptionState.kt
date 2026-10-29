@@ -13,7 +13,8 @@ import li.gkd.app.subscription.SubscriptionRepository
 
 object SubscriptionState {
     val subsMapFlow by lazy {
-        SubscriptionRepository.snapshotFlow.map { it.value?.subscriptions.orEmpty() }
+        SubscriptionRepository.snapshotFlow
+            .map { it.value?.subscriptions.orEmpty() }
             .stateIn(
                 appScope,
                 SharingStarted.Eagerly,
@@ -22,15 +23,22 @@ object SubscriptionState {
     }
 
     val ruleSummaryFlow by lazy {
-        ruleGroupState.map { state ->
-            when (state) {
-                Loadable.Loading -> Loadable.Loading
-                is Loadable.Failure -> state
-                is Loadable.Ready -> Loadable.Ready(
-                    RuleSummaryBuilder.build(state.value.groups, state.value.apps, RuleExecutionHost.runtime)
-                )
+        ruleGroupState
+            .map { state ->
+                when (state) {
+                    Loadable.Loading -> Loadable.Loading
+                    is Loadable.Failure -> state
+                    is Loadable.Ready ->
+                        Loadable.Ready(
+                            RuleSummaryBuilder.build(
+                                state.value.groups,
+                                state.value.apps,
+                                RuleExecutionHost.runtime,
+                            ),
+                        )
+                }
             }
-        }.catch { emit(Loadable.Failure(it)) }
+            .catch { emit(Loadable.Failure(it)) }
             .stateIn(appScope, SharingStarted.Eagerly, Loadable.Loading)
     }
 }

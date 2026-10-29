@@ -9,12 +9,14 @@ import li.gkd.app.service.A11yService
 import li.gkd.app.util.AndroidTarget
 
 fun createUiAutomationServiceInfo(): AccessibilityServiceInfo {
-    val resolveInfo = ResolveInfo().apply {
-        serviceInfo = app.packageManager.getServiceInfo(
-            A11yService.a11yCn,
-            PackageManager.GET_META_DATA,
-        )
-    }
+    val resolveInfo =
+        ResolveInfo().apply {
+            serviceInfo =
+                app.packageManager.getServiceInfo(
+                    A11yService.a11yCn,
+                    PackageManager.GET_META_DATA,
+                )
+        }
     val rawInfo = AccessibilityServiceInfoHidden(resolveInfo, app).toPublic
     return AccessibilityServiceInfo().apply {
         eventTypes = rawInfo.eventTypes

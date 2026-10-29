@@ -87,20 +87,22 @@ android {
     }
     // https://priv-kit.pages.dev/zh/guide/getting-started#native-library-packaging
     packaging.jniLibs.useLegacyPackaging = true
-    packaging.resources.excludes += setOf(
-        "META-INF/**",
-        "DebugProbesKt.bin",
-    )
+    packaging.resources.excludes +=
+        setOf(
+            "META-INF/**",
+            "DebugProbesKt.bin",
+        )
 }
 
 val androidBuildAssetAdapter =
     BuildAssetAdapter<ApplicationAndroidComponentsExtension, ApplicationVariant>(
         onVariants = { components, buildType, action ->
-            val selector = if (buildType == null) {
-                components.selector().all()
-            } else {
-                components.selector().withBuildType(buildType)
-            }
+            val selector =
+                if (buildType == null) {
+                    components.selector().all()
+                } else {
+                    components.selector().withBuildType(buildType)
+                }
             components.onVariants(selector, action)
         },
         addGeneratedSourceDirectory = { variant, task ->
@@ -110,17 +112,16 @@ val androidBuildAssetAdapter =
             )
         },
         describe = { variant ->
-            val flavorName = variant.productFlavors
-                .single { it.first == "channel" }
-                .second
+            val flavorName = variant.productFlavors.single { it.first == "channel" }.second
             val mainOutput = variant.outputs.single()
             BuildAssetVariant(
                 name = variant.name,
                 flavor = flavorName,
                 buildType = requireNotNull(variant.buildType),
-                mappingFile = variant.artifacts.get(
-                    SingleArtifact.OBFUSCATION_MAPPING_FILE,
-                ),
+                mappingFile =
+                    variant.artifacts.get(
+                        SingleArtifact.OBFUSCATION_MAPPING_FILE,
+                    ),
                 versionCode = mainOutput.versionCode,
                 versionName = mainOutput.versionName,
             )
@@ -138,9 +139,7 @@ configureBuildAssets(
 androidComponents.onVariants(
     androidComponents.selector().withBuildType("release"),
 ) { variant ->
-    val flavorName = variant.productFlavors
-        .single { it.first == "channel" }
-        .second
+    val flavorName = variant.productFlavors.single { it.first == "channel" }.second
     variant.manifestPlaceholders.put(
         "buildKey",
         project.releaseBuildKey(flavorName, gitInfo.commitId),

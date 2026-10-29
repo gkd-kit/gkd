@@ -3,6 +3,10 @@ package li.gkd.app.util
 import android.app.Application
 import android.os.Binder
 import android.os.ParcelFileDescriptor
+import java.io.FileDescriptor
+import java.io.PrintWriter
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -14,10 +18,6 @@ import org.robolectric.annotation.Implements
 import org.robolectric.annotation.RealObject
 import org.robolectric.shadows.ShadowParcelFileDescriptor
 import org.robolectric.util.ReflectionHelpers
-import java.io.FileDescriptor
-import java.io.PrintWriter
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(
@@ -39,9 +39,10 @@ class BinderDumpTest {
 
     @Test
     fun permissionDenialTextThrowsInsteadOfReturningDumpData() {
-        val binder = DumpBinder(
-            "Permission Denial: can't dump AccessibilityManagerService due to missing android.permission.DUMP permission",
-        )
+        val binder =
+            DumpBinder(
+                "Permission Denial: can't dump AccessibilityManagerService due to missing android.permission.DUMP permission",
+            )
         val error = assertThrows(SecurityException::class.java) { binder.dump() }
         assertEquals(binder.output, error.message)
     }
@@ -53,11 +54,11 @@ class BinderDumpTest {
         assertEquals("System service dump is empty", error.message)
     }
 
-    // Robolectric implements pipes with ordinary files, whose readers otherwise see EOF before dump writes.
+    // Robolectric implements pipes with ordinary files, whose readers otherwise see EOF before dump
+    // writes.
     @Implements(ParcelFileDescriptor::class)
     class BlockingPipe : ShadowParcelFileDescriptor() {
-        @RealObject
-        private lateinit var descriptor: ParcelFileDescriptor
+        @RealObject private lateinit var descriptor: ParcelFileDescriptor
 
         @Implementation
         override fun getFileDescriptor(): FileDescriptor {
@@ -76,8 +77,10 @@ class BinderDumpTest {
             fun createBlockingPipe(): Array<ParcelFileDescriptor> {
                 written = CountDownLatch(1)
                 return ReflectionHelpers.callStaticMethod<Array<ParcelFileDescriptor>>(
-                    ShadowParcelFileDescriptor::class.java, "createPipe",
-                ).also { readEnd = it[0] }
+                        ShadowParcelFileDescriptor::class.java,
+                        "createPipe",
+                    )
+                    .also { readEnd = it[0] }
             }
         }
     }

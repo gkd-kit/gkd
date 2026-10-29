@@ -25,11 +25,10 @@ object ZipArchive {
         zos: ZipOutputStream,
         includeEmptyDirectories: Boolean,
     ) {
-        val rootPath =
-            rawRootPath + (if (rawRootPath.isBlank()) "" else "/") + srcFile.getName()
+        val rootPath = rawRootPath + (if (rawRootPath.isBlank()) "" else "/") + srcFile.getName()
         if (srcFile.isDirectory()) {
-            val fileList = srcFile.listFiles()
-                ?: throw IOException("Cannot list directory: $srcFile")
+            val fileList =
+                srcFile.listFiles() ?: throw IOException("Cannot list directory: $srcFile")
             if (fileList.isEmpty() && includeEmptyDirectories) {
                 val entry = ZipEntry("$rootPath/")
                 zos.putNextEntry(entry)
@@ -53,7 +52,11 @@ object ZipArchive {
         }
     }
 
-    fun zipFiles(srcFiles: Collection<File>, zipFile: File, includeEmptyDirectories: Boolean = true) {
+    fun zipFiles(
+        srcFiles: Collection<File>,
+        zipFile: File,
+        includeEmptyDirectories: Boolean = true,
+    ) {
         ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
             for (srcFile in srcFiles) {
                 zipFile(srcFile, "", zos, includeEmptyDirectories)
@@ -79,7 +82,7 @@ object ZipArchive {
                 if (entryCount > limits.maxEntryCount) {
                     throw StorageException(
                         ArchiveIssue.FileCountExceeded,
-                        limits.maxEntryCount
+                        limits.maxEntryCount,
                     )
                 }
                 if (entry.name.indexOf('\\') >= 0) {
@@ -89,7 +92,7 @@ object ZipArchive {
                 if (!outPath.startsWith(rootPath)) {
                     throw StorageException(
                         ArchiveIssue.PathOutsideDestination,
-                        entry.name
+                        entry.name,
                     )
                 }
                 val outFile = outPath.toFile()
@@ -100,7 +103,7 @@ object ZipArchive {
                     if (declaredSize > limits.maxEntryBytes) {
                         throw StorageException(
                             ArchiveIssue.FileTooLarge,
-                            entry.name
+                            entry.name,
                         )
                     }
                     outFile.parentFile?.let { parent ->
@@ -118,7 +121,7 @@ object ZipArchive {
                                 if (entryBytes > limits.maxEntryBytes) {
                                     throw StorageException(
                                         ArchiveIssue.FileTooLarge,
-                                        entry.name
+                                        entry.name,
                                     )
                                 }
                                 if (totalBytes > limits.maxTotalBytes) {

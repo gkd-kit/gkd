@@ -3,35 +3,35 @@ package li.gkd.app.ui.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog as MaterialAlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Placeable
-import androidx.compose.ui.unit.dp
-import kotlin.math.max
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.material3.AlertDialog as MaterialAlertDialog
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog as PlatformDialog
+import androidx.compose.ui.window.DialogProperties
+import kotlin.math.max
 
 /** Optional host back dispatcher; Android dialogs already own their native back handling. */
 val LocalOverlayBackHandler =
@@ -48,19 +48,23 @@ private object DialogRegistry {
     private val registrations = mutableStateMapOf<Any, DialogRegistration>()
 
     val topToken: Any?
-        get() = registrations.maxWithOrNull(
-            compareBy<Map.Entry<Any, DialogRegistration>> { it.value.order }
-                .thenBy { it.value.registrationOrder }
-        )?.key
+        get() =
+            registrations
+                .maxWithOrNull(
+                    compareBy<Map.Entry<Any, DialogRegistration>> { it.value.order }
+                        .thenBy { it.value.registrationOrder },
+                )
+                ?.key
 
     fun createOrder(): Long = ++nextOrder
 
     fun register(token: Any, order: Long) {
         nextOrder = maxOf(nextOrder, order)
-        registrations[token] = DialogRegistration(
-            order = order,
-            registrationOrder = ++nextRegistrationOrder,
-        )
+        registrations[token] =
+            DialogRegistration(
+                order = order,
+                registrationOrder = ++nextRegistrationOrder,
+            )
     }
 
     fun unregister(token: Any) {
@@ -234,8 +238,8 @@ private fun SpacedAlertDialogContent(
                                     Alignment.Start
                                 } else {
                                     Alignment.CenterHorizontally
-                                }
-                            )
+                                },
+                            ),
                     ) {
                         title()
                     }
@@ -250,7 +254,7 @@ private fun SpacedAlertDialogContent(
                     Box(
                         Modifier.weight(weight = 1f, fill = false)
                             .padding(bottom = textToButtonsSpacing)
-                            .align(Alignment.Start)
+                            .align(Alignment.Start),
                     ) {
                         text()
                     }

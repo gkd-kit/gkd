@@ -1,8 +1,8 @@
 package li.gkd.app.util
 
 import android.content.ComponentName
-import li.gkd.app.META
 import kotlin.reflect.KClass
+import li.gkd.app.META
 
 private val componentNameCache by lazy { HashMap<String, ComponentName>() }
 

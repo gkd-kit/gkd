@@ -1,8 +1,7 @@
 package li.gkd.app.snapshot.platform
 
-import li.gkd.app.platform.PlatformResult
-
 import java.io.File
+import li.gkd.app.platform.PlatformResult
 
 /** Returns false for undecodable input or different dimensions; throws on write failure. */
 expect fun prepareSnapshotReplacement(original: File, bytes: ByteArray, output: File): Boolean

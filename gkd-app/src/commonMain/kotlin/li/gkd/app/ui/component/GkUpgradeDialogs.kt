@@ -15,15 +15,23 @@ import org.jetbrains.compose.resources.stringResource
 
 sealed interface UpdateDownloadState {
     data class Loading(val progress: Float) : UpdateDownloadState
+
     data class Failure(val exception: Exception) : UpdateDownloadState
+
     data object Success : UpdateDownloadState
 }
 
 @Composable
 fun GkUpgradeDialogs(
-    text: String?, allowIgnore: Boolean, downloadStatus: UpdateDownloadState?,
-    onDownload: () -> Unit, onDismissVersion: () -> Unit, onIgnore: () -> Unit,
-    onCancelDownload: () -> Unit, onDismissDownload: () -> Unit, onInstall: () -> Unit,
+    text: String?,
+    allowIgnore: Boolean,
+    downloadStatus: UpdateDownloadState?,
+    onDownload: () -> Unit,
+    onDismissVersion: () -> Unit,
+    onIgnore: () -> Unit,
+    onCancelDownload: () -> Unit,
+    onDismissDownload: () -> Unit,
+    onInstall: () -> Unit,
 ) {
     if (text != null) {
         val scrollState = rememberScrollState()
@@ -34,17 +42,17 @@ fun GkUpgradeDialogs(
             text = {
                 Text(
                     text = text,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(scrollState)
+                    modifier =
+                        Modifier.fillMaxWidth().heightIn(max = 400.dp).verticalScroll(scrollState),
                 )
             },
-            onDismissRequest = { },
+            onDismissRequest = {},
             confirmButton = {
-                TextButton(onClick = {
-                    onDownload()
-                }) {
+                TextButton(
+                    onClick = {
+                        onDownload()
+                    },
+                ) {
                     Text(text = stringResource(Res.string.update_download))
                 }
             },
@@ -53,9 +61,11 @@ fun GkUpgradeDialogs(
                     Text(text = stringResource(Res.string.action_cancel))
                 }
                 if (allowIgnore) {
-                    TextButton(onClick = {
-                        onIgnore()
-                    }) {
+                    TextButton(
+                        onClick = {
+                            onIgnore()
+                        },
+                    ) {
                         Text(text = stringResource(Res.string.action_ignore))
                     }
                 }
@@ -74,9 +84,11 @@ fun GkUpgradeDialogs(
                     },
                     onDismissRequest = {},
                     confirmButton = {
-                        TextButton(onClick = {
-                            onCancelDownload()
-                        }) {
+                        TextButton(
+                            onClick = {
+                                onCancelDownload()
+                            },
+                        ) {
                             Text(text = stringResource(Res.string.download_abort))
                         }
                     },
@@ -87,15 +99,20 @@ fun GkUpgradeDialogs(
                 GkAlertDialog(
                     title = { Text(text = stringResource(Res.string.download_failed)) },
                     text = {
-                        Text(text = downloadStatusVal.exception.let {
-                            it.message ?: it.toString()
-                        })
+                        Text(
+                            text =
+                                downloadStatusVal.exception.let {
+                                    it.message ?: it.toString()
+                                },
+                        )
                     },
                     onDismissRequest = { onDismissDownload() },
                     confirmButton = {
-                        TextButton(onClick = {
-                            onDismissDownload()
-                        }) {
+                        TextButton(
+                            onClick = {
+                                onDismissDownload()
+                            },
+                        ) {
                             Text(text = stringResource(Res.string.action_close))
                         }
                     },
@@ -110,9 +127,11 @@ fun GkUpgradeDialogs(
                     },
                     onDismissRequest = {},
                     dismissButton = {
-                        TextButton(onClick = {
-                            onDismissDownload()
-                        }) {
+                        TextButton(
+                            onClick = {
+                                onDismissDownload()
+                            },
+                        ) {
                             Text(text = stringResource(Res.string.action_close))
                         }
                     },
@@ -120,7 +139,8 @@ fun GkUpgradeDialogs(
                         TextButton(onClick = onInstall) {
                             Text(text = stringResource(Res.string.action_install))
                         }
-                    })
+                    },
+                )
             }
         }
     }

@@ -29,19 +29,22 @@ fun GkPrivilegeTopBar(onBack: () -> Unit, onInfo: () -> Unit) {
             GkIconButton(
                 GkIcons.Info,
                 contentDescription = stringResource(Res.string.page_help),
-                onClick = onInfo
+                onClick = onInfo,
             )
-        })
+        },
+    )
 }
 
 @Composable
 fun PrivilegeServiceInfoDialog(onDismissRequest: () -> Unit) {
-    val linkStyles = TextLinkStyles(
-        style = SpanStyle(
-            color = MaterialTheme.colorScheme.primary,
-            textDecoration = TextDecoration.Underline,
-        ),
-    )
+    val linkStyles =
+        TextLinkStyles(
+            style =
+                SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                ),
+        )
     GkAlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
@@ -55,18 +58,19 @@ fun PrivilegeServiceInfoDialog(onDismissRequest: () -> Unit) {
                     text = stringResource(Res.string.privilege_service_help_description),
                 )
                 Text(
-                    text = buildAnnotatedString {
-                        append(stringResource(Res.string.privilege_service_project_prefix))
-                        withLink(
-                            LinkAnnotation.Url(
-                                url = "https://github.com/priv-kit/priv-kit",
-                                styles = linkStyles,
-                            ),
-                        ) {
-                            append(stringResource(Res.string.privilege_project_name))
-                        }
-                        append(stringResource(Res.string.privilege_service_project_suffix))
-                    },
+                    text =
+                        buildAnnotatedString {
+                            append(stringResource(Res.string.privilege_service_project_prefix))
+                            withLink(
+                                LinkAnnotation.Url(
+                                    url = "https://github.com/priv-kit/priv-kit",
+                                    styles = linkStyles,
+                                ),
+                            ) {
+                                append(stringResource(Res.string.privilege_project_name))
+                            }
+                            append(stringResource(Res.string.privilege_service_project_suffix))
+                        },
                 )
             }
         },

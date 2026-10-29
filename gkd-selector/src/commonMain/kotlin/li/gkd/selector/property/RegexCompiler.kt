@@ -36,11 +36,12 @@ private fun String.parseSimpleRegex(): SimpleRegex? {
         return SimpleRegex.create(SimpleRegexKind.Start, value)
     }
     extractPlainRegexText(
-        SIMPLE_REGEX_WILDCARD_PREFIX,
-        SIMPLE_REGEX_WILDCARD_SUFFIX,
-    )?.let { value ->
-        return SimpleRegex.create(SimpleRegexKind.Include, value)
-    }
+            SIMPLE_REGEX_WILDCARD_PREFIX,
+            SIMPLE_REGEX_WILDCARD_SUFFIX,
+        )
+        ?.let { value ->
+            return SimpleRegex.create(SimpleRegexKind.Include, value)
+        }
     extractPlainRegexText(SIMPLE_REGEX_WILDCARD_PREFIX, "")?.let { value ->
         return SimpleRegex.create(SimpleRegexKind.End, value)
     }
@@ -69,15 +70,17 @@ private enum class SimpleRegexMatch {
     Unknown,
 }
 
-private class SimpleRegex private constructor(
+private class SimpleRegex
+private constructor(
     private val kind: SimpleRegexKind,
     private val value: String,
 ) {
-    private val includeFailure: IntArray? = if (kind == SimpleRegexKind.Include) {
-        value.buildAsciiIgnoreCaseFailureTable()
-    } else {
-        null
-    }
+    private val includeFailure: IntArray? =
+        if (kind == SimpleRegexKind.Include) {
+            value.buildAsciiIgnoreCaseFailureTable()
+        } else {
+            null
+        }
 
     fun match(input: CharSequence): SimpleRegexMatch =
         when (kind) {
@@ -92,10 +95,7 @@ private class SimpleRegex private constructor(
         val failure = checkNotNull(includeFailure)
         var matchedLength = 0
         for (character in input) {
-            while (
-                matchedLength > 0 &&
-                !value[matchedLength].equalsAsciiIgnoreCase(character)
-            ) {
+            while (matchedLength > 0 && !value[matchedLength].equalsAsciiIgnoreCase(character)) {
                 matchedLength = failure[matchedLength - 1]
             }
             if (value[matchedLength].equalsAsciiIgnoreCase(character)) {
@@ -147,8 +147,7 @@ private class SimpleRegex private constructor(
         ): SimpleRegex? {
             if (
                 value.any { character ->
-                    character.isSurrogateCodeUnit ||
-                            character.hasCase && !character.isAsciiLetter
+                    character.isSurrogateCodeUnit || character.hasCase && !character.isAsciiLetter
                 }
             ) {
                 return null
@@ -168,7 +167,8 @@ private val Char.isSurrogateCodeUnit: Boolean
     get() = this in '\uD800'..'\uDFFF'
 
 private fun Char.equalsAsciiIgnoreCase(other: Char): Boolean =
-    this == other || isAsciiLetter && other.isAsciiLetter && lowercaseChar() == other.lowercaseChar()
+    this == other ||
+        isAsciiLetter && other.isAsciiLetter && lowercaseChar() == other.lowercaseChar()
 
 private fun String.buildAsciiIgnoreCaseFailureTable(): IntArray {
     val failure = IntArray(length)
@@ -185,10 +185,7 @@ private fun String.buildAsciiIgnoreCaseFailureTable(): IntArray {
 
 private fun CharSequence.hasNonAsciiCaseCharacter(): Boolean {
     for (character in this) {
-        if (
-            character.isSurrogateCodeUnit ||
-            character.hasCase && !character.isAsciiLetter
-        ) {
+        if (character.isSurrogateCodeUnit || character.hasCase && !character.isAsciiLetter) {
             return true
         }
     }

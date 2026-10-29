@@ -9,7 +9,13 @@ class StorageException(
     vararg val arguments: Any?,
     cause: Throwable? = null,
 ) : IOException(issue.name + arguments.joinToString(prefix = ": "), cause), BusinessError {
-    override val errorCode: String get() = issue.name
+    override val errorCode: String
+        get() = issue.name
+
     override val errorMessage: ErrorMessage
-        get() = ErrorMessage.Resource(issue.messageResource, arguments.map { ErrorMessage.Text(it.toString()) })
+        get() =
+            ErrorMessage.Resource(
+                issue.messageResource,
+                arguments.map { ErrorMessage.Text(it.toString()) },
+            )
 }

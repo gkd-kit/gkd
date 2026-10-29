@@ -18,13 +18,13 @@ import com.sun.jna.platform.win32.WinNT.HRESULT
 import com.sun.jna.ptr.IntByReference
 import com.sun.jna.ptr.PointerByReference
 import com.sun.jna.win32.StdCallLibrary.StdCallCallback
+import java.awt.Window
+import java.io.File
+import java.util.concurrent.Executors
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
-import java.awt.Window
-import java.io.File
-import java.util.concurrent.Executors
 
 /** Windows Common Item Dialog; all COM objects stay on one dedicated STA thread. */
 object WindowsFileDialog {
@@ -61,18 +61,20 @@ object WindowsFileDialog {
         val job = currentCoroutineContext()[Job]
         // A fresh thread avoids inheriting an MTA apartment from a shared coroutine worker.
         return Executors.newSingleThreadExecutor { task ->
-            Thread(task, "GKD file dialog").apply { isDaemon = true }
-        }.asCoroutineDispatcher().use { dispatcher ->
-            withContext(dispatcher) {
-                val ole = Ole32.INSTANCE
-                COMUtils.checkRC(ole.CoInitializeEx(null, Ole32.COINIT_APARTMENTTHREADED))
-                try {
-                    show(hwnd, directory, save) { job?.isActive == false }
-                } finally {
-                    ole.CoUninitialize()
+                Thread(task, "GKD file dialog").apply { isDaemon = true }
+            }
+            .asCoroutineDispatcher()
+            .use { dispatcher ->
+                withContext(dispatcher) {
+                    val ole = Ole32.INSTANCE
+                    COMUtils.checkRC(ole.CoInitializeEx(null, Ole32.COINIT_APARTMENTTHREADED))
+                    try {
+                        show(hwnd, directory, save) { job?.isActive == false }
+                    } finally {
+                        ole.CoUninitialize()
+                    }
                 }
             }
-        }
     }
 
     private fun show(owner: HWND, directory: File, save: File?, cancelled: () -> Boolean): File? {
@@ -80,28 +82,42 @@ object WindowsFileDialog {
         COMUtils.checkRC(
             Ole32.INSTANCE.CoCreateInstance(
                 GUID(if (save == null) CLSID_FILE_OPEN_DIALOG else CLSID_FILE_SAVE_DIALOG),
-                null, CLSCTX_INPROC_SERVER,
+                null,
+                CLSCTX_INPROC_SERVER,
                 GUID(IID_FILE_DIALOG),
-                result
-            )
+                result,
+            ),
         )
         return ComObject(result.value).use { dialog ->
             val options = IntByReference()
             dialog.check(FILE_DIALOG_GET_OPTIONS, options)
             dialog.check(
                 FILE_DIALOG_SET_OPTIONS,
-                options.value or FOS_FORCEFILESYSTEM or FOS_PATHMUSTEXIST or
-                    if (save == null) FOS_FILEMUSTEXIST else FOS_OVERWRITEPROMPT
+                options.value or
+                    FOS_FORCEFILESYSTEM or
+                    FOS_PATHMUSTEXIST or
+                    if (save == null) FOS_FILEMUSTEXIST else FOS_OVERWRITEPROMPT,
             )
             if (directory.isDirectory) {
                 val folder = PointerByReference()
-                val createItem = NativeLibrary.getInstance("shell32")
-                    .getFunction("SHCreateItemFromParsingName", Function.ALT_CONVENTION)
-                COMUtils.checkRC(HRESULT(createItem.invokeInt(arrayOf(
-                    WString(directory.absolutePath), null,
-                    GUID(IID_SHELL_ITEM), folder
-                ))))
-                ComObject(folder.value).use { dialog.check(FILE_DIALOG_SET_DEFAULT_FOLDER, it.pointer) }
+                val createItem =
+                    NativeLibrary.getInstance("shell32")
+                        .getFunction("SHCreateItemFromParsingName", Function.ALT_CONVENTION)
+                COMUtils.checkRC(
+                    HRESULT(
+                        createItem.invokeInt(
+                            arrayOf(
+                                WString(directory.absolutePath),
+                                null,
+                                GUID(IID_SHELL_ITEM),
+                                folder,
+                            ),
+                        ),
+                    ),
+                )
+                ComObject(folder.value).use {
+                    dialog.check(FILE_DIALOG_SET_DEFAULT_FOLDER, it.pointer)
+                }
             }
             if (save != null) {
                 dialog.check(FILE_DIALOG_SET_FILE_NAME, WString(save.name))
@@ -113,23 +129,31 @@ object WindowsFileDialog {
             // Show runs a native message loop. Its timer closes on session cancellation or
             // owner disposal, on this same STA; never call the COM pointer from another thread.
             val user = NativeLibrary.getInstance("user32")
-            val timerCallback = object : DialogTimer {
-                override fun invoke(hwnd: Pointer?, message: Int, timer: Pointer?, time: Int) {
-                    if (cancelled() || !User32.INSTANCE.IsWindow(owner)) {
-                        dialog.call(FILE_DIALOG_CLOSE, HRESULT_CANCELLED)
+            val timerCallback =
+                object : DialogTimer {
+                    override fun invoke(hwnd: Pointer?, message: Int, timer: Pointer?, time: Int) {
+                        if (cancelled() || !User32.INSTANCE.IsWindow(owner)) {
+                            dialog.call(FILE_DIALOG_CLOSE, HRESULT_CANCELLED)
+                        }
                     }
                 }
-            }
-            val timer = user.getFunction("SetTimer", Function.ALT_CONVENTION)
-                .invokePointer(arrayOf(null, null, CANCELLATION_CHECK_INTERVAL_MS, timerCallback))
+            val timer =
+                user
+                    .getFunction("SetTimer", Function.ALT_CONVENTION)
+                    .invokePointer(
+                        arrayOf(null, null, CANCELLATION_CHECK_INTERVAL_MS, timerCallback),
+                    )
             check(timer != null) { "Unable to create file dialog cancellation timer" }
-            val shown = try {
-                if (cancelled() || !User32.INSTANCE.IsWindow(owner)) return@use null
-                dialog.call(FILE_DIALOG_SHOW, owner)
-            } finally {
-                user.getFunction("KillTimer", Function.ALT_CONVENTION).invokeInt(arrayOf(null, timer))
-                java.lang.ref.Reference.reachabilityFence(timerCallback)
-            }
+            val shown =
+                try {
+                    if (cancelled() || !User32.INSTANCE.IsWindow(owner)) return@use null
+                    dialog.call(FILE_DIALOG_SHOW, owner)
+                } finally {
+                    user
+                        .getFunction("KillTimer", Function.ALT_CONVENTION)
+                        .invokeInt(arrayOf(null, timer))
+                    java.lang.ref.Reference.reachabilityFence(timerCallback)
+                }
             if (shown == HRESULT_CANCELLED) return@use null
             COMUtils.checkRC(HRESULT(shown))
             val item = PointerByReference()
@@ -157,6 +181,9 @@ object WindowsFileDialog {
             _invokeNativeInt(slot, arrayOf(pointer, *args))
 
         fun check(slot: Int, vararg args: Any?) = COMUtils.checkRC(HRESULT(call(slot, *args)))
-        override fun close() { Release() }
+
+        override fun close() {
+            Release()
+        }
     }
 }

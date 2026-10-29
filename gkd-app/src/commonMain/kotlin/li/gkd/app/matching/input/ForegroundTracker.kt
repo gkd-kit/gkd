@@ -99,7 +99,10 @@ class ForegroundTracker(
             pendingSource = ForegroundSource.Accessibility
         }
         surfaceReturn = null
-        return decision(if (exited) ForegroundDecisionReason.SystemSurfaceExited else ForegroundDecisionReason.SurfaceObservedClear)
+        return decision(
+            if (exited) ForegroundDecisionReason.SystemSurfaceExited
+            else ForegroundDecisionReason.SurfaceObservedClear,
+        )
     }
 
     @Synchronized
@@ -167,7 +170,10 @@ class ForegroundTracker(
                 pendingSince = now
                 pendingSource = source
             }
-            return decision(if (pending == null) ForegroundDecisionReason.Unchanged else ForegroundDecisionReason.AwaitingNodes)
+            return decision(
+                if (pending == null) ForegroundDecisionReason.Unchanged
+                else ForegroundDecisionReason.AwaitingNodes,
+            )
         }
         val repeated =
             lastNodes == value.appId &&
@@ -193,7 +199,8 @@ class ForegroundTracker(
             if (next.appId != SYSTEM_UI && surfaceCovered != true) surfaceReturn = null
             return decision(
                 if (appReentered) ForegroundDecisionReason.AppReentered
-                else if (task != null && task?.appId != next.appId) ForegroundDecisionReason.SurfaceConfirmed
+                else if (task != null && task?.appId != next.appId)
+                    ForegroundDecisionReason.SurfaceConfirmed
                 else ForegroundDecisionReason.NodesConfirmed,
                 changed,
                 appReentered,
@@ -215,7 +222,10 @@ class ForegroundTracker(
             pendingAppReentry = false
             return decision(ForegroundDecisionReason.StaleObservationDiscarded)
         }
-        return decision(if (pending == null) ForegroundDecisionReason.Unchanged else ForegroundDecisionReason.ForegroundConflict)
+        return decision(
+            if (pending == null) ForegroundDecisionReason.Unchanged
+            else ForegroundDecisionReason.ForegroundConflict,
+        )
     }
 
     private companion object {

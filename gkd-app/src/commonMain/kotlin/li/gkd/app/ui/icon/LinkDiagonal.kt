@@ -12,17 +12,20 @@ val LinkDiagonal: ImageVector
             return _linkDiagonal!!
         }
         val path = Icons.Outlined.Link.root[0] as VectorPath
-        _linkDiagonal = ImageVector.Builder(
-            name = "LinkDiagonal",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
-        ).apply {
-            addGroup(rotate = -45f, pivotX = 12f, pivotY = 12f)
-            addPath(pathData = path.pathData, fill = path.fill)
-            clearGroup()
-        }.build()
+        _linkDiagonal =
+            ImageVector.Builder(
+                    name = "LinkDiagonal",
+                    defaultWidth = 24.dp,
+                    defaultHeight = 24.dp,
+                    viewportWidth = 24f,
+                    viewportHeight = 24f,
+                )
+                .apply {
+                    addGroup(rotate = -45f, pivotX = 12f, pivotY = 12f)
+                    addPath(pathData = path.pathData, fill = path.fill)
+                    clearGroup()
+                }
+                .build()
         return _linkDiagonal!!
     }
 

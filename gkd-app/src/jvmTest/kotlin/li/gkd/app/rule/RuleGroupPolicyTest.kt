@@ -18,51 +18,60 @@ class RuleGroupPolicyTest {
         val explicitDefault = SubsCategoryConfig(null, subscription.id, category.key)
         assertEquals(
             false,
-            RuleGroupPolicy.getGroupEnabled(group, null, category, null)
+            RuleGroupPolicy.getGroupEnabled(group, null, category, null),
         )
         assertEquals(
             true,
-            RuleGroupPolicy.getGroupEnabled(group, null, category, explicitDefault)
+            RuleGroupPolicy.getGroupEnabled(group, null, category, explicitDefault),
         )
         assertEquals(
             false,
-            RuleGroupPolicy.getGroupEnabled(group, null, category, explicitDefault.copy(enable = false))
+            RuleGroupPolicy.getGroupEnabled(
+                group,
+                null,
+                category,
+                explicitDefault.copy(enable = false),
+            ),
         )
         assertEquals(
             true,
             RuleGroupPolicy.getGroupEnabled(
-                group, SubsAppGroupConfig(subscription.id, "app.id", group.key, true),
-                category, explicitDefault.copy(enable = false)
-            )
+                group,
+                SubsAppGroupConfig(subscription.id, "app.id", group.key, true),
+                category,
+                explicitDefault.copy(enable = false),
+            ),
         )
     }
 
-    private val subscription = RawSubscriptionParser.parse(
-        """
-        {
-          id: -2,
-          name: 'Local',
-          version: 0,
-          categories: [{ key: 0, name: 'Batch', enable: false }],
-          apps: [{
-            id: 'app.id',
-            groups: [{ key: 1, name: 'Batch', enable: true, rules: [] }],
-          }],
-          globalGroups: [{
-            key: 2,
-            name: 'Global',
-            matchLauncher: true,
-            matchSystemApp: false,
-            matchAnyApp: false,
-            apps: [
-              { id: 'blocked.app', enable: false },
-              { id: 'forced.app', enable: true },
-            ],
-            rules: [],
-          }],
-        }
-        """.trimIndent(),
-    )
+    private val subscription =
+        RawSubscriptionParser.parse(
+            """
+            {
+              id: -2,
+              name: 'Local',
+              version: 0,
+              categories: [{ key: 0, name: 'Batch', enable: false }],
+              apps: [{
+                id: 'app.id',
+                groups: [{ key: 1, name: 'Batch', enable: true, rules: [] }],
+              }],
+              globalGroups: [{
+                key: 2,
+                name: 'Global',
+                matchLauncher: true,
+                matchSystemApp: false,
+                matchAnyApp: false,
+                apps: [
+                  { id: 'blocked.app', enable: false },
+                  { id: 'forced.app', enable: true },
+                ],
+                rules: [],
+              }],
+            }
+            """
+                .trimIndent(),
+        )
 
     @Test
     fun appGroupConfigurationOverridesCategoryAndGroupDefaults() {
@@ -79,7 +88,7 @@ class RuleGroupPolicyTest {
                 SubsCategoryConfig(
                     enable = true,
                     subsId = subscription.id,
-                    categoryKey = category.key
+                    categoryKey = category.key,
                 ),
             ),
         )
@@ -97,7 +106,7 @@ class RuleGroupPolicyTest {
                 SubsCategoryConfig(
                     enable = true,
                     subsId = subscription.id,
-                    categoryKey = category.key
+                    categoryKey = category.key,
                 ),
             ),
         )
@@ -107,11 +116,12 @@ class RuleGroupPolicyTest {
     fun explicitFollowStateUsesGroupDefaultWhenCategoryDefaultsToDisabled() {
         val group = subscription.apps.single().groups.single()
         val category = subscription.categories.single()
-        val config = SubsCategoryConfig(
-            enable = null,
-            subsId = subscription.id,
-            categoryKey = category.key,
-        )
+        val config =
+            SubsCategoryConfig(
+                enable = null,
+                subsId = subscription.id,
+                categoryKey = category.key,
+            )
 
         assertEquals(false, RuleGroupPolicy.getCategoryEnabled(category, null))
         assertNull(RuleGroupPolicy.getCategoryEnabled(category, config))
@@ -122,11 +132,12 @@ class RuleGroupPolicyTest {
     fun explicitFollowStateUsesGroupDefaultWhenCategoryDefaultsToEnabled() {
         val group = subscription.apps.single().groups.single().copy(enable = false)
         val category = subscription.categories.single().copy(enable = true)
-        val config = SubsCategoryConfig(
-            enable = null,
-            subsId = subscription.id,
-            categoryKey = category.key,
-        )
+        val config =
+            SubsCategoryConfig(
+                enable = null,
+                subsId = subscription.id,
+                categoryKey = category.key,
+            )
 
         assertEquals(true, RuleGroupPolicy.getCategoryEnabled(category, null))
         assertNull(RuleGroupPolicy.getCategoryEnabled(category, config))

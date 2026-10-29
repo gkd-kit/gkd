@@ -18,9 +18,10 @@ fun GkTooltipIconButtonBox(contentDescription: String?, content: @Composable () 
         TooltipBox(
             tooltip = { PlainTooltip { Text(text = contentDescription) } },
             state = rememberTooltipState(),
-            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                TooltipAnchorPosition.Start
-            ),
+            positionProvider =
+                TooltipDefaults.rememberTooltipPositionProvider(
+                    TooltipAnchorPosition.Start,
+                ),
             content = content,
         )
     }

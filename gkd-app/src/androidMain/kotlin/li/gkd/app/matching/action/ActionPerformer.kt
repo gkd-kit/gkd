@@ -7,24 +7,28 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import li.gkd.app.data.calc
-import li.gkd.app.model.ActionResult
 import li.gkd.app.matching.diagnostics.observeActionOperation
+import li.gkd.app.model.ActionResult
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.toHidden
 import li.gkd.app.service.A11yService
 import li.gkd.app.service.TrackService
-import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.PositionCalculationException
 import li.gkd.app.subscription.PositionError
+import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.util.ScreenUtils
 
 sealed class ActionPerformer(val action: String) {
-    suspend fun perform(node: AccessibilityNodeInfo, locationProps: RawSubscription.LocationProps,
-        captureInputs: Boolean = false): ActionResult = try {
-        performAction(node, locationProps, captureInputs)
-    } catch (error: PositionCalculationException) {
-        ActionResult(action, false, coordinateError = error.error)
-    }
+    suspend fun perform(
+        node: AccessibilityNodeInfo,
+        locationProps: RawSubscription.LocationProps,
+        captureInputs: Boolean = false,
+    ): ActionResult =
+        try {
+            performAction(node, locationProps, captureInputs)
+        } catch (error: PositionCalculationException) {
+            ActionResult(action, false, coordinateError = error.error)
+        }
 
     protected abstract suspend fun performAction(
         node: AccessibilityNodeInfo,
@@ -41,9 +45,10 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addA11yNodePosition(node)
             return ActionResult(
                 action = action,
-                result = observeActionOperation("AccessibilityNodeInfo.performAction:CLICK") {
-                    node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                }
+                result =
+                    observeActionOperation("AccessibilityNodeInfo.performAction:CLICK") {
+                        node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    },
             )
         }
     }
@@ -56,24 +61,30 @@ sealed class ActionPerformer(val action: String) {
         ): ActionResult {
             val position = calculateActionPosition(node, locationProps, captureInputs)
             val (x, y) = position
-            coordinateBoundsFailure(action, position, "position")?.let { return it }
+            coordinateBoundsFailure(action, position, "position")?.let {
+                return it
+            }
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = privilegeContextFlow.value?.let { privilege ->
-                    observeActionOperation("PrivilegedTap") { privilege.tap(x, y) }
-                } ?: run {
-                    val gestureDescription = GestureDescription.Builder()
-                    val path = Path()
-                    path.moveTo(x, y)
-                    gestureDescription.addStroke(
-                        GestureDescription.StrokeDescription(
-                            path, 0, ViewConfiguration.getTapTimeout().toLong()
-                        )
-                    )
-                    A11yService.instance?.awaitGesture(gestureDescription.build()) == true
-                },
-                position = x to y
+                result =
+                    privilegeContextFlow.value?.let { privilege ->
+                        observeActionOperation("PrivilegedTap") { privilege.tap(x, y) }
+                    }
+                        ?: run {
+                            val gestureDescription = GestureDescription.Builder()
+                            val path = Path()
+                            path.moveTo(x, y)
+                            gestureDescription.addStroke(
+                                GestureDescription.StrokeDescription(
+                                    path,
+                                    0,
+                                    ViewConfiguration.getTapTimeout().toLong(),
+                                ),
+                            )
+                            A11yService.instance?.awaitGesture(gestureDescription.build()) == true
+                        },
+                position = x to y,
             )
         }
     }
@@ -103,19 +114,22 @@ sealed class ActionPerformer(val action: String) {
             TrackService.addA11yNodePosition(node)
             return ActionResult(
                 action = action,
-                result = observeActionOperation("AccessibilityNodeInfo.performAction:LONG_CLICK") {
-                    node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
-                }.apply {
-                    if (this) {
-                        delay(LongClickCenter.LONG_DURATION.milliseconds)
-                    }
-                }
+                result =
+                    observeActionOperation("AccessibilityNodeInfo.performAction:LONG_CLICK") {
+                            node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
+                        }
+                        .apply {
+                            if (this) {
+                                delay(LongClickCenter.LONG_DURATION.milliseconds)
+                            }
+                        },
             )
         }
     }
 
     data object LongClickCenter : ActionPerformer("longClickCenter") {
         const val LONG_DURATION = 500L
+
         override suspend fun performAction(
             node: AccessibilityNodeInfo,
             locationProps: RawSubscription.LocationProps,
@@ -124,16 +138,22 @@ sealed class ActionPerformer(val action: String) {
             val position = calculateActionPosition(node, locationProps, captureInputs)
             val (x, y) = position
             // 某些系统的 ViewConfiguration.getLongPressTimeout() 返回 300 , 这将导致触发普通的 click 事件
-            coordinateBoundsFailure(action, position, "position")?.let { return it }
+            coordinateBoundsFailure(action, position, "position")?.let {
+                return it
+            }
             TrackService.addXyPosition(x, y)
             return ActionResult(
                 action = action,
-                result = privilegeContextFlow.value?.let { privilege ->
-                    observeActionOperation("PrivilegedLongPress") { privilege.tap(x, y, LONG_DURATION) }
-                } ?: run {
-                    A11yService.instance?.awaitSwipe(x, y, x, y, LONG_DURATION) == true
-                },
-                position = x to y
+                result =
+                    privilegeContextFlow.value?.let { privilege ->
+                        observeActionOperation("PrivilegedLongPress") {
+                            privilege.tap(x, y, LONG_DURATION)
+                        }
+                    }
+                        ?: run {
+                            A11yService.instance?.awaitSwipe(x, y, x, y, LONG_DURATION) == true
+                        },
+                position = x to y,
             )
         }
     }
@@ -162,7 +182,7 @@ sealed class ActionPerformer(val action: String) {
         ): ActionResult {
             return ActionResult(
                 action = action,
-                result = performActionBack()
+                result = performActionBack(),
             )
         }
     }
@@ -175,7 +195,7 @@ sealed class ActionPerformer(val action: String) {
         ): ActionResult {
             return ActionResult(
                 action = action,
-                result = true
+                result = true,
             )
         }
     }
@@ -187,10 +207,12 @@ sealed class ActionPerformer(val action: String) {
             captureInputs: Boolean,
         ): ActionResult {
             val rect = node.toHidden.boundsInScreen
-            val swipeArg = locationProps.swipeArg ?: return ActionResult(
-                action = action,
-                result = false,
-            )
+            val swipeArg =
+                locationProps.swipeArg
+                    ?: return ActionResult(
+                        action = action,
+                        result = false,
+                    )
             val screenSize = ScreenUtils.getSize()
             val startP = swipeArg.start.calc(rect, "swipeArg.start", captureInputs, screenSize)
             val endP = swipeArg.end?.calc(rect, "swipeArg.end", captureInputs, screenSize) ?: startP
@@ -198,14 +220,19 @@ sealed class ActionPerformer(val action: String) {
             val startY = startP.second
             val endX = endP.first
             val endY = endP.second
-            coordinateBoundsFailure(action, startP, "swipeArg.start", endP)?.let { return it }
-            coordinateBoundsFailure(action, endP, "swipeArg.end")?.let { return it }
-            TrackService.addSwipePosition(startX, startY, endX, endY, swipeArg.duration)
-            val injected = privilegeContextFlow.value?.let { privilege ->
-                observeActionOperation("PrivilegedSwipe") {
-                    privilege.swipe(startX, startY, endX, endY, swipeArg.duration)
-                }
+            coordinateBoundsFailure(action, startP, "swipeArg.start", endP)?.let {
+                return it
             }
+            coordinateBoundsFailure(action, endP, "swipeArg.end")?.let {
+                return it
+            }
+            TrackService.addSwipePosition(startX, startY, endX, endY, swipeArg.duration)
+            val injected =
+                privilegeContextFlow.value?.let { privilege ->
+                    observeActionOperation("PrivilegedSwipe") {
+                        privilege.swipe(startX, startY, endX, endY, swipeArg.duration)
+                    }
+                }
             return if (injected != null) {
                 ActionResult(
                     action = action,
@@ -216,7 +243,14 @@ sealed class ActionPerformer(val action: String) {
             } else {
                 ActionResult(
                     action = action,
-                    result = A11yService.instance?.awaitSwipe(startX, startY, endX, endY, swipeArg.duration) == true,
+                    result =
+                        A11yService.instance?.awaitSwipe(
+                            startX,
+                            startY,
+                            endX,
+                            endY,
+                            swipeArg.duration,
+                        ) == true,
                     position = endX to endY,
                 )
             }
@@ -259,9 +293,12 @@ private fun coordinateBoundsFailure(
     position: Pair<Float, Float>,
     field: String,
     resultPosition: Pair<Float, Float> = position,
-): ActionResult? = if (ScreenUtils.contains(position.first, position.second)) null else ActionResult(
-    action = action,
-    result = false,
-    position = resultPosition,
-    coordinateError = PositionError(field, "COORDINATE_OUT_OF_BOUNDS"),
-)
+): ActionResult? =
+    if (ScreenUtils.contains(position.first, position.second)) null
+    else
+        ActionResult(
+            action = action,
+            result = false,
+            position = resultPosition,
+            coordinateError = PositionError(field, "COORDINATE_OUT_OF_BOUNDS"),
+        )

@@ -16,21 +16,24 @@ data class BuildAssetVariant(
 )
 
 class BuildAssetAdapter<AndroidComponentsT, VariantT : Any>(
-    val onVariants: (
-        androidComponents: AndroidComponentsT,
-        buildType: String?,
-        action: Action<VariantT>,
-    ) -> Unit,
-    val addGeneratedSourceDirectory: (
-        variant: VariantT,
-        task: TaskProvider<GenerateSourcePathsTask>,
-    ) -> Unit,
+    val onVariants:
+        (
+            androidComponents: AndroidComponentsT,
+            buildType: String?,
+            action: Action<VariantT>,
+        ) -> Unit,
+    val addGeneratedSourceDirectory:
+        (
+            variant: VariantT,
+            task: TaskProvider<GenerateSourcePathsTask>,
+        ) -> Unit,
     val describe: (variant: VariantT) -> BuildAssetVariant,
-    val computeTaskName: (
-        variant: VariantT,
-        action: String,
-        subject: String,
-    ) -> String,
+    val computeTaskName:
+        (
+            variant: VariantT,
+            action: String,
+            subject: String,
+        ) -> String,
 )
 
 fun <AndroidComponentsT, VariantT : Any> Project.configureBuildAssets(
@@ -48,8 +51,7 @@ fun <AndroidComponentsT, VariantT : Any> Project.configureBuildAssets(
         },
     )
 
-    val githubCookie = buildProperty("GITHUB_COOKIE")
-        .orElse(buildProperty("GKD_GITHUB_COOKIE"))
+    val githubCookie = buildProperty("GITHUB_COOKIE").orElse(buildProperty("GKD_GITHUB_COOKIE"))
     val apiAuthToken = buildProperty("GKD_API_AUTH_TOKEN")
     if (!githubCookie.isPresent || !apiAuthToken.isPresent) return
 
@@ -60,11 +62,12 @@ fun <AndroidComponentsT, VariantT : Any> Project.configureBuildAssets(
             override fun execute(variant: VariantT) {
                 registerBuildAssetUpload(
                     variant = adapter.describe(variant),
-                    uploadTaskName = adapter.computeTaskName(
-                        variant,
-                        "upload",
-                        "buildAsset",
-                    ),
+                    uploadTaskName =
+                        adapter.computeTaskName(
+                            variant,
+                            "upload",
+                            "buildAsset",
+                        ),
                     generateSourcePaths = generateSourcePaths,
                     githubCookie = githubCookie,
                     apiAuthToken = apiAuthToken,
@@ -84,37 +87,39 @@ private fun Project.registerBuildAssetUpload(
     val buildGitInfo = this.gitInfo
     val variantBuildKey = releaseBuildKey(variant.flavor, buildGitInfo.commitId)
     val cleanBuildKey = "${variant.flavor}-${buildGitInfo.commitId.take(16)}"
-    val uploadBuildAsset = tasks.register(
-        uploadTaskName,
-        UploadBuildAssetTask::class.java,
-    ) {
-        description = "Creates and uploads the build archive"
-        mappingFile.set(variant.mappingFile)
-        sourcePathsFile.set(
-            generateSourcePaths.flatMap {
-                it.outputDirectory.file("source-paths.txt")
-            },
-        )
-        buildKey.set(variantBuildKey)
-        variantName.set(variant.name)
-        flavor.set(variant.flavor)
-        buildType.set(variant.buildType)
-        commitId.set(buildGitInfo.commitId)
-        commitTime.set(buildGitInfo.commitTime)
-        tagName.set(buildGitInfo.tagName.orEmpty())
-        includeGitMetadata.set(
-            variantBuildKey.map { it == cleanBuildKey },
-        )
-        versionCode.set(variant.versionCode)
-        versionName.set(variant.versionName)
-        this.githubCookie.set(githubCookie)
-        this.apiAuthToken.set(apiAuthToken)
-    }
+    val uploadBuildAsset =
+        tasks.register(
+            uploadTaskName,
+            UploadBuildAssetTask::class.java,
+        ) {
+            description = "Creates and uploads the build archive"
+            mappingFile.set(variant.mappingFile)
+            sourcePathsFile.set(
+                generateSourcePaths.flatMap {
+                    it.outputDirectory.file("source-paths.txt")
+                },
+            )
+            buildKey.set(variantBuildKey)
+            variantName.set(variant.name)
+            flavor.set(variant.flavor)
+            buildType.set(variant.buildType)
+            commitId.set(buildGitInfo.commitId)
+            commitTime.set(buildGitInfo.commitTime)
+            tagName.set(buildGitInfo.tagName.orEmpty())
+            includeGitMetadata.set(
+                variantBuildKey.map { it == cleanBuildKey },
+            )
+            versionCode.set(variant.versionCode)
+            versionName.set(variant.versionName)
+            this.githubCookie.set(githubCookie)
+            this.apiAuthToken.set(apiAuthToken)
+        }
     val capitalizedVariantName = variant.name.replaceFirstChar(Char::uppercaseChar)
-    val lifecycleTaskNames = setOf(
-        "assemble$capitalizedVariantName",
-        "bundle$capitalizedVariantName",
-    )
+    val lifecycleTaskNames =
+        setOf(
+            "assemble$capitalizedVariantName",
+            "bundle$capitalizedVariantName",
+        )
     tasks.configureEach {
         if (name in lifecycleTaskNames) dependsOn(uploadBuildAsset)
     }

@@ -1,7 +1,7 @@
 package li.gkd.app.settings
 
-import li.gkd.app.storage.writeTextAtomically
 import java.io.File
+import li.gkd.app.storage.writeTextAtomically
 
 /** Same durable format on Android and Desktop; paths belong to the host. */
 class FileSettingsStorage(private val directory: File) : SettingsStorage {

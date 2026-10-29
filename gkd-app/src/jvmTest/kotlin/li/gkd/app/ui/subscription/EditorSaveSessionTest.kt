@@ -6,11 +6,11 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import li.gkd.app.ui.page.EditorSaveResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import li.gkd.app.ui.page.EditorSaveResult
 
 class EditorSaveSessionTest {
     @Test
@@ -18,9 +18,27 @@ class EditorSaveSessionTest {
         val session = EditorSaveSession<EditorSaveResult> { it == EditorSaveResult.Saved }
         val rejected = EditorSaveResult.Rejected("Duplicate name")
         var attempts = 0
-        assertEquals(rejected, session.save { attempts++; rejected })
-        assertEquals(EditorSaveResult.Saved, session.save { attempts++; EditorSaveResult.Saved })
-        assertEquals(EditorSaveResult.Saved, session.save { attempts++; rejected })
+        assertEquals(
+            rejected,
+            session.save {
+                attempts++
+                rejected
+            },
+        )
+        assertEquals(
+            EditorSaveResult.Saved,
+            session.save {
+                attempts++
+                EditorSaveResult.Saved
+            },
+        )
+        assertEquals(
+            EditorSaveResult.Saved,
+            session.save {
+                attempts++
+                rejected
+            },
+        )
         assertEquals(2, attempts)
     }
 
@@ -39,7 +57,12 @@ class EditorSaveSessionTest {
             }
         }
         started.await()
-        val second = async { session.save { writes++; 99 } }
+        val second = async {
+            session.save {
+                writes++
+                99
+            }
+        }
         finish.complete(Unit)
         assertEquals(42, first.await())
         assertEquals(42, second.await())
@@ -72,8 +95,18 @@ class EditorSaveSessionTest {
     fun successfulNullResultStillPreventsDuplicateCreation() = runBlocking {
         val session = EditorSaveSession<String?>()
         var writes = 0
-        assertNull(session.save { writes++; null })
-        assertNull(session.save { writes++; "duplicate" })
+        assertNull(
+            session.save {
+                writes++
+                null
+            },
+        )
+        assertNull(
+            session.save {
+                writes++
+                "duplicate"
+            },
+        )
         assertEquals(1, writes)
     }
 }

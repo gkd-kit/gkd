@@ -13,14 +13,13 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.resources.*
-import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.ToastUtils
 import li.gkd.app.service.switchAutomatorService
 import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.IntentUtils
+import li.gkd.app.util.ToastUtils
 
 @Composable
-actual fun privilegeAvailable() =
-    privilegeContextFlow.collectAsStateWithLifecycle().value != null
+actual fun privilegeAvailable() = privilegeContextFlow.collectAsStateWithLifecycle().value != null
 
 @Composable
 actual fun ignoresBatteryOptimizations() =
@@ -33,7 +32,8 @@ actual fun RefreshPermissions() {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             withContext(Dispatchers.IO) {
                 while (isActive) {
-                    PermissionStates.refreshAll(); delay(1000)
+                    PermissionStates.refreshAll()
+                    delay(1000)
                 }
             }
         }

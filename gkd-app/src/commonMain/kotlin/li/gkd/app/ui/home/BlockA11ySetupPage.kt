@@ -45,8 +45,8 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
-import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.navigation.OnRouteRemoved
+import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.ignoresBatteryOptimizations
 import li.gkd.app.ui.platform.openAppDetails
@@ -95,7 +95,7 @@ fun BlockA11ySetupPage(host: UiHost) {
         bottomBar = {
             BottomAppBar(
                 windowInsets =
-                    LocalHomeNavigationInsets.current ?: BottomAppBarDefaults.windowInsets
+                    LocalHomeNavigationInsets.current ?: BottomAppBarDefaults.windowInsets,
             ) {
                 Text(
                     text =
@@ -120,7 +120,7 @@ fun BlockA11ySetupPage(host: UiHost) {
                     Text(
                         text =
                             if (store.enableBlockA11yAppList) stringResource(Res.string.action_back)
-                            else stringResource(Res.string.action_enable)
+                            else stringResource(Res.string.action_enable),
                     )
                 }
                 Spacer(modifier = Modifier.width(itemHorizontalPadding))
@@ -132,7 +132,7 @@ fun BlockA11ySetupPage(host: UiHost) {
                 Modifier.fillMaxSize()
                     .padding(contentPadding)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = itemHorizontalPadding)
+                    .padding(horizontal = itemHorizontalPadding),
         ) {
             Text(
                 text = stringResource(Res.string.partial_disable_intro),
@@ -171,9 +171,12 @@ fun BlockA11ySetupPage(host: UiHost) {
                     imageVector =
                         if (ignoreBatteryOptimizations) GkIcons.Check else GkIcons.OpenInNew,
                     onClickLabel = stringResource(Res.string.battery_optimization_settings_open),
-                    onClick = mainVm.scope.launchUiAction {
-                        mainVm.permissions.ensurePermissions(AppPermission.IgnoreBatteryOptimizations)
-                    },
+                    onClick =
+                        mainVm.scope.launchUiAction {
+                            mainVm.permissions.ensurePermissions(
+                                AppPermission.IgnoreBatteryOptimizations,
+                            )
+                        },
                 )
             }
             BlockA11ySectionTitle(

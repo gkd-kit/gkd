@@ -5,7 +5,7 @@ data class CrashMetadata(
     val osCode: Int,
     val osName: String,
     val versionCode: Int,
-    val versionName: String
+    val versionName: String,
 )
 
 class CrashRecorder(private val metadata: CrashMetadata) {
@@ -23,8 +23,8 @@ class CrashRecorder(private val metadata: CrashMetadata) {
                 error.javaClass.name,
                 error.message,
                 thread.name,
-                error.stackTraceToString()
-            )
+                error.stackTraceToString(),
+            ),
         )
     }
 }

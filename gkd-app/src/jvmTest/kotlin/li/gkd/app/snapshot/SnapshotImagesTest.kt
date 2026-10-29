@@ -1,10 +1,5 @@
 package li.gkd.app.snapshot
 
-import kotlinx.coroutines.test.runTest
-import li.gkd.app.platform.PlatformResult
-import li.gkd.app.snapshot.platform.prepareSnapshotReplacement
-import li.gkd.app.snapshot.platform.saveImageToAlbum
-import org.jetbrains.skia.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -14,12 +9,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import li.gkd.app.platform.PlatformResult
+import li.gkd.app.snapshot.platform.prepareSnapshotReplacement
+import li.gkd.app.snapshot.platform.saveImageToAlbum
+import org.jetbrains.skia.Image
 
 class SnapshotImagesTest {
-    private fun png(width: Int, height: Int) = ByteArrayOutputStream().use {
-        ImageIO.write(BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB), "png", it)
-        it.toByteArray()
-    }
+    private fun png(width: Int, height: Int) =
+        ByteArrayOutputStream().use {
+            ImageIO.write(BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB), "png", it)
+            it.toByteArray()
+        }
 
     @Test
     fun replacementEncodesWebpAndPreservesDimensions() {

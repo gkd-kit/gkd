@@ -23,9 +23,14 @@ class DesktopKeyDispatcher {
     }
 
     fun dispatch(event: KeyEvent): Boolean {
-        if (event.type != KeyEventType.KeyUp || event.isCtrlPressed || event.isAltPressed ||
-            event.isShiftPressed || event.isMetaPressed
-        ) return false
+        if (
+            event.type != KeyEventType.KeyUp ||
+                event.isCtrlPressed ||
+                event.isAltPressed ||
+                event.isShiftPressed ||
+                event.isMetaPressed
+        )
+            return false
         val handler = handlers.lastOrNull { it.key == event.key } ?: return false
         handler.action()
         return true

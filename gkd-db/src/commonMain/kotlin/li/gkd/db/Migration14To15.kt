@@ -19,7 +19,8 @@ object Migration14To15 : Migration(14, 15) {
                 PRIMARY KEY (subs_id, app_id, group_key),
                 FOREIGN KEY (subs_id) REFERENCES subs_item(id) ON UPDATE NO ACTION ON DELETE CASCADE
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL(
             """
@@ -30,7 +31,8 @@ object Migration14To15 : Migration(14, 15) {
                 WHERE type = 2 AND subs_id IN (SELECT id FROM subs_item)
                 GROUP BY subs_id, app_id, group_key
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL(
             """
@@ -42,7 +44,8 @@ object Migration14To15 : Migration(14, 15) {
                 PRIMARY KEY (subs_id, group_key),
                 FOREIGN KEY (subs_id) REFERENCES subs_item(id) ON UPDATE NO ACTION ON DELETE CASCADE
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL(
             """
@@ -53,7 +56,8 @@ object Migration14To15 : Migration(14, 15) {
                 WHERE type = 3 AND subs_id IN (SELECT id FROM subs_item)
                 GROUP BY subs_id, group_key
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL(
             """
@@ -64,7 +68,8 @@ object Migration14To15 : Migration(14, 15) {
                 PRIMARY KEY (subs_id, app_id),
                 FOREIGN KEY (subs_id) REFERENCES subs_item(id) ON UPDATE NO ACTION ON DELETE CASCADE
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL(
             """
@@ -75,7 +80,8 @@ object Migration14To15 : Migration(14, 15) {
                 WHERE 1 AND subs_id IN (SELECT id FROM subs_item)
                 GROUP BY subs_id, app_id
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL("DROP TABLE app_config")
         connection.execSQL("ALTER TABLE app_config_new RENAME TO app_config")
@@ -88,7 +94,8 @@ object Migration14To15 : Migration(14, 15) {
                 PRIMARY KEY (subs_id, category_key),
                 FOREIGN KEY (subs_id) REFERENCES subs_item(id) ON UPDATE NO ACTION ON DELETE CASCADE
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL(
             """
@@ -99,7 +106,8 @@ object Migration14To15 : Migration(14, 15) {
                 WHERE 1 AND subs_id IN (SELECT id FROM subs_item)
                 GROUP BY subs_id, category_key
             )
-            """.trimIndent()
+            """
+                .trimIndent(),
         )
         connection.execSQL("DROP TABLE category_config")
         connection.execSQL("ALTER TABLE category_config_new RENAME TO category_config")

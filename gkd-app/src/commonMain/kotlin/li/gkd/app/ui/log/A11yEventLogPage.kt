@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,6 +48,7 @@ import li.gkd.app.ui.component.GkLogTimeline
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkLogTimelineRail
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.home.appLabel
 import li.gkd.app.ui.image.GkAppIcon
@@ -115,14 +115,17 @@ fun A11yEventLogPage() {
             onOpenApp = { mainVm.navigator.navigate(AppConfigRoute(it)) },
             modifier = Modifier.scaffoldPadding(contentPadding),
         ) { item ->
-            EventLogEntry(item, onClick = {
-                val error = item.parsedText.exceptionOrNull()
-                if (error != null) {
-                    mainVm.textDialog.showText(error.stackTraceToString())
-                } else {
-                    vm.setShownEventLog(item)
-                }
-            })
+            EventLogEntry(
+                item,
+                onClick = {
+                    val error = item.parsedText.exceptionOrNull()
+                    if (error != null) {
+                        mainVm.textDialog.showText(error.stackTraceToString())
+                    } else {
+                        vm.setShownEventLog(item)
+                    }
+                },
+            )
         }
     }
 
@@ -140,8 +143,8 @@ fun A11yEventLogPage() {
                                 "name" to JsonPrimitive(eventLog.name),
                                 "desc" to JsonPrimitive(eventLog.desc),
                                 "text" to JsonArray(parsedText.map(::JsonPrimitive)),
-                            )
-                        )
+                            ),
+                        ),
                     ),
                     dark,
                 )
@@ -162,7 +165,7 @@ fun A11yEventLogPage() {
                             stringResource(Res.string.event_type_prefix) +
                                 if (eventLog.isStateChanged)
                                     stringResource(Res.string.event_window_state_changed)
-                                else stringResource(Res.string.event_window_content_changed)
+                                else stringResource(Res.string.event_window_content_changed),
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = stringResource(Res.string.app_id))
@@ -175,7 +178,7 @@ fun A11yEventLogPage() {
                         CopyIcon(
                             onClick = {
                                 copyText(eventLog.appId)
-                            }
+                            },
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -216,7 +219,7 @@ fun A11yEventLogPage() {
                             CopyIcon(
                                 onClick = {
                                     copyText(selectorText)
-                                }
+                                },
                             )
                         }
                     }
@@ -282,9 +285,10 @@ private fun EventLogEntry(item: A11yEventLogItem, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
             )
         } else {
-            val summary = remember(parsedText) {
-                parsedText.filter { it.isNotBlank() }.joinToString(" · ")
-            }
+            val summary =
+                remember(parsedText) {
+                    parsedText.filter { it.isNotBlank() }.joinToString(" · ")
+                }
             if (summary.isNotBlank()) {
                 EventLogSummary(GkIcons.TextFields, summary, maxLines = 2)
             }

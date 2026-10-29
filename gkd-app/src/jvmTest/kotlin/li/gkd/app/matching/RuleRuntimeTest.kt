@@ -1,7 +1,5 @@
 package li.gkd.app.matching
 
-import li.gkd.app.rule.RuleMatchEnvironment
-import li.gkd.app.rule.RuleRuntime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -9,21 +7,26 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import li.gkd.app.model.AppInfo
 import li.gkd.app.rule.ResolvedRule
+import li.gkd.app.rule.RuleMatchEnvironment
+import li.gkd.app.rule.RuleRuntime
 import li.gkd.app.rule.RuleStatus
 import li.gkd.app.rule.RuleSummary
 import li.gkd.app.rule.RuleSummaryBuilder
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.UsedSubsEntry
-import li.gkd.db.SubsItem
 import li.gkd.app.util.monotonicTimeMillis
+import li.gkd.db.SubsItem
 
 class RuleRuntimeTest {
     /** Android foreground timestamps and the default runtime must share the elapsed-time domain. */
     @Test
     fun defaultRuntimeUsesTheSameClockAsForegroundTransitions() {
         val runtime = RuleRuntime()
-        val rule = build(runtime, """[{key:1,name:'Timed',rules:[{matches:'*',matchDelay:60000}]}]""")
-            .appIdToRules.getValue("app.test").single()
+        val rule =
+            build(runtime, """[{key:1,name:'Timed',rules:[{matches:'*',matchDelay:60000}]}]""")
+                .appIdToRules
+                .getValue("app.test")
+                .single()
         val transition = monotonicTimeMillis()
         runtime.onAppChanged(transition)
         rule.resetState(transition)
@@ -36,11 +39,15 @@ class RuleRuntimeTest {
     fun activityTransitionsRespectAppActivityAndMatchResetPolicies() {
         var resets = 0
         val runtime = RuleRuntime(now = { 10_000L }, cancelPending = { resets++ })
-        val rules = build(
-            runtime, """[{key:1,name:'Reset',rules:[
+        val rules =
+            build(
+                    runtime,
+                    """[{key:1,name:'Reset',rules:[
             {matches:'*',resetMatch:'app'}, {matches:'*',resetMatch:'activity'},
-            {matches:'*',resetMatch:'match'}]}]"""
-        ).appIdToRules.getValue("app.test")
+            {matches:'*',resetMatch:'match'}]}]""",
+                )
+                .appIdToRules
+                .getValue("app.test")
         rules.forEach { it.resetState(10_000) }
         resets = 0
         rules.forEach { it.onActivityTransition(10_100, previouslyMatched = true) }
@@ -55,15 +62,18 @@ class RuleRuntimeTest {
     }
 
     private fun build(runtime: RuleRuntime, groups: String, global: String = "[]"): RuleSummary {
-        val sub = RawSubscriptionParser.parse(
-            """{id:1,name:'Runtime',version:1,
-            apps:[{id:'app.test',groups:$groups}],globalGroups:$global} """
-        )
+        val sub =
+            RawSubscriptionParser.parse(
+                """{id:1,name:'Runtime',version:1,
+            apps:[{id:'app.test',groups:$groups}],globalGroups:$global} """,
+            )
         return RuleSummaryBuilder.build(
             runtime,
             listOf(UsedSubsEntry(SubsItem(1, enable = true, order = 0), sub)),
             mapOf("app.test" to AppInfo("app.test", "Test", 1, "1", false, 0, false, 0)),
-            emptyList(), emptyList(), emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
         )
     }
 
@@ -71,12 +81,16 @@ class RuleRuntimeTest {
     fun scopedRulesShareCooldownAndCountAndResetTheSameCounters() {
         var now = 10_000L
         val runtime = RuleRuntime(now = { now })
-        val rules = build(
-            runtime, """[
+        val rules =
+            build(
+                    runtime,
+                    """[
             {key:1,name:'Source',rules:[{key:10,matches:'*',actionCd:100,actionMaximum:2}]},
             {key:2,name:'Linked',scopeKeys:[1],rules:[{key:20,matches:'*',actionCdKey:10,actionCd:100,actionMaximumKey:10,actionMaximum:2}]}
-        ]"""
-        ).appIdToRules.getValue("app.test")
+        ]""",
+                )
+                .appIdToRules
+                .getValue("app.test")
         val (source, linked) = rules
         source.trigger()
         assertEquals(RuleStatus.Cooldown, linked.status)
@@ -91,7 +105,8 @@ class RuleRuntimeTest {
     @Test
     fun prerequisitesUseRuleIdentityAndDoNotLeakAcrossSnapshotsOrRuntimes() {
         val runtime = RuleRuntime(now = { 10_000L })
-        val groups = """[{key:1,name:'Group',rules:[
+        val groups =
+            """[{key:1,name:'Group',rules:[
             {key:1,matches:'*',actionCd:0},{key:2,matches:'*',preKeys:[1],actionCd:0}]}]"""
         val old = build(runtime, groups).appIdToRules.getValue("app.test")
         assertEquals(RuleStatus.PrerequisitePending, old[1].status)
@@ -114,11 +129,16 @@ class RuleRuntimeTest {
         var now = 10_000L
         var cancelled: ResolvedRule? = null
         val runtime = RuleRuntime(now = { now }, cancelPending = { cancelled = it })
-        val rule = build(
-            runtime, """[{key:1,name:'Timed',rules:[{matches:'*',
+        val rule =
+            build(
+                    runtime,
+                    """[{key:1,name:'Timed',rules:[{matches:'*',
             matchDelay:100,matchTime:200,actionDelay:50,actionCd:100,
-            forcedTime:300,priorityTime:250}]}]"""
-        ).appIdToRules.getValue("app.test").single()
+            forcedTime:300,priorityTime:250}]}]""",
+                )
+                .appIdToRules
+                .getValue("app.test")
+                .single()
         runtime.onAppChanged(now)
         assertTrue(rule.isFirstMatchApp)
         rule.resetState(now)
@@ -155,11 +175,14 @@ class RuleRuntimeTest {
     fun globalRulesReadCurrentPlatformInputsWithoutAndroidRepositories() {
         var environment = RuleMatchEnvironment("launcher", setOf("system.app"))
         val runtime = RuleRuntime(environment = { environment })
-        val rule = build(
-            runtime,
-            "[]",
-            """[{key:1,name:'Global',rules:[{matches:'*'}]}]"""
-        ).globalRules.single()
+        val rule =
+            build(
+                    runtime,
+                    "[]",
+                    """[{key:1,name:'Global',rules:[{matches:'*'}]}]""",
+                )
+                .globalRules
+                .single()
         assertTrue(rule.matchActivity("ordinary.app"))
         assertFalse(rule.matchActivity("launcher"))
         assertFalse(rule.matchActivity("system.app"))
@@ -171,10 +194,15 @@ class RuleRuntimeTest {
 
     @Test
     fun appActivityPrefixesStillRespectInheritedExclusions() {
-        val rule = build(
-            RuleRuntime(), """[{key:1,name:'App',activityIds:['.Allowed'],
-            excludeActivityIds:['.AllowedBlocked'],rules:[{matches:'*'}]}]"""
-        ).appIdToRules.getValue("app.test").single()
+        val rule =
+            build(
+                    RuleRuntime(),
+                    """[{key:1,name:'App',activityIds:['.Allowed'],
+            excludeActivityIds:['.AllowedBlocked'],rules:[{matches:'*'}]}]""",
+                )
+                .appIdToRules
+                .getValue("app.test")
+                .single()
         assertTrue(rule.matchActivity("app.test", "app.test.AllowedScreen"))
         assertFalse(rule.matchActivity("app.test", "app.test.AllowedBlockedScreen"))
         assertFalse(rule.matchActivity("other.app", "app.test.AllowedScreen"))

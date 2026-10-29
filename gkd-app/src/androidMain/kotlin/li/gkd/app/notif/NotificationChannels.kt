@@ -33,13 +33,14 @@ object NotificationChannels {
         manager.createNotificationChannels(
             AppNotificationChannel.entries.map { spec ->
                 NotificationChannel(
-                    spec.id,
-                    spec.displayName,
-                    spec.importance,
-                ).apply {
-                    description = spec.description
-                }
-            }
+                        spec.id,
+                        spec.displayName,
+                        spec.importance,
+                    )
+                    .apply {
+                        description = spec.description
+                    }
+            },
         )
     }
 }

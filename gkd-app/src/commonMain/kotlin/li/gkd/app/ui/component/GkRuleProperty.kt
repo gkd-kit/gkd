@@ -26,22 +26,26 @@ import org.jetbrains.compose.resources.stringResource
 
 // Display labels live here; classification never depends on their language.
 enum class RuleProperty {
-    CustomSetting, Personal, Restricted;
+    CustomSetting,
+    Personal,
+    Restricted;
 
     val label: String
-        @Composable get() = when (this) {
-            CustomSetting -> stringResource(Res.string.rule_personal_switch_setting)
-            Personal -> stringResource(Res.string.rule_scope_and_exclusions)
-            Restricted -> stringResource(Res.string.rule_current_restrictions)
-        }
+        @Composable
+        get() =
+            when (this) {
+                CustomSetting -> stringResource(Res.string.rule_personal_switch_setting)
+                Personal -> stringResource(Res.string.rule_scope_and_exclusions)
+                Restricted -> stringResource(Res.string.rule_current_restrictions)
+            }
 
     val icon: ImageVector
-        get() = when (this) {
-            CustomSetting -> ResetSettings
-            Personal -> Icons.Outlined.FilterAltOff
-            Restricted -> GkIcons.WarningAmber
-        }
-
+        get() =
+            when (this) {
+                CustomSetting -> ResetSettings
+                Personal -> Icons.Outlined.FilterAltOff
+                Restricted -> GkIcons.WarningAmber
+            }
 }
 
 @Composable
@@ -64,11 +68,15 @@ fun GkRuleSupportingContent(
     Row(
         modifier.fillMaxWidth().heightIn(min = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
-            color = textColor, maxLines = 1, overflow = TextOverflow.Ellipsis
+            text,
+            Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         GkRulePropertyIndicators(state)
     }
@@ -81,7 +89,7 @@ fun GkRulePropertyIndicators(state: RuleControlState) {
         if (state.limitations.hasPersonalExclusions) {
             GkRulePropertyIcon(
                 RuleProperty.Personal,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -94,11 +102,17 @@ object RulePropertyText {
         addAll(state.restrictions.map { it.message.messageResource() })
         if (state.limitations.blockedRules > 0 && !state.limitations.fullyBlocked) {
             add(
-                stringResource(Res.string.rule_partially_inapplicable_prefix) + state.limitations.blockedReasons.map { it.message.messageResource() }
-                    .joinToString("\n")
-                    .ifEmpty { stringResource(Res.string.rule_app_or_version_mismatch) })
+                stringResource(Res.string.rule_partially_inapplicable_prefix) +
+                    state.limitations.blockedReasons
+                        .map { it.message.messageResource() }
+                        .joinToString("\n")
+                        .ifEmpty { stringResource(Res.string.rule_app_or_version_mismatch) },
+            )
         }
-        if (!state.canEnable && isEmpty()) add(stringResource(Res.string.rule_temporarily_unavailable))
-    }.distinct().joinToString("\n").takeIf { it.isNotEmpty() }
-
+        if (!state.canEnable && isEmpty())
+            add(stringResource(Res.string.rule_temporarily_unavailable))
+    }
+        .distinct()
+        .joinToString("\n")
+        .takeIf { it.isNotEmpty() }
 }

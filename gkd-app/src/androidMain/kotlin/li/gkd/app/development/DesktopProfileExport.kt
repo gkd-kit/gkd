@@ -31,11 +31,11 @@ import li.gkd.app.META
 import li.gkd.app.MainActivity
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.launcherAppIdFlow
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.logging.LogUtils
 import li.gkd.db.Db
 import org.json.JSONArray
 import org.json.JSONObject
@@ -60,9 +60,13 @@ object DesktopProfileExport {
                     withContext(Dispatchers.IO) {
                         check(root.mkdirs() || root.isDirectory)
                         // Retain requests for a day so another client can still pull its ZIP.
-                        root.listFiles()?.filter {
-                            it.isDirectory && System.currentTimeMillis() - it.lastModified() > 86_400_000
-                        }?.forEach { it.deleteRecursively() }
+                        root
+                            .listFiles()
+                            ?.filter {
+                                it.isDirectory &&
+                                    System.currentTimeMillis() - it.lastModified() > 86_400_000
+                            }
+                            ?.forEach { it.deleteRecursively() }
                     }
                     if (request.exists()) return@withLock
                     withContext(Dispatchers.IO) {
@@ -70,8 +74,10 @@ object DesktopProfileExport {
                         status(request, "running")
                     }
                     withTimeout(120_000) {
-                        while (!activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) ||
-                            activity.window.decorView.rootWindowInsets == null || activity.window.decorView.height == 0
+                        while (
+                            !activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) ||
+                                activity.window.decorView.rootWindowInsets == null ||
+                                activity.window.decorView.height == 0
                         ) delay(50)
                         val profile = captureWindow(activity)
                         withContext(Dispatchers.IO) { export(request, profile) }
@@ -84,7 +90,7 @@ object DesktopProfileExport {
                                 LogUtils.i(
                                     "Cannot report desktop profile export failure",
                                     e,
-                                    it
+                                    it,
                                 )
                             }
                     }
@@ -97,11 +103,15 @@ object DesktopProfileExport {
 
     private fun status(request: File, state: String, error: String? = null) {
         val temporary = File(request, "status.json.part")
-        temporary.writeText(JSONObject().apply {
-            put("requestId", request.name)
-            put("state", state)
-            if (error != null) put("error", error)
-        }.toString())
+        temporary.writeText(
+            JSONObject()
+                .apply {
+                    put("requestId", request.name)
+                    put("state", state)
+                    if (error != null) put("error", error)
+                }
+                .toString(),
+        )
         check(temporary.renameTo(File(request, "status.json")))
     }
 
@@ -110,99 +120,120 @@ object DesktopProfileExport {
         val resources = activity.resources
         val density = resources.displayMetrics.density
         val insets =
-            WindowInsetsCompat.toWindowInsetsCompat(checkNotNull(activity.window.decorView.rootWindowInsets))
+            WindowInsetsCompat.toWindowInsetsCompat(
+                checkNotNull(activity.window.decorView.rootWindowInsets),
+            )
         val statusInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
         val navigationInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-        fun palette(scheme: ColorScheme) = JSONObject(
-            mapOf(
-                "primary" to scheme.primary.toArgb(),
-                "onPrimary" to scheme.onPrimary.toArgb(),
-                "primaryContainer" to scheme.primaryContainer.toArgb(),
-                "onPrimaryContainer" to scheme.onPrimaryContainer.toArgb(),
-                "inversePrimary" to scheme.inversePrimary.toArgb(),
-                "secondary" to scheme.secondary.toArgb(),
-                "onSecondary" to scheme.onSecondary.toArgb(),
-                "secondaryContainer" to scheme.secondaryContainer.toArgb(),
-                "onSecondaryContainer" to scheme.onSecondaryContainer.toArgb(),
-                "tertiary" to scheme.tertiary.toArgb(),
-                "onTertiary" to scheme.onTertiary.toArgb(),
-                "tertiaryContainer" to scheme.tertiaryContainer.toArgb(),
-                "onTertiaryContainer" to scheme.onTertiaryContainer.toArgb(),
-                "background" to scheme.background.toArgb(),
-                "onBackground" to scheme.onBackground.toArgb(),
-                "surface" to scheme.surface.toArgb(),
-                "onSurface" to scheme.onSurface.toArgb(),
-                "surfaceVariant" to scheme.surfaceVariant.toArgb(),
-                "onSurfaceVariant" to scheme.onSurfaceVariant.toArgb(),
-                "surfaceTint" to scheme.surfaceTint.toArgb(),
-                "inverseSurface" to scheme.inverseSurface.toArgb(),
-                "inverseOnSurface" to scheme.inverseOnSurface.toArgb(),
-                "error" to scheme.error.toArgb(),
-                "onError" to scheme.onError.toArgb(),
-                "errorContainer" to scheme.errorContainer.toArgb(),
-                "onErrorContainer" to scheme.onErrorContainer.toArgb(),
-                "outline" to scheme.outline.toArgb(),
-                "outlineVariant" to scheme.outlineVariant.toArgb(),
-                "scrim" to scheme.scrim.toArgb(),
-                "surfaceBright" to scheme.surfaceBright.toArgb(),
-                "surfaceDim" to scheme.surfaceDim.toArgb(),
-                "surfaceContainer" to scheme.surfaceContainer.toArgb(),
-                "surfaceContainerHigh" to scheme.surfaceContainerHigh.toArgb(),
-                "surfaceContainerHighest" to scheme.surfaceContainerHighest.toArgb(),
-                "surfaceContainerLow" to scheme.surfaceContainerLow.toArgb(),
-                "surfaceContainerLowest" to scheme.surfaceContainerLowest.toArgb()
+        fun palette(scheme: ColorScheme) =
+            JSONObject(
+                mapOf(
+                    "primary" to scheme.primary.toArgb(),
+                    "onPrimary" to scheme.onPrimary.toArgb(),
+                    "primaryContainer" to scheme.primaryContainer.toArgb(),
+                    "onPrimaryContainer" to scheme.onPrimaryContainer.toArgb(),
+                    "inversePrimary" to scheme.inversePrimary.toArgb(),
+                    "secondary" to scheme.secondary.toArgb(),
+                    "onSecondary" to scheme.onSecondary.toArgb(),
+                    "secondaryContainer" to scheme.secondaryContainer.toArgb(),
+                    "onSecondaryContainer" to scheme.onSecondaryContainer.toArgb(),
+                    "tertiary" to scheme.tertiary.toArgb(),
+                    "onTertiary" to scheme.onTertiary.toArgb(),
+                    "tertiaryContainer" to scheme.tertiaryContainer.toArgb(),
+                    "onTertiaryContainer" to scheme.onTertiaryContainer.toArgb(),
+                    "background" to scheme.background.toArgb(),
+                    "onBackground" to scheme.onBackground.toArgb(),
+                    "surface" to scheme.surface.toArgb(),
+                    "onSurface" to scheme.onSurface.toArgb(),
+                    "surfaceVariant" to scheme.surfaceVariant.toArgb(),
+                    "onSurfaceVariant" to scheme.onSurfaceVariant.toArgb(),
+                    "surfaceTint" to scheme.surfaceTint.toArgb(),
+                    "inverseSurface" to scheme.inverseSurface.toArgb(),
+                    "inverseOnSurface" to scheme.inverseOnSurface.toArgb(),
+                    "error" to scheme.error.toArgb(),
+                    "onError" to scheme.onError.toArgb(),
+                    "errorContainer" to scheme.errorContainer.toArgb(),
+                    "onErrorContainer" to scheme.onErrorContainer.toArgb(),
+                    "outline" to scheme.outline.toArgb(),
+                    "outlineVariant" to scheme.outlineVariant.toArgb(),
+                    "scrim" to scheme.scrim.toArgb(),
+                    "surfaceBright" to scheme.surfaceBright.toArgb(),
+                    "surfaceDim" to scheme.surfaceDim.toArgb(),
+                    "surfaceContainer" to scheme.surfaceContainer.toArgb(),
+                    "surfaceContainerHigh" to scheme.surfaceContainerHigh.toArgb(),
+                    "surfaceContainerHighest" to scheme.surfaceContainerHighest.toArgb(),
+                    "surfaceContainerLow" to scheme.surfaceContainerLow.toArgb(),
+                    "surfaceContainerLowest" to scheme.surfaceContainerLowest.toArgb(),
+                ),
             )
-        )
 
-        val profile = JSONObject().apply {
-            put("width", (activity.window.decorView.width / density).toInt())
-            put("height", (activity.window.decorView.height / density).toInt())
-            put("fontScale", resources.configuration.fontScale)
-            put("density", density)
-            put("statusBar", statusInset / density)
-            put("navigationBar", navigationInset / density)
-            put("launcherAppId", launcherAppIdFlow.value)
-            put(
-                "dark",
-                SettingsRepository.settings.value.enableDarkTheme
-                    ?: (resources.configuration.uiMode and 0x30 == 0x20)
-            )
-            put(
-                "lightColors",
-                palette(
-                    if (AndroidTarget.S) dynamicLightColorScheme(context) else lightColorScheme()
+        val profile =
+            JSONObject().apply {
+                put("width", (activity.window.decorView.width / density).toInt())
+                put("height", (activity.window.decorView.height / density).toInt())
+                put("fontScale", resources.configuration.fontScale)
+                put("density", density)
+                put("statusBar", statusInset / density)
+                put("navigationBar", navigationInset / density)
+                put("launcherAppId", launcherAppIdFlow.value)
+                put(
+                    "dark",
+                    SettingsRepository.settings.value.enableDarkTheme
+                        ?: (resources.configuration.uiMode and 0x30 == 0x20),
                 )
-            )
-            put(
-                "darkColors",
-                palette(
-                    if (AndroidTarget.S) dynamicDarkColorScheme(context) else darkColorScheme()
+                put(
+                    "lightColors",
+                    palette(
+                        if (AndroidTarget.S) dynamicLightColorScheme(context)
+                        else lightColorScheme(),
+                    ),
                 )
-            )
-        }
+                put(
+                    "darkColors",
+                    palette(
+                        if (AndroidTarget.S) dynamicDarkColorScheme(context) else darkColorScheme(),
+                    ),
+                )
+            }
         return profile
     }
 
     private suspend fun export(request: File, profile: JSONObject) {
         val snapshot = SubscriptionRepository.snapshotFlow.first { it.value != null }.value!!
-        check(snapshot.loadErrors.isEmpty()) { "Cannot export subscriptions: ${snapshot.loadErrors}" }
+        check(snapshot.loadErrors.isEmpty()) {
+            "Cannot export subscriptions: ${snapshot.loadErrors}"
+        }
         val subscriptions = snapshot.subscriptions
         val catalog = AppInfoRepository.snapshots.first()
         val items = Db.subsItemDao.queryAll()
         val settings = JSONObject(settingsJson.encodeToString(SettingsRepository.settings.value))
-        val settingKeys = listOf(
-            "enableDarkTheme", "enableDynamicColor", "toastWhenClick", "useSystemToast",
-            "actionToast", "excludeFromRecents", "enableBlockA11yAppList", "useCustomNotifText",
-            "customNotifTitle", "customNotifText", "enableMatch", "enableStatusService", "appSort",
-            "appGroupType", "showBlockApp"
-        )
-        val selectedSettings = JSONObject().apply {
-            settingKeys.forEach { key -> if (settings.has(key)) put(key, settings.get(key)) }
-        }
-        val seed = JSONObject().apply {
-            put("blocked", JSONArray(SettingsRepository.blockMatchAppList.value.toList()))
-            put("subscriptions", JSONObject(items.associate { it.id.toString() to it.enable }))
-        }
+        val settingKeys =
+            listOf(
+                "enableDarkTheme",
+                "enableDynamicColor",
+                "toastWhenClick",
+                "useSystemToast",
+                "actionToast",
+                "excludeFromRecents",
+                "enableBlockA11yAppList",
+                "useCustomNotifText",
+                "customNotifTitle",
+                "customNotifText",
+                "enableMatch",
+                "enableStatusService",
+                "appSort",
+                "appGroupType",
+                "showBlockApp",
+            )
+        val selectedSettings =
+            JSONObject().apply {
+                settingKeys.forEach { key -> if (settings.has(key)) put(key, settings.get(key)) }
+            }
+        val seed =
+            JSONObject().apply {
+                put("blocked", JSONArray(SettingsRepository.blockMatchAppList.value.toList()))
+                put("subscriptions", JSONObject(items.associate { it.id.toString() to it.enable }))
+            }
         val temporary = File(request, "profile.zip.part")
         ZipOutputStream(temporary.outputStream().buffered()).use { zip ->
             fun text(name: String, value: String) {

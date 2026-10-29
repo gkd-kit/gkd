@@ -33,9 +33,10 @@ class PermissionRequestContent(
     private fun BindHostLifecycle() {
         val lifecycle = LocalLifecycleOwner.current.lifecycle
         val hasWindowFocus = LocalWindowInfo.current.isWindowFocused
-        var resumed by remember(lifecycle) {
-            mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
-        }
+        var resumed by
+            remember(lifecycle) {
+                mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+            }
         DisposableEffect(lifecycle) {
             val observer = LifecycleEventObserver { _, _ ->
                 resumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
@@ -61,19 +62,23 @@ class PermissionRequestContent(
                 state.confirmText,
                 state.dismissText,
                 { coordinator.confirmDialog(state.id) },
-                { coordinator.dismissDialog(state.id) })
+                { coordinator.dismissDialog(state.id) },
+            )
         }
     }
 
     @Composable
     private fun PromptOverlay(modifier: Modifier) {
         val prompt = coordinator.visiblePrompt.collectAsStateWithLifecycle().value
-        GkPermissionPrompt(prompt?.let {
-            PermissionPromptContent(
-                it.title,
-                it.message,
-                it.displayDelayMillis
-            )
-        }, modifier)
+        GkPermissionPrompt(
+            prompt?.let {
+                PermissionPromptContent(
+                    it.title,
+                    it.message,
+                    it.displayDelayMillis,
+                )
+            },
+            modifier,
+        )
     }
 }

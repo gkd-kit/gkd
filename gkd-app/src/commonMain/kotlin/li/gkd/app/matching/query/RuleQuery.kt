@@ -1,21 +1,24 @@
 package li.gkd.app.matching.query
 
-import li.gkd.app.rule.RuleDelayKind
-
 import li.gkd.app.matching.ForegroundRuleSnapshot
 import li.gkd.app.matching.MatchWork
 import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.model.ActionResult
 import li.gkd.app.rule.AppRule
 import li.gkd.app.rule.ResolvedRule
+import li.gkd.app.rule.RuleDelayKind
 import li.gkd.app.rule.RuleStatus
 
 /** Platform operations for a single query; N is the original node, never a wrapper tree. */
 interface RuleQueryNodes<N : Any> {
     suspend fun root(): N?
+
     fun appId(node: N): String?
+
     suspend fun refresh(node: N): N?
+
     suspend fun match(rule: ResolvedRule, node: N): N?
+
     suspend fun perform(rule: ResolvedRule, node: N): ActionResult
 }
 
@@ -74,10 +77,12 @@ suspend fun <N : Any> queryRules(
             observed?.invoke(rule, "node_unavailable", false, null)
             continue
         }
-        val appId = nodes.appId(node) ?: run {
-            work.trace(MatchStage.Root, "node_package_unavailable", rule)
-            return
-        }
+        val appId =
+            nodes.appId(node)
+                ?: run {
+                    work.trace(MatchStage.Root, "node_package_unavailable", rule)
+                    return
+                }
         val matchesApp = rule.matchActivity(appId)
         if (activity.topActivity.appId != appId || (!matchesApp && rule is AppRule)) {
             work.trace(MatchStage.Root, "foreground_conflict", rule)
@@ -90,14 +95,15 @@ suspend fun <N : Any> queryRules(
             continue
         }
         work.trace(MatchStage.Selector, "matching", rule)
-        val target = try {
-            work.match(rule) { nodes.match(rule, node) }
-        } catch (error: MatchQueryIncomplete) {
-            work.ensureCurrent()
-            work.trace(MatchStage.Selector, error.reason.wireValue, rule)
-            observed?.invoke(rule, error.reason.wireValue, false, null)
-            continue
-        }
+        val target =
+            try {
+                work.match(rule) { nodes.match(rule, node) }
+            } catch (error: MatchQueryIncomplete) {
+                work.ensureCurrent()
+                work.trace(MatchStage.Selector, error.reason.wireValue, rule)
+                observed?.invoke(rule, error.reason.wireValue, false, null)
+                continue
+            }
         work.ensureCurrent()
         if (target == null) {
             work.trace(MatchStage.Selector, "not_matched", rule)
@@ -122,7 +128,12 @@ suspend fun <N : Any> queryRules(
         work.trace(MatchStage.Action, "action_started", rule)
         val result = work.performAction(rule) { nodes.perform(rule, target) }
         work.trace(MatchStage.Action, result.outcomeReason, rule, action = result)
-        observed?.invoke(rule, if (result.coordinateError != null) result.outcomeReason else "action_finished", true, result)
+        observed?.invoke(
+            rule,
+            if (result.coordinateError != null) result.outcomeReason else "action_finished",
+            true,
+            result,
+        )
         // Preserve an acknowledged physical result even if it caused a page transition.
         // The host commits counters only while holding its activity-state lock.
         if (result.result) completed(rule, target, result)

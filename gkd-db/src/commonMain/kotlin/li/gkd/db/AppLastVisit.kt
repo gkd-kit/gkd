@@ -33,7 +33,7 @@ data class AppLastVisit(
                     ORDER BY last_visit_time DESC
                     LIMIT 1 OFFSET 500
                 )
-        """
+        """,
         )
         suspend fun deleteKeepLatest(): Int
     }

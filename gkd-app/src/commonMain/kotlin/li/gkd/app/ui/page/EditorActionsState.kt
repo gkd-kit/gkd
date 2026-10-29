@@ -8,12 +8,15 @@ import kotlinx.coroutines.launch
 
 sealed interface EditorDialog {
     data object Discard : EditorDialog
+
     data class Error(val cause: Exception) : EditorDialog
+
     data class Rejected(val message: String) : EditorDialog
 }
 
 sealed interface EditorSaveResult {
     data object Saved : EditorSaveResult
+
     data class Rejected(val message: String) : EditorSaveResult
 }
 

@@ -6,13 +6,13 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import li.gkd.app.app
 import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.util.AndroidTarget
-import java.io.File
 
 actual suspend fun saveToDownloads(source: File): PlatformResult<String> {
     return withContext(Dispatchers.IO) {
@@ -31,11 +31,12 @@ private fun saveToLegacyDownloads(source: File): String {
     if (!downloadsDirectory.exists() && !downloadsDirectory.mkdirs()) {
         error(Res.string.download_directory_create_failed.getSync())
     }
-    val destination = ExportFileNames.reserve(
-        downloadsDirectory,
-        source.nameWithoutExtension,
-        source.extension,
-    )
+    val destination =
+        ExportFileNames.reserve(
+            downloadsDirectory,
+            source.nameWithoutExtension,
+            source.extension,
+        )
     try {
         source.copyTo(destination, overwrite = true)
         return destination.name
@@ -48,32 +49,38 @@ private fun saveToLegacyDownloads(source: File): String {
 @RequiresApi(Build.VERSION_CODES.Q)
 private fun saveWithMediaStore(source: File): String {
     val resolver = app.contentResolver
-    val displayName = ExportFileNames.availableName(
-        source.nameWithoutExtension,
-        source.extension,
-    ) { name ->
-        runCatching {
-            resolver.query(
-                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                arrayOf(MediaStore.MediaColumns._ID),
-                "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
-                arrayOf(name, "${Environment.DIRECTORY_DOWNLOADS}/"),
-                null,
-            )?.use { it.moveToFirst() } == true
-        }.getOrDefault(false)
-    }
-    val values = ContentValues().apply {
-        put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
-        put(
-            MediaStore.MediaColumns.MIME_TYPE,
-            MimeTypeMap.getSingleton().getMimeTypeFromExtension(source.extension)
-                ?: "application/octet-stream",
-        )
-        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-        put(MediaStore.MediaColumns.IS_PENDING, 1)
-    }
-    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-        ?: error(Res.string.download_file_create_failed.getSync())
+    val displayName =
+        ExportFileNames.availableName(
+            source.nameWithoutExtension,
+            source.extension,
+        ) { name ->
+            runCatching {
+                    resolver
+                        .query(
+                            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            arrayOf(MediaStore.MediaColumns._ID),
+                            "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
+                            arrayOf(name, "${Environment.DIRECTORY_DOWNLOADS}/"),
+                            null,
+                        )
+                        ?.use { it.moveToFirst() } == true
+                }
+                .getOrDefault(false)
+        }
+    val values =
+        ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(
+                MediaStore.MediaColumns.MIME_TYPE,
+                MimeTypeMap.getSingleton().getMimeTypeFromExtension(source.extension)
+                    ?: "application/octet-stream",
+            )
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+    val uri =
+        resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: error(Res.string.download_file_create_failed.getSync())
     try {
         resolver.openOutputStream(uri)?.use { output ->
             source.inputStream().use { input -> input.copyTo(output) }
@@ -82,9 +89,11 @@ private fun saveWithMediaStore(source: File): String {
         values.put(MediaStore.MediaColumns.IS_PENDING, 0)
         resolver.update(uri, values, null, null)
         return runCatching {
-            resolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)
+            resolver
+                .query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)
                 ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-        }.getOrNull() ?: displayName
+        }
+            .getOrNull() ?: displayName
     } catch (e: Throwable) {
         resolver.delete(uri, null, null)
         throw e

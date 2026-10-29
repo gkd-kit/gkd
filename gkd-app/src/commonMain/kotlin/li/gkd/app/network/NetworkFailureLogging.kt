@@ -12,15 +12,18 @@ import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 /** Only transport failures are summarized; disk I/O and unrecognized failures keep their stack. */
-fun networkFailureSummary(error: Throwable): String? = when (error) {
-    is ResponseException -> "HTTP ${error.response.status.value}"
-    is HttpRequestTimeoutException, is SocketTimeoutException -> "network timeout"
-    is UnknownHostException -> "DNS resolution failed"
-    is ConnectException, is NoRouteToHostException -> "connection unavailable"
-    is SocketException -> "socket connection failed"
-    is SSLException -> "TLS ${error.javaClass.simpleName}"
-    else -> null
-}
+fun networkFailureSummary(error: Throwable): String? =
+    when (error) {
+        is ResponseException -> "HTTP ${error.response.status.value}"
+        is HttpRequestTimeoutException,
+        is SocketTimeoutException -> "network timeout"
+        is UnknownHostException -> "DNS resolution failed"
+        is ConnectException,
+        is NoRouteToHostException -> "connection unavailable"
+        is SocketException -> "socket connection failed"
+        is SSLException -> "TLS ${error.javaClass.simpleName}"
+        else -> null
+    }
 
 fun logNetworkFailure(
     operation: String,

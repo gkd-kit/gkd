@@ -58,22 +58,27 @@ fun rememberRuleListFocus(
 
         // Await a real list layout before positioning; a composed/prefetched card is not
         // proof of visibility. A changed key order cancels this attempt and resolves again.
-        snapshotFlow { listState.layoutInfo }.first {
-            it.totalItemsCount >= itemKeys.size && it.viewportSize.height > 0
-        }
+        snapshotFlow { listState.layoutInfo }
+            .first {
+                it.totalItemsCount >= itemKeys.size && it.viewportSize.height > 0
+            }
         beforePosition()
         scrollState.scrollToItemAndAwait(index)
-        val layout = snapshotFlow { listState.layoutInfo }.first { info ->
-            info.visibleItemsInfo.any { it.key == requestKey }
+        val layout = snapshotFlow {
+            listState.layoutInfo
         }
+            .first { info ->
+                info.visibleItemsInfo.any { it.key == requestKey }
+            }
         val target = layout.visibleItemsInfo.first { it.key == requestKey }
         val top = layout.unobscuredTop(stickyHeaderKeys)
         if (target.offset < top) {
             listState.scrollBy((target.offset - top).toFloat())
         }
-        snapshotFlow { listState.layoutInfo }.first { info ->
-            info.isUnobscured(requestKey, stickyHeaderKeys)
-        }
+        snapshotFlow { listState.layoutInfo }
+            .first { info ->
+                info.isUnobscured(requestKey, stickyHeaderKeys)
+            }
         handled = true
         positionedKey = requestKey
     }
@@ -101,13 +106,15 @@ fun rememberRuleListFocus(
 private fun LazyListLayoutInfo.isUnobscured(key: Any, stickyHeaderKeys: Set<Any>): Boolean {
     val item = visibleItemsInfo.find { it.key == key } ?: return false
     val top = unobscuredTop(stickyHeaderKeys)
-    return item.offset >= top && item.offset < viewportEndOffset &&
-            (item.offset + item.size <= viewportEndOffset || item.size > viewportEndOffset - top)
+    return item.offset >= top &&
+        item.offset < viewportEndOffset &&
+        (item.offset + item.size <= viewportEndOffset || item.size > viewportEndOffset - top)
 }
 
 private fun LazyListLayoutInfo.unobscuredTop(stickyHeaderKeys: Set<Any>): Int {
     val top = viewportStartOffset + beforeContentPadding
-    return visibleItemsInfo.filter { it.key in stickyHeaderKeys && it.offset <= top }
-        .maxOfOrNull { it.offset + it.size }?.coerceAtLeast(top) ?: top
+    return visibleItemsInfo
+        .filter { it.key in stickyHeaderKeys && it.offset <= top }
+        .maxOfOrNull { it.offset + it.size }
+        ?.coerceAtLeast(top) ?: top
 }
-

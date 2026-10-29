@@ -10,7 +10,9 @@ import priv.kit.ui.adb.PrivilegeUiStaticTcpSwitchAction
 
 val defaultSimulatedDevice = SimulatedDevice()
 
-/** The only simulator snapshot. DesktopEnvironment projects inputs for window and page rendering. */
+/**
+ * The only simulator snapshot. DesktopEnvironment projects inputs for window and page rendering.
+ */
 @Serializable
 data class SimulatorSettings(
     val device: SimulatedDevice = defaultSimulatedDevice,
@@ -19,94 +21,118 @@ data class SimulatorSettings(
     val prompts: SimulatedPrompts = SimulatedPrompts(),
     val privilege: SimulatedPrivilege = SimulatedPrivilege(),
 ) {
-    val networkAvailable: Boolean get() = device.wifi || device.mobileSignal > 0
+    val networkAvailable: Boolean
+        get() = device.wifi || device.mobileSignal > 0
 
-    fun environment() = DesktopEnvironment(
-        width = device.width, height = device.height, density = device.density,
-        fontScale = device.fontScale, dark = device.dark, locale = device.locale,
-        android = AndroidWindow(
-            statusBarHeight = device.statusBarHeight,
-            navigationBarHeight = device.navigationBarHeight,
-            statusBarVisible = device.statusBarVisible,
-            navigationBarVisible = device.navigationBarVisible,
-            gestureHandleVisible = device.gestureHandleVisible,
-            cutoutWidth = device.cutoutWidth,
-            cutoutHeight = device.cutoutHeight,
-            batteryPercent = device.batteryPercent,
-            charging = device.charging,
-            wifi = device.wifi,
-            mobileSignal = device.mobileSignal,
-            imeVisible = device.imeVisible,
-            imeHeight = device.imeHeight,
-            topAppId = device.topAppId,
-            localNetworkGranted = permissions.localNetworkGranted,
-            restricted = permissions.restricted,
-            ignoreBatteryOptimizations = permissions.ignoreBatteryOptimizations,
-            writeSecureSettings = permissions.writeSecureSettings,
-            serviceEnabled = services.serviceEnabled,
-            automationRunning = services.automationRunning,
-            a11yEnabled = services.a11yEnabled,
-            partiallyDisabled = services.partiallyDisabled,
-            activityRunning = services.activityRunning,
-            statusEnabled = services.statusEnabled,
-            restrictedWarning = prompts.restrictedWarning,
-            automationOccupied = prompts.automationOccupied,
-            privilegeAvailable = privilege.available,
-        ),
-    )
+    fun environment() =
+        DesktopEnvironment(
+            width = device.width,
+            height = device.height,
+            density = device.density,
+            fontScale = device.fontScale,
+            dark = device.dark,
+            locale = device.locale,
+            android =
+                AndroidWindow(
+                    statusBarHeight = device.statusBarHeight,
+                    navigationBarHeight = device.navigationBarHeight,
+                    statusBarVisible = device.statusBarVisible,
+                    navigationBarVisible = device.navigationBarVisible,
+                    gestureHandleVisible = device.gestureHandleVisible,
+                    cutoutWidth = device.cutoutWidth,
+                    cutoutHeight = device.cutoutHeight,
+                    batteryPercent = device.batteryPercent,
+                    charging = device.charging,
+                    wifi = device.wifi,
+                    mobileSignal = device.mobileSignal,
+                    imeVisible = device.imeVisible,
+                    imeHeight = device.imeHeight,
+                    topAppId = device.topAppId,
+                    localNetworkGranted = permissions.localNetworkGranted,
+                    restricted = permissions.restricted,
+                    ignoreBatteryOptimizations = permissions.ignoreBatteryOptimizations,
+                    writeSecureSettings = permissions.writeSecureSettings,
+                    serviceEnabled = services.serviceEnabled,
+                    automationRunning = services.automationRunning,
+                    a11yEnabled = services.a11yEnabled,
+                    partiallyDisabled = services.partiallyDisabled,
+                    activityRunning = services.activityRunning,
+                    statusEnabled = services.statusEnabled,
+                    restrictedWarning = prompts.restrictedWarning,
+                    automationOccupied = prompts.automationOccupied,
+                    privilegeAvailable = privilege.available,
+                ),
+        )
 
     fun withEnvironment(value: DesktopEnvironment): SimulatorSettings {
         value.validate()
         val a = value.android
         return copy(
-            device = SimulatedDevice(
-                value.width,
-                value.height,
-                value.density,
-                value.fontScale,
-                value.dark,
-                value.locale,
-                a.statusBarHeight,
-                a.navigationBarHeight,
-                a.statusBarVisible,
-                a.navigationBarVisible,
-                a.gestureHandleVisible,
-                a.cutoutWidth,
-                a.cutoutHeight,
-                a.batteryPercent,
-                a.charging,
-                a.wifi,
-                a.mobileSignal,
-                a.imeVisible,
-                a.imeHeight,
-                a.topAppId
-            ),
-            permissions = permissions.copy(
-                restricted = a.restricted,
-                localNetworkGranted = a.localNetworkGranted,
-                ignoreBatteryOptimizations = a.ignoreBatteryOptimizations,
-                writeSecureSettings = a.writeSecureSettings
-            ),
-            services = services.copy(a11yEnabled = a.a11yEnabled, partiallyDisabled = a.partiallyDisabled),
+            device =
+                SimulatedDevice(
+                    value.width,
+                    value.height,
+                    value.density,
+                    value.fontScale,
+                    value.dark,
+                    value.locale,
+                    a.statusBarHeight,
+                    a.navigationBarHeight,
+                    a.statusBarVisible,
+                    a.navigationBarVisible,
+                    a.gestureHandleVisible,
+                    a.cutoutWidth,
+                    a.cutoutHeight,
+                    a.batteryPercent,
+                    a.charging,
+                    a.wifi,
+                    a.mobileSignal,
+                    a.imeVisible,
+                    a.imeHeight,
+                    a.topAppId,
+                ),
+            permissions =
+                permissions.copy(
+                    restricted = a.restricted,
+                    localNetworkGranted = a.localNetworkGranted,
+                    ignoreBatteryOptimizations = a.ignoreBatteryOptimizations,
+                    writeSecureSettings = a.writeSecureSettings,
+                ),
+            services =
+                services.copy(a11yEnabled = a.a11yEnabled, partiallyDisabled = a.partiallyDisabled),
             prompts = SimulatedPrompts(a.restrictedWarning, a.automationOccupied),
-            privilege = if (privilege.available == a.privilegeAvailable) privilege else privilege.withAvailability(
-                a.privilegeAvailable
-            ),
+            privilege =
+                if (privilege.available == a.privilegeAvailable) privilege
+                else
+                    privilege.withAvailability(
+                        a.privilegeAvailable,
+                    ),
         )
     }
 
-    fun persistent() = copy(
-        device = device.copy(imeVisible = false, batteryPercent = defaultSimulatedDevice.batteryPercent),
-        services = services.persistent(),
-        privilege = privilege.persistent()
-    )
+    fun persistent() =
+        copy(
+            device =
+                device.copy(
+                    imeVisible = false,
+                    batteryPercent = defaultSimulatedDevice.batteryPercent,
+                ),
+            services = services.persistent(),
+            privilege = privilege.persistent(),
+        )
 
     fun validate() {
         environment().validate()
-        require(services.plans.keys == SimulatedService.entries.toSet() - SimulatedService.Debug) { "Invalid service plans" }
-        require(services.runtime.keys == SimulatedService.entries.toSet()) { "Missing service states" }
+        require(services.plans.keys == SimulatedService.entries.toSet() - SimulatedService.Debug) {
+            "Invalid service plans"
+        }
+        require(services.runtime.keys == SimulatedService.entries.toSet()) {
+            "Missing service states"
+        }
         require(privilege.tcpPort in 1..65535) { "Invalid TCP port" }
-        require(privilege.activeTcpPort == null || privilege.activeTcpPort in 1..65535) { "Invalid active TCP port" }
+        require(privilege.activeTcpPort == null || privilege.activeTcpPort in 1..65535) {
+            "Invalid active TCP port"
+        }
     }
 }
 
@@ -136,17 +162,21 @@ data class SimulatedDevice(
 
 @Serializable
 data class SimulatedPermissions(
-    val notificationGranted: Boolean = true, val overlayGranted: Boolean = true,
-    val canQueryPackages: Boolean = true, val queryPackagesAbnormal: Boolean = false,
-    val restricted: Boolean = false, val localNetworkGranted: Boolean = true,
-    val ignoreBatteryOptimizations: Boolean = false, val writeSecureSettings: Boolean = false,
+    val notificationGranted: Boolean = true,
+    val overlayGranted: Boolean = true,
+    val canQueryPackages: Boolean = true,
+    val queryPackagesAbnormal: Boolean = false,
+    val restricted: Boolean = false,
+    val localNetworkGranted: Boolean = true,
+    val ignoreBatteryOptimizations: Boolean = false,
+    val writeSecureSettings: Boolean = false,
     val deniedServerPermissions: Set<String> = emptySet(),
 )
 
 @Serializable
 data class SimulatedPrompts(
     val restrictedWarning: Boolean = false,
-    val automationOccupied: Boolean = false
+    val automationOccupied: Boolean = false,
 )
 
 @Serializable
@@ -173,22 +203,43 @@ data class SimulatedPrivilege(
     @Transient val pairingInProgress: Boolean = false,
     @Transient val startupLogLines: List<String> = emptyList(),
 ) {
-    val available: Boolean get() = runtimeStatus == PrivilegeUiRuntimeStatus.CONNECTED
-    val serverUid: Int? get() = if (!available) null else if (runtimeStartSource == PrivilegeUiRuntimeStartSource.ROOT) SimulatorUid.ROOT_UID else SimulatorUid.SHELL_UID
+    val available: Boolean
+        get() = runtimeStatus == PrivilegeUiRuntimeStatus.CONNECTED
 
-    fun cancelled() = copy(
-        operationId = operationId + 1, busy = false, pendingStart = null,
-        restartConfirmationTarget = null, staticTcpSwitchConfirmation = null,
-        externalAuthorizationRequested = false, pairingDialogVisible = false,
-        pairingCode = "", pairingInProgress = false,
-        runtimeStatus = if (runtimeStatus == PrivilegeUiRuntimeStatus.STARTING) PrivilegeUiRuntimeStatus.DISCONNECTED else runtimeStatus,
-    )
+    val serverUid: Int?
+        get() =
+            if (!available) null
+            else if (runtimeStartSource == PrivilegeUiRuntimeStartSource.ROOT) SimulatorUid.ROOT_UID
+            else SimulatorUid.SHELL_UID
 
-    fun withAvailability(value: Boolean) = cancelled().copy(
-        runtimeStatus = if (value) PrivilegeUiRuntimeStatus.CONNECTED else PrivilegeUiRuntimeStatus.DISCONNECTED,
-        runtimeStartSource = if (value) PrivilegeUiRuntimeStartSource.ADB_WIRELESS else null,
-        runtimeStartProviderId = null, desiredEnabled = value,
-    )
+    fun cancelled() =
+        copy(
+            operationId = operationId + 1,
+            busy = false,
+            pendingStart = null,
+            restartConfirmationTarget = null,
+            staticTcpSwitchConfirmation = null,
+            externalAuthorizationRequested = false,
+            pairingDialogVisible = false,
+            pairingCode = "",
+            pairingInProgress = false,
+            runtimeStatus =
+                if (runtimeStatus == PrivilegeUiRuntimeStatus.STARTING)
+                    PrivilegeUiRuntimeStatus.DISCONNECTED
+                else runtimeStatus,
+        )
+
+    fun withAvailability(value: Boolean) =
+        cancelled()
+            .copy(
+                runtimeStatus =
+                    if (value) PrivilegeUiRuntimeStatus.CONNECTED
+                    else PrivilegeUiRuntimeStatus.DISCONNECTED,
+                runtimeStartSource =
+                    if (value) PrivilegeUiRuntimeStartSource.ADB_WIRELESS else null,
+                runtimeStartProviderId = null,
+                desiredEnabled = value,
+            )
 
     fun persistent() =
         cancelled().copy(operationId = 0, connectionSerial = 0, startupLogLines = emptyList())

@@ -15,17 +15,27 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun GkScaffold(
     modifier: Modifier = Modifier,
-    topBar: @Composable () -> Unit = {}, bottomBar: @Composable () -> Unit = {},
-    snackbarHost: @Composable () -> Unit = {}, floatingActionButton: @Composable () -> Unit = {},
+    topBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
     containerColor: Color = MaterialTheme.colorScheme.background,
     contentColor: Color = contentColorFor(containerColor),
-    contentWindowInsets: WindowInsets = LocalEditorWindowInsets.current
-        ?: ScaffoldDefaults.contentWindowInsets,
+    contentWindowInsets: WindowInsets =
+        LocalEditorWindowInsets.current ?: ScaffoldDefaults.contentWindowInsets,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
-        modifier, topBar, bottomBar, snackbarHost, floatingActionButton,
-        floatingActionButtonPosition, containerColor, contentColor, contentWindowInsets, content
+        modifier,
+        topBar,
+        bottomBar,
+        snackbarHost,
+        floatingActionButton,
+        floatingActionButtonPosition,
+        containerColor,
+        contentColor,
+        contentWindowInsets,
+        content,
     )
 }

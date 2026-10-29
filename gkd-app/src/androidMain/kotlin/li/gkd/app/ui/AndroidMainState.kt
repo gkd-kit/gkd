@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.crash.FileCrashStorage
 import li.gkd.app.entry.EntryActivity
 import li.gkd.app.entry.OpenFileActivity
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.permission.PermissionRequests
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.service.ServiceController
@@ -18,23 +19,22 @@ import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.resources.*
 import li.gkd.app.service.A11yService
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.ui.home.BottomNavItem
 import li.gkd.app.ui.navigation.GkdLink
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.ui.share.ActivityResultRequests
 import li.gkd.app.ui.share.importBackup as importBackupArchive
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
-import li.gkd.app.ui.navigation.MatchDebugRoute
 
 fun createMainViewModel(): MainViewModel {
     lateinit var vm: MainViewModel
@@ -53,11 +53,13 @@ class AndroidMainState(
 ) : AutoCloseable {
     /** Returns whether the start request was issued; observe StatusService for running state. */
     suspend fun enableStatusService(): Boolean {
-        if (!permissionRequests.ensurePermissions(
+        if (
+            !permissionRequests.ensurePermissions(
                 PermissionStates.foregroundServiceSpecialUse,
                 PermissionStates.notification,
             )
-        ) return false
+        )
+            return false
         ServiceController.setStatusEnabled(true)
         return true
     }
@@ -67,40 +69,49 @@ class AndroidMainState(
     fun handleGkdUri(uri: Uri) {
         val notFoundToast = { ToastUtils.show(Res.string.uri_unknown.getSync(uri)) }
         when (val link = GkdLink.parse(uri.toString())) {
-            is GkdLink.Home -> ThreadUtils.runMainOrPost {
-                val tab = link.tab
-                if (tab != null && BottomNavItem.allSubObjects.any { it.key == tab }) {
-                    mainVm.homeNavigation.selectTab(BottomNavItem.allSubObjects.first { it.key == tab })
+            is GkdLink.Home ->
+                ThreadUtils.runMainOrPost {
+                    val tab = link.tab
+                    if (tab != null && BottomNavItem.allSubObjects.any { it.key == tab }) {
+                        mainVm.homeNavigation.selectTab(
+                            BottomNavItem.allSubObjects.first { it.key == tab },
+                        )
+                    }
+                    // MainActivity 被复用时，也需要返回首页。
+                    mainVm.navigator.popToHome()
                 }
-                // MainActivity 被复用时，也需要返回首页。
-                mainVm.navigator.popToHome()
-            }
 
-            is GkdLink.Page -> if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage() else mainVm.navigator.navigate(link.route)
+            is GkdLink.Page ->
+                if (link.route == MatchDebugRoute) mainVm.navigator.openDiagnosticPage()
+                else mainVm.navigator.navigate(link.route)
             GkdLink.WeChatScanner -> IntentUtils.openWeChatScanner()
             null -> notFoundToast()
         }
     }
 
-    fun handleIntent(intent: Intent) = mainVm.scope.launchUi {
-        LogUtils.i(intent)
-        val uri = intent.data?.normalizeScheme()
-        val source = intent.getStringExtra(EntryActivity.activityNavSourceName)
-        if (uri?.scheme == "gkd") {
-            handleGkdUri(uri)
-        } else if (source == OpenFileActivity::class.java.name && uri != null) {
-            if (!mainVm.dialogRequests.confirm(
-                    title = Res.string.backup_import_label.getSync(),
-                    text = Res.string.backup_import_confirmation.getSync(),
-                )
-            ) {
-                return@launchUi
+    fun handleIntent(intent: Intent) =
+        mainVm.scope.launchUi {
+            LogUtils.i(intent)
+            val uri = intent.data?.normalizeScheme()
+            val source = intent.getStringExtra(EntryActivity.activityNavSourceName)
+            if (uri?.scheme == "gkd") {
+                handleGkdUri(uri)
+            } else if (source == OpenFileActivity::class.java.name && uri != null) {
+                if (
+                    !mainVm.dialogRequests.confirm(
+                        title = Res.string.backup_import_label.getSync(),
+                        text = Res.string.backup_import_confirmation.getSync(),
+                    )
+                ) {
+                    return@launchUi
+                }
+                importBackupArchive(FileSource.Uri(uri.toString()))
             }
-            importBackupArchive(FileSource.Uri(uri.toString()))
         }
-    }
 
-    override fun close() { updateAutomatorModeJob?.cancel() }
+    override fun close() {
+        updateAutomatorModeJob?.cancel()
+    }
 
     private var updateAutomatorModeJob: Job? = null
 
@@ -113,31 +124,30 @@ class AndroidMainState(
     fun updateAutomatorMode(option: AutomatorMode) {
         updateAutomatorModeJob?.cancel()
         if (SettingsRepository.settings.value.automatorMode == option.value) return
-        if (
-            option != AutomatorMode.Automation ||
-            privilegeContextFlow.value == null
-        ) {
+        if (option != AutomatorMode.Automation || privilegeContextFlow.value == null) {
             applyAutomatorMode(option)
             return
         }
-        updateAutomatorModeJob = mainVm.scope.launch {
-            val occupied = try {
-                withContext(Dispatchers.IO) {
-                    AutomationService.isOtherUiAutomationRunning()
+        updateAutomatorModeJob =
+            mainVm.scope.launch {
+                val occupied =
+                    try {
+                        withContext(Dispatchers.IO) {
+                            AutomationService.isOtherUiAutomationRunning()
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        ToastUtils.show(Res.string.automation_state_check_failed.getSync(e.message))
+                        LogUtils.e("detect automation state failed", e)
+                        return@launch
+                    }
+                if (occupied) {
+                    AutomationService.showOccupiedWarning()
+                    return@launch
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                ToastUtils.show(Res.string.automation_state_check_failed.getSync(e.message))
-                LogUtils.e("detect automation state failed", e)
-                return@launch
+                applyAutomatorMode(option)
             }
-            if (occupied) {
-                AutomationService.showOccupiedWarning()
-                return@launch
-            }
-            applyAutomatorMode(option)
-        }
     }
 
     init {
@@ -154,6 +164,5 @@ class AndroidMainState(
             val list = FileCrashStorage.takePending()
             withContext(Dispatchers.Main.immediate) { mainVm.showCrashReports(list) }
         }
-
     }
 }

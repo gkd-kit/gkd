@@ -5,7 +5,8 @@ import li.songe.json5.decodeFromJson5String
 
 private fun String.toTestNode(): TestNode = Json.decodeFromJson5String(this)
 
-internal fun testTree(): TestNode = """
+internal fun testTree(): TestNode =
+    """
     {
       key: 'root',
       name: 'Root',
@@ -91,6 +92,7 @@ internal fun testTree(): TestNode = """
         },
       ],
     }
-""".toTestNode()
+"""
+        .toTestNode()
 
 internal fun compileSelector(source: String): Selector = Selector.compile(source).value

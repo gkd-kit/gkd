@@ -6,13 +6,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import li.gkd.app.SimulatorStore
 import li.gkd.db.Db
 import li.gkd.db.SubsItem
@@ -45,9 +45,10 @@ suspend fun assertUpdateErrorDismissal(simulator: SimulatorStore) {
     }
     server.createContext("/moved/") { exchange ->
         movedRequests.incrementAndGet()
-        val text = if (exchange.requestURI.path.endsWith("version")) {
-            """{"id":$id,"version":3}"""
-        } else response.get()
+        val text =
+            if (exchange.requestURI.path.endsWith("version")) {
+                """{"id":$id,"version":3}"""
+            } else response.get()
         val bytes = text.toByteArray()
         exchange.sendResponseHeaders(200, bytes.size.toLong())
         exchange.responseBody.use { it.write(bytes) }
@@ -60,7 +61,11 @@ suspend fun assertUpdateErrorDismissal(simulator: SimulatorStore) {
         val original = RawSubscription(id = id, name = "Update error fixture", version = 1)
         SubscriptionRepository.saveWithItem(
             original,
-            SubsItem(id = id, order = 100, updateUrl = "http://127.0.0.1:${server.address.port}/subscription"),
+            SubsItem(
+                id = id,
+                order = 100,
+                updateUrl = "http://127.0.0.1:${server.address.port}/subscription",
+            ),
         )
         val originalItem = Db.subsItemDao.queryAll().single { it.id == id }
         SubscriptionRepository.refresh()
@@ -87,12 +92,19 @@ suspend fun assertUpdateErrorDismissal(simulator: SimulatorStore) {
 
         SubscriptionRepository.saveWithItem(
             RawSubscription(otherId, "Other subscription", 1),
-            SubsItem(id = otherId, order = 101, updateUrl = "http://127.0.0.1:${server.address.port}/other"),
+            SubsItem(
+                id = otherId,
+                order = 101,
+                updateUrl = "http://127.0.0.1:${server.address.port}/other",
+            ),
         )
         // A targeted refresh must neither request nor update the other subscription.
         SubscriptionRepository.refresh(id)
         assertEquals(0, otherRequests.get())
-        assertEquals(1, SubscriptionRepository.awaitSnapshot().subscriptions.getValue(otherId).version)
+        assertEquals(
+            1,
+            SubscriptionRepository.awaitSnapshot().subscriptions.getValue(otherId).version,
+        )
 
         // Hold a real request open: single and full refreshes reject each other in both directions.
         for (target in listOf(id, null)) {
@@ -113,13 +125,21 @@ suspend fun assertUpdateErrorDismissal(simulator: SimulatorStore) {
             }
         }
         assertEquals(1, otherRequests.get())
-        assertEquals(2, SubscriptionRepository.awaitSnapshot().subscriptions.getValue(otherId).version)
-
-        // Editing a URL performs no request; later refresh uses it even if content names an old URL.
-        val beforeEdit = SubscriptionRepository.awaitSnapshot().subscriptions.getValue(id).copy(
-            updateUrl = "http://127.0.0.1:${server.address.port}/subscription",
-            checkUpdateUrl = "version",
+        assertEquals(
+            2,
+            SubscriptionRepository.awaitSnapshot().subscriptions.getValue(otherId).version,
         )
+
+        // Editing a URL performs no request; later refresh uses it even if content names an old
+        // URL.
+        val beforeEdit =
+            SubscriptionRepository.awaitSnapshot()
+                .subscriptions
+                .getValue(id)
+                .copy(
+                    updateUrl = "http://127.0.0.1:${server.address.port}/subscription",
+                    checkUpdateUrl = "version",
+                )
         SubscriptionRepository.saveWithItem(beforeEdit, originalItem)
         val itemBeforeEdit = Db.subsItemDao.queryAll().single { it.id == id }
         val newUrl = "http://127.0.0.1:${server.address.port}/moved/subscription"
@@ -129,7 +149,10 @@ suspend fun assertUpdateErrorDismissal(simulator: SimulatorStore) {
             SubscriptionRepository.addOrModifyRemote(newUrl, itemBeforeEdit.id),
         )
         assertEquals(0, movedRequests.get())
-        assertEquals(itemBeforeEdit.copy(updateUrl = newUrl), Db.subsItemDao.queryAll().single { it.id == id })
+        assertEquals(
+            itemBeforeEdit.copy(updateUrl = newUrl),
+            Db.subsItemDao.queryAll().single { it.id == id },
+        )
         assertEquals(beforeEdit, SubscriptionRepository.awaitSnapshot().subscriptions.getValue(id))
         SubscriptionRepository.refresh(id)
         assertEquals(2, movedRequests.get())

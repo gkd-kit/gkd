@@ -23,6 +23,14 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.withCharset
 import io.ktor.utils.io.streams.asInput
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.Closeable
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
@@ -35,19 +43,9 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
-import java.io.Closeable
-import java.io.File
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
-private const val BUILD_ASSET_GET_URL =
-    "https://api.gkd.li/build-asset/getBuildAsset"
-private const val BUILD_ASSET_CREATE_URL =
-    "https://api.gkd.li/build-asset/createBuildAsset"
+private const val BUILD_ASSET_GET_URL = "https://api.gkd.li/build-asset/getBuildAsset"
+private const val BUILD_ASSET_CREATE_URL = "https://api.gkd.li/build-asset/createBuildAsset"
 private const val GITHUB_REPOSITORY_ID = "661952005"
 private const val GITHUB_UPLOAD_FILE_NAME = "file.zip"
 private const val GITHUB_UPLOAD_CONTENT_TYPE = "application/x-zip-compressed"
@@ -55,7 +53,7 @@ private const val GITHUB_REFERER = "https://github.com/gkd-kit/inspect/issues/46
 private const val GITHUB_ORIGIN = "https://github.com"
 private const val GITHUB_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
+        "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
 private const val GITHUB_POLICIES_URL = "https://github.com/upload/policies/assets"
 private const val GITHUB_GRAPHQL_URL = "https://github.com/_graphql"
 private const val GITHUB_ISSUE_ID = "I_kwDOJ3SWBc6viUWN"
@@ -90,24 +88,26 @@ private data class BuildAssetGitMetadata(
 private class BuildAssetApiClient(
     private val authToken: String,
 ) : Closeable {
-    private val client = HttpClient(OkHttp) {
-        followRedirects = true
-        expectSuccess = false
-        install(HttpTimeout) {
-            connectTimeoutMillis = 30_000
-            requestTimeoutMillis = 60_000
-            socketTimeoutMillis = 60_000
+    private val client =
+        HttpClient(OkHttp) {
+            followRedirects = true
+            expectSuccess = false
+            install(HttpTimeout) {
+                connectTimeoutMillis = 30_000
+                requestTimeoutMillis = 60_000
+                socketTimeoutMillis = 60_000
+            }
         }
-    }
 
     suspend fun get(buildKey: String): BuildAsset? {
-        val response = client.get(BUILD_ASSET_GET_URL) {
-            parameter("buildKey", buildKey)
-        }
+        val response =
+            client.get(BUILD_ASSET_GET_URL) {
+                parameter("buildKey", buildKey)
+            }
         val responseBody = response.requireSuccess("Querying build asset")
         val result = JsonSlurper().parseText(responseBody) ?: return null
-        val responseObject = result as? Map<*, *>
-            ?: error("Build asset query did not return a JSON object or null")
+        val responseObject =
+            result as? Map<*, *> ?: error("Build asset query did not return a JSON object or null")
         responseObject.requireApiSuccess("Build asset query")
         return BuildAsset(
             assetId = responseObject.requiredPositiveInt("assetId"),
@@ -121,27 +121,30 @@ private class BuildAssetApiClient(
         assetId: Int,
         gitMetadata: BuildAssetGitMetadata?,
     ) {
-        val response = client.post(BUILD_ASSET_CREATE_URL) {
-            header(HttpHeaders.Authorization, "Bearer $authToken")
-            contentType(ContentType.Application.Json)
-            setBody(
-                JsonOutput.toJson(
-                    linkedMapOf<String, Any?>(
-                        "buildKey" to buildKey,
-                        "assetId" to assetId,
-                    ).apply {
-                        if (gitMetadata != null) {
-                            this["commitId"] = gitMetadata.commitId
-                            this["tag"] = gitMetadata.tag
-                        }
-                    },
-                ),
+        val response =
+            client.post(BUILD_ASSET_CREATE_URL) {
+                header(HttpHeaders.Authorization, "Bearer $authToken")
+                contentType(ContentType.Application.Json)
+                setBody(
+                    JsonOutput.toJson(
+                        linkedMapOf<String, Any?>(
+                                "buildKey" to buildKey,
+                                "assetId" to assetId,
+                            )
+                            .apply {
+                                if (gitMetadata != null) {
+                                    this["commitId"] = gitMetadata.commitId
+                                    this["tag"] = gitMetadata.tag
+                                }
+                            },
+                    ),
+                )
+            }
+        val result =
+            parseObject(
+                response.requireSuccess("Creating build asset"),
+                "Build asset creation",
             )
-        }
-        val result = parseObject(
-            response.requireSuccess("Creating build asset"),
-            "Build asset creation",
-        )
         result.requireApiSuccess("Build asset creation")
         require(result.requiredString("buildKey") == buildKey) {
             "Build asset creation returned a different buildKey"
@@ -169,15 +172,16 @@ private class BuildAssetApiClient(
 private class GithubAssetUploader(
     private val cookie: String,
 ) : Closeable {
-    private val client = HttpClient(OkHttp) {
-        followRedirects = true
-        expectSuccess = false
-        install(HttpTimeout) {
-            connectTimeoutMillis = 30_000
-            requestTimeoutMillis = 600_000
-            socketTimeoutMillis = 600_000
+    private val client =
+        HttpClient(OkHttp) {
+            followRedirects = true
+            expectSuccess = false
+            install(HttpTimeout) {
+                connectTimeoutMillis = 30_000
+                requestTimeoutMillis = 600_000
+                socketTimeoutMillis = 600_000
+            }
         }
-    }
 
     suspend fun upload(file: File): Int {
         val policy = requestUploadPolicy(file)
@@ -192,40 +196,42 @@ private class GithubAssetUploader(
     }
 
     private suspend fun requestUploadPolicy(file: File): UploadPolicy {
-        val response = client.post(GITHUB_POLICIES_URL) {
-            githubHeaders()
-            header("GitHub-Verified-Fetch", "true")
-            header("X-Requested-With", "XMLHttpRequest")
-            setBody(
-                multipartBody(
-                    linkedMapOf(
-                        "repository_id" to GITHUB_REPOSITORY_ID,
-                        "name" to GITHUB_UPLOAD_FILE_NAME,
-                        "size" to file.length().toString(),
-                        "content_type" to GITHUB_UPLOAD_CONTENT_TYPE,
+        val response =
+            client.post(GITHUB_POLICIES_URL) {
+                githubHeaders()
+                header("GitHub-Verified-Fetch", "true")
+                header("X-Requested-With", "XMLHttpRequest")
+                setBody(
+                    multipartBody(
+                        linkedMapOf(
+                            "repository_id" to GITHUB_REPOSITORY_ID,
+                            "name" to GITHUB_UPLOAD_FILE_NAME,
+                            "size" to file.length().toString(),
+                            "content_type" to GITHUB_UPLOAD_CONTENT_TYPE,
+                        ),
                     ),
-                ),
-            )
-        }
+                )
+            }
         if (response.status == HttpStatusCode.Unauthorized) {
             error("GitHub cookie is invalid or expired")
         }
-        val result = parseObject(
-            response.requireSuccess("Requesting GitHub upload policy"),
-            "GitHub upload policy",
-        )
+        val result =
+            parseObject(
+                response.requireSuccess("Requesting GitHub upload policy"),
+                "GitHub upload policy",
+            )
         val asset = result.requiredObject("asset")
-        val assetId = (asset["id"] as? Number)?.toInt()
-            ?: error("GitHub upload policy is missing asset.id")
+        val assetId =
+            (asset["id"] as? Number)?.toInt() ?: error("GitHub upload policy is missing asset.id")
         require(assetId > 0) { "GitHub asset id must be positive: $assetId" }
-        val form = result.requiredObject("form").entries.associate { (key, value) ->
-            key.toString() to value.toString()
-        }
+        val form =
+            result.requiredObject("form").entries.associate { (key, value) ->
+                key.toString() to value.toString()
+            }
         return UploadPolicy(
             uploadUrl = result.requiredString("upload_url"),
             assetUploadUrl = result.requiredString("asset_upload_url"),
-            assetUploadAuthenticityToken =
-                result.requiredString("asset_upload_authenticity_token"),
+            assetUploadAuthenticityToken = result.requiredString("asset_upload_authenticity_token"),
             assetId = assetId,
             assetHref = asset.requiredString("href"),
             form = form,
@@ -233,68 +239,79 @@ private class GithubAssetUploader(
     }
 
     private suspend fun uploadToStorage(policy: UploadPolicy, file: File) {
-        val response = client.post(policy.uploadUrl) {
-            // uploadUrl points to external storage, so GitHub credentials must not be sent.
-            setBody(multipartBody(fields = policy.form, file = file))
-        }
+        val response =
+            client.post(policy.uploadUrl) {
+                // uploadUrl points to external storage, so GitHub credentials must not be sent.
+                setBody(multipartBody(fields = policy.form, file = file))
+            }
         response.requireSuccess("Uploading build archive to GitHub storage")
     }
 
     private suspend fun finalizeUpload(policy: UploadPolicy) {
-        val response = client.put(GITHUB_ORIGIN + policy.assetUploadUrl) {
-            githubHeaders()
-            header(HttpHeaders.Accept, ContentType.Application.Json.toString())
-            setBody(
-                multipartBody(
-                    mapOf(
-                        "authenticity_token" to policy.assetUploadAuthenticityToken,
+        val response =
+            client.put(GITHUB_ORIGIN + policy.assetUploadUrl) {
+                githubHeaders()
+                header(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                setBody(
+                    multipartBody(
+                        mapOf(
+                            "authenticity_token" to policy.assetUploadAuthenticityToken,
+                        ),
                     ),
-                ),
-            )
-        }
+                )
+            }
         response.requireSuccess("Finalizing GitHub build archive upload")
     }
 
     private suspend fun attachAndRemoveComment(assetHref: String) {
-        val commentResult = graphql(
-            persistedQueryName = "addCommentMutation",
-            queryHash = "edafa18ab5734f05c9893cbc92d0dfb1",
-            variables = mapOf(
-                "connections" to listOf(GITHUB_ISSUE_CONNECTION),
-                "input" to mapOf(
-                    "body" to assetHref,
-                    "subjectId" to GITHUB_ISSUE_ID,
-                ),
-            ),
-        )
-        val commentId = commentResult.requiredObject("data")
-            .requiredObject("addComment")
-            .requiredObject("timelineEdge")
-            .requiredObject("node")
-            .requiredString("id")
+        val commentResult =
+            graphql(
+                persistedQueryName = "addCommentMutation",
+                queryHash = "edafa18ab5734f05c9893cbc92d0dfb1",
+                variables =
+                    mapOf(
+                        "connections" to listOf(GITHUB_ISSUE_CONNECTION),
+                        "input" to
+                            mapOf(
+                                "body" to assetHref,
+                                "subjectId" to GITHUB_ISSUE_ID,
+                            ),
+                    ),
+            )
+        val commentId =
+            commentResult
+                .requiredObject("data")
+                .requiredObject("addComment")
+                .requiredObject("timelineEdge")
+                .requiredObject("node")
+                .requiredString("id")
 
         delay(1_000)
 
         graphql(
             persistedQueryName = "updateIssueSubscriptionMutation",
             queryHash = "d0752b2e49295017f67c84f21bfe41a3",
-            variables = mapOf(
-                "input" to mapOf(
-                    "state" to "UNSUBSCRIBED",
-                    "subscribableId" to GITHUB_ISSUE_ID,
+            variables =
+                mapOf(
+                    "input" to
+                        mapOf(
+                            "state" to "UNSUBSCRIBED",
+                            "subscribableId" to GITHUB_ISSUE_ID,
+                        ),
                 ),
-            ),
         )
         graphql(
             persistedQueryName = "deleteIssueCommentMutation",
             queryHash = "b0f125991160e607a64d9407db9c01b3",
-            variables = mapOf(
-                "connections" to listOf(
-                    GITHUB_ISSUE_FRONT_CONNECTION,
-                    GITHUB_ISSUE_CONNECTION,
+            variables =
+                mapOf(
+                    "connections" to
+                        listOf(
+                            GITHUB_ISSUE_FRONT_CONNECTION,
+                            GITHUB_ISSUE_CONNECTION,
+                        ),
+                    "input" to mapOf("id" to commentId),
                 ),
-                "input" to mapOf("id" to commentId),
-            ),
         )
     }
 
@@ -303,24 +320,27 @@ private class GithubAssetUploader(
         queryHash: String,
         variables: Map<String, Any>,
     ): Map<*, *> {
-        val requestBody = JsonOutput.toJson(
-            mapOf(
-                "persistedQueryName" to persistedQueryName,
-                "query" to queryHash,
-                "variables" to variables,
-            ),
-        )
-        val response = client.post(GITHUB_GRAPHQL_URL) {
-            githubHeaders()
-            header(HttpHeaders.Accept, ContentType.Application.Json.toString())
-            header("GitHub-Verified-Fetch", "true")
-            contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
-            setBody(requestBody)
-        }
-        val result = parseObject(
-            response.requireSuccess("Calling GitHub GraphQL $persistedQueryName"),
-            "GitHub GraphQL $persistedQueryName",
-        )
+        val requestBody =
+            JsonOutput.toJson(
+                mapOf(
+                    "persistedQueryName" to persistedQueryName,
+                    "query" to queryHash,
+                    "variables" to variables,
+                ),
+            )
+        val response =
+            client.post(GITHUB_GRAPHQL_URL) {
+                githubHeaders()
+                header(HttpHeaders.Accept, ContentType.Application.Json.toString())
+                header("GitHub-Verified-Fetch", "true")
+                contentType(ContentType.Text.Plain.withCharset(Charsets.UTF_8))
+                setBody(requestBody)
+            }
+        val result =
+            parseObject(
+                response.requireSuccess("Calling GitHub GraphQL $persistedQueryName"),
+                "GitHub GraphQL $persistedQueryName",
+            )
         val errors = result["errors"] as? Collection<*>
         require(errors.isNullOrEmpty()) {
             "GitHub GraphQL $persistedQueryName returned errors"
@@ -346,55 +366,44 @@ abstract class UploadBuildAssetTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val sourcePathsFile: RegularFileProperty
 
-    @get:Input
-    abstract val buildKey: Property<String>
+    @get:Input abstract val buildKey: Property<String>
 
-    @get:Input
-    abstract val variantName: Property<String>
+    @get:Input abstract val variantName: Property<String>
 
-    @get:Input
-    abstract val flavor: Property<String>
+    @get:Input abstract val flavor: Property<String>
 
-    @get:Input
-    abstract val buildType: Property<String>
+    @get:Input abstract val buildType: Property<String>
 
-    @get:Input
-    abstract val commitId: Property<String>
+    @get:Input abstract val commitId: Property<String>
 
-    @get:Input
-    abstract val commitTime: Property<String>
+    @get:Input abstract val commitTime: Property<String>
 
-    @get:Input
-    abstract val tagName: Property<String>
+    @get:Input abstract val tagName: Property<String>
 
-    @get:Input
-    abstract val includeGitMetadata: Property<Boolean>
+    @get:Input abstract val includeGitMetadata: Property<Boolean>
 
-    @get:Input
-    abstract val versionCode: Property<Int>
+    @get:Input abstract val versionCode: Property<Int>
 
-    @get:Input
-    abstract val versionName: Property<String>
+    @get:Input abstract val versionName: Property<String>
 
-    @get:Internal
-    abstract val githubCookie: Property<String>
+    @get:Internal abstract val githubCookie: Property<String>
 
-    @get:Internal
-    abstract val apiAuthToken: Property<String>
+    @get:Internal abstract val apiAuthToken: Property<String>
 
     @TaskAction
     fun upload() {
         val cookie = githubCookie.get().trim()
         val authToken = apiAuthToken.get().trim()
         val resolvedBuildKey = buildKey.get()
-        val gitMetadata = if (includeGitMetadata.get()) {
-            BuildAssetGitMetadata(
-                commitId = commitId.get(),
-                tag = tagName.get().takeIf(String::isNotEmpty),
-            )
-        } else {
-            null
-        }
+        val gitMetadata =
+            if (includeGitMetadata.get()) {
+                BuildAssetGitMetadata(
+                    commitId = commitId.get(),
+                    tag = tagName.get().takeIf(String::isNotEmpty),
+                )
+            } else {
+                null
+            }
         require(cookie.isNotEmpty()) { "GitHub cookie must not be blank" }
         require(authToken.isNotEmpty()) { "GKD_API_AUTH_TOKEN must not be blank" }
 
@@ -406,10 +415,8 @@ abstract class UploadBuildAssetTask : DefaultTask() {
         if (existingBuildAsset != null) {
             if (
                 gitMetadata != null &&
-                (
-                        existingBuildAsset.commitId != gitMetadata.commitId ||
-                                existingBuildAsset.tag != gitMetadata.tag
-                        )
+                    (existingBuildAsset.commitId != gitMetadata.commitId ||
+                        existingBuildAsset.tag != gitMetadata.tag)
             ) {
                 runBlocking {
                     BuildAssetApiClient(authToken).use { apiClient ->
@@ -422,13 +429,13 @@ abstract class UploadBuildAssetTask : DefaultTask() {
                 }
                 logger.lifecycle(
                     "Build asset Git metadata updated: $resolvedBuildKey -> " +
-                            "${existingBuildAsset.assetId}",
+                        "${existingBuildAsset.assetId}",
                 )
                 return
             }
             logger.lifecycle(
                 "Build asset already exists: $resolvedBuildKey -> " +
-                        "${existingBuildAsset.assetId}",
+                    "${existingBuildAsset.assetId}",
             )
             return
         }
@@ -446,12 +453,13 @@ abstract class UploadBuildAssetTask : DefaultTask() {
         createBuildArchive(mapping, sourcePaths, zipFile)
         logger.lifecycle(
             "Uploading build archive for $resolvedBuildKey as $GITHUB_UPLOAD_FILE_NAME " +
-                    "(${zipFile.length()} bytes)",
+                "(${zipFile.length()} bytes)",
         )
         val assetId = runBlocking {
-            val uploadedAssetId = GithubAssetUploader(cookie).use { uploader ->
-                uploader.upload(zipFile)
-            }
+            val uploadedAssetId =
+                GithubAssetUploader(cookie).use { uploader ->
+                    uploader.upload(zipFile)
+                }
             BuildAssetApiClient(authToken).use { apiClient ->
                 apiClient.create(
                     buildKey = resolvedBuildKey,
@@ -469,24 +477,27 @@ abstract class UploadBuildAssetTask : DefaultTask() {
         sourcePathsFile: File,
         zipFile: File,
     ) {
-        val metadata = linkedMapOf(
-            "schemaVersion" to 1,
-            "buildKey" to buildKey.get(),
-            "variant" to variantName.get(),
-            "flavor" to flavor.get(),
-            "buildType" to buildType.get(),
-            "versionCode" to versionCode.get(),
-            "versionName" to versionName.get(),
-            "git" to linkedMapOf(
-                "commitId" to commitId.get(),
-                "commitTime" to commitTime.get().toLong(),
-                "tagName" to tagName.get().takeIf(String::isNotEmpty),
-            ),
-            "files" to listOf(
-                fileMetadata(MAPPING_FILE_NAME, mappingFile),
-                fileMetadata(SOURCE_PATHS_FILE_NAME, sourcePathsFile),
-            ),
-        )
+        val metadata =
+            linkedMapOf(
+                "schemaVersion" to 1,
+                "buildKey" to buildKey.get(),
+                "variant" to variantName.get(),
+                "flavor" to flavor.get(),
+                "buildType" to buildType.get(),
+                "versionCode" to versionCode.get(),
+                "versionName" to versionName.get(),
+                "git" to
+                    linkedMapOf(
+                        "commitId" to commitId.get(),
+                        "commitTime" to commitTime.get().toLong(),
+                        "tagName" to tagName.get().takeIf(String::isNotEmpty),
+                    ),
+                "files" to
+                    listOf(
+                        fileMetadata(MAPPING_FILE_NAME, mappingFile),
+                        fileMetadata(SOURCE_PATHS_FILE_NAME, sourcePathsFile),
+                    ),
+            )
         val metadataText = JsonOutput.prettyPrint(JsonOutput.toJson(metadata)) + "\n"
 
         zipFile.parentFile.mkdirs()
@@ -550,13 +561,14 @@ private fun multipartBody(
             if (file != null) {
                 appendInput(
                     key = "file",
-                    headers = Headers.build {
-                        append(
-                            HttpHeaders.ContentDisposition,
-                            "filename=\"$GITHUB_UPLOAD_FILE_NAME\"",
-                        )
-                        append(HttpHeaders.ContentType, GITHUB_UPLOAD_CONTENT_TYPE)
-                    },
+                    headers =
+                        Headers.build {
+                            append(
+                                HttpHeaders.ContentDisposition,
+                                "filename=\"$GITHUB_UPLOAD_FILE_NAME\"",
+                            )
+                            append(HttpHeaders.ContentType, GITHUB_UPLOAD_CONTENT_TYPE)
+                        },
                     size = file.length(),
                 ) {
                     file.inputStream().asInput()
@@ -580,13 +592,11 @@ private fun parseObject(value: String, description: String): Map<*, *> {
 }
 
 private fun Map<*, *>.requiredObject(key: String): Map<*, *> {
-    return this[key] as? Map<*, *>
-        ?: error("Missing JSON object: $key")
+    return this[key] as? Map<*, *> ?: error("Missing JSON object: $key")
 }
 
 private fun Map<*, *>.requiredString(key: String): String {
-    return this[key] as? String
-        ?: error("Missing JSON string: $key")
+    return this[key] as? String ?: error("Missing JSON string: $key")
 }
 
 private fun Map<*, *>.requiredNullableString(key: String): String? {
@@ -599,12 +609,10 @@ private fun Map<*, *>.requiredNullableString(key: String): String? {
 }
 
 private fun Map<*, *>.requiredPositiveInt(key: String): Int {
-    val number = this[key] as? Number
-        ?: error("Missing JSON integer: $key")
+    val number = this[key] as? Number ?: error("Missing JSON integer: $key")
     val value = number.toLong()
     require(
-        number.toDouble() == value.toDouble() &&
-                value in 1..Int.MAX_VALUE.toLong(),
+        number.toDouble() == value.toDouble() && value in 1..Int.MAX_VALUE.toLong(),
     ) {
         "JSON integer must be a positive 32-bit value: $key"
     }

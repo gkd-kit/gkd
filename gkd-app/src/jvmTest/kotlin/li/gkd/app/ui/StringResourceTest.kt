@@ -1,10 +1,10 @@
 package li.gkd.app.ui
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.runBlocking
 import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.getString
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class StringResourceTest {
     @Test

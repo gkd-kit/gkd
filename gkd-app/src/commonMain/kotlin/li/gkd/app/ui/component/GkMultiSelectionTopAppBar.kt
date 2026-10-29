@@ -79,8 +79,8 @@ fun GkMultiSelectionTopAppBar(
 
     val animatedTitle: @Composable () -> Unit = {
         transition.AnimatedContent(
-            modifier = Modifier.fillMaxWidth()
-                .heightIn(min = with(density) { normalTitleHeight.toDp() }),
+            modifier =
+                Modifier.fillMaxWidth().heightIn(min = with(density) { normalTitleHeight.toDp() }),
             transitionSpec = { selectionTransform(travel) },
             contentAlignment = Alignment.CenterStart,
         ) { contentSelectedMode ->
@@ -88,13 +88,17 @@ fun GkMultiSelectionTopAppBar(
             // Each state owns its complete layout. Adding the close button cannot
             // change the horizontal position of either title during the transition.
             Row(
-                modifier = Modifier.fillMaxWidth().heightIn(min = ActionRowHeight)
-                    .focusProperties { canFocus = currentContent }
-                    .semantics { if (!currentContent) hideFromAccessibility() },
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .heightIn(min = ActionRowHeight)
+                        .focusProperties { canFocus = currentContent }
+                        .semantics { if (!currentContent) hideFromAccessibility() },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (onNavigateBack == null && contentSelectedMode) {
-                    CompositionLocalProvider(LocalContentColor provides colors.navigationIconContentColor) {
+                    CompositionLocalProvider(
+                        LocalContentColor provides colors.navigationIconContentColor,
+                    ) {
                         GkIconButton(
                             imageVector = GkIcons.Close,
                             contentDescription = stringResource(Res.string.selection_cancel),
@@ -103,36 +107,40 @@ fun GkMultiSelectionTopAppBar(
                     }
                 }
                 Box(
-                    modifier = Modifier.weight(1f)
-                        .then(
-                            if (onNavigateBack == null) {
-                                Modifier.padding(
-                                    start = if (contentSelectedMode) BarEdgePadding else TitleStartPadding,
-                                    end = BarEdgePadding,
-                                )
-                            } else Modifier,
-                        )
-                        .then(
-                            if (onTitleClick != null) {
-                                Modifier.clickable(
-                                    interactionSource = null,
-                                    indication = null,
-                                    onClick = onTitleClick
-                                )
-                            } else Modifier,
-                        )
-                        .then(
-                            if (!contentSelectedMode) {
-                                // Retain the normal two-line title's height at large font scales.
-                                Modifier.onSizeChanged { normalTitleHeight = it.height }
-                            } else Modifier,
-                        ),
+                    modifier =
+                        Modifier.weight(1f)
+                            .then(
+                                if (onNavigateBack == null) {
+                                    Modifier.padding(
+                                        start =
+                                            if (contentSelectedMode) BarEdgePadding
+                                            else TitleStartPadding,
+                                        end = BarEdgePadding,
+                                    )
+                                } else Modifier,
+                            )
+                            .then(
+                                if (onTitleClick != null) {
+                                    Modifier.clickable(
+                                        interactionSource = null,
+                                        indication = null,
+                                        onClick = onTitleClick,
+                                    )
+                                } else Modifier,
+                            )
+                            .then(
+                                if (!contentSelectedMode) {
+                                    // Retain the normal two-line title's height at large font
+                                    // scales.
+                                    Modifier.onSizeChanged { normalTitleHeight = it.height }
+                                } else Modifier,
+                            ),
                 ) {
                     if (contentSelectedMode) {
                         Text(
                             stringResource(Res.string.selection_count, displayedCount),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     } else {
                         title()
@@ -147,9 +155,12 @@ fun GkMultiSelectionTopAppBar(
             contentAlignment = Alignment.CenterEnd,
         ) { contentSelectedMode ->
             Row(
-                modifier = Modifier.heightIn(min = ActionRowHeight)
-                    .focusProperties { canFocus = contentSelectedMode == selectedMode }
-                    .semantics { if (contentSelectedMode != selectedMode) hideFromAccessibility() },
+                modifier =
+                    Modifier.heightIn(min = ActionRowHeight)
+                        .focusProperties { canFocus = contentSelectedMode == selectedMode }
+                        .semantics {
+                            if (contentSelectedMode != selectedMode) hideFromAccessibility()
+                        },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 actions(contentSelectedMode)
@@ -192,10 +203,12 @@ fun GkMultiSelectionTopAppBar(
 private fun AnimatedContentTransitionScope<Boolean>.selectionTransform(travel: Int) =
     if (targetState) {
         (slideInVertically { travel } + fadeIn() togetherWith
-                slideOutVertically { -travel } + fadeOut()).using(null)
+                slideOutVertically { -travel } + fadeOut())
+            .using(null)
     } else {
         (slideInVertically { -travel } + fadeIn() togetherWith
-                slideOutVertically { travel } + fadeOut()).using(null)
+                slideOutVertically { travel } + fadeOut())
+            .using(null)
     }
 
 @Composable
@@ -211,20 +224,22 @@ private fun PinnedSelectionTopAppBar(
     val insets = LocalTopBarWindowInsets.current ?: TopAppBarDefaults.windowInsets
     Layout(
         modifier = modifier.semantics { isTraversalGroup = true },
-        contents = listOf(
-            { GkTopAppBar(title = {}, scrollBehavior = scrollBehavior, canScroll = canScroll) },
-            {
-                Box(Modifier.windowInsetsPadding(insets).clipToBounds()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .heightIn(min = TopAppBarDefaults.TopAppBarExpandedHeight)
-                            .padding(horizontal = BarEdgePadding),
-                        verticalAlignment = Alignment.CenterVertically,
-                        content = content,
-                    )
-                }
-            },
-        ),
+        contents =
+            listOf(
+                { GkTopAppBar(title = {}, scrollBehavior = scrollBehavior, canScroll = canScroll) },
+                {
+                    Box(Modifier.windowInsetsPadding(insets).clipToBounds()) {
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .heightIn(min = TopAppBarDefaults.TopAppBarExpandedHeight)
+                                    .padding(horizontal = BarEdgePadding),
+                            verticalAlignment = Alignment.CenterVertically,
+                            content = content,
+                        )
+                    }
+                },
+            ),
     ) { (background, foreground), constraints ->
         val row = foreground.single().measure(constraints)
         val bar = background.single().measure(Constraints.fixed(row.width, row.height))

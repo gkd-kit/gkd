@@ -29,17 +29,23 @@ fun GkRuleCategoryTabs(
         exit = shrinkVertically(tween(300), shrinkTowards = Alignment.Top) + fadeOut(tween(300)),
     ) {
         PrimaryScrollableTabRow(selectedTabIndex = selectedIndex, edgePadding = 8.dp) {
-            if (firstTabTitle != null) Tab(
-                selected = selectedIndex == 0,
-                onClick = { onSelect(0) },
-                text = { Text(firstTabTitle, maxLines = 1) },
-            )
+            if (firstTabTitle != null)
+                Tab(
+                    selected = selectedIndex == 0,
+                    onClick = { onSelect(0) },
+                    text = { Text(firstTabTitle, maxLines = 1) },
+                )
             categories.forEachIndexed { index, name ->
                 val tabIndex = index + if (firstTabTitle != null) 1 else 0
                 Tab(
                     selected = selectedIndex == tabIndex,
                     onClick = { onSelect(tabIndex) },
-                    text = { Text(name ?: stringResource(Res.string.rule_category_uncategorized), maxLines = 1) },
+                    text = {
+                        Text(
+                            name ?: stringResource(Res.string.rule_category_uncategorized),
+                            maxLines = 1,
+                        )
+                    },
                 )
             }
         }

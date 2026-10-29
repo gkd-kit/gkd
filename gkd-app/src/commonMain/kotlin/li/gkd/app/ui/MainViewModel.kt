@@ -1,9 +1,9 @@
 package li.gkd.app.ui
 
-import li.gkd.app.META
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.gkd.app.META
 import li.gkd.app.crash.CrashData
 import li.gkd.app.permission.PermissionRequester
 import li.gkd.app.rule.RuleGroupTarget
@@ -29,8 +29,7 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
     companion object {
         private var current: MainViewModel? = null
 
-        fun requireCurrent(): MainViewModel =
-            checkNotNull(current) { "Main UI is not initialized" }
+        fun requireCurrent(): MainViewModel = checkNotNull(current) { "Main UI is not initialized" }
     }
 
     fun registerCurrent() {
@@ -56,39 +55,52 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
         delete: suspend () -> Unit,
     ) = scope.launchUi {
         confirmRuleDeletion(
-            dialogRequests, navigator, subsSheet, ruleGroupState, ruleControlDialog,
-            title, text, targets, dismiss, delete,
+            dialogRequests,
+            navigator,
+            subsSheet,
+            ruleGroupState,
+            ruleControlDialog,
+            title,
+            text,
+            targets,
+            dismiss,
+            delete,
         )
     }
 
     val updateStatus = if (META.updateEnabled) UpdateStatus(scope) else null
 
-    val githubUpload = GithubUploadState(
-        scope = scope,
-        navigator = navigator,
-    )
+    val githubUpload =
+        GithubUploadState(
+            scope = scope,
+            navigator = navigator,
+        )
 
-    val shareLog = ShareLogState(
-        scope = scope,
-        githubUpload = githubUpload,
-    )
+    val shareLog =
+        ShareLogState(
+            scope = scope,
+            githubUpload = githubUpload,
+        )
 
     val textDialog = TextDialogState()
 
-    val subsLinkDialog = SubsLinkDialogState(
-        navigator = navigator,
-        permissions = permissions,
-        showText = textDialog::showText,
-    )
+    val subsLinkDialog =
+        SubsLinkDialogState(
+            navigator = navigator,
+            permissions = permissions,
+            showText = textDialog::showText,
+        )
 
-    val subsSheet = SubsSheetState(
-        navigator = navigator,
-        openUrl = textDialog::showUrl,
-        requestUrl = subsLinkDialog::request,
-        confirmDelete = ::confirmDelete,
-    )
+    val subsSheet =
+        SubsSheetState(
+            navigator = navigator,
+            openUrl = textDialog::showUrl,
+            requestUrl = subsLinkDialog::request,
+            confirmDelete = ::confirmDelete,
+        )
 
     val ruleGroupState = RuleGroupState(dialogRequests)
+
     fun showRuleGroup(
         subscriptionId: Long,
         appId: String?,

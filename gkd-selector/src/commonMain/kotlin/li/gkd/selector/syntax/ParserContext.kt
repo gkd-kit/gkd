@@ -1,7 +1,7 @@
 package li.gkd.selector.syntax
 
-import li.gkd.selector.SourceMapped
 import li.gkd.selector.SelectorPositionKind
+import li.gkd.selector.SourceMapped
 
 internal class ParserContext(
     source: String,

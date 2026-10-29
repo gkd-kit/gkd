@@ -12,13 +12,15 @@ val LocalEditorWindowInsets = staticCompositionLocalOf<WindowInsets?> { null }
 
 @Composable
 fun GkEditorLayout(
-    title: @Composable () -> Unit, saveEnabled: Boolean,
-    onClose: () -> Unit, onSave: () -> Unit,
+    title: @Composable () -> Unit,
+    saveEnabled: Boolean,
+    onClose: () -> Unit,
+    onSave: () -> Unit,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     GkScaffold(
-        contentWindowInsets = LocalEditorWindowInsets.current
-            ?: ScaffoldDefaults.contentWindowInsets,
+        contentWindowInsets =
+            LocalEditorWindowInsets.current ?: ScaffoldDefaults.contentWindowInsets,
         topBar = {
             GkTopAppBar(
                 title = title,
@@ -26,13 +28,15 @@ fun GkEditorLayout(
                     GkIconButton(
                         GkIcons.Close,
                         contentDescription = stringResource(Res.string.dialog_close),
-                        onClick = onClose
+                        onClick = onClose,
                     )
                 },
                 actions = {
                     GkIconButton(
-                        GkIcons.Check, contentDescription = stringResource(Res.string.action_save),
-                        enabled = saveEnabled, onClick = onSave
+                        GkIcons.Check,
+                        contentDescription = stringResource(Res.string.action_save),
+                        enabled = saveEnabled,
+                        onClick = onSave,
                     )
                 },
             )

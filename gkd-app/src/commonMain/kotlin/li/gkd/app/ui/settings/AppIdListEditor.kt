@@ -12,7 +12,9 @@ class AppIdListEditor(
 
     fun startEditing(state: AppListEditorState) {
         savedIds = currentIds()
-        state.startEditing(SettingsAppIds.format(savedIds, AppInfoRepository.snapshot?.apps.orEmpty()))
+        state.startEditing(
+            SettingsAppIds.format(savedIds, AppInfoRepository.snapshot?.apps.orEmpty()),
+        )
     }
 
     fun hasChanges(text: String) = savedIds != SettingsAppIds.decode(text)

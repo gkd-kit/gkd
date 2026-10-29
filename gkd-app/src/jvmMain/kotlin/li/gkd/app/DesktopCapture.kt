@@ -1,14 +1,14 @@
 package li.gkd.app
 
-import li.gkd.app.window.DesktopWindowGeometry
-import org.jetbrains.skia.Image
-import org.jetbrains.skiko.SkiaLayer
 import java.awt.Component
 import java.awt.Container
 import java.awt.Window
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
+import li.gkd.app.window.DesktopWindowGeometry
+import org.jetbrains.skia.Image
+import org.jetbrains.skiko.SkiaLayer
 
 /** Reads the current Skia recording. Does not recompose a new scene or capture native HWNDs. */
 object DesktopCapture {
@@ -31,15 +31,19 @@ object DesktopCapture {
                         Image.makeFromBitmap(it).use { image ->
                             requireNotNull(image.encodeToData()).use { data ->
                                 ImageIO.read(
-                                    ByteArrayInputStream(data.bytes)
+                                    ByteArrayInputStream(data.bytes),
                                 )
                             }
                         }
                     }
                     val origin = layer.canvas.locationOnScreen
                     graphics.drawImage(
-                        picture, origin.x - bounds.x, origin.y - bounds.y,
-                        layer.canvas.width, layer.canvas.height, null
+                        picture,
+                        origin.x - bounds.x,
+                        origin.y - bounds.y,
+                        layer.canvas.width,
+                        layer.canvas.height,
+                        null,
                     )
                 }
                 drawComponent(host)

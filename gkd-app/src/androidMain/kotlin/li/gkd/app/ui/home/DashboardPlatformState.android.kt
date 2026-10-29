@@ -34,10 +34,23 @@ actual fun dashboardPlatformState(): DashboardPlatformState {
     val restrictions by PermissionStates.appRestrictionsFlow.collectAsStateWithLifecycle()
     val activity by ActivityService.isRunning.collectAsStateWithLifecycle()
     return DashboardPlatformState(
-        a11y, automation != null, a11yEnabled, secure, partial, privilege != null,
+        a11y,
+        automation != null,
+        a11yEnabled,
+        secure,
+        partial,
+        privilege != null,
         when (privilegeStatus) {
-            PrivilegeServiceStatus.Connected -> DashboardPrivilegeStatus.Connected; PrivilegeServiceStatus.DisconnectedDesired -> DashboardPrivilegeStatus.DisconnectedDesired; PrivilegeServiceStatus.Disconnected -> DashboardPrivilegeStatus.Disconnected
+            PrivilegeServiceStatus.Connected -> DashboardPrivilegeStatus.Connected
+            PrivilegeServiceStatus.DisconnectedDesired ->
+                DashboardPrivilegeStatus.DisconnectedDesired
+            PrivilegeServiceStatus.Disconnected -> DashboardPrivilegeStatus.Disconnected
         },
-        status, activity, restrictions.isNotEmpty(), topApp, capabilities, restrictions
+        status,
+        activity,
+        restrictions.isNotEmpty(),
+        topApp,
+        capabilities,
+        restrictions,
     )
 }

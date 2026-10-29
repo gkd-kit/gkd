@@ -23,24 +23,28 @@ class DesktopSession(
     val revision = state.revision
     // Controls expose archive paths; production pages use the shared host actions.
     var backupPath by mutableStateOf("")
-    fun exportBackup() = state.mainVm.scope.launchUi {
-        runtime.subscriptionInitialization.join()
-        val file = BackupManager.exportData()
-        backupPath = file.absolutePath
-        state.record("backup-export:" + file.absolutePath)
-        ToastUtils.show(file.absolutePath)
-    }
 
-    fun importBackup() = state.mainVm.scope.launchUi {
-        runtime.subscriptionInitialization.join()
-        val file = File(backupPath)
-        importBackupArchive(FileSource.Local(file))
-        state.record("backup-import:" + file.absolutePath)
-    }
+    fun exportBackup() =
+        state.mainVm.scope.launchUi {
+            runtime.subscriptionInitialization.join()
+            val file = BackupManager.exportData()
+            backupPath = file.absolutePath
+            state.record("backup-export:" + file.absolutePath)
+            ToastUtils.show(file.absolutePath)
+        }
 
-    fun exportLogs() = state.mainVm.scope.launchUi {
-        val file = createLogArchive()
-        state.record("logs-export:" + file.absolutePath)
-        ToastUtils.show(file.absolutePath)
-    }
+    fun importBackup() =
+        state.mainVm.scope.launchUi {
+            runtime.subscriptionInitialization.join()
+            val file = File(backupPath)
+            importBackupArchive(FileSource.Local(file))
+            state.record("backup-import:" + file.absolutePath)
+        }
+
+    fun exportLogs() =
+        state.mainVm.scope.launchUi {
+            val file = createLogArchive()
+            state.record("logs-export:" + file.absolutePath)
+            ToastUtils.show(file.absolutePath)
+        }
 }

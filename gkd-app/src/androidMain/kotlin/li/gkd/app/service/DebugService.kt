@@ -2,7 +2,6 @@ package li.gkd.app.service
 
 import android.content.Intent
 import androidx.lifecycle.lifecycleScope
-import li.gkd.app.app
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
@@ -12,9 +11,11 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.data.appinfo.PackageAppCatalog.selfAppInfo
 import li.gkd.app.data.currentDeviceInfo
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.action.executeManualAction
 import li.gkd.app.network.AppLinks
 import li.gkd.app.network.NetworkAddresses
@@ -27,7 +28,6 @@ import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.JsonUtils
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.app.util.mapState
@@ -55,9 +55,13 @@ class DebugService : LifecycleHookService() {
         }
         onDestroyed { diagnostics?.close() }
         onCreated {
-            if (!NotificationCatalog.debug(httpServerPortFlow.value).startForeground()) return@onCreated
-            diagnostics = app.applicationInfoWithMetadata.metaData?.getString("debugServerDiagnostics")
-                ?.let { Class.forName(it).getDeclaredConstructor().newInstance() as DebugServerDiagnostics }
+            if (!NotificationCatalog.debug(httpServerPortFlow.value).startForeground())
+                return@onCreated
+            diagnostics =
+                app.applicationInfoWithMetadata.metaData?.getString("debugServerDiagnostics")?.let {
+                    Class.forName(it).getDeclaredConstructor().newInstance()
+                        as DebugServerDiagnostics
+                }
             var startedOnce = false
             lifecycleScope.launchLogged(Dispatchers.IO) {
                 httpServerPortFlow.collectLatest { port ->
@@ -73,18 +77,23 @@ class DebugService : LifecycleHookService() {
                     } catch (e: Exception) {
                         server.stop()
                         diagnostics?.unpublish()
-                        ToastUtils.show(Res.string.debug_service_start_failed.getSync(e.stackTraceToString()))
+                        ToastUtils.show(
+                            Res.string.debug_service_start_failed.getSync(e.stackTraceToString()),
+                        )
                         LogUtils.e("调试服务启动失败", e)
                         stopSelf()
                         return@collectLatest
                     }
                     httpServerFlow.value = server
-                    val localNetworkIps = try {
-                        NetworkAddresses.localIpv4Addresses()
-                    } catch (e: Exception) {
-                        ToastUtils.show(Res.string.network_host_failed_prefix.getSync() + e.message)
-                        emptyList()
-                    }
+                    val localNetworkIps =
+                        try {
+                            NetworkAddresses.localIpv4Addresses()
+                        } catch (e: Exception) {
+                            ToastUtils.show(
+                                Res.string.network_host_failed_prefix.getSync() + e.message,
+                            )
+                            emptyList()
+                        }
                     localNetworkIpsFlow.value = localNetworkIps
                     NotificationCatalog.debug(port, localNetworkIps).startForeground()
                     if (startedOnce) {
@@ -117,8 +126,8 @@ class DebugService : LifecycleHookService() {
             field = MutableStateFlow(emptyList())
 
         fun stop() = IntentUtils.stopService(DebugService::class)
-        fun start() = IntentUtils.startForegroundService(DebugService::class)
 
+        fun start() = IntentUtils.startForegroundService(DebugService::class)
     }
 }
 
@@ -131,17 +140,19 @@ suspend fun clearDebugSubscription() {
     }
 }
 
-private fun createServer(port: Int, diagnostics: DebugServerDiagnostics?) = embeddedServer(CIO, port) {
-    diagnostics?.configure(this)
-    configureInspectionServer(
-        serverInfo = {
-            ServerInfo(
-                currentDeviceInfo(),
-                selfAppInfo
-            )
-        },
-        captureSnapshot = { SnapshotCaptureHost.capture() },
-        execSelector = { executeManualAction(it) },
-        scriptUrl = AppLinks.ServerScript, jsonFormat = JsonUtils.keepingNulls,
-    )
-}
+private fun createServer(port: Int, diagnostics: DebugServerDiagnostics?) =
+    embeddedServer(CIO, port) {
+        diagnostics?.configure(this)
+        configureInspectionServer(
+            serverInfo = {
+                ServerInfo(
+                    currentDeviceInfo(),
+                    selfAppInfo,
+                )
+            },
+            captureSnapshot = { SnapshotCaptureHost.capture() },
+            execSelector = { executeManualAction(it) },
+            scriptUrl = AppLinks.ServerScript,
+            jsonFormat = JsonUtils.keepingNulls,
+        )
+    }

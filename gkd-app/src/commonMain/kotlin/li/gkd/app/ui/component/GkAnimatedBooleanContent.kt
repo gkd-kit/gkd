@@ -12,19 +12,22 @@ import li.gkd.app.ui.style.getUpDownTransform
 fun GkAnimatedBooleanContent(
     targetState: Boolean,
     modifier: Modifier = Modifier,
-    transitionSpec: AnimatedContentTransitionScope<Boolean>.() -> ContentTransform = { getUpDownTransform() },
+    transitionSpec: AnimatedContentTransitionScope<Boolean>.() -> ContentTransform = {
+        getUpDownTransform()
+    },
     contentAlignment: Alignment = Alignment.TopStart,
     contentTrue: @Composable () -> Unit,
     contentFalse: @Composable () -> Unit,
-) = AnimatedContent(
-    targetState = targetState,
-    modifier = modifier,
-    transitionSpec = transitionSpec,
-    contentAlignment = contentAlignment,
-) {
-    if (it) {
-        contentTrue()
-    } else {
-        contentFalse()
+) =
+    AnimatedContent(
+        targetState = targetState,
+        modifier = modifier,
+        transitionSpec = transitionSpec,
+        contentAlignment = contentAlignment,
+    ) {
+        if (it) {
+            contentTrue()
+        } else {
+            contentFalse()
+        }
     }
-}

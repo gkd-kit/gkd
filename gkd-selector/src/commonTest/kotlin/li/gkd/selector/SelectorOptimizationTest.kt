@@ -14,11 +14,10 @@ class SelectorOptimizationTest {
         repeat(23) { depth ->
             root = TestNode("node-$depth", "N", children = listOf(root))
         }
-        val selector = compileSelector(
-            "Never[missing=null]" +
-                    " >n N".repeat(9) +
-                    " >n N[prev!=null] >n N",
-        )
+        val selector =
+            compileSelector(
+                "Never[missing=null]" + " >n N".repeat(9) + " >n N[prev!=null] >n N",
+            )
 
         TestNodeAdapter.resetCounters()
         assertNull(selector.match(leaf, TestNodeAdapter))
@@ -35,9 +34,10 @@ class SelectorOptimizationTest {
         repeat(23) { depth ->
             root = TestNode("node-$depth", "N", children = listOf(root))
         }
-        val selector = compileSelector(
-            "Never[missing=null]" + " >n N".repeat(9) + " -> N > N",
-        )
+        val selector =
+            compileSelector(
+                "Never[missing=null]" + " >n N".repeat(9) + " -> N > N",
+            )
 
         TestNodeAdapter.resetCounters()
         assertNull(selector.match(leaf, TestNodeAdapter))
@@ -62,12 +62,12 @@ class SelectorOptimizationTest {
         assertEquals(regular, fast)
         assertSame(view, TestNodeAdapter.querySelector(root, selector, fastOption))
 
-        val regularTraceTargets = TestNodeAdapter
-            .querySelectorAllWithTrace(root, selector, regularOption)
-            .map { it.target }
-        val fastTraceTargets = TestNodeAdapter
-            .querySelectorAllWithTrace(root, selector, fastOption)
-            .map { it.target }
+        val regularTraceTargets =
+            TestNodeAdapter.querySelectorAllWithTrace(root, selector, regularOption).map {
+                it.target
+            }
+        val fastTraceTargets =
+            TestNodeAdapter.querySelectorAllWithTrace(root, selector, fastOption).map { it.target }
         assertEquals(regular, regularTraceTargets)
         assertEquals(regularTraceTargets, fastTraceTargets)
 

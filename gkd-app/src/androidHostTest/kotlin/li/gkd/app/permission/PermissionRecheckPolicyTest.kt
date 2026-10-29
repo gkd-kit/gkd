@@ -16,9 +16,12 @@ class PermissionRecheckPolicyTest {
     @Test
     fun delayedGrantSucceedsBeforeReportingDenial() = runBlocking {
         var reads = 0
-        val granted = PermissionRecheckPolicy(listOf(10L, 10L, 10L)).awaitGranted(
-            MutableStateFlow(true),
-        ) { ++reads >= 3 }
+        val granted =
+            PermissionRecheckPolicy(listOf(10L, 10L, 10L)).awaitGranted(
+                MutableStateFlow(true),
+            ) {
+                ++reads >= 3
+            }
         assertTrue(granted)
         assertEquals(3, reads)
     }
@@ -26,18 +29,26 @@ class PermissionRecheckPolicyTest {
     @Test
     fun persistentDenialFinishesAfterBoundedRetries() = runBlocking {
         var reads = 0
-        val granted = PermissionRecheckPolicy(listOf(10L, 10L)).awaitGranted(
-            MutableStateFlow(true),
-        ) { reads++; false }
+        val granted =
+            PermissionRecheckPolicy(listOf(10L, 10L)).awaitGranted(
+                MutableStateFlow(true),
+            ) {
+                reads++
+                false
+            }
         assertFalse(granted)
         assertEquals(3, reads)
     }
 
     @Test
     fun grantedPermissionDoesNotWaitForRetryWindow() = runBlocking {
-        assertTrue(withTimeout(1_000L) {
-            PermissionRecheckPolicy(listOf(60_000L)).awaitGranted(MutableStateFlow(true)) { true }
-        })
+        assertTrue(
+            withTimeout(1_000L) {
+                PermissionRecheckPolicy(listOf(60_000L)).awaitGranted(MutableStateFlow(true)) {
+                    true
+                }
+            },
+        )
     }
 
     @Test
@@ -87,10 +98,12 @@ class PermissionRecheckPolicyTest {
     @Test
     fun ordinaryPermissionDenialDoesNotRetry() = runBlocking {
         var reads = 0
-        assertFalse(PermissionRecheckPolicy.Immediate.awaitGranted(MutableStateFlow(true)) {
-            reads++
-            false
-        })
+        assertFalse(
+            PermissionRecheckPolicy.Immediate.awaitGranted(MutableStateFlow(true)) {
+                reads++
+                false
+            },
+        )
         assertEquals(1, reads)
     }
 }

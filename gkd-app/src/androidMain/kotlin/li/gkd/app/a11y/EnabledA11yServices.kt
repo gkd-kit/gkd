@@ -16,18 +16,20 @@ import li.gkd.app.util.mapState
 fun useEnabledA11yServicesFlow(scope: CoroutineScope): StateFlow<Set<ComponentName>> {
     val initialValue = app.getSecureA11yServices()
     return callbackFlow {
-        val contextObserver = object : ContentObserver(null) {
-            override fun onChange(selfChange: Boolean) {
-                trySend(app.getSecureA11yServices())
-            }
+            val contextObserver =
+                object : ContentObserver(null) {
+                    override fun onChange(selfChange: Boolean) {
+                        trySend(app.getSecureA11yServices())
+                    }
+                }
+            app.registerObserver(
+                Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+                contextObserver,
+            )
+            trySend(initialValue)
+            awaitClose { app.unregisterObserver(contextObserver) }
         }
-        app.registerObserver(
-            Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
-            contextObserver
-        )
-        trySend(initialValue)
-        awaitClose { app.unregisterObserver(contextObserver) }
-    }.stateIn(scope, SharingStarted.Eagerly, initialValue)
+        .stateIn(scope, SharingStarted.Eagerly, initialValue)
 }
 
 fun useA11yServiceEnabledFlow(

@@ -17,7 +17,9 @@ fun rememberRuleControlEnvironment(): RuleControlEnvironment {
     return remember(snapshot, launcher, blocked) {
         RuleControlEnvironment(
             launcher,
-            snapshot?.apps.orEmpty(), snapshot?.systemApps.orEmpty(), blocked
+            snapshot?.apps.orEmpty(),
+            snapshot?.systemApps.orEmpty(),
+            blocked,
         )
     }
 }

@@ -13,20 +13,42 @@ object Db {
         checkNotNull(createDatabase) { "Db is not initialized" }.invoke()
     }
 
-    val subsItemDao get() = database.subsItemDao()
-    val subsAppGroupConfigDao get() = database.subsAppGroupConfigDao()
-    val subsGlobalGroupConfigDao get() = database.subsGlobalGroupConfigDao()
-    val snapshotDao get() = database.snapshotDao()
-    val actionLogDao get() = database.actionLogDao()
-    val ruleTriggerStatsDao get() = database.ruleTriggerStatsDao()
-    val subsCategoryConfigDao get() = database.subsCategoryConfigDao()
-    val activityLogDao get() = database.activityLogDao()
-    val subsAppConfigDao get() = database.subsAppConfigDao()
-    val appLastVisitDao get() = database.appLastVisitDao()
-    val a11yEventLogDao get() = database.a11yEventLogDao()
+    val subsItemDao
+        get() = database.subsItemDao()
+
+    val subsAppGroupConfigDao
+        get() = database.subsAppGroupConfigDao()
+
+    val subsGlobalGroupConfigDao
+        get() = database.subsGlobalGroupConfigDao()
+
+    val snapshotDao
+        get() = database.snapshotDao()
+
+    val actionLogDao
+        get() = database.actionLogDao()
+
+    val ruleTriggerStatsDao
+        get() = database.ruleTriggerStatsDao()
+
+    val subsCategoryConfigDao
+        get() = database.subsCategoryConfigDao()
+
+    val activityLogDao
+        get() = database.activityLogDao()
+
+    val subsAppConfigDao
+        get() = database.subsAppConfigDao()
+
+    val appLastVisitDao
+        get() = database.appLastVisitDao()
+
+    val a11yEventLogDao
+        get() = database.a11yEventLogDao()
 
     fun close() = database.close()
 
-    suspend fun <T> withTransaction(block: suspend () -> T): T =
-        database.withWriteTransaction { block() }
+    suspend fun <T> withTransaction(block: suspend () -> T): T = database.withWriteTransaction {
+        block()
+    }
 }

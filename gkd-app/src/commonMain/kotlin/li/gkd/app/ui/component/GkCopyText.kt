@@ -65,16 +65,15 @@ fun GkCopyableText(
         onCopy = onCopy,
         copyIconVisible = textFieldState.selection.collapsed,
         contentColor = contentColor,
-        modifier = modifier.defaultMinSize(
-            minHeight = LocalMinimumInteractiveComponentSize.current,
-        ),
+        modifier =
+            modifier.defaultMinSize(
+                minHeight = LocalMinimumInteractiveComponentSize.current,
+            ),
     ) {
         BasicTextField(
             state = textFieldState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(contentPadding)
-                .run {
+            modifier =
+                Modifier.fillMaxWidth().padding(contentPadding).run {
                     if (textContentDescription == null) {
                         this
                     } else {
@@ -114,9 +113,10 @@ fun GkCopyIconOverlay(
                 onClick = {
                     onCopy(textToCopy)
                 },
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = contentColor.copy(alpha = 0.5f),
-                ),
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        contentColor = contentColor.copy(alpha = 0.5f),
+                    ),
             )
         }
     }
@@ -135,10 +135,7 @@ fun GkCopyTextCard(
     GkCopyableText(
         text = remember { AnnotatedString(text) },
         onCopy = onCopy,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(containerColor),
+        modifier = modifier.fillMaxWidth().clip(shape).background(containerColor),
         contentPadding = PaddingValues(8.dp),
         textStyle = textStyle,
         contentColor = contentColor,

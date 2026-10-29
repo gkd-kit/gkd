@@ -9,16 +9,18 @@ import io.ktor.server.response.respond
 
 /** Install before browser CORS so its OPTIONS response cannot bypass diagnostic authentication. */
 fun Application.configureDebugAccess(token: String, stopping: () -> Boolean) {
-    install(createApplicationPlugin("DebugAccess") {
-        onCall { call ->
-            val path = call.request.path()
-            if (path == "/health" || path == "/debug" || path.startsWith("/debug/")) {
-                if (stopping()) {
-                    call.respond(HttpStatusCode.ServiceUnavailable)
-                } else if (call.request.headers["Authorization"] != "Bearer $token") {
-                    call.respond(HttpStatusCode.Unauthorized)
+    install(
+        createApplicationPlugin("DebugAccess") {
+            onCall { call ->
+                val path = call.request.path()
+                if (path == "/health" || path == "/debug" || path.startsWith("/debug/")) {
+                    if (stopping()) {
+                        call.respond(HttpStatusCode.ServiceUnavailable)
+                    } else if (call.request.headers["Authorization"] != "Bearer $token") {
+                        call.respond(HttpStatusCode.Unauthorized)
+                    }
                 }
             }
-        }
-    })
+        },
+    )
 }

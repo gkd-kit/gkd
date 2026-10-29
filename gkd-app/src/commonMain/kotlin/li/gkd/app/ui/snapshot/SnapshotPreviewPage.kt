@@ -2,8 +2,8 @@ package li.gkd.app.ui.snapshot
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.rememberPagerState
@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.app.ActivityNames.getShowActivityId
+import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.MainViewModel
@@ -43,7 +44,6 @@ import li.gkd.app.ui.page.GkImagePreviewContent
 import li.gkd.app.ui.platform.GkSystemBars
 import li.gkd.app.ui.platform.UiHost
 import org.jetbrains.compose.resources.stringResource
-import li.gkd.app.app.AppInfoRepository
 
 @Composable
 fun SnapshotPreviewPage(
@@ -67,32 +67,41 @@ fun SnapshotPreviewPage(
             val previewSnapshots = route.snapshotIds.mapNotNull(snapshotsById::get)
 
             if (previewSnapshots.isNotEmpty()) {
-                val initialPage = previewSnapshots.indexOfFirst { it.id == route.snapshotId }
-                    .coerceAtLeast(0)
-                val pagerState = rememberPagerState(initialPage = initialPage) {
-                    previewSnapshots.size
-                }
+                val initialPage =
+                    previewSnapshots.indexOfFirst { it.id == route.snapshotId }.coerceAtLeast(0)
+                val pagerState =
+                    rememberPagerState(initialPage = initialPage) {
+                        previewSnapshots.size
+                    }
                 GkImagePreviewContent(
-                    imageLoader = imageLoader, systemBars = { host.GkSystemBars(it) },
-                    route = ImagePreviewRoute(items = previewSnapshots.map {
-                        ImagePreviewItem(uri = it.image().path)
-                    }),
+                    imageLoader = imageLoader,
+                    systemBars = { host.GkSystemBars(it) },
+                    route =
+                        ImagePreviewRoute(
+                            items =
+                                previewSnapshots.map {
+                                    ImagePreviewItem(uri = it.image().path)
+                                },
+                        ),
                     pagerState = pagerState,
                     imageVersion = imageVersion,
                     onBack = mainVm.navigator::pop,
                     titleContent = { index ->
                         previewSnapshots.getOrNull(index)?.let { item ->
-                            val appName = catalog.snapshot?.apps?.get(item.appId)?.name ?: item.appId
-                            val activityId = getShowActivityId(item.appId, item.activityId)
-                                ?.takeIf(String::isNotBlank)
+                            val appName =
+                                catalog.snapshot?.apps?.get(item.appId)?.name ?: item.appId
+                            val activityId =
+                                getShowActivityId(item.appId, item.activityId)
+                                    ?.takeIf(String::isNotBlank)
                             Column {
                                 GkAppNameText(
                                     appId = item.appId,
                                     fallbackName = appName,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium,
-                                    ),
+                                    style =
+                                        MaterialTheme.typography.titleLarge.copy(
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
                                 )
                                 if (activityId != null) {
                                     Text(
@@ -100,9 +109,10 @@ fun SnapshotPreviewPage(
                                         maxLines = 1,
                                         softWrap = false,
                                         overflow = TextOverflow.MiddleEllipsis,
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            color = Color.White.copy(alpha = 0.8f),
-                                        ),
+                                        style =
+                                            MaterialTheme.typography.titleSmall.copy(
+                                                color = Color.White.copy(alpha = 0.8f),
+                                            ),
                                     )
                                 }
                             }
@@ -114,7 +124,8 @@ fun SnapshotPreviewPage(
                             GkIconButton(
                                 imageVector = GkIcons.MoreVert,
                                 contentDescription = stringResource(Res.string.more_label),
-                                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                                colors =
+                                    IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                                 onClick = { vm.showActions(item.id) },
                             )
                         }
@@ -132,44 +143,55 @@ fun SnapshotPreviewPage(
                         vm.dismissActions(request)
                     },
                 ) { _, snapshot, sheetState, dismiss ->
-                    val routeAfterDelete = if (previewSnapshots.size == 1) {
-                        null
-                    } else {
-                        val currentIndex = previewSnapshots.indexOfFirst { it.id == snapshot.id }
-                        val targetIndex = if (currentIndex < previewSnapshots.lastIndex) {
-                            currentIndex + 1
+                    val routeAfterDelete =
+                        if (previewSnapshots.size == 1) {
+                            null
                         } else {
-                            currentIndex - 1
+                            val currentIndex = previewSnapshots.indexOfFirst {
+                                it.id == snapshot.id
+                            }
+                            val targetIndex =
+                                if (currentIndex < previewSnapshots.lastIndex) {
+                                    currentIndex + 1
+                                } else {
+                                    currentIndex - 1
+                                }
+                            route.copy(
+                                snapshotId = previewSnapshots[targetIndex].id,
+                                snapshotIds = route.snapshotIds.filterNot { it == snapshot.id },
+                            )
                         }
-                        route.copy(
-                            snapshotId = previewSnapshots[targetIndex].id,
-                            snapshotIds = route.snapshotIds.filterNot { it == snapshot.id },
+                    val actions =
+                        host.snapshotActions(
+                            mainVm,
+                            vm,
+                            { imageVersion++ },
+                            {
+                                if (routeAfterDelete == null) {
+                                    mainVm.navigator.pop()
+                                } else {
+                                    replaceRoute(routeAfterDelete)
+                                }
+                            },
+                            {
+                                if (routeAfterDelete == null) {
+                                    if (mainVm.navigator.topRoute == SnapshotPageRoute)
+                                        mainVm.navigator.navigate(route)
+                                } else if (mainVm.navigator.topRoute == routeAfterDelete) {
+                                    replaceRoute(route)
+                                }
+                            },
                         )
-                    }
-                    val actions = host.snapshotActions(mainVm,
-                        vm,
-                        { imageVersion++ },
-                        {
-                            if (routeAfterDelete == null) {
-                                mainVm.navigator.pop()
-                            } else {
-                                replaceRoute(routeAfterDelete)
-                            }
-                        },
-                        {
-                            if (routeAfterDelete == null) {
-                                if (mainVm.navigator.topRoute == SnapshotPageRoute) mainVm.navigator.navigate(route)
-                            } else if (mainVm.navigator.topRoute == routeAfterDelete) {
-                                replaceRoute(route)
-                            }
-                        },
-                    )
                     GkSnapshotActionsSheet(
-                        imageLoader, snapshot = snapshot,
-                        appName = catalog.snapshot?.apps?.get(snapshot.appId)?.name ?: snapshot.appId,
+                        imageLoader,
+                        snapshot = snapshot,
+                        appName =
+                            catalog.snapshot?.apps?.get(snapshot.appId)?.name ?: snapshot.appId,
                         sheetState = sheetState,
                         onDismissRequest = dismiss,
-                        onShare = { vm.shareSnapshots(listOf(snapshot), host.snapshotPlatformActions()) },
+                        onShare = {
+                            vm.shareSnapshots(listOf(snapshot), host.snapshotPlatformActions())
+                        },
                         shareEnabled = shareProgress == null,
                         onSaveToDownloads = { actions.saveToDownloads(snapshot) },
                         onUpload = { actions.upload(snapshot) },
@@ -183,15 +205,17 @@ fun SnapshotPreviewPage(
                     GkImagePreviewContent(
                         imageLoader = imageLoader,
                         systemBars = { host.GkSystemBars(it) },
-                        route = ImagePreviewRoute(title = stringResource(Res.string.snapshot_records)),
+                        route =
+                            ImagePreviewRoute(title = stringResource(Res.string.snapshot_records)),
                         onBack = mainVm.navigator::pop,
                     )
                     if (loadableState is Loadable.Loading) {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     } else {
                         Text(
-                            text = (loadableState as? Loadable.Failure)?.cause?.message
-                                ?: stringResource(Res.string.snapshot_missing_or_deleted),
+                            text =
+                                (loadableState as? Loadable.Failure)?.cause?.message
+                                    ?: stringResource(Res.string.snapshot_missing_or_deleted),
                             modifier = Modifier.align(Alignment.Center),
                             color = Color.White,
                         )
@@ -203,9 +227,12 @@ fun SnapshotPreviewPage(
             GkSnapshotShareProgress(
                 progress = it,
                 onCancel = vm::cancelShare,
-                modifier = Modifier.align(Alignment.BottomCenter)
-                    .windowInsetsPadding(LocalEditorWindowInsets.current ?: WindowInsets.safeDrawing)
-                    .then(host.snapshotShareCornerPadding()),
+                modifier =
+                    Modifier.align(Alignment.BottomCenter)
+                        .windowInsetsPadding(
+                            LocalEditorWindowInsets.current ?: WindowInsets.safeDrawing,
+                        )
+                        .then(host.snapshotShareCornerPadding()),
             )
         }
     }

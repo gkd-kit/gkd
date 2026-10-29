@@ -19,11 +19,12 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun GkRuleSectionHeader(title: String, groupCount: Int) {
     Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .semantics { heading() }
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .semantics { heading() }
+                .padding(horizontal = 8.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

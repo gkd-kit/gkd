@@ -52,7 +52,7 @@ fun GkOutlinedTextField(
     interactionSource: MutableInteractionSource? = null,
     shape: Shape = OutlinedTextFieldDefaults.shape,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
-    contentPadding: PaddingValues = OutlinedTextFieldDefaults.contentPadding()
+    contentPadding: PaddingValues = OutlinedTextFieldDefaults.contentPadding(),
 ) {
     @Suppress("NAME_SHADOWING")
     val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
@@ -87,12 +87,13 @@ fun GkOutlinedTextField(
                                 .padding(top = with(density) { 8.sp.toDp() })
                         } else {
                             Modifier
-                        }
+                        },
                     )
-//                    .defaultErrorSemantics(isError, getString(Strings.DefaultErrorMessage))
+                    //                    .defaultErrorSemantics(isError,
+                    // getString(Strings.DefaultErrorMessage))
                     .defaultMinSize(
                         minWidth = OutlinedTextFieldDefaults.MinWidth,
-                        minHeight = OutlinedTextFieldDefaults.MinHeight
+                        minHeight = OutlinedTextFieldDefaults.MinHeight,
                     ),
             onValueChange = onValueChange,
             enabled = enabled,
@@ -135,7 +136,7 @@ fun GkOutlinedTextField(
                         },
                         contentPadding = contentPadding,
                     )
-                }
+                },
         )
     }
 }

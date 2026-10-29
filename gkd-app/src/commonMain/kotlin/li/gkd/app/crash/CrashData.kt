@@ -17,6 +17,5 @@ data class CrashData(
     val message: String?,
     val thread: String,
     val stackTrace: String,
-    @Transient
-    val filename: String = "gkd-crash-" + mtime.format("yyyyMMddHHmmss") + ".json",
+    @Transient val filename: String = "gkd-crash-" + mtime.format("yyyyMMddHHmmss") + ".json",
 )

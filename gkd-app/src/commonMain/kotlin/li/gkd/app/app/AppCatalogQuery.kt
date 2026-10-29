@@ -9,18 +9,26 @@ interface AppCatalogQuery {
     val userId: Int
     val launcherAppId: String?
     val canQueryPackages: Boolean
-    val detectIncompleteList: Boolean get() = true
-    val queryPackagesAbnormal: Boolean get() = false
+    val detectIncompleteList: Boolean
+        get() = true
+
+    val queryPackagesAbnormal: Boolean
+        get() = false
+
     fun isCurrent(): Boolean = true
 
     /** Release obsolete host resources after a successful query. Must not throw. */
     fun committed(snapshot: AppCatalogSnapshot) = Unit
+
     suspend fun primaryApps(): List<AppInfo>
 
     /** null means confirmed absence, never a failed query. */
     suspend fun primaryApp(id: String): AppInfo?
+
     suspend fun privilegedApps(userId: Int): PlatformResult<List<AppInfo>>
+
     suspend fun visibleApps(): List<AppInfo>
+
     suspend fun otherUsers(): List<AppUser>
 }
 

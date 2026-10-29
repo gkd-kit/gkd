@@ -6,16 +6,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.record.TriggerStats
 import li.gkd.app.state.Loadable
 import li.gkd.db.Db
-import li.gkd.app.record.TriggerStats
 
 val scopeAppSource by lazy {
     combine(
         AppInfoRepository.visibleAppInfosFlow,
         Db.actionLogDao.queryLatestUniqueAppIds(),
         Db.appLastVisitDao.query(),
-        Db.ruleTriggerStatsDao.observe()
+        Db.ruleTriggerStatsDao.observe(),
     ) { apps, order, visits, records ->
         AppListSources.build(apps, order, visits).copy(triggerStats = TriggerStats(records))
     }
@@ -26,7 +26,9 @@ fun rememberVisitOrder(): Loadable<Map<String, Int>> = remember {
     Db.appLastVisitDao.query().map { ids ->
         Loadable.Ready(ids.mapIndexed { index, id -> id to index }.toMap())
     }
-}.collectAsStateWithLifecycle<Loadable<Map<String, Int>>>(Loadable.Loading).value
+}
+    .collectAsStateWithLifecycle<Loadable<Map<String, Int>>>(Loadable.Loading)
+    .value
 
 @Composable
 fun appLabel(id: String): String =

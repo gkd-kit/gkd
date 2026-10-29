@@ -3,20 +3,21 @@ package li.gkd.app.util
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Point
-import li.gkd.app.model.ScreenSize
 import li.gkd.app.app
+import li.gkd.app.model.ScreenSize
 
 object ScreenUtils {
-    fun getSize(): ScreenSize = if (AndroidTarget.R) {
-        val b = app.windowManager.currentWindowMetrics.bounds
-        ScreenSize(b.width(), b.height())
-    } else {
-        val p = Point().apply {
-            @Suppress("DEPRECATION")
-            app.compatDisplay.getRealSize(this)
+    fun getSize(): ScreenSize =
+        if (AndroidTarget.R) {
+            val b = app.windowManager.currentWindowMetrics.bounds
+            ScreenSize(b.width(), b.height())
+        } else {
+            val p =
+                Point().apply {
+                    @Suppress("DEPRECATION") app.compatDisplay.getRealSize(this)
+                }
+            ScreenSize(p.x, p.y)
         }
-        ScreenSize(p.x, p.y)
-    }
 
     fun getDensityDpi(): Int = Resources.getSystem().displayMetrics.densityDpi
 

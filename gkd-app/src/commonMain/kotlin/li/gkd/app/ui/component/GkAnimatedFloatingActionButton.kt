@@ -45,34 +45,38 @@ fun GkAnimatedFloatingActionButton(
         }
         percent.animateTo(
             targetValue = if (visible) 1f else 0f,
-            animationSpec = tween(durationMillis = DefaultDurationMillis)
+            animationSpec = tween(durationMillis = DefaultDurationMillis),
         )
         innerVisible = visible
     }
     if (innerVisible) {
         GkTooltipIconButtonBox(contentDescription) {
             // Measure an untransformed parent so animation frames cannot move the exit target.
-            Box(Modifier.onGloballyPositioned { coordinates ->
-                val distanceToEdge = coordinates.findRootCoordinates().size.width -
-                        coordinates.positionInRoot().x
-                maxTranslationX = distanceToEdge.coerceAtLeast(0f) + shadowSpace
-            }) {
+            Box(
+                Modifier.onGloballyPositioned { coordinates ->
+                    val distanceToEdge =
+                        coordinates.findRootCoordinates().size.width -
+                            coordinates.positionInRoot().x
+                    maxTranslationX = distanceToEdge.coerceAtLeast(0f) + shadowSpace
+                },
+            ) {
                 FloatingActionButton(
-                    modifier = modifier
-                        .graphicsLayer {
-                            alpha = percent.value
-                            translationX = (1f - percent.value) * maxTranslationX
-                            // Avoid an alpha offscreen buffer clipping the FAB's outer shadow.
-                            compositingStrategy = CompositingStrategy.ModulateAlpha
-                        }
-                        .semantics {
-                            if (contentDescription != null) {
-                                this.contentDescription = contentDescription
+                    modifier =
+                        modifier
+                            .graphicsLayer {
+                                alpha = percent.value
+                                translationX = (1f - percent.value) * maxTranslationX
+                                // Avoid an alpha offscreen buffer clipping the FAB's outer shadow.
+                                compositingStrategy = CompositingStrategy.ModulateAlpha
                             }
-                            if (onClickLabel != null) {
-                                this.onClick(label = onClickLabel, action = null)
-                            }
-                        },
+                            .semantics {
+                                if (contentDescription != null) {
+                                    this.contentDescription = contentDescription
+                                }
+                                if (onClickLabel != null) {
+                                    this.onClick(label = onClickLabel, action = null)
+                                }
+                            },
                     onClick = onClick,
                     content = {
                         GkIcon(imageVector = imageVector, contentDescription = null)

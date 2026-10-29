@@ -1,15 +1,18 @@
 package li.gkd.app.util
 
+import java.io.File
 import li.gkd.app.app
 import li.gkd.app.storage.AppStorageLayout
-import li.gkd.app.storage.StorageLocation
 import li.gkd.app.storage.DirectorySelectionRecord
+import li.gkd.app.storage.StorageLocation
 import li.gkd.app.storage.StorageSelectionReason
 import li.gkd.app.storage.recordStartupLog
-import java.io.File
 
 object AndroidStorage {
-    private data class StorageInitialization(val filesDir: File, val directorySelectionRecord: DirectorySelectionRecord)
+    private data class StorageInitialization(
+        val filesDir: File,
+        val directorySelectionRecord: DirectorySelectionRecord,
+    )
 
     private val initialization: StorageInitialization by lazy {
         val internalFiles = app.filesDir
@@ -20,24 +23,31 @@ object AndroidStorage {
         val createMarker = !marked && external == null
         val markerCreated = if (createMarker) markFile.createNewFile() else null
         val selected = external ?: internalFiles
-        val record = DirectorySelectionRecord(
-            markerBefore = marked,
-            externalResult = external?.absolutePath,
-            reason = when {
-                marked -> StorageSelectionReason.InternalMarkerExists
-                external != null -> StorageSelectionReason.ExternalAvailable
-                else -> StorageSelectionReason.ExternalNullFallback
-            },
-            markerCreated = markerCreated,
-            selectedPath = selected.absolutePath,
-            storageLocation = if (external != null) StorageLocation.External else StorageLocation.Internal,
-        )
+        val record =
+            DirectorySelectionRecord(
+                markerBefore = marked,
+                externalResult = external?.absolutePath,
+                reason =
+                    when {
+                        marked -> StorageSelectionReason.InternalMarkerExists
+                        external != null -> StorageSelectionReason.ExternalAvailable
+                        else -> StorageSelectionReason.ExternalNullFallback
+                    },
+                markerCreated = markerCreated,
+                selectedPath = selected.absolutePath,
+                storageLocation =
+                    if (external != null) StorageLocation.External else StorageLocation.Internal,
+            )
         recordStartupLog(record, internalFiles, external)
         StorageInitialization(selected, record)
     }
 
-    val filesDir get() = initialization.filesDir
-    val directorySelectionRecord get() = initialization.directorySelectionRecord
+    val filesDir
+        get() = initialization.filesDir
+
+    val directorySelectionRecord
+        get() = initialization.directorySelectionRecord
+
     private val cacheDir by lazy { app.externalCacheDir ?: app.cacheDir }
 
     val storage by lazy { AppStorageLayout(filesDir, cacheDir, app.filesDir) }

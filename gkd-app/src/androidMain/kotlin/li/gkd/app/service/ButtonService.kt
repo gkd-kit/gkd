@@ -19,9 +19,10 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.IntentUtils
 
-class ButtonService : OverlayWindowService(
-    positionKey = "button"
-) {
+class ButtonService :
+    OverlayWindowService(
+        positionKey = "button",
+    ) {
     override fun onClickView() {
         if (isOverlayContentHidden) return
         lifecycleScope.launchUi {
@@ -38,10 +39,10 @@ class ButtonService : OverlayWindowService(
         val alpha = 0.75f
         GkIcon(
             imageVector = GkIcons.CenterFocusWeak,
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.small)
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
-                .size(40.dp),
+            modifier =
+                Modifier.clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
+                    .size(40.dp),
             tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
         )
     }
@@ -66,6 +67,5 @@ class ButtonService : OverlayWindowService(
         }
 
         fun stop() = IntentUtils.stopService(ButtonService::class)
-
     }
 }

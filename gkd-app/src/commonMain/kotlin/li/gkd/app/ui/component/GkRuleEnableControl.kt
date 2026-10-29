@@ -40,27 +40,41 @@ data class RuleControlEnvironment(
     val blockedApps: Set<String>,
 ) {
     fun resolve(
-        subscription: RawSubscription, group: RawSubscription.RawGroupProps,
-        appId: String?, configs: SubscriptionConfigSnapshot,
-        configIndex: RuleConfigIndex = RuleConfigIndex(configs)
+        subscription: RawSubscription,
+        group: RawSubscription.RawGroupProps,
+        appId: String?,
+        configs: SubscriptionConfigSnapshot,
+        configIndex: RuleConfigIndex = RuleConfigIndex(configs),
     ): RuleControlState =
         RuleGroupPolicy.controlState(
-            subscription, group, appId, configs, apps[appId],
-            launcherAppId, systemApps, appId in blockedApps, configIndex
+            subscription,
+            group,
+            appId,
+            configs,
+            apps[appId],
+            launcherAppId,
+            systemApps,
+            appId in blockedApps,
+            configIndex,
         )
 
     fun app(
-        subsId: Long, appId: String, configs: SubscriptionConfigSnapshot,
-        configIndex: RuleConfigIndex = RuleConfigIndex(configs)
-    ): RuleControlState = RuleControlState(
-        setting = configIndex.setting(RuleSwitchTarget.App(subsId, appId)),
-        defaultEnabled = appId in apps,
-        scope = RuleControlScope.SubscriptionApp,
-        blockedApp = appId in blockedApps,
-        restrictions = buildList {
-            if (configIndex.subscriptionEnabled(subsId) == false) add(RuleRestriction.SubscriptionDisabled)
-        },
-    )
+        subsId: Long,
+        appId: String,
+        configs: SubscriptionConfigSnapshot,
+        configIndex: RuleConfigIndex = RuleConfigIndex(configs),
+    ): RuleControlState =
+        RuleControlState(
+            setting = configIndex.setting(RuleSwitchTarget.App(subsId, appId)),
+            defaultEnabled = appId in apps,
+            scope = RuleControlScope.SubscriptionApp,
+            blockedApp = appId in blockedApps,
+            restrictions =
+                buildList {
+                    if (configIndex.subscriptionEnabled(subsId) == false)
+                        add(RuleRestriction.SubscriptionDisabled)
+                },
+        )
 }
 
 @Composable
@@ -70,89 +84,116 @@ fun GkRuleEnableControl(
     modifier: Modifier = Modifier,
     identity: RuleSwitchTarget? = null,
     showCustomSettingIcon: Boolean = true,
-) = key(identity) {
-    // Lazy layouts can reuse M3's thumb node with its previous animation state.
-    // Reset only when its business target changes, never when checked changes.
-    var showReason by remember { mutableStateOf(false) }
-    val reasonAction = if (state.canEnable) {
-        Modifier
-    } else {
-        Modifier.minimumInteractiveComponentSize().clickable(
-            interactionSource = null,
-            indication = null,
-            role = Role.Button,
-            onClickLabel = stringResource(Res.string.rule_unavailable_reason_view),
-        ) { showReason = true }
-    }
-    // M3 keeps its track centered at its native size inside this expanded touch target.
-    // Its own interaction source draws press feedback on the thumb, not the whole target.
-    val switchLabel = stringResource(Res.string.rule_switch)
-    val configuredLabel = if (state.setting == RuleSetting.FollowDefault) {
-        stringResource(
-            Res.string.setting_follow_default_value,
-            stringResource(if (state.defaultEnabled) Res.string.action_turn_on else Res.string.action_close)
-        )
-    } else stringResource(state.setting.labelResource)
-    val description = configuredLabel + when {
-        !state.canEnable -> stringResource(Res.string.rule_unavailable_reason_action_suffix)
-        state.configuredEnabled && state.restrictions.isNotEmpty() ->
-            stringResource(Res.string.rule_temporarily_unavailable_prefix) + state.restrictions.map { it.message.messageResource() }.joinToString(
-                "，"
-            )
-
-        else -> ""
-    }
-    Switch(
-        modifier = modifier.then(reasonAction).semantics {
-            contentDescription = switchLabel
-            stateDescription = description
-        },
-        checked = state.configuredEnabled,
-        onCheckedChange = if (state.canEnable) {
-            { onSettingChange(RuleSetting.from(it)) }
-        } else null,
-        enabled = state.canEnable,
-        thumbContent = {
-            // Keep the thumb size consistent even when this surface hides its icon.
-            Box(Modifier.size(SwitchDefaults.IconSize)) {
-                if (showCustomSettingIcon && state.hasCustomSetting) {
-                    GkRulePropertyIcon(
-                        RuleProperty.CustomSetting,
-                        modifier = Modifier.size(SwitchDefaults.IconSize), contentDescription = null
-                    )
+) =
+    key(identity) {
+        // Lazy layouts can reuse M3's thumb node with its previous animation state.
+        // Reset only when its business target changes, never when checked changes.
+        var showReason by remember { mutableStateOf(false) }
+        val reasonAction =
+            if (state.canEnable) {
+                Modifier
+            } else {
+                Modifier.minimumInteractiveComponentSize().clickable(
+                    interactionSource = null,
+                    indication = null,
+                    role = Role.Button,
+                    onClickLabel = stringResource(Res.string.rule_unavailable_reason_view),
+                ) {
+                    showReason = true
                 }
             }
-        },
-    )
-    if (showReason) {
-        GkAlertDialog(
-            onDismissRequest = { showReason = false },
-            title = {
-                Text(
-                    if (state.canEnable) stringResource(Res.string.rule_status) else stringResource(
-                        Res.string.rule_unavailable
-                    )
+        // M3 keeps its track centered at its native size inside this expanded touch target.
+        // Its own interaction source draws press feedback on the thumb, not the whole target.
+        val switchLabel = stringResource(Res.string.rule_switch)
+        val configuredLabel =
+            if (state.setting == RuleSetting.FollowDefault) {
+                stringResource(
+                    Res.string.setting_follow_default_value,
+                    stringResource(
+                        if (state.defaultEnabled) Res.string.action_turn_on
+                        else Res.string.action_close,
+                    ),
                 )
-            },
-            text = {
-                Text(
-                    RulePropertyText.restrictionSummary(state)
-                        ?: stringResource(Res.string.rule_now_available)
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showReason = false
-                }) { Text(stringResource(Res.string.action_got_it)) }
-            },
-            dismissButton = {
-                if (state.configuredEnabled) {
-                    TextButton(onClick = {
-                        showReason = false
-                        onSettingChange(RuleSetting.Disabled)
-                    }) { Text(stringResource(Res.string.rule_close)) }
+            } else stringResource(state.setting.labelResource)
+        val description =
+            configuredLabel +
+                when {
+                    !state.canEnable ->
+                        stringResource(Res.string.rule_unavailable_reason_action_suffix)
+                    state.configuredEnabled && state.restrictions.isNotEmpty() ->
+                        stringResource(Res.string.rule_temporarily_unavailable_prefix) +
+                            state.restrictions
+                                .map { it.message.messageResource() }
+                                .joinToString(
+                                    "，",
+                                )
+
+                    else -> ""
+                }
+        Switch(
+            modifier =
+                modifier.then(reasonAction).semantics {
+                    contentDescription = switchLabel
+                    stateDescription = description
+                },
+            checked = state.configuredEnabled,
+            onCheckedChange =
+                if (state.canEnable) {
+                    { onSettingChange(RuleSetting.from(it)) }
+                } else null,
+            enabled = state.canEnable,
+            thumbContent = {
+                // Keep the thumb size consistent even when this surface hides its icon.
+                Box(Modifier.size(SwitchDefaults.IconSize)) {
+                    if (showCustomSettingIcon && state.hasCustomSetting) {
+                        GkRulePropertyIcon(
+                            RuleProperty.CustomSetting,
+                            modifier = Modifier.size(SwitchDefaults.IconSize),
+                            contentDescription = null,
+                        )
+                    }
                 }
             },
         )
+        if (showReason) {
+            GkAlertDialog(
+                onDismissRequest = { showReason = false },
+                title = {
+                    Text(
+                        if (state.canEnable) stringResource(Res.string.rule_status)
+                        else
+                            stringResource(
+                                Res.string.rule_unavailable,
+                            ),
+                    )
+                },
+                text = {
+                    Text(
+                        RulePropertyText.restrictionSummary(state)
+                            ?: stringResource(Res.string.rule_now_available),
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showReason = false
+                        },
+                    ) {
+                        Text(stringResource(Res.string.action_got_it))
+                    }
+                },
+                dismissButton = {
+                    if (state.configuredEnabled) {
+                        TextButton(
+                            onClick = {
+                                showReason = false
+                                onSettingChange(RuleSetting.Disabled)
+                            },
+                        ) {
+                            Text(stringResource(Res.string.rule_close))
+                        }
+                    }
+                },
+            )
+        }
     }
-}

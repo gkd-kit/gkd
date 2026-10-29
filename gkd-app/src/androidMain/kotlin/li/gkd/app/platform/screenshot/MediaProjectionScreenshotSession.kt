@@ -12,16 +12,16 @@ import android.media.projection.MediaProjection
 import android.os.Handler
 import android.os.HandlerThread
 import androidx.core.graphics.createBitmap
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.app
-import li.gkd.app.resources.*
 import li.gkd.app.logging.LogUtils
+import li.gkd.app.resources.*
 import li.gkd.app.util.ScreenUtils
 import li.gkd.app.util.isFullTransparent
 import org.jetbrains.compose.resources.StringResource
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 // https://github.com/npes87184/ScreenShareTile/blob/master/app/src/main/java/com/npes87184/screenshottile/ScreenshotService.kt
 
@@ -37,21 +37,20 @@ class MediaProjectionScreenshotSession(
         ProjectionStopped(
             Res.string.screenshot_permission_expired,
             stopProjection = false,
-            notifyOwner = true
+            notifyOwner = true,
         ),
         Closed(Res.string.screenshot_service_stopped, stopProjection = true, notifyOwner = false),
         InitializationFailed(
             Res.string.screenshot_service_init_failed,
             stopProjection = true,
-            notifyOwner = true
+            notifyOwner = true,
         ),
     }
 
     private val handlerThread = HandlerThread("gkd-screenshot").apply { start() }
     private val handler = Handler(handlerThread.looper)
 
-    @Volatile
-    private var closed = false
+    @Volatile private var closed = false
     private var terminatedOnHandler = false
     private var projectionCreationAttempted = false
     private var mediaProjection: MediaProjection? = null
@@ -59,11 +58,12 @@ class MediaProjectionScreenshotSession(
     private var activeImageReader: ImageReader? = null
     private var activeContinuation: CancellableContinuation<Bitmap>? = null
 
-    private val mediaProjectionCallback = object : MediaProjection.Callback() {
-        override fun onStop() {
-            terminate(TerminationReason.ProjectionStopped)
+    private val mediaProjectionCallback =
+        object : MediaProjection.Callback() {
+            override fun onStop() {
+                terminate(TerminationReason.ProjectionStopped)
+            }
         }
-    }
 
     @Synchronized
     override fun close() {
@@ -124,7 +124,7 @@ class MediaProjectionScreenshotSession(
         }
         if (!handler.post { startCapture(continuation) } && continuation.isActive) {
             continuation.resumeWithException(
-                IllegalStateException(Res.string.screenshot_thread_unavailable.getSync())
+                IllegalStateException(Res.string.screenshot_thread_unavailable.getSync()),
             )
         }
     }
@@ -133,13 +133,13 @@ class MediaProjectionScreenshotSession(
         if (!continuation.isActive) return
         if (closed) {
             continuation.resumeWithException(
-                IllegalStateException(Res.string.screenshot_service_unavailable.getSync())
+                IllegalStateException(Res.string.screenshot_service_unavailable.getSync()),
             )
             return
         }
         if (activeContinuation != null) {
             continuation.resumeWithException(
-                IllegalStateException(Res.string.screenshot_capturing.getSync())
+                IllegalStateException(Res.string.screenshot_capturing.getSync()),
             )
             return
         }
@@ -150,25 +150,29 @@ class MediaProjectionScreenshotSession(
             val screenSize = ScreenUtils.getSize()
             val captureDpi = ScreenUtils.getDensityDpi()
             val projection = getOrCreateProjection()
-            imageReader = ImageReader.newInstance(
-                screenSize.width,
-                screenSize.height,
-                PixelFormat.RGBA_8888,
-                2,
-            )
-            val display = virtualDisplay
-            if (display == null) {
-                virtualDisplay = projection.createVirtualDisplay(
-                    "screenshot",
+            imageReader =
+                ImageReader.newInstance(
                     screenSize.width,
                     screenSize.height,
-                    captureDpi,
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                    imageReader.surface,
-                    null,
-                    handler,
+                    PixelFormat.RGBA_8888,
+                    2,
                 )
-                    ?: throw IllegalStateException(Res.string.screenshot_virtual_display_failed.getSync())
+            val display = virtualDisplay
+            if (display == null) {
+                virtualDisplay =
+                    projection.createVirtualDisplay(
+                        "screenshot",
+                        screenSize.width,
+                        screenSize.height,
+                        captureDpi,
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                        imageReader.surface,
+                        null,
+                        handler,
+                    )
+                        ?: throw IllegalStateException(
+                            Res.string.screenshot_virtual_display_failed.getSync(),
+                        )
             } else {
                 display.resize(screenSize.width, screenSize.height, captureDpi)
                 display.surface = imageReader.surface
@@ -187,15 +191,18 @@ class MediaProjectionScreenshotSession(
     }
 
     private fun getOrCreateProjection(): MediaProjection {
-        mediaProjection?.let { return it }
-        check(!projectionCreationAttempted) { Res.string.screenshot_permission_reuse_forbidden.getSync() }
+        mediaProjection?.let {
+            return it
+        }
+        check(!projectionCreationAttempted) {
+            Res.string.screenshot_permission_reuse_forbidden.getSync()
+        }
         projectionCreationAttempted = true
-        return (
-                app.mediaProjectionManager.getMediaProjection(
-                    RESULT_OK,
-                    screenshotIntent,
-                ) ?: throw IllegalStateException(Res.string.screenshot_permission_failed.getSync())
-                ).also {
+        return (app.mediaProjectionManager.getMediaProjection(
+                RESULT_OK,
+                screenshotIntent,
+            ) ?: throw IllegalStateException(Res.string.screenshot_permission_failed.getSync()))
+            .also {
                 it.registerCallback(mediaProjectionCallback, handler)
                 mediaProjection = it
             }
@@ -222,13 +229,14 @@ class MediaProjectionScreenshotSession(
             val rowWidth = plane.rowStride / plane.pixelStride
             bitmapWithStride = createBitmap(rowWidth, image.height)
             bitmapWithStride.copyPixelsFromBuffer(plane.buffer)
-            bitmap = Bitmap.createBitmap(
-                bitmapWithStride,
-                0,
-                0,
-                reader.width,
-                reader.height,
-            )
+            bitmap =
+                Bitmap.createBitmap(
+                    bitmapWithStride,
+                    0,
+                    0,
+                    reader.width,
+                    reader.height,
+                )
             if (bitmap === bitmapWithStride) {
                 bitmapWithStride = null
             }

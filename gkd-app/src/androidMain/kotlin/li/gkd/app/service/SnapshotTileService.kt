@@ -5,12 +5,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import li.gkd.app.appScope
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.AndroidAutomationSessions
 import li.gkd.app.matching.action.performActionBack
 import li.gkd.app.resources.*
 import li.gkd.app.snapshot.SnapshotCaptureHost
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 
 class SnapshotTileService : BaseTileService() {
@@ -64,7 +64,7 @@ private fun execSnapshot() {
                 if (timeout()) {
                     ToastUtils.show(
                         Res.string.snapshot_activity_switch_missing.getSync(),
-                        forced = true
+                        forced = true,
                     )
                     break
                 }

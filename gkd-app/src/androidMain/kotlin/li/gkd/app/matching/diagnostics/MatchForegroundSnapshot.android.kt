@@ -8,7 +8,10 @@ import li.gkd.app.util.ScreenUtils
 actual fun matchForegroundSnapshot(): ForegroundDebugState? {
     val service = AndroidAutomationSessions.service
     return ForegroundDebugState(
-        isInteractive, ScreenUtils.isLocked(), service?.mode?.value,
-        AndroidForegroundState.foregroundSnapshot(), service?.let(AndroidAutomationSessions::isEffective) == true,
+        isInteractive,
+        ScreenUtils.isLocked(),
+        service?.mode?.value,
+        AndroidForegroundState.foregroundSnapshot(),
+        service?.let(AndroidAutomationSessions::isEffective) == true,
     )
 }

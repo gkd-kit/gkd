@@ -30,13 +30,29 @@ fun <N : Any> matchRuleSelectors(
     root: () -> N?,
     query: (N, Selector) -> N?,
     explain: ((String) -> Unit)? = null,
-): N? = matchRuleSelectorsUsing(rule.matchRoot, rule.anyMatches, rule.matches, rule.excludeMatches, rule.excludeAllMatches,
-    node, root, { target, selector, _, _ -> query(target, selector) }, explain)
+): N? =
+    matchRuleSelectorsUsing(
+        rule.matchRoot,
+        rule.anyMatches,
+        rule.matches,
+        rule.excludeMatches,
+        rule.excludeAllMatches,
+        node,
+        root,
+        { target, selector, _, _ -> query(target, selector) },
+        explain,
+    )
 
 /** Selector grouping semantics shared by ordinary queries and diagnostics. */
 inline fun <N : Any> matchRuleSelectorsUsing(
-    matchRoot: Boolean, anyMatches: List<Selector>, matches: List<Selector>, excludeMatches: List<Selector>,
-    excludeAllMatches: List<Selector>, node: N, root: () -> N?, query: (N, Selector, String, Int) -> N?,
+    matchRoot: Boolean,
+    anyMatches: List<Selector>,
+    matches: List<Selector>,
+    excludeMatches: List<Selector>,
+    excludeAllMatches: List<Selector>,
+    node: N,
+    root: () -> N?,
+    query: (N, Selector, String, Int) -> N?,
     noinline explain: ((String) -> Unit)?,
 ): N? {
     val targetRoot = if (matchRoot) root() ?: return null else node
@@ -44,7 +60,8 @@ inline fun <N : Any> matchRuleSelectorsUsing(
     if (anyMatches.isNotEmpty()) {
         for ((index, selector) in anyMatches.withIndex()) {
             result = query(targetRoot, selector, "anyMatches", index)
-            if (explain != null) explain("anyMatches[$index]:${if (result == null) "miss" else "hit"}")
+            if (explain != null)
+                explain("anyMatches[$index]:${if (result == null) "miss" else "hit"}")
             if (result != null) break
         }
         if (result == null) return null

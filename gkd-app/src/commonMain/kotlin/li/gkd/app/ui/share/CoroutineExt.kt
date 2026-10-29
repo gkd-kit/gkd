@@ -18,20 +18,21 @@ fun CoroutineScope.launchUi(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     @CallSite loc: String = "",
     block: suspend CoroutineScope.() -> Unit,
-): Job = launch(context, start) {
-    try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        LogUtils.e(e, loc = loc)
-        ToastUtils.show(
-            e.resolveMessage(),
-            forced = e is InspectionException,
-            loc = "",
-        )
+): Job =
+    launch(context, start) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            LogUtils.e(e, loc = loc)
+            ToastUtils.show(
+                e.resolveMessage(),
+                forced = e is InspectionException,
+                loc = "",
+            )
+        }
     }
-}
 
 fun CoroutineScope.launchUiAction(
     context: CoroutineContext = EmptyCoroutineContext,

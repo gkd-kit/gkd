@@ -3,6 +3,7 @@ package li.gkd.selector
 /** Observes only conditions actually evaluated. No node/value is read again for explanation. */
 public interface SelectorObserver<T : Any> {
     public val enabled: Boolean
+
     public fun record(event: SelectorEvaluation<T>)
 }
 
@@ -19,7 +20,7 @@ public enum class SelectorEvaluationKind(public val key: String) {
     CachedFailure("cached_failure"),
     RelationExhausted("relation_exhausted"),
     RelationSearch("relation_search"),
-    LimitReached("limit_reached");
+    LimitReached("limit_reached"),
 }
 
 public data class SelectorEvaluation<T : Any>(

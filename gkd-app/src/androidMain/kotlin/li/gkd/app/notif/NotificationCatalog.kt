@@ -1,18 +1,18 @@
 package li.gkd.app.notif
 
 import android.app.Service
+import kotlin.reflect.KClass
 import li.gkd.app.META
 import li.gkd.app.resources.*
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
-import li.gkd.app.service.EventService
 import li.gkd.app.service.DebugService
+import li.gkd.app.service.EventService
+import li.gkd.app.service.MatchDiagnosticService
 import li.gkd.app.service.ScreenshotService
 import li.gkd.app.service.TrackService
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import li.gkd.app.util.Constants
-import kotlin.reflect.KClass
-import li.gkd.app.service.MatchDiagnosticService
 
 enum class ForegroundNotificationKey(
     val id: Int,
@@ -56,8 +56,10 @@ data class ForegroundNotification(
 ) : AppNotificationSpec {
     override val id: Int
         get() = key.id
+
     override val channel: AppNotificationChannel
         get() = key.channel
+
     override val ongoing = true
     override val autoCancel = false
 
@@ -75,8 +77,10 @@ data class PostedNotification(
 ) : AppNotificationSpec {
     override val id: Int
         get() = key.id
+
     override val channel: AppNotificationChannel
         get() = key.channel
+
     override val stopService: KClass<out Service>? = null
 
     fun post() {
@@ -85,54 +89,65 @@ data class PostedNotification(
 }
 
 object NotificationCatalog {
-    fun matchDiagnostic(saving: Boolean = false) = ForegroundNotification(
-        key = ForegroundNotificationKey.MatchDiagnostic,
-        title = (if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing).getSync(),
-        text = if (saving) null else Res.string.match_debug_notification_help.getSync(),
-        uri = "gkd://page/matching-diagnostics",
-        stopService = if (saving) null else MatchDiagnosticService::class,
-    )
+    fun matchDiagnostic(saving: Boolean = false) =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.MatchDiagnostic,
+            title =
+                (if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing)
+                    .getSync(),
+            text = if (saving) null else Res.string.match_debug_notification_help.getSync(),
+            uri = "gkd://page/matching-diagnostics",
+            stopService = if (saving) null else MatchDiagnosticService::class,
+        )
+
     fun status(
         title: String = META.appName,
         text: String? = Res.string.a11y_running.getSync(),
         uri: String? = null,
-    ) = ForegroundNotification(
-        key = ForegroundNotificationKey.Status,
-        title = title,
-        text = text,
-        uri = uri,
-    )
+    ) =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Status,
+            title = title,
+            text = text,
+            uri = uri,
+        )
 
-    fun screenshot() = ForegroundNotification(
-        key = ForegroundNotificationKey.Screenshot,
-        title = Res.string.screenshot_capture_enabled.getSync(),
-        text = Res.string.screenshot_capture_notification_description.getSync(),
-        uri = "gkd://page/1",
-        stopService = ScreenshotService::class,
-    )
+    fun screenshot() =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Screenshot,
+            title = Res.string.screenshot_capture_enabled.getSync(),
+            text = Res.string.screenshot_capture_notification_description.getSync(),
+            uri = "gkd://page/1",
+            stopService = ScreenshotService::class,
+        )
 
-    fun button() = ForegroundNotification(
-        key = ForegroundNotificationKey.Button,
-        title = Res.string.snapshot_button_enabled.getSync(),
-        text = Res.string.snapshot_button_notification_description.getSync(),
-        uri = "gkd://page/1",
-        stopService = ButtonService::class,
-    )
+    fun button() =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Button,
+            title = Res.string.snapshot_button_enabled.getSync(),
+            text = Res.string.snapshot_button_notification_description.getSync(),
+            uri = "gkd://page/1",
+            stopService = ButtonService::class,
+        )
 
-    fun debug(port: Int, localNetworkIps: List<String> = emptyList()) = ForegroundNotification(
-        key = ForegroundNotificationKey.Debug,
-        title = Res.string.debug_service_enabled.getSync(),
-        text = localNetworkIps.ifEmpty { listOf(Constants.loopbackHost) }
-            .joinToString(", ") { "$it:$port" },
-        uri = "gkd://page/1",
-        stopService = DebugService::class,
-    )
+    fun debug(port: Int, localNetworkIps: List<String> = emptyList()) =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Debug,
+            title = Res.string.debug_service_enabled.getSync(),
+            text =
+                localNetworkIps
+                    .ifEmpty { listOf(Constants.loopbackHost) }
+                    .joinToString(", ") { "$it:$port" },
+            uri = "gkd://page/1",
+            stopService = DebugService::class,
+        )
 
-    fun expose() = ForegroundNotification(
-        key = ForegroundNotificationKey.Expose,
-        title = Res.string.external_call_processing.getSync(),
-        text = Res.string.external_call_notification_description.getSync(),
-    )
+    fun expose() =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Expose,
+            title = Res.string.external_call_processing.getSync(),
+            text = Res.string.external_call_notification_description.getSync(),
+        )
 
     fun snapshotSaved(
         appName: String,
@@ -140,37 +155,44 @@ object NotificationCatalog {
         screenshotStatus: SnapshotScreenshotStatus,
         savedToDownloads: Boolean,
         exportDetail: String? = null,
-    ) = PostedNotification(
-        key = PostedNotificationKey.SnapshotSaved,
-        title = Res.string.snapshot_saved_app.getSync(appName),
-        text = buildList {
-            activityId?.let(::add)
-            screenshotStatus.detailText()?.let(::add)
-            exportDetail?.let(::add)
-            if (savedToDownloads) add(Res.string.saved_to_downloads.getSync())
-        }.joinToString(separator = " · ").takeIf { it.isNotEmpty() },
-        uri = "gkd://page/2",
-    )
+    ) =
+        PostedNotification(
+            key = PostedNotificationKey.SnapshotSaved,
+            title = Res.string.snapshot_saved_app.getSync(appName),
+            text =
+                buildList {
+                        activityId?.let(::add)
+                        screenshotStatus.detailText()?.let(::add)
+                        exportDetail?.let(::add)
+                        if (savedToDownloads) add(Res.string.saved_to_downloads.getSync())
+                    }
+                    .joinToString(separator = " · ")
+                    .takeIf { it.isNotEmpty() },
+            uri = "gkd://page/2",
+        )
 
-    fun activity(text: String? = null) = ForegroundNotification(
-        key = ForegroundNotificationKey.Activity,
-        title = Res.string.activity_info_showing.getSync(),
-        text = text,
-        uri = "gkd://page/1",
-        stopService = ActivityService::class,
-    )
+    fun activity(text: String? = null) =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Activity,
+            title = Res.string.activity_info_showing.getSync(),
+            text = text,
+            uri = "gkd://page/1",
+            stopService = ActivityService::class,
+        )
 
-    fun event() = ForegroundNotification(
-        key = ForegroundNotificationKey.Event,
-        title = Res.string.a11y_events_recording.getSync(),
-        uri = "gkd://page/1",
-        stopService = EventService::class,
-    )
+    fun event() =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Event,
+            title = Res.string.a11y_events_recording.getSync(),
+            uri = "gkd://page/1",
+            stopService = EventService::class,
+        )
 
-    fun track() = ForegroundNotification(
-        key = ForegroundNotificationKey.Track,
-        title = Res.string.track_overlay_enabled.getSync(),
-        uri = "gkd://page?tab=3",
-        stopService = TrackService::class,
-    )
+    fun track() =
+        ForegroundNotification(
+            key = ForegroundNotificationKey.Track,
+            title = Res.string.track_overlay_enabled.getSync(),
+            uri = "gkd://page?tab=3",
+            stopService = TrackService::class,
+        )
 }

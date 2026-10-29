@@ -8,11 +8,13 @@ import li.gkd.app.settings.AutomatorMode
 
 interface AndroidAutomationSession {
     suspend fun screenshot(): Bitmap?
+
     val windowNodeInfo: AccessibilityNodeInfo?
     val windowInfos: List<AccessibilityWindowInfo>
     val scope: CoroutineScope
     var justStarted: Boolean
     val mode: AutomatorMode
     val matchHost: AndroidMatchHost
+
     fun shutdown(temp: Boolean = false)
 }

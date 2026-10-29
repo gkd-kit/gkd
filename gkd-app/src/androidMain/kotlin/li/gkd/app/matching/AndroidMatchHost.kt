@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.gkd.app.META
 import li.gkd.app.matching.action.ActionPerformer
+import li.gkd.app.matching.diagnostics.MatchEventDrop
 import li.gkd.app.matching.input.A11yEvent
 import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.AndroidForegroundState
@@ -54,7 +55,6 @@ import li.gkd.app.subscription.refreshSubscriptionsOnLauncher
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.AndroidToastUtils
 import li.gkd.app.util.monotonicTimeMillis
-import li.gkd.app.matching.diagnostics.MatchEventDrop
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 

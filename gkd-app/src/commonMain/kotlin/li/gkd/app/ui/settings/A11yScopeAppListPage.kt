@@ -17,12 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import li.gkd.app.app.AppQuery
+import li.gkd.app.app.AppSort
+import li.gkd.app.model.findOption
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
@@ -44,14 +45,13 @@ import li.gkd.app.ui.component.GkPageBottomSpaceDefaults
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.isFullVisible
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.icon.GkBackCloseIcon
 import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.option.AppGroupOption
-import li.gkd.app.app.AppSort
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -67,20 +67,30 @@ fun A11yScopeAppListPage(host: UiHost) {
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val searchStr by vm.searchStr.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf(searchStr) }
-    LaunchedEffect(searchStr) { delay(200); query = searchStr }
-    val source by vm.uiState.collectAsStateWithLifecycle()
-    val result = when (val loaded = source) {
-        is Loadable.Ready -> Loadable.Ready(
-            AppQuery.select(
-                loaded.value.apps, query, store.a11yScopeAppGroupType, store.a11yScopeAppSort,
-                actionOrder = loaded.value.actionOrder, visitOrder = loaded.value.visitOrder,
-                triggerCounts = loaded.value.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
-            )
-        )
-
-        is Loadable.Failure -> loaded
-        Loadable.Loading -> Loadable.Loading
+    LaunchedEffect(searchStr) {
+        delay(200)
+        query = searchStr
     }
+    val source by vm.uiState.collectAsStateWithLifecycle()
+    val result =
+        when (val loaded = source) {
+            is Loadable.Ready ->
+                Loadable.Ready(
+                    AppQuery.select(
+                        loaded.value.apps,
+                        query,
+                        store.a11yScopeAppGroupType,
+                        store.a11yScopeAppSort,
+                        actionOrder = loaded.value.actionOrder,
+                        visitOrder = loaded.value.visitOrder,
+                        triggerCounts =
+                            loaded.value.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
+                    ),
+                )
+
+            is Loadable.Failure -> loaded
+            Loadable.Loading -> Loadable.Loading
+        }
     val appInfos = result.value?.apps.orEmpty()
     val showAllApps = result.value?.showAllApps == true
     val editorState = vm.editorState
@@ -92,10 +102,13 @@ fun A11yScopeAppListPage(host: UiHost) {
     val scrollBehavior = pageScrollState.scrollBehavior
     val listState = pageScrollState.listState
     pageScrollState.ResetOnListChange(appInfos, key = { it.id })
-    GkBackHandler(editable, vm.scope.launchUiAction {
-        host.hideIme()
-        vm.closeEditor()
-    })
+    GkBackHandler(
+        editable,
+        vm.scope.launchUiAction {
+            host.hideIme()
+            vm.closeEditor()
+        },
+    )
     GkScaffold(
         modifier = Modifier.gkTopAppBarScroll(scrollBehavior),
         topBar = {
@@ -104,10 +117,11 @@ fun A11yScopeAppListPage(host: UiHost) {
                 canScroll = !editable,
                 navigationIcon = {
                     IconButton(
-                        onClick = vm.scope.launchUiAction {
-                            host.hideIme()
-                            vm.onBack()
-                        }
+                        onClick =
+                            vm.scope.launchUiAction {
+                                host.hideIme()
+                                vm.onBack()
+                            },
                     ) {
                         GkBackCloseIcon(backOrClose = !editable)
                     }
@@ -127,11 +141,11 @@ fun A11yScopeAppListPage(host: UiHost) {
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
                     } else {
-                        val titleModifier = Modifier
-                            .noRippleClickable(
+                        val titleModifier =
+                            Modifier.noRippleClickable(
                                 onClick = {
                                     pageScrollState.resetScroll()
-                                }
+                                },
                             )
                         Text(
                             modifier = titleModifier,
@@ -147,10 +161,11 @@ fun A11yScopeAppListPage(host: UiHost) {
                             GkIconButton(
                                 imageVector = GkIcons.Check,
                                 contentDescription = stringResource(Res.string.action_save),
-                                onClick = vm.scope.launchUiAction {
-                                    host.hideIme()
-                                    vm.saveEditor()
-                                },
+                                onClick =
+                                    vm.scope.launchUiAction {
+                                        host.hideIme()
+                                        vm.saveEditor()
+                                    },
                             )
                         },
                         contentFalse = {
@@ -159,39 +174,44 @@ fun A11yScopeAppListPage(host: UiHost) {
                                 GkSearchCloseIconButton(
                                     onClick = {
                                         editorState.toggleSearch(
-                                            searchStr
-                                        ) { vm.setSearchStr(it.trim()) }
+                                            searchStr,
+                                        ) {
+                                            vm.setSearchStr(it.trim())
+                                        }
                                     },
                                     isSearchOpen = showSearchBar,
                                 )
-                                GkFilterIconButton(filtered = !showAllApps, onClick = {
-                                    expanded = true
-                                })
+                                GkFilterIconButton(
+                                    filtered = !showAllApps,
+                                    onClick = {
+                                        expanded = true
+                                    },
+                                )
                                 Box(
-                                    modifier = Modifier
-                                        .wrapContentSize(Alignment.TopStart)
+                                    modifier = Modifier.wrapContentSize(Alignment.TopStart),
                                 ) {
                                     DropdownMenu(
                                         expanded = expanded,
-                                        onDismissRequest = { expanded = false }
+                                        onDismissRequest = { expanded = false },
                                     ) {
                                         GkMenuGroupCard(
                                             inTop = true,
-                                            title = stringResource(Res.string.sort_title)
+                                            title = stringResource(Res.string.sort_title),
                                         ) {
                                             AppSort.options.forEach { option ->
                                                 GkMenuItemRadioButton(
                                                     text = stringResource(option.labelResource),
-                                                    selected = AppSort.options.findOption(
-                                                        store.a11yScopeAppSort
-                                                    ) == option,
+                                                    selected =
+                                                        AppSort.options.findOption(
+                                                            store.a11yScopeAppSort,
+                                                        ) == option,
                                                     onClick = { vm.setSortType(option) },
                                                 )
                                             }
                                         }
                                         GkMenuGroupCard(
                                             inTop = true,
-                                            title = stringResource(Res.string.display_title)
+                                            title = stringResource(Res.string.display_title),
                                         ) {
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue =
@@ -199,7 +219,8 @@ fun A11yScopeAppListPage(host: UiHost) {
                                                 GkMenuItemCheckbox(
                                                     enabled = newValue != 0,
                                                     text = stringResource(option.labelResource),
-                                                    checked = option.include(store.a11yScopeAppGroupType),
+                                                    checked =
+                                                        option.include(store.a11yScopeAppGroupType),
                                                     onClick = { vm.setAppGroupType(newValue) },
                                                 )
                                             }
@@ -214,7 +235,8 @@ fun A11yScopeAppListPage(host: UiHost) {
                         contentDescription = stringResource(Res.string.scoped_a11y_help),
                         onClick = vm.scope.launchUiAction { vm.showHelp() },
                     )
-                })
+                },
+            )
         },
         floatingActionButton = {
             GkAnimatedFloatingActionButton(
@@ -222,7 +244,7 @@ fun A11yScopeAppListPage(host: UiHost) {
                 onClickLabel = stringResource(Res.string.text_edit_mode_enter),
                 onClick = vm::startEditing,
                 imageVector = GkIcons.Edit,
-                contentDescription = stringResource(Res.string.text_edit)
+                contentDescription = stringResource(Res.string.text_edit),
             )
         },
     ) { contentPadding ->
@@ -236,7 +258,8 @@ fun A11yScopeAppListPage(host: UiHost) {
                 indicatorSize = editorUiState.indicatorSize,
             )
         } else {
-            val a11yScopeAppList by SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
+            val a11yScopeAppList by
+                SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,

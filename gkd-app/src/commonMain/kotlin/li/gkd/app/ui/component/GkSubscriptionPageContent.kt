@@ -39,16 +39,18 @@ fun <T : Any> GkSubscriptionPageContent(
     // An explicit removal may invalidate this page before its navigation exit ends.
     // Keep this purely visual snapshot; failures still render normally otherwise.
     when (val current = if (retainContent) lastReady ?: state else state) {
-        Loadable.Loading -> SubscriptionStatePage(onBack = onBack) {
-            CircularProgressIndicator()
-        }
-        is Loadable.Failure -> SubscriptionStatePage(onBack = onBack) {
-            Text(
-                text = current.cause.messageResource(),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
+        Loadable.Loading ->
+            SubscriptionStatePage(onBack = onBack) {
+                CircularProgressIndicator()
+            }
+        is Loadable.Failure ->
+            SubscriptionStatePage(onBack = onBack) {
+                Text(
+                    text = current.cause.messageResource(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
 
         is Loadable.Ready -> content(current.value)
     }
@@ -70,10 +72,7 @@ private fun SubscriptionStatePage(onBack: () -> Unit, content: @Composable () ->
         },
     ) { contentPadding ->
         Box(
-            modifier = Modifier
-                .scaffoldPadding(contentPadding)
-                .fillMaxSize()
-                .padding(24.dp),
+            modifier = Modifier.scaffoldPadding(contentPadding).fillMaxSize().padding(24.dp),
             contentAlignment = Alignment.Center,
         ) {
             content()

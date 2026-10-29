@@ -5,7 +5,8 @@ import li.gkd.db.Db
 import li.gkd.db.SubsItem
 
 object SubscriptionPersistence {
-    private val files get() = SubscriptionRepository.files
+    private val files
+        get() = SubscriptionRepository.files
 
     enum class DeleteStage {
         File,
@@ -48,21 +49,23 @@ object SubscriptionPersistence {
     }
 
     suspend fun delete(requestedIds: LongArray): DeleteResult {
-        val existingIds = try {
-            Db.subsItemDao.queryAll().mapTo(mutableSetOf()) { it.id }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            throw DeleteException(DeleteStage.Database, e)
-        }
+        val existingIds =
+            try {
+                Db.subsItemDao.queryAll().mapTo(mutableSetOf()) { it.id }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                throw DeleteException(DeleteStage.Database, e)
+            }
         val targetIds = requestedIds.filterTo(mutableSetOf()) { it in existingIds }
         if (targetIds.isEmpty()) return DeleteResult(emptySet(), 0)
 
-        val previousFiles = try {
-            targetIds.associateWith(files::readBytes)
-        } catch (e: Exception) {
-            throw DeleteException(DeleteStage.File, e)
-        }
+        val previousFiles =
+            try {
+                targetIds.associateWith(files::readBytes)
+            } catch (e: Exception) {
+                throw DeleteException(DeleteStage.File, e)
+            }
         try {
             targetIds.forEach(files::delete)
         } catch (e: Exception) {
@@ -70,22 +73,23 @@ object SubscriptionPersistence {
             throw DeleteException(DeleteStage.File, e)
         }
 
-        val deleteSize = try {
-            Db.withTransaction {
-                val ids = targetIds.toLongArray()
-                val size = Db.subsItemDao.deleteById(*ids)
-                if (size > 0) {
-                    Db.actionLogDao.deleteBySubsId(*ids)
+        val deleteSize =
+            try {
+                Db.withTransaction {
+                    val ids = targetIds.toLongArray()
+                    val size = Db.subsItemDao.deleteById(*ids)
+                    if (size > 0) {
+                        Db.actionLogDao.deleteBySubsId(*ids)
+                    }
+                    size
                 }
-                size
+            } catch (e: CancellationException) {
+                restoreFiles(previousFiles, e)
+                throw e
+            } catch (e: Exception) {
+                restoreFiles(previousFiles, e)
+                throw DeleteException(DeleteStage.Database, e)
             }
-        } catch (e: CancellationException) {
-            restoreFiles(previousFiles, e)
-            throw e
-        } catch (e: Exception) {
-            restoreFiles(previousFiles, e)
-            throw DeleteException(DeleteStage.Database, e)
-        }
         if (deleteSize == 0) {
             restoreFiles(previousFiles)?.let { error ->
                 throw DeleteException(DeleteStage.File, error)
@@ -96,17 +100,19 @@ object SubscriptionPersistence {
 
     private suspend fun cleanupConfigs(subscription: RawSubscription): Int {
         val globalKeys = subscription.globalGroups.mapTo(mutableSetOf()) { it.key }
-        val appKeys = subscription.apps.associate { app ->
-            app.id to app.groups.mapTo(mutableSetOf()) { it.key }
-        }
+        val appKeys =
+            subscription.apps.associate { app ->
+                app.id to app.groups.mapTo(mutableSetOf()) { it.key }
+            }
         val appConfigs = Db.subsAppGroupConfigDao.queryBySubsIds(listOf(subscription.id))
         val globalConfigs = Db.subsGlobalGroupConfigDao.queryBySubsIds(listOf(subscription.id))
         val obsoleteApps = appConfigs.filter { appKeys[it.appId]?.contains(it.groupKey) != true }
         val obsoleteGlobals = globalConfigs.filter { it.groupKey !in globalKeys }
         val categoryKeys = subscription.categories.mapTo(mutableSetOf()) { it.key }
         val obsoleteCategories =
-            Db.subsCategoryConfigDao.querySubsItemConfig(listOf(subscription.id))
-                .filter { it.categoryKey !in categoryKeys }
+            Db.subsCategoryConfigDao.querySubsItemConfig(listOf(subscription.id)).filter {
+                it.categoryKey !in categoryKeys
+            }
         val size = obsoleteApps.size + obsoleteGlobals.size + obsoleteCategories.size
         if (size == 0) return 0
         Db.subsAppGroupConfigDao.delete(*obsoleteApps.toTypedArray())
@@ -116,9 +122,7 @@ object SubscriptionPersistence {
     }
 
     private fun restoreFile(id: Long, bytes: ByteArray?, cause: Throwable) {
-        runCatching { this.files.restore(id, bytes) }
-            .exceptionOrNull()
-            ?.let(cause::addSuppressed)
+        runCatching { this.files.restore(id, bytes) }.exceptionOrNull()?.let(cause::addSuppressed)
     }
 
     private fun restoreFiles(

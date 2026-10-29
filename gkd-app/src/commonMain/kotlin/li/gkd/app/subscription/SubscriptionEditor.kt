@@ -1,6 +1,5 @@
 package li.gkd.app.subscription
 
-
 class SubscriptionEditor(
     subscription: RawSubscription,
 ) {
@@ -9,7 +8,10 @@ class SubscriptionEditor(
     fun update(transform: RawSubscription.() -> RawSubscription) {
         val next = current.transform()
         require(next.id == current.id) {
-            throw SubscriptionException(SubscriptionFailureReason.SubscriptionIdImmutable, listOf(current.id.toString(), next.id.toString()))
+            throw SubscriptionException(
+                SubscriptionFailureReason.SubscriptionIdImmutable,
+                listOf(current.id.toString(), next.id.toString()),
+            )
         }
         current = next
     }
@@ -18,10 +20,11 @@ class SubscriptionEditor(
         appId: String,
         transform: RawSubscription.RawApp.() -> RawSubscription.RawApp,
     ): Boolean {
-        val newApps = current.apps.updateFirstOrNull(
-            predicate = { it.id == appId },
-            transform = { it.transform() },
-        ) ?: return false
+        val newApps =
+            current.apps.updateFirstOrNull(
+                predicate = { it.id == appId },
+                transform = { it.transform() },
+            ) ?: return false
         if (newApps !== current.apps) {
             current = current.copy(apps = newApps)
         }
@@ -41,10 +44,15 @@ class SubscriptionEditor(
     fun mergeApp(app: RawSubscription.RawApp): SubscriptionEditResult<RawSubscription.RawApp> {
         val currentApp = current.apps.find { it.id == app.id }
         if (currentApp == null) {
-            validateGroupNames(emptyList(), app.groups)?.let { return it }
-            return SubscriptionEditResult.Success(app.copy(
-                groups = normalizeAppGroupKeys(emptyList(), app.groups),
-            ).also(::putApp))
+            validateGroupNames(emptyList(), app.groups)?.let {
+                return it
+            }
+            return SubscriptionEditResult.Success(
+                app.copy(
+                        groups = normalizeAppGroupKeys(emptyList(), app.groups),
+                    )
+                    .also(::putApp),
+            )
         }
         return appendAppGroups(app, app.groups)
     }
@@ -54,9 +62,13 @@ class SubscriptionEditor(
         groups: List<RawSubscription.RawAppGroup>,
     ): SubscriptionEditResult<RawSubscription.RawApp> {
         val app = current.apps.find { it.id == targetApp.id } ?: targetApp
-        validateGroupNames(app.groups, groups)?.let { return it }
+        validateGroupNames(app.groups, groups)?.let {
+            return it
+        }
         val normalizedGroups = normalizeAppGroupKeys(app.groups, groups)
-        return SubscriptionEditResult.Success(app.copy(groups = app.groups + normalizedGroups).also(::putApp))
+        return SubscriptionEditResult.Success(
+            app.copy(groups = app.groups + normalizedGroups).also(::putApp),
+        )
     }
 
     private fun removeApp(appId: String): RawSubscription.RawApp? {
@@ -69,10 +81,11 @@ class SubscriptionEditor(
         categoryKey: Int,
         transform: RawSubscription.RawCategory.() -> RawSubscription.RawCategory,
     ): Boolean {
-        val newCategories = current.categories.updateFirstOrNull(
-            predicate = { it.key == categoryKey },
-            transform = { it.transform() },
-        ) ?: return false
+        val newCategories =
+            current.categories.updateFirstOrNull(
+                predicate = { it.key == categoryKey },
+                transform = { it.transform() },
+            ) ?: return false
         if (newCategories !== current.categories) {
             current = current.copy(categories = newCategories)
         }
@@ -99,10 +112,11 @@ class SubscriptionEditor(
         groupKey: Int,
         transform: RawSubscription.RawGlobalGroup.() -> RawSubscription.RawGlobalGroup,
     ): Boolean {
-        val newGroups = current.globalGroups.updateFirstOrNull(
-            predicate = { it.key == groupKey },
-            transform = { it.transform() },
-        ) ?: return false
+        val newGroups =
+            current.globalGroups.updateFirstOrNull(
+                predicate = { it.key == groupKey },
+                transform = { it.transform() },
+            ) ?: return false
         if (newGroups !== current.globalGroups) {
             current = current.copy(globalGroups = newGroups)
         }
@@ -124,7 +138,9 @@ class SubscriptionEditor(
     fun appendGlobalGroup(
         group: RawSubscription.RawGlobalGroup,
     ): SubscriptionEditResult<RawSubscription.RawGlobalGroup> {
-        validateGroupNames(current.globalGroups, listOf(group))?.let { return it }
+        validateGroupNames(current.globalGroups, listOf(group))?.let {
+            return it
+        }
         val normalizedGroup = normalizeGlobalGroupKey(current.globalGroups, group)
         putGlobalGroup(normalizedGroup)
         return SubscriptionEditResult.Success(normalizedGroup)
@@ -147,10 +163,11 @@ class SubscriptionEditor(
     ): Boolean {
         var groupFound = false
         updateApp(appId) {
-            val newGroups = groups.updateFirstOrNull(
-                predicate = { it.key == groupKey },
-                transform = { group -> group.transform() },
-            ) ?: return@updateApp this
+            val newGroups =
+                groups.updateFirstOrNull(
+                    predicate = { it.key == groupKey },
+                    transform = { group -> group.transform() },
+                ) ?: return@updateApp this
             groupFound = true
             if (newGroups === groups) {
                 this
@@ -173,10 +190,15 @@ class SubscriptionEditor(
             putApp(targetApp.copy(groups = listOf(newGroup)))
             return SubscriptionEditResult.Success(Unit)
         }
-        val group = currentApp.groups.find { it.key == groupKey }
-            ?: return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleMissing)
-        if (group != expectedGroup) return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleEditConflict)
-        validateGroupNames(currentApp.groups.filterNot { it.key == groupKey }, listOf(newGroup))?.let { return it }
+        val group =
+            currentApp.groups.find { it.key == groupKey }
+                ?: return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleMissing)
+        if (group != expectedGroup)
+            return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleEditConflict)
+        validateGroupNames(currentApp.groups.filterNot { it.key == groupKey }, listOf(newGroup))
+            ?.let {
+                return it
+            }
         updateAppGroup(targetApp.id, groupKey) { newGroup }
         return SubscriptionEditResult.Success(Unit)
     }
@@ -187,10 +209,15 @@ class SubscriptionEditor(
         newGroup: RawSubscription.RawGlobalGroup,
     ): SubscriptionEditResult<Unit> {
         require(newGroup.key == groupKey)
-        val group = current.globalGroups.find { it.key == groupKey }
-            ?: return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleMissing)
-        if (group != expectedGroup) return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleEditConflict)
-        validateGroupNames(current.globalGroups.filterNot { it.key == groupKey }, listOf(newGroup))?.let { return it }
+        val group =
+            current.globalGroups.find { it.key == groupKey }
+                ?: return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleMissing)
+        if (group != expectedGroup)
+            return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleEditConflict)
+        validateGroupNames(current.globalGroups.filterNot { it.key == groupKey }, listOf(newGroup))
+            ?.let {
+                return it
+            }
         updateGlobalGroup(groupKey) { newGroup }
         return SubscriptionEditResult.Success(Unit)
     }
@@ -213,7 +240,6 @@ class SubscriptionEditor(
 
     fun build(): RawSubscription = current
 
-
     private fun validateGroupNames(
         existingGroups: List<RawSubscription.RawGroupProps>,
         newGroups: List<RawSubscription.RawGroupProps>,
@@ -221,7 +247,10 @@ class SubscriptionEditor(
         val usedNames = existingGroups.mapTo(mutableSetOf()) { it.name }
         newGroups.forEach { group ->
             if (!usedNames.add(group.name)) {
-                return SubscriptionEditResult.Rejected(SubscriptionFailureReason.RuleNameDuplicate, listOf(group.name))
+                return SubscriptionEditResult.Rejected(
+                    SubscriptionFailureReason.RuleNameDuplicate,
+                    listOf(group.name),
+                )
             }
         }
         return null

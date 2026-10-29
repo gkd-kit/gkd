@@ -1,11 +1,11 @@
 package li.gkd.app.permission
 
+import kotlin.coroutines.resume
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.resources.*
-import kotlin.coroutines.resume
 
 data class PermissionPrompt(
     val title: String,
@@ -50,55 +50,61 @@ class PermissionRequestCoordinator {
     }
 
     fun dispose() {
-        val dialogToDismiss = synchronized(lock) {
-            activityResumed = false
-            activityHasWindowFocus = false
-            activePrompt = null
-            visiblePrompt.value = null
-            dialog.value.also {
-                dialog.value = null
+        val dialogToDismiss =
+            synchronized(lock) {
+                activityResumed = false
+                activityHasWindowFocus = false
+                activePrompt = null
+                visiblePrompt.value = null
+                dialog.value.also {
+                    dialog.value = null
+                }
             }
-        }
         dialogToDismiss?.onDismiss?.invoke()
     }
 
     fun beginPrompt(prompt: PermissionPrompt): AutoCloseable {
-        val id = synchronized(lock) {
-            val newId = ++nextId
-            activePrompt = ActivePrompt(
-                id = newId,
-                prompt = prompt,
-            )
-            visiblePrompt.value = null
-            if (!activityResumed || !activityHasWindowFocus) {
-                revealPromptLocked()
+        val id =
+            synchronized(lock) {
+                val newId = ++nextId
+                activePrompt =
+                    ActivePrompt(
+                        id = newId,
+                        prompt = prompt,
+                    )
+                visiblePrompt.value = null
+                if (!activityResumed || !activityHasWindowFocus) {
+                    revealPromptLocked()
+                }
+                newId
             }
-            newId
-        }
         return PromptSession(id)
     }
 
     suspend fun awaitResolution(permissionState: PermissionState): Boolean {
         val resolution = permissionState.resolution ?: return false
         return suspendCancellableCoroutine { continuation ->
-            val id = showDialog(
-                title = Res.string.permission_request_title.getSync(),
-                message = listOfNotNull(
-                    permissionState.purpose,
-                    resolution.message,
-                ).joinToString("\n\n"),
-                confirmText = resolution.confirmText,
-                onConfirm = {
-                    if (continuation.isActive) {
-                        continuation.resume(true)
-                    }
-                },
-                onDismiss = {
-                    if (continuation.isActive) {
-                        continuation.resume(false)
-                    }
-                },
-            )
+            val id =
+                showDialog(
+                    title = Res.string.permission_request_title.getSync(),
+                    message =
+                        listOfNotNull(
+                                permissionState.purpose,
+                                resolution.message,
+                            )
+                            .joinToString("\n\n"),
+                    confirmText = resolution.confirmText,
+                    onConfirm = {
+                        if (continuation.isActive) {
+                            continuation.resume(true)
+                        }
+                    },
+                    onDismiss = {
+                        if (continuation.isActive) {
+                            continuation.resume(false)
+                        }
+                    },
+                )
             continuation.invokeOnCancellation {
                 dismissDialog(id)
             }
@@ -125,24 +131,28 @@ class PermissionRequestCoordinator {
         synchronized(lock) {
             previousDialog = dialog.value
             id = ++nextId
-            dialog.value = PermissionDialogState(
-                id = id,
-                title = title,
-                message = message,
-                confirmText = confirmText,
-                onConfirm = onConfirm,
-                onDismiss = onDismiss,
-            )
+            dialog.value =
+                PermissionDialogState(
+                    id = id,
+                    title = title,
+                    message = message,
+                    confirmText = confirmText,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss,
+                )
         }
         previousDialog?.onDismiss?.invoke()
         return id
     }
 
-    private fun takeDialog(id: Long): PermissionDialogState? = synchronized(lock) {
-        dialog.value?.takeIf { it.id == id }?.also {
-            dialog.value = null
+    private fun takeDialog(id: Long): PermissionDialogState? =
+        synchronized(lock) {
+            dialog.value
+                ?.takeIf { it.id == id }
+                ?.also {
+                    dialog.value = null
+                }
         }
-    }
 
     private fun revealPromptLocked() {
         val prompt = activePrompt ?: return
@@ -153,11 +163,7 @@ class PermissionRequestCoordinator {
 
     private fun dismissReturnedPromptLocked() {
         val prompt = activePrompt ?: return
-        if (
-            prompt.visible &&
-            activityResumed &&
-            (activityHasWindowFocus || prompt.completed)
-        ) {
+        if (prompt.visible && activityResumed && (activityHasWindowFocus || prompt.completed)) {
             clearPromptLocked()
         }
     }

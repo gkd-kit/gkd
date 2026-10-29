@@ -83,19 +83,23 @@ fun LifecycleOwner.useLogLifecycle(@CallSite loc: String = "") {
 
 @MainThread
 fun LifecycleOwner.onCreated(callback: () -> Unit) {
-    lifecycle.addObserver(object : DefaultLifecycleObserver {
-        override fun onCreate(owner: LifecycleOwner) {
-            owner.lifecycle.removeObserver(this)
-            callback()
-        }
-    })
+    lifecycle.addObserver(
+        object : DefaultLifecycleObserver {
+            override fun onCreate(owner: LifecycleOwner) {
+                owner.lifecycle.removeObserver(this)
+                callback()
+            }
+        },
+    )
 }
 
 @MainThread
 fun LifecycleOwner.onDestroyed(callback: () -> Unit) {
-    lifecycle.addObserver(object : DefaultLifecycleObserver {
-        override fun onDestroy(owner: LifecycleOwner) {
-            callback()
-        }
-    })
+    lifecycle.addObserver(
+        object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                callback()
+            }
+        },
+    )
 }

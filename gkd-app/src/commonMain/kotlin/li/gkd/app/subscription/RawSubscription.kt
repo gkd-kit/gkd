@@ -1,5 +1,6 @@
 package li.gkd.app.subscription
 
+import java.util.regex.PatternSyntaxException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
@@ -9,7 +10,6 @@ import li.gkd.app.subscription.SubscriptionJson.json
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.db.RuleGroupType
 import li.gkd.db.SubscriptionIds
-import java.util.regex.PatternSyntaxException
 
 @Serializable
 data class RawSubscription(
@@ -49,14 +49,17 @@ data class RawSubscription(
     val isLocal: Boolean
         get() = SubscriptionIds.isLocal(id)
 
-    val hasRule get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
+    val hasRule
+        get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
 
     private val categoryAppsMap: Map<Int?, List<RawApp>> by lazy {
         val map = mutableMapOf<Int?, MutableList<RawApp>>()
         apps.forEach { app ->
-            app.groups.groupBy { getCategory(it.name)?.key }.forEach { (key, groups) ->
-                map.getOrPut(key) { mutableListOf() }.add(app.copy(groups = groups))
-            }
+            app.groups
+                .groupBy { getCategory(it.name)?.key }
+                .forEach { (key, groups) ->
+                    map.getOrPut(key) { mutableListOf() }.add(app.copy(groups = groups))
+                }
         }
         map
     }
@@ -74,11 +77,12 @@ data class RawSubscription(
     }
 
     fun getApp(appId: String, fallbackName: String? = null): RawApp {
-        return apps.find { a -> a.id == appId } ?: RawApp(
-            id = appId,
-            name = fallbackName,
-            groups = emptyList()
-        )
+        return apps.find { a -> a.id == appId }
+            ?: RawApp(
+                id = appId,
+                name = fallbackName,
+                groups = emptyList(),
+            )
     }
 
     val appGroups by lazy {
@@ -88,12 +92,18 @@ data class RawSubscription(
     val globalGroupAppGroupMatches by lazy {
         globalGroups.associate { group ->
             val prefix = group.disableIfAppGroupMatch?.ifEmpty { group.name }
-            group.key to if (prefix == null) emptyMap() else apps.mapNotNull { app ->
-                val matches = app.groups.filter {
-                    it.ignoreGlobalGroupMatch != true && it.name.startsWith(prefix)
-                }
-                matches.takeIf { it.isNotEmpty() }?.let { app.id to it }
-            }.toMap()
+            group.key to
+                if (prefix == null) emptyMap()
+                else
+                    apps
+                        .mapNotNull { app ->
+                            val matches =
+                                app.groups.filter {
+                                    it.ignoreGlobalGroupMatch != true && it.name.startsWith(prefix)
+                                }
+                            matches.takeIf { it.isNotEmpty() }?.let { app.id to it }
+                        }
+                        .toMap()
         }
     }
 
@@ -122,8 +132,11 @@ data class RawSubscription(
 
         fun match(value: String?): Boolean = match(value, ignoreInvalidPattern = false)
 
-        /** Saving a preference may ignore a syntax error, but still respects the other conditions. */
-        fun matchValidConditions(value: String?): Boolean = match(value, ignoreInvalidPattern = true)
+        /**
+         * Saving a preference may ignore a syntax error, but still respects the other conditions.
+         */
+        fun matchValidConditions(value: String?): Boolean =
+            match(value, ignoreInvalidPattern = true)
 
         private fun match(value: String?, ignoreInvalidPattern: Boolean): Boolean {
             if (value == null) return false
@@ -158,7 +171,6 @@ data class RawSubscription(
         val groups: List<RawAppGroup> = emptyList(),
     )
 
-
     @Serializable
     data class RawCategory(
         val key: Int,
@@ -166,7 +178,6 @@ data class RawSubscription(
         val enable: Boolean?,
         val desc: String?,
     )
-
 
     @Serializable
     data class Position(
@@ -179,8 +190,11 @@ data class RawSubscription(
     ) {
         private val compilation by lazy { RulePositionCompilation(this) }
 
-        val validationError: PositionError? get() = compilation.error
-        val isValid get() = validationError == null
+        val validationError: PositionError?
+            get() = compilation.error
+
+        val isValid
+            get() = validationError == null
 
         /** Missing configuration is handled by the caller; invalid or failed coordinates throw. */
         fun calc(
@@ -250,17 +264,22 @@ data class RawSubscription(
         val rules: List<RawRuleProps>
 
         val compilation: RuleGroupCompilation
-        val valid: Boolean get() = validationError == null
-        val validationError: RuleValidationError? get() = compilation.error
+        val valid: Boolean
+            get() = validationError == null
+
+        val validationError: RuleValidationError?
+            get() = compilation.error
+
         val allExampleUrls: List<String>
         val cacheStr: String
         val cacheJsonObject: JsonObject
 
         val groupType: Int
-            get() = when (this) {
-                is RawAppGroup -> RuleGroupType.App
-                is RawGlobalGroup -> RuleGroupType.Global
-            }
+            get() =
+                when (this) {
+                    is RawAppGroup -> RuleGroupType.App
+                    is RawGlobalGroup -> RuleGroupType.Global
+                }
     }
 
     sealed interface RawAppRuleProps {
@@ -280,7 +299,6 @@ data class RawSubscription(
         override val versionCode: IntegerMatcher?,
         override val versionName: StringMatcher?,
     ) : RawAppRuleProps
-
 
     @Serializable
     data class RawGlobalRuleApp(
@@ -324,14 +342,15 @@ data class RawSubscription(
     ) : RawGroupProps {
         override val compilation by lazy { RuleGroupCompilation.compile(this) }
         override val allExampleUrls by lazy {
-            ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
-                r.exampleUrls ?: emptyList()
-            }).distinct()
+            ((exampleUrls ?: emptyList()) +
+                    rules.flatMap { r ->
+                        r.exampleUrls ?: emptyList()
+                    })
+                .distinct()
         }
         override val cacheStr by lazy { toJson5String(this) }
         override val cacheJsonObject by lazy { json.encodeToJsonElement(this).jsonObject }
     }
-
 
     @Serializable
     data class RawGlobalRule(
@@ -362,7 +381,7 @@ data class RawSubscription(
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
         override val anyMatches: List<String>?,
-        val apps: List<RawGlobalRuleApp>?
+        val apps: List<RawGlobalRuleApp>?,
     ) : RawRuleProps
 
     @Serializable
@@ -398,9 +417,11 @@ data class RawSubscription(
     ) : RawGroupProps, RawAppRuleProps {
         override val compilation by lazy { RuleGroupCompilation.compile(this) }
         override val allExampleUrls by lazy {
-            ((exampleUrls ?: emptyList()) + rules.flatMap { r ->
-                r.exampleUrls ?: emptyList()
-            }).distinct()
+            ((exampleUrls ?: emptyList()) +
+                    rules.flatMap { r ->
+                        r.exampleUrls ?: emptyList()
+                    })
+                .distinct()
         }
         override val cacheStr by lazy { toJson5String(this) }
         override val cacheJsonObject by lazy { json.encodeToJsonElement(this).jsonObject }
@@ -418,7 +439,6 @@ data class RawSubscription(
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
         override val anyMatches: List<String>?,
-
         override val actionCdKey: Int?,
         override val actionMaximumKey: Int?,
         override val actionCd: Long?,
@@ -436,10 +456,8 @@ data class RawSubscription(
         override val snapshotUrls: List<String>?,
         override val excludeSnapshotUrls: List<String>?,
         override val exampleUrls: List<String>?,
-
         override val activityIds: List<String>?,
         override val excludeActivityIds: List<String>?,
-
         override val versionCode: IntegerMatcher?,
         override val versionName: StringMatcher?,
     ) : RawRuleProps, RawAppRuleProps

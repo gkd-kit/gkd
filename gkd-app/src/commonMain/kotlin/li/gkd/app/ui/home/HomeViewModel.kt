@@ -1,6 +1,5 @@
 package li.gkd.app.ui.home
 
-import li.gkd.app.ui.component.MultiSelectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,12 +19,13 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.SubscriptionRepository
 import li.gkd.app.subscription.SubscriptionResult
+import li.gkd.app.ui.component.MultiSelectionState
 import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.ui.subscription.SubsManageUiState
 import li.gkd.db.Db
-import li.gkd.db.SubscriptionIds
 import li.gkd.db.SubsItem
+import li.gkd.db.SubscriptionIds
 
 /** Business state owned by the HomeRoute navigation entry. */
 class HomeViewModel : BaseViewModel() {
@@ -57,9 +57,13 @@ class HomeViewModel : BaseViewModel() {
 
     init {
         scope.launch {
-            appListState.map { it.search }.distinctUntilChanged().debounce(200).collect { query ->
-                appListState.update { it.copy(query = query.trim()) }
-            }
+            appListState
+                .map { it.search }
+                .distinctUntilChanged()
+                .debounce(200)
+                .collect { query ->
+                    appListState.update { it.copy(query = query.trim()) }
+                }
         }
     }
 
@@ -74,13 +78,14 @@ class HomeViewModel : BaseViewModel() {
     fun toggleAppSearch() {
         appListState.update {
             if (!it.searchOpen) it.copy(searchOpen = true)
-            else if (it.search.isEmpty()) it.copy(searchOpen = false)
-            else it.copy(search = "")
+            else if (it.search.isEmpty()) it.copy(searchOpen = false) else it.copy(search = "")
         }
     }
 
     fun toggleAppListEdit(blocked: Set<String>) {
-        appListState.update { it.copy(editingFilter = if (it.editingFilter == null) blocked else null) }
+        appListState.update {
+            it.copy(editingFilter = if (it.editingFilter == null) blocked else null)
+        }
     }
 
     fun closeAppListEdit() {
@@ -93,48 +98,62 @@ class HomeViewModel : BaseViewModel() {
         }
     }
 
-    val homeState = HomeState(onTabChanged = { tab ->
-        if (tab != BottomNavItem.SubsManage) selection.clear()
-    })
-    val latestState = HomeDataSources.observeLatest()
-        .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
+    val homeState =
+        HomeState(
+            onTabChanged = { tab ->
+                if (tab != BottomNavItem.SubsManage) selection.clear()
+            },
+        )
+    val latestState =
+        HomeDataSources.observeLatest()
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
 
-    val appsState = AppListSources.observe(
-        AppInfoRepository.state,
-        ruleGroupState,
-        Db.actionLogDao.queryLatestUniqueAppIds(),
-        Db.appLastVisitDao.query(),
-        Db.ruleTriggerStatsDao.observe(),
-        globalGroupCounts = { it.groups.appIdToGlobalGroupCount },
-        appGroups = { it.groups.appIdToAllGroups },
-    ).stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
-
-
+    val appsState =
+        AppListSources.observe(
+                AppInfoRepository.state,
+                ruleGroupState,
+                Db.actionLogDao.queryLatestUniqueAppIds(),
+                Db.appLastVisitDao.query(),
+                Db.ruleTriggerStatsDao.observe(),
+                globalGroupCounts = { it.groups.appIdToGlobalGroupCount },
+                appGroups = { it.groups.appIdToAllGroups },
+            )
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
 
     val powerWarningItemFlow: StateFlow<SubsItem?>
         field = MutableStateFlow(null)
 
     val subscriptionsState: StateFlow<Loadable<SubsManageUiState>> =
-        SubscriptionRepository.snapshotFlow.flatMapLatest { snapshotState ->
-            when (snapshotState) {
-                Loadable.Loading -> flowOf(Loadable.Loading)
-                is Loadable.Failure -> flowOf(snapshotState)
-                is Loadable.Ready -> combine(
-                    Db.subsItemDao.query(),
-                    Db.ruleTriggerStatsDao.observe(),
-                ) { subItems, records ->
-                    SubsManageUiState(
-                        subItems = subItems,
-                        subscriptions = snapshotState.value.subscriptions,
-                        loadErrors = snapshotState.value.loadErrors,
-                        refreshErrors = snapshotState.value.updateErrors,
-                        triggerCounts = records.groupBy { it.subsId }
-                            .mapValues { (_, rows) -> rows.sumOf { it.triggerCount } },
-                    )
-                }.map<SubsManageUiState, Loadable<SubsManageUiState>> { Loadable.Ready(it) }
-                    .catch { emit(Loadable.Failure(it)) }
+        SubscriptionRepository.snapshotFlow
+            .flatMapLatest { snapshotState ->
+                when (snapshotState) {
+                    Loadable.Loading -> flowOf(Loadable.Loading)
+                    is Loadable.Failure -> flowOf(snapshotState)
+                    is Loadable.Ready ->
+                        combine(
+                                Db.subsItemDao.query(),
+                                Db.ruleTriggerStatsDao.observe(),
+                            ) { subItems, records ->
+                                SubsManageUiState(
+                                    subItems = subItems,
+                                    subscriptions = snapshotState.value.subscriptions,
+                                    loadErrors = snapshotState.value.loadErrors,
+                                    refreshErrors = snapshotState.value.updateErrors,
+                                    triggerCounts =
+                                        records
+                                            .groupBy { it.subsId }
+                                            .mapValues { (_, rows) ->
+                                                rows.sumOf { it.triggerCount }
+                                            },
+                                )
+                            }
+                            .map<SubsManageUiState, Loadable<SubsManageUiState>> {
+                                Loadable.Ready(it)
+                            }
+                            .catch { emit(Loadable.Failure(it)) }
+                }
             }
-        }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), Loadable.Loading)
 
     fun setUpdateInterval(value: Long) {
         SettingsRepository.updateSettings { it.copy(updateSubsInterval = value) }
@@ -174,5 +193,4 @@ class HomeViewModel : BaseViewModel() {
         powerWarningItemFlow.value = null
         SubscriptionRepository.requestEnabled(item.id, true, confirmed = true)
     }
-
 }

@@ -16,26 +16,35 @@ import org.jetbrains.compose.resources.getString
 actual fun UiHost.snapshotPlatformActions(): SnapshotPlatformActions {
     return object : SnapshotPlatformActions {
         override suspend fun ensureSavePermission() =
-            mainVm.androidState.permissionRequests.ensurePermissions(PermissionStates.writeExternalStorage)
+            mainVm.androidState.permissionRequests.ensurePermissions(
+                PermissionStates.writeExternalStorage,
+            )
 
         override suspend fun share(files: List<File>): PlatformResult<Unit> {
-            val uris = files.mapTo(ArrayList(files.size)) { file ->
-                FileProvider.getUriForFile(this@snapshotPlatformActions, "$packageName.provider", file)
-            }
-            val intent = Intent().apply {
-                type = "application/zip"
-                if (uris.size == 1) {
-                    action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_STREAM, uris.single())
-                } else {
-                    action = Intent.ACTION_SEND_MULTIPLE
-                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            val uris =
+                files.mapTo(ArrayList(files.size)) { file ->
+                    FileProvider.getUriForFile(
+                        this@snapshotPlatformActions,
+                        "$packageName.provider",
+                        file,
+                    )
                 }
-                clipData = ClipData.newRawUri("", uris.first()).apply {
-                    uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+            val intent =
+                Intent().apply {
+                    type = "application/zip"
+                    if (uris.size == 1) {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_STREAM, uris.single())
+                    } else {
+                        action = Intent.ACTION_SEND_MULTIPLE
+                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                    }
+                    clipData =
+                        ClipData.newRawUri("", uris.first()).apply {
+                            uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+                        }
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
             val title = getString(Res.string.snapshot_share)
             startActivity(Intent.createChooser(intent, title))
             return PlatformResult.Success(Unit)

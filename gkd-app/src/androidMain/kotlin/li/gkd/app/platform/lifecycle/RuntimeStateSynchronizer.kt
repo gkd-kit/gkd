@@ -5,11 +5,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.gkd.app.appScope
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.updateSystemDefaultAppId
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.service.fixRestartAutomatorService
-import li.gkd.app.logging.LogUtils
 import li.songe.codeorigin.CallSite
 
 object RuntimeStateSynchronizer {

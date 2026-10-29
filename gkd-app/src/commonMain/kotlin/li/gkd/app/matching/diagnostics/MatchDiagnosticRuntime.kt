@@ -14,7 +14,10 @@ data class ForegroundDebugState(
 )
 
 @Serializable
-data class MatchDebugSnapshot(val engine: MatchEngineSnapshot, val foreground: ForegroundDebugState?)
+data class MatchDebugSnapshot(
+    val engine: MatchEngineSnapshot,
+    val foreground: ForegroundDebugState?,
+)
 
 /** Cached foreground observations; not an atomic OS snapshot. */
 expect fun matchForegroundSnapshot(): ForegroundDebugState?

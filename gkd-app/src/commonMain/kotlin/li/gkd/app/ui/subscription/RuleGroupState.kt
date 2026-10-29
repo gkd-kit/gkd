@@ -1,10 +1,5 @@
 package li.gkd.app.ui.subscription
 
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import li.gkd.app.record.TriggerSummary
-import li.gkd.app.record.summarizeTriggers
-import li.gkd.db.Db
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -12,9 +7,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import li.gkd.app.model.ExcludeData
-import li.gkd.db.SubsGlobalGroupConfig
+import li.gkd.app.record.TriggerSummary
+import li.gkd.app.record.summarizeTriggers
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleControlState
 import li.gkd.app.rule.RuleGroupConfigService
@@ -23,8 +21,8 @@ import li.gkd.app.rule.RuleGroupTarget
 import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionRepository
-import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.DialogRequests
+import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.navigation.AppNavigator
@@ -35,7 +33,9 @@ import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.share.DeletionTarget
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.ToastUtils
+import li.gkd.db.Db
 import li.gkd.db.RuleTriggerStats
+import li.gkd.db.SubsGlobalGroupConfig
 
 private data class RuleSheetSnapshot(
     val target: RuleGroupTarget,
@@ -50,6 +50,7 @@ class RuleGroupState(
     private val dialogs: DialogRequests,
 ) {
     private val showGroupFlow = MutableStateFlow<SheetRequest<RuleGroupTarget>?>(null)
+
     private fun dismissGroupShow(request: SheetRequest<RuleGroupTarget>) {
         if (showGroupFlow.value === request) showGroupFlow.value = null
     }
@@ -61,9 +62,10 @@ class RuleGroupState(
     fun dismissForDeletion(targets: Set<DeletionTarget>) {
         val request = showGroupFlow.value ?: return
         val group = request.key
-        if (DeletionTarget.Subscription(group.subsId) in targets ||
-            DeletionTarget.Group(group.subsId, group.appId, group.groupKey) in targets ||
-            (group.appId?.let { DeletionTarget.App(group.subsId, it) in targets } == true)
+        if (
+            DeletionTarget.Subscription(group.subsId) in targets ||
+                DeletionTarget.Group(group.subsId, group.appId, group.groupKey) in targets ||
+                (group.appId?.let { DeletionTarget.App(group.subsId, it) in targets } == true)
         ) {
             dismissGroupShow(request)
         }
@@ -77,7 +79,7 @@ class RuleGroupState(
         dismiss()
         navigator.navigate(
             if (state.appId == null) SubsGlobalGroupExcludeRoute(state.subsId, state.groupKey)
-            else RuleExcludeEditorRoute(state.subsId, state.groupKey, state.appId)
+            else RuleExcludeEditorRoute(state.subsId, state.groupKey, state.appId),
         )
     }
 
@@ -86,20 +88,22 @@ class RuleGroupState(
     ) {
         SubscriptionRepository.update(state.subsId) { subscription ->
             when (state) {
-                is RuleGroupTarget.Global -> subscription.edit {
-                    if (removeGlobalGroups { it.key == state.groupKey }.isEmpty()) {
-                        error(Res.string.rule_missing.getSync())
+                is RuleGroupTarget.Global ->
+                    subscription.edit {
+                        if (removeGlobalGroups { it.key == state.groupKey }.isEmpty()) {
+                            error(Res.string.rule_missing.getSync())
+                        }
                     }
-                }
 
-                is RuleGroupTarget.App -> subscription.edit {
-                    if (subscription.apps.none { it.id == state.appId }) {
-                        error(Res.string.app_rule_missing.getSync())
+                is RuleGroupTarget.App ->
+                    subscription.edit {
+                        if (subscription.apps.none { it.id == state.appId }) {
+                            error(Res.string.app_rule_missing.getSync())
+                        }
+                        if (removeAppGroups(state.appId) { it.key == state.groupKey }.isEmpty()) {
+                            error(Res.string.rule_missing.getSync())
+                        }
                     }
-                    if (removeAppGroups(state.appId) { it.key == state.groupKey }.isEmpty()) {
-                        error(Res.string.rule_missing.getSync())
-                    }
-                }
             }
         }
     }
@@ -118,38 +122,60 @@ class RuleGroupState(
         val subscriptions by SubscriptionRepository.snapshotFlow.collectAsStateWithLifecycle()
         val subscription = subscriptions.value?.subscriptions?.get(target?.subsId)
         val group =
-            if (target?.appId == null) subscription?.globalGroups?.find { it.key == target?.groupKey } else subscription?.apps?.find { it.id == target.appId }?.groups?.find { it.key == target.groupKey }
-        val configurationFlow = remember(target) {
-            target?.let(RuleGroupConfigService::groupConfiguration) ?: flowOf(null)
-        }
+            if (target?.appId == null)
+                subscription?.globalGroups?.find { it.key == target?.groupKey }
+            else
+                subscription
+                    ?.apps
+                    ?.find { it.id == target.appId }
+                    ?.groups
+                    ?.find { it.key == target.groupKey }
+        val configurationFlow =
+            remember(target) {
+                target?.let(RuleGroupConfigService::groupConfiguration) ?: flowOf(null)
+            }
         val configuration =
             key(requested) { configurationFlow.collectAsStateWithLifecycle(null).value }
-        val statsFlow = remember(target) {
-            if (target == null) flowOf<Loadable<TriggerSummary>>(Loadable.Loading)
-            else Db.ruleTriggerStatsDao.observe(
-                subsId = target.subsId, appId = target.pageAppId,
-                groupType = target.groupType, groupKey = target.groupKey,
-            ).map<List<RuleTriggerStats>, Loadable<TriggerSummary>> { Loadable.Ready(it.summarizeTriggers()) }
-                .catch { emit(Loadable.Failure(it)) }
-        }
+        val statsFlow =
+            remember(target) {
+                if (target == null) flowOf<Loadable<TriggerSummary>>(Loadable.Loading)
+                else
+                    Db.ruleTriggerStatsDao
+                        .observe(
+                            subsId = target.subsId,
+                            appId = target.pageAppId,
+                            groupType = target.groupType,
+                            groupKey = target.groupKey,
+                        )
+                        .map<List<RuleTriggerStats>, Loadable<TriggerSummary>> {
+                            Loadable.Ready(it.summarizeTriggers())
+                        }
+                        .catch { emit(Loadable.Failure(it)) }
+            }
         val stats = key(requested) { statsFlow.collectAsStateWithLifecycle(Loadable.Loading).value }
         val snapshot =
             if (target != null && subscription != null && group != null && configuration != null) {
                 RuleSheetSnapshot(
-                    target, subscription, group, configuration,
+                    target,
+                    subscription,
+                    group,
+                    configuration,
                     environment.resolve(
                         subscription,
                         group,
                         target.pageAppId,
-                        configuration.snapshot
+                        configuration.snapshot,
                     ),
-                    stats
+                    stats,
                 )
             } else null
         GkRetainedSheet(
             request = requested,
             snapshot = snapshot,
-            missing = target != null && subscriptions is Loadable.Ready && (subscription == null || group == null),
+            missing =
+                target != null &&
+                    subscriptions is Loadable.Ready &&
+                    (subscription == null || group == null),
             onDismissRequest = ::dismissGroupShow,
         ) { _, displayed, sheetState, dismiss ->
             val showGroupState = displayed.target
@@ -157,11 +183,14 @@ class RuleGroupState(
             val showGroup = displayed.group
             val configSnapshot = displayed.configuration
             val subsConfig = configSnapshot.group
-            val excludeData = remember(subsConfig?.exclude) {
-                ExcludeData.parse(subsConfig?.exclude)
-            }
+            val excludeData =
+                remember(subsConfig?.exclude) {
+                    ExcludeData.parse(subsConfig?.exclude)
+                }
             GkRuleGroupDialog(
-                navigator, openSubscription, ruleControl,
+                navigator,
+                openSubscription,
+                ruleControl,
                 sheetState = sheetState,
                 subs = showSubs,
                 group = showGroup,
@@ -175,18 +204,26 @@ class RuleGroupState(
                 onMatchAnyAppChange = { value ->
                     scope.launchUi {
                         RuleGroupConfigService.setMatchAnyApp(
-                            showSubs, RuleGroupTarget.Global(showSubs.id, showGroup.key), value,
+                            showSubs,
+                            RuleGroupTarget.Global(showSubs.id, showGroup.key),
+                            value,
                         )
                     }
                 },
                 onSettingChange = { setting ->
-                    val change = RuleGroupConfigService.prepare(
-                        listOf(showGroupState.toSwitchTarget()),
-                        listOf(showSubs),
-                        configSnapshot.snapshot
-                    )
+                    val change =
+                        RuleGroupConfigService.prepare(
+                            listOf(showGroupState.toSwitchTarget()),
+                            listOf(showSubs),
+                            configSnapshot.snapshot,
+                        )
                     scope.launchUi {
-                        applyRuleSwitchWithConfirmation(change, setting, dialogs, RuleSwitchHost.RuleDetail)
+                        applyRuleSwitchWithConfirmation(
+                                change,
+                                setting,
+                                dialogs,
+                                RuleSwitchHost.RuleDetail,
+                            )
                             ?.failureMessage()
                             ?.let { ToastUtils.show(it) }
                     }
@@ -198,7 +235,7 @@ class RuleGroupState(
                             subsId = showGroupState.subsId,
                             groupKey = showGroupState.groupKey,
                             appId = showGroupState.appId,
-                        )
+                        ),
                     )
                 },
                 onClickEditExclude = {
@@ -213,18 +250,17 @@ class RuleGroupState(
                                 DeletionTarget.Group(
                                     showGroupState.subsId,
                                     showGroupState.appId,
-                                    showGroupState.groupKey
-                                )
+                                    showGroupState.groupKey,
+                                ),
                             )
                         },
-                        dismiss
+                        dismiss,
                     ) {
                         deleteGroup(showGroupState)
                         ToastUtils.show(Res.string.delete_success.getSync())
                     }
-                }
+                },
             )
         }
-
     }
 }

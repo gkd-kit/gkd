@@ -1,7 +1,7 @@
 package li.gkd.app.development
 
-import li.gkd.app.matching.diagnostics.MatchDebugSnapshot
 import kotlinx.serialization.Serializable
+import li.gkd.app.matching.diagnostics.MatchDebugSnapshot
 
 @Serializable
 data class AppDebugCatalogStatus(
@@ -12,10 +12,13 @@ data class AppDebugCatalogStatus(
 )
 
 @Serializable
-data class AppDebugSessionStatus(val id: String, val active: Boolean, val systemFinalizing: Boolean = false)
+data class AppDebugSessionStatus(
+    val id: String,
+    val active: Boolean,
+    val systemFinalizing: Boolean = false,
+)
 
-@Serializable
-data class DebugReadinessCheck(val ready: Boolean, val reasons: List<String>)
+@Serializable data class DebugReadinessCheck(val ready: Boolean, val reasons: List<String>)
 
 @Serializable
 data class AppDebugReadiness(
@@ -35,7 +38,8 @@ fun buildAppDebugReadiness(
 ): AppDebugReadiness {
     val foreground = runtime.foreground
     val liveReasons = buildList {
-        if (foreground == null) add("live_nodes_unsupported") else {
+        if (foreground == null) add("live_nodes_unsupported")
+        else {
             if (!foreground.serviceEffective) add("service_not_effective")
             if (!foreground.interactive) add("screen_not_interactive")
             if (foreground.foreground.pending != null) add("foreground_pending")
@@ -46,23 +50,37 @@ fun buildAppDebugReadiness(
                 add("platform_cleanup_pending")
                 if (!runtime.engine.attached) add("service_disconnected_cleanup_unconfirmed")
             }
-            if (!catalog.loaded) add(if (catalog.error == null) "catalog_not_loaded" else "catalog_load_failed")
+            if (!catalog.loaded)
+                add(if (catalog.error == null) "catalog_not_loaded" else "catalog_load_failed")
         }
     }
     fun check(reasons: List<String>) = DebugReadinessCheck(reasons.isEmpty(), reasons)
-    return AppDebugReadiness(app, catalog, runtime, session, mapOf(
-        "observe" to check(emptyList()),
-        "startCapture" to check(buildList {
-            if (session?.active == true) add("diagnostic_session_active")
-            if (session?.systemFinalizing == true) add("system_recording_finalizing")
-        }),
-        "liveQuery" to check(liveReasons),
-        "androidBenchmark" to check(liveReasons + buildList {
-            if (foreground != null) {
-                if (foreground.locked) add("screen_locked")
-                if (app.enableMatch) add("rule_matching_enabled")
-                if (session?.active == true) add("diagnostic_session_active")
-            }
-        }),
-    ))
+    return AppDebugReadiness(
+        app,
+        catalog,
+        runtime,
+        session,
+        mapOf(
+            "observe" to check(emptyList()),
+            "startCapture" to
+                check(
+                    buildList {
+                        if (session?.active == true) add("diagnostic_session_active")
+                        if (session?.systemFinalizing == true) add("system_recording_finalizing")
+                    },
+                ),
+            "liveQuery" to check(liveReasons),
+            "androidBenchmark" to
+                check(
+                    liveReasons +
+                        buildList {
+                            if (foreground != null) {
+                                if (foreground.locked) add("screen_locked")
+                                if (app.enableMatch) add("rule_matching_enabled")
+                                if (session?.active == true) add("diagnostic_session_active")
+                            }
+                        },
+                ),
+        ),
+    )
 }

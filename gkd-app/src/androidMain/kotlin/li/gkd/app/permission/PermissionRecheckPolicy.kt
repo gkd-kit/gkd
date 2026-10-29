@@ -12,17 +12,20 @@ class PermissionRecheckPolicy(private val delaysMillis: List<Long> = emptyList()
     suspend fun awaitGranted(
         hostInteractive: StateFlow<Boolean>,
         refresh: () -> Boolean,
-    ): Boolean = hostInteractive.transformLatest { interactive ->
-        if (interactive) {
-            var granted = refresh()
-            for (delayMillis in delaysMillis) {
-                if (granted) break
-                delay(delayMillis)
-                granted = refresh()
+    ): Boolean =
+        hostInteractive
+            .transformLatest { interactive ->
+                if (interactive) {
+                    var granted = refresh()
+                    for (delayMillis in delaysMillis) {
+                        if (granted) break
+                        delay(delayMillis)
+                        granted = refresh()
+                    }
+                    emit(granted)
+                }
             }
-            emit(granted)
-        }
-    }.first()
+            .first()
 
     companion object {
         val Immediate = PermissionRecheckPolicy()

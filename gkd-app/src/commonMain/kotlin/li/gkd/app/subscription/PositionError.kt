@@ -21,19 +21,29 @@ data class PositionError(
             append(this@PositionError.field)
             source?.let { append(": ").append(it) }
             append(" — ").append(code)
-            if (startIndex != null && endIndex != null) append(" [").append(startIndex).append(", ").append(endIndex).append(')')
+            if (startIndex != null && endIndex != null)
+                append(" [").append(startIndex).append(", ").append(endIndex).append(')')
             detail?.let { append(": ").append(it) }
         }
 
     val message: ErrorMessage
-        get() = ErrorMessage.Resource(Res.string.rule_invalid_position, listOf(ErrorMessage.Text(description)))
+        get() =
+            ErrorMessage.Resource(
+                Res.string.rule_invalid_position,
+                listOf(ErrorMessage.Text(description)),
+            )
 
     fun at(parent: String): PositionError = copy(field = "$parent.$field")
 }
 
 class PositionCalculationException(val error: PositionError, cause: Throwable? = null) :
     IllegalArgumentException(error.code, cause), BusinessError {
-    override val errorCode: String get() = error.code
-    override val errorPath: String get() = error.field
-    override val errorMessage: ErrorMessage get() = error.message
+    override val errorCode: String
+        get() = error.code
+
+    override val errorPath: String
+        get() = error.field
+
+    override val errorMessage: ErrorMessage
+        get() = error.message
 }

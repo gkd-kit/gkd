@@ -1,30 +1,29 @@
 package li.gkd.app.ui.subscription
 
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,6 +48,7 @@ import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSubscriptionPageContent
 import li.gkd.app.ui.component.GkTooltipIconButtonBox
 import li.gkd.app.ui.component.GkTwoLineText
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.navigation.CategoryEditorRoute
 import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
@@ -81,7 +81,9 @@ fun SubsCategoryPage(
             leadingItemKey = if (state.uncategorizedApps.isNotEmpty()) "uncategorized" else null,
         )
         val keys =
-            remember(state.categories) { state.categories.mapTo(mutableSetOf()) { it.category.key } }
+            remember(state.categories) {
+                state.categories.mapTo(mutableSetOf()) { it.category.key }
+            }
         val selected = selectionSnapshot.selectedKeys intersect keys
         LaunchedEffect(keys) { selection.retain(keys) }
         fun setSelected(setting: CategorySetting) {
@@ -109,20 +111,32 @@ fun SubsCategoryPage(
                     },
                     actions = { selectedMode ->
                         if (selectedMode) {
-                            GkMultiSelectionActions(selectionSnapshot.selectedKeys, keys, selection::selectAll, selection::invert) { dismiss ->
+                            GkMultiSelectionActions(
+                                selectionSnapshot.selectedKeys,
+                                keys,
+                                selection::selectAll,
+                                selection::invert,
+                            ) { dismiss ->
                                 GkBatchActionMenuItem(
                                     stringResource(Res.string.category_follow_subscription),
                                     dismiss,
-                                    { setSelected(CategorySetting.FollowSubscription) })
+                                    { setSelected(CategorySetting.FollowSubscription) },
+                                )
                                 GkBatchActionMenuItem(
-                                    stringResource(Res.string.action_turn_on), dismiss,
-                                    { setSelected(CategorySetting.Enabled) })
+                                    stringResource(Res.string.action_turn_on),
+                                    dismiss,
+                                    { setSelected(CategorySetting.Enabled) },
+                                )
                                 GkBatchActionMenuItem(
-                                    stringResource(Res.string.action_close), dismiss,
-                                    { setSelected(CategorySetting.Disabled) })
+                                    stringResource(Res.string.action_close),
+                                    dismiss,
+                                    { setSelected(CategorySetting.Disabled) },
+                                )
                                 GkBatchActionMenuItem(
-                                    stringResource(Res.string.category_use_group_default), dismiss,
-                                    { setSelected(CategorySetting.GroupDefault) })
+                                    stringResource(Res.string.category_use_group_default),
+                                    dismiss,
+                                    { setSelected(CategorySetting.GroupDefault) },
+                                )
                                 if (subs.isLocal) {
                                     GkBatchActionMenuItem(
                                         stringResource(Res.string.action_delete),
@@ -130,27 +144,36 @@ fun SubsCategoryPage(
                                         {
                                             val selectedKeys = selected
                                             vm.scope.launchUi {
-                                                if (!mainVm.dialogRequests.confirm(
-                                                        title = getString(Res.string.category_delete),
-                                                        text = getString(
-                                                            Res.string.categories_delete_confirmation,
-                                                            selectedKeys.size.toString()
-                                                        ),
+                                                if (
+                                                    !mainVm.dialogRequests.confirm(
+                                                        title =
+                                                            getString(Res.string.category_delete),
+                                                        text =
+                                                            getString(
+                                                                Res.string
+                                                                    .categories_delete_confirmation,
+                                                                selectedKeys.size.toString(),
+                                                            ),
                                                         error = true,
                                                     )
-                                                ) return@launchUi
+                                                )
+                                                    return@launchUi
                                                 vm.deleteCategories(state, selectedKeys)
                                                 selection.removeDeleted(selectedKeys)
-                                                ToastUtils.show(getString(Res.string.delete_success))
+                                                ToastUtils.show(
+                                                    getString(Res.string.delete_success),
+                                                )
                                             }
-                                        })
+                                        },
+                                    )
                                 }
                             }
                         } else {
                             GkIconButton(
                                 imageVector = GkIcons.Info,
                                 contentDescription = stringResource(Res.string.category_help),
-                                onClick = { showHelp = true })
+                                onClick = { showHelp = true },
+                            )
                         }
                     },
                 )
@@ -173,15 +196,18 @@ fun SubsCategoryPage(
                 if (state.uncategorizedApps.isNotEmpty()) {
                     item("uncategorized") {
                         GkRuleListItem(
-                            onClick = { mainVm.navigator.navigate(SubsCategoryGroupRoute(subs.id, null)) },
+                            onClick = {
+                                mainVm.navigator.navigate(SubsCategoryGroupRoute(subs.id, null))
+                            },
                             selectable = false,
                             trailingInfo = {
                                 GkRuleStats(
                                     GkRuleStatsData(
                                         apps = state.uncategorizedApps.size,
-                                        appGroups = state.uncategorizedApps.sumOf { it.groups.size },
+                                        appGroups =
+                                            state.uncategorizedApps.sumOf { it.groups.size },
                                         enabledAppGroups = state.uncategorizedEnabledGroupCount,
-                                    )
+                                    ),
                                 )
                             },
                         ) {
@@ -203,19 +229,19 @@ fun SubsCategoryPage(
                             mainVm.navigator.navigate(
                                 SubsCategoryGroupRoute(
                                     subs.id,
-                                    summary.category.key
-                                )
+                                    summary.category.key,
+                                ),
                             )
                         },
                     )
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    if (state.categories.isEmpty() && state.uncategorizedApps.isEmpty()) GkEmptyState(stringResource(Res.string.categories_empty))
+                    if (state.categories.isEmpty() && state.uncategorizedApps.isEmpty())
+                        GkEmptyState(stringResource(Res.string.categories_empty))
                     GkPageBottomSpace()
                 }
             }
         }
-
     }
 }
 
@@ -240,35 +266,49 @@ private fun CategoryItemCard(
                 CategorySettingIcons(
                     setting = summary.setting,
                     subscriptionDefault = summary.category.enable,
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                        .clearAndSetSemantics { contentDescription = description },
+                    modifier =
+                        Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).clearAndSetSemantics {
+                            contentDescription = description
+                        },
                 )
             }
-        }) {
+        },
+    ) {
         Text(
-            summary.category.name, style = MaterialTheme.typography.bodyLarge,
-            maxLines = 2, overflow = TextOverflow.Ellipsis
+            summary.category.name,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
-        summary.category.desc?.trim()
-            ?.takeIf { it.isNotEmpty() && it != summary.category.name.trim() }?.let { description ->
+        summary.category.desc
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() && it != summary.category.name.trim() }
+            ?.let { description ->
                 Text(
-                    description, style = MaterialTheme.typography.bodySmall,
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
             }
         GkRuleStats(
             GkRuleStatsData(
-                apps = summary.appCount, appGroups = summary.groupCount,
-                enabledAppGroups = summary.enabledGroupCount, showZeroCounts = true
-            )
+                apps = summary.appCount,
+                appGroups = summary.groupCount,
+                enabledAppGroups = summary.enabledGroupCount,
+                showZeroCounts = true,
+            ),
         )
     }
 }
 
 @Composable
-private fun categorySettingDescription(setting: CategorySetting, subscriptionDefault: Boolean?): String =
+private fun categorySettingDescription(
+    setting: CategorySetting,
+    subscriptionDefault: Boolean?,
+): String =
     stringResource(
         if (setting == CategorySetting.FollowSubscription) {
             when (subscriptionDefault) {
@@ -276,7 +316,7 @@ private fun categorySettingDescription(setting: CategorySetting, subscriptionDef
                 false -> Res.string.category_follow_subscription_disabled
                 null -> Res.string.category_follow_subscription_unspecified
             }
-        } else setting.descriptionResource
+        } else setting.descriptionResource,
     )
 
 @Composable
@@ -294,16 +334,19 @@ private fun CategorySettingIcons(
             imageVector = setting.icon,
             modifier = Modifier.size(20.dp),
             contentDescription = null,
-            tint = if (setting == CategorySetting.Enabled) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint =
+                if (setting == CategorySetting.Enabled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (setting == CategorySetting.FollowSubscription && subscriptionDefault != null) {
             GkIcon(
-                imageVector = if (subscriptionDefault) GkIcons.CheckCircle else GkIcons.RemoveCircleOutline,
+                imageVector =
+                    if (subscriptionDefault) GkIcons.CheckCircle else GkIcons.RemoveCircleOutline,
                 modifier = Modifier.size(20.dp),
                 contentDescription = null,
-                tint = if (subscriptionDefault) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint =
+                    if (subscriptionDefault) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -332,7 +375,10 @@ private fun CategoryHelpDialog(onDismissRequest: () -> Unit) {
                 Text(stringResource(Res.string.category_help_description))
                 Text(
                     stringResource(Res.string.category_help_state_note),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        ),
                 )
             }
         },

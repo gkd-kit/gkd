@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import li.gkd.app.MainActivity
 import li.gkd.app.ui.component.GkFullscreenDialog as AndroidFullscreenDialog
 import li.gkd.app.ui.share.optimizedImePadding
-import li.gkd.app.MainActivity
 
 actual typealias UiHost = MainActivity
 
@@ -27,8 +27,8 @@ actual fun GkFullscreenDialog(
     content: @Composable () -> Unit,
 ) = AndroidFullscreenDialog(onDismiss, content)
 
-@Composable
-actual fun inputInsets(): Modifier = Modifier.optimizedImePadding()
+@Composable actual fun inputInsets(): Modifier = Modifier.optimizedImePadding()
+
 actual fun UiHost.hideIme(): Boolean = imeController.requestHide()
 
 @Composable
@@ -56,5 +56,4 @@ actual fun UiHost.GkSystemBars(visible: Boolean) {
             controller.hide(WindowInsetsCompat.Type.statusBars())
         }
     }
-
 }

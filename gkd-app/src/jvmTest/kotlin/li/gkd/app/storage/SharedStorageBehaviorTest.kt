@@ -56,15 +56,23 @@ class SharedStorageBehaviorTest {
     fun cacheCleanupLeavesRecentFilesAndPersistentDataUntouched() {
         val root = Files.createTempDirectory("gkd-cache-cleanup").toFile()
         try {
-            val layout = AppStorageLayout(
-                root.resolve("files"),
-                root.resolve("cache"),
-                root.resolve("files")
-            )
-            val old = layout.tempCache.resolve("old").apply { writeText("old"); setLastModified(1) }
+            val layout =
+                AppStorageLayout(
+                    root.resolve("files"),
+                    root.resolve("cache"),
+                    root.resolve("files"),
+                )
+            val old =
+                layout.tempCache.resolve("old").apply {
+                    writeText("old")
+                    setLastModified(1)
+                }
             val recent = layout.sharedCache.resolve("new").apply { writeText("new") }
             val config =
-                layout.store.resolve("store.json").apply { writeText("{}"); setLastModified(1) }
+                layout.store.resolve("store.json").apply {
+                    writeText("{}")
+                    setLastModified(1)
+                }
             StorageMaintenance.clearExpired(layout)
             assertFalse(old.exists())
             assertTrue(recent.exists())

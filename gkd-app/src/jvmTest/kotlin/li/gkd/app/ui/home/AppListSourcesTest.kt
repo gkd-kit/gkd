@@ -1,5 +1,10 @@
 package li.gkd.app.ui.home
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -12,20 +17,16 @@ import li.gkd.app.model.AppInventory
 import li.gkd.app.state.Loadable
 import li.gkd.db.RuleGroupType
 import li.gkd.db.RuleTriggerStats
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertSame
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppListSourcesTest {
     @Test
     fun activityUpdatesReuseRuleProjectionWhileCatalogAndRuleChangesRefreshIt() = runTest {
         val catalog = MutableStateFlow(AppCatalogState())
-        val rules = MutableStateFlow<Loadable<Map<String, Int>>>(
-            Loadable.Ready(mapOf("app.example" to 2))
-        )
+        val rules =
+            MutableStateFlow<Loadable<Map<String, Int>>>(
+                Loadable.Ready(mapOf("app.example" to 2)),
+            )
         val actionOrder = MutableStateFlow(emptyList<String>())
         val visits = MutableStateFlow(emptyList<String>())
         val triggerStats = MutableStateFlow(emptyList<RuleTriggerStats>())
@@ -34,15 +35,27 @@ class AppListSourcesTest {
         val emissions = mutableListOf<Loadable<AppListSource>>()
         backgroundScope.launch {
             AppListSources.observe(
-                catalog, rules, actionOrder, visits, triggerStats,
-                globalGroupCounts = { globalReads++; it },
-                appGroups = { groupReads++; emptyMap() },
-            ).collect { emissions += it }
+                    catalog,
+                    rules,
+                    actionOrder,
+                    visits,
+                    triggerStats,
+                    globalGroupCounts = {
+                        globalReads++
+                        it
+                    },
+                    appGroups = {
+                        groupReads++
+                        emptyMap()
+                    },
+                )
+                .collect { emissions += it }
         }
         fun current() = assertIs<Loadable.Ready<AppListSource>>(emissions.last()).value
-        fun snapshot(vararg ids: String) = AppCatalogSnapshot(
-            AppInventory(apps = ids.map { AppInfo(it, it, 1, "1", false, 0, false, 0) })
-        )
+        fun snapshot(vararg ids: String) =
+            AppCatalogSnapshot(
+                AppInventory(apps = ids.map { AppInfo(it, it, 1, "1", false, 0, false, 0) }),
+            )
 
         runCurrent()
         assertSame(Loadable.Loading, emissions.last())

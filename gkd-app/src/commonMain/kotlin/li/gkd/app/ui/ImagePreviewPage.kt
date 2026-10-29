@@ -24,13 +24,17 @@ fun ImagePreviewPage(
         imageLoader = imageLoader,
         systemBars = { host.GkSystemBars(it) },
         actionContent = { uri, _ ->
-            if (uri != null && (uri.startsWith("https://", true) || uri.startsWith(
-                    "http://",
-                    true
-                ))
+            if (
+                uri != null &&
+                    (uri.startsWith("https://", true) ||
+                        uri.startsWith(
+                            "http://",
+                            true,
+                        ))
             ) {
                 GkIconButton(
-                    GkIcons.OpenInNew, onClick = { mainVm.textDialog.showUrl(uri) },
+                    GkIcons.OpenInNew,
+                    onClick = { mainVm.textDialog.showUrl(uri) },
                     colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                 )
             }

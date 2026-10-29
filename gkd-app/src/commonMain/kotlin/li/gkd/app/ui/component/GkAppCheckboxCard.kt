@@ -33,36 +33,35 @@ fun GkAppCheckboxCard(
         stringResource(if (checked) Res.string.list_member else Res.string.list_not_member)
     val actionLabel = stringResource(if (checked) Res.string.list_remove else Res.string.list_add)
     Row(
-        modifier = Modifier
-            .clickable(onClick = onCheckedChange)
-            .clearAndSetSemantics {
-                contentDescription = description
-                stateDescription =
-                    membership
-                onClick(
-                    label = actionLabel,
-                    action = null
-                )
-            }
-            .itemPadding(),
+        modifier =
+            Modifier.clickable(onClick = onCheckedChange)
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    stateDescription = membership
+                    onClick(
+                        label = actionLabel,
+                        action = null,
+                    )
+                }
+                .itemPadding(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         appIcon()
         Column(
-            modifier = Modifier
-                .weight(1f),
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center,
         ) {
             appName()
-            if (appInfo.name != appInfo.id) Text(
-                text = appInfo.id,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                softWrap = false
-            )
+            if (appInfo.name != appInfo.id)
+                Text(
+                    text = appInfo.id,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = false,
+                )
         }
         GkCheckbox(
             key = appInfo.id,

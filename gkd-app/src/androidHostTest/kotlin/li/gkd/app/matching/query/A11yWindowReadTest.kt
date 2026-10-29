@@ -13,10 +13,19 @@ class A11yWindowReadTest {
         val session = trace.start(MatchTimingPolicy())
         assertNull(readA11yWindow(trace, "Root") { null })
         assertNull(readA11yWindow(trace, "Root") { throw SecurityException("cross-user denied") })
-        assertNull(readA11yWindow(trace, "Windows") { throw IllegalStateException("UiAutomation disconnected") })
-        assertEquals(listOf("null", "java.lang.SecurityException: cross-user denied",
-            "java.lang.IllegalStateException: UiAutomation disconnected"),
-            trace.export(session.id).events.mapNotNull { it.operation?.outcome })
+        assertNull(
+            readA11yWindow(trace, "Windows") {
+                throw IllegalStateException("UiAutomation disconnected")
+            },
+        )
+        assertEquals(
+            listOf(
+                "null",
+                "java.lang.SecurityException: cross-user denied",
+                "java.lang.IllegalStateException: UiAutomation disconnected",
+            ),
+            trace.export(session.id).events.mapNotNull { it.operation?.outcome },
+        )
         assertTrue(trace.state.value!!.openOperations.isEmpty())
     }
 
@@ -25,12 +34,18 @@ class A11yWindowReadTest {
         val trace = MatchDiagnostics(nanoTime = { error("clock") }, wallTime = { error("clock") })
         assertNull(readA11yWindow(trace, "Root") { throw SecurityException("denied") })
         val cancelled = CancellationException("stopped")
-        assertSame(cancelled, assertThrows(CancellationException::class.java) {
-            readA11yWindow(trace, "Root") { throw cancelled }
-        })
+        assertSame(
+            cancelled,
+            assertThrows(CancellationException::class.java) {
+                readA11yWindow(trace, "Root") { throw cancelled }
+            },
+        )
         val fatal = LinkageError("invalid binding")
-        assertSame(fatal, assertThrows(LinkageError::class.java) {
-            readA11yWindow(trace, "Root") { throw fatal }
-        })
+        assertSame(
+            fatal,
+            assertThrows(LinkageError::class.java) {
+                readA11yWindow(trace, "Root") { throw fatal }
+            },
+        )
     }
 }

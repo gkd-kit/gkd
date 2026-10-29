@@ -1,12 +1,12 @@
 package li.gkd.selector.property
 
-import li.gkd.selector.SourceMapped
 import li.gkd.selector.FastQuery
 import li.gkd.selector.MatchContext
 import li.gkd.selector.NodeAdapter
 import li.gkd.selector.SelectorEvaluation
 import li.gkd.selector.SelectorEvaluationKind
 import li.gkd.selector.SelectorObserver
+import li.gkd.selector.SourceMapped
 import li.gkd.selector.syntax.SelectorPrinter
 
 internal class PropertySelector(
@@ -88,7 +88,8 @@ internal class PropertySelector(
                 else
                     filter.evaluateUsing(
                         { comparison ->
-                            if (!observer.enabled) return@evaluateUsing comparison.match(context, adapter)
+                            if (!observer.enabled)
+                                return@evaluateUsing comparison.match(context, adapter)
                             val left = comparison.left.evaluate(context, adapter)
                             val right = comparison.right.evaluate(context, adapter)
                             val result = comparison.compareEvaluated(left, right)
@@ -116,7 +117,10 @@ internal class PropertySelector(
                                         unit = unit,
                                         property = property,
                                         kind = SelectorEvaluationKind.Logical,
-                                        expression = if (expression is LogicalExpression) expression.operator.key else "!",
+                                        expression =
+                                            if (expression is LogicalExpression)
+                                                expression.operator.key
+                                            else "!",
                                         matched = result,
                                     ),
                                 )
@@ -127,7 +131,8 @@ internal class PropertySelector(
                                         unit = unit,
                                         property = property,
                                         kind = SelectorEvaluationKind.Skipped,
-                                        expression = "${(expression as LogicalExpression).operator.key}: right operand skipped",
+                                        expression =
+                                            "${(expression as LogicalExpression).operator.key}: right operand skipped",
                                         matched = null,
                                     ),
                                 )
@@ -141,7 +146,8 @@ internal class PropertySelector(
                             unit = unit,
                             property = property,
                             kind = SelectorEvaluationKind.Skipped,
-                            expression = "filters ${index + 1}..${filters.lastIndex} after failed filter",
+                            expression =
+                                "filters ${index + 1}..${filters.lastIndex} after failed filter",
                             matched = null,
                         ),
                     )

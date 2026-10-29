@@ -6,6 +6,8 @@ import android.content.ServiceConnection
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.IBinder
+import java.io.Closeable
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeoutOrNull
@@ -14,25 +16,21 @@ import priv.kit.core.PrivilegeExternalStartup
 import priv.kit.core.PrivilegeStartupException
 import priv.kit.core.PrivilegeStartupLogListener
 import rikka.shizuku.Shizuku
-import java.io.Closeable
-import kotlin.time.Duration.Companion.milliseconds
 
 class PrivilegeShizukuExternalStarter(
     context: Context,
 ) : Closeable {
     private val applicationContext = context.applicationContext
 
-    @Volatile
-    private var service: IPrivilegeShizukuStartService? = null
+    @Volatile private var service: IPrivilegeShizukuStartService? = null
 
-    @Volatile
-    private var serviceConnection: ServiceConnection? = null
+    @Volatile private var serviceConnection: ServiceConnection? = null
 
     fun isAvailable(): Boolean =
         Shizuku.pingBinder() &&
-                !Shizuku.isPreV11() &&
-                Shizuku.getVersion() >= SHIZUKU_USER_SERVICE_MIN_VERSION &&
-                Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+            !Shizuku.isPreV11() &&
+            Shizuku.getVersion() >= SHIZUKU_USER_SERVICE_MIN_VERSION &&
+            Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
 
     suspend fun start(commandLine: String): String =
         startAndWait(commandLine, startupLogListener = null)
@@ -69,33 +67,40 @@ class PrivilegeShizukuExternalStarter(
     }
 
     private suspend fun bindOrGetService(): IPrivilegeShizukuStartService {
-        service?.takeIf { service ->
-            runCatching { service.asBinder().pingBinder() }.getOrDefault(false)
-        }?.let { return it }
+        service
+            ?.takeIf { service ->
+                runCatching { service.asBinder().pingBinder() }.getOrDefault(false)
+            }
+            ?.let {
+                return it
+            }
 
         val binding = CompletableDeferred<IPrivilegeShizukuStartService>()
-        val connection = object : ServiceConnection {
-            override fun onServiceConnected(
-                name: ComponentName,
-                binder: IBinder,
-            ) {
-                val startService = IPrivilegeShizukuStartService.Stub.asInterface(binder)
-                if (startService == null) {
+        val connection =
+            object : ServiceConnection {
+                override fun onServiceConnected(
+                    name: ComponentName,
+                    binder: IBinder,
+                ) {
+                    val startService = IPrivilegeShizukuStartService.Stub.asInterface(binder)
+                    if (startService == null) {
+                        binding.completeExceptionally(
+                            PrivilegeStartupException(
+                                "Shizuku UserService returned an invalid Binder",
+                            ),
+                        )
+                    } else {
+                        binding.complete(startService)
+                    }
+                }
+
+                override fun onServiceDisconnected(name: ComponentName) {
+                    service = null
                     binding.completeExceptionally(
-                        PrivilegeStartupException("Shizuku UserService returned an invalid Binder"),
+                        PrivilegeStartupException("Shizuku UserService disconnected while binding"),
                     )
-                } else {
-                    binding.complete(startService)
                 }
             }
-
-            override fun onServiceDisconnected(name: ComponentName) {
-                service = null
-                binding.completeExceptionally(
-                    PrivilegeStartupException("Shizuku UserService disconnected while binding"),
-                )
-            }
-        }
 
         try {
             serviceConnection = connection
@@ -105,28 +110,30 @@ class PrivilegeShizukuExternalStarter(
             throw PrivilegeStartupException("Failed to bind Shizuku UserService", throwable)
         }
 
-        val boundService = try {
-            withTimeoutOrNull(SHIZUKU_BIND_TIMEOUT_MILLIS.milliseconds) { binding.await() }
-                ?: throw PrivilegeStartupException("Timed out binding Shizuku UserService")
-        } catch (throwable: Throwable) {
-            removeUserService(connection)
-            serviceConnection = null
-            if (throwable is CancellationException) throw throwable
-            if (throwable is PrivilegeStartupException) throw throwable
-            throw PrivilegeStartupException("Failed to bind Shizuku UserService", throwable)
-        }
+        val boundService =
+            try {
+                withTimeoutOrNull(SHIZUKU_BIND_TIMEOUT_MILLIS.milliseconds) { binding.await() }
+                    ?: throw PrivilegeStartupException("Timed out binding Shizuku UserService")
+            } catch (throwable: Throwable) {
+                removeUserService(connection)
+                serviceConnection = null
+                if (throwable is CancellationException) throw throwable
+                if (throwable is PrivilegeStartupException) throw throwable
+                throw PrivilegeStartupException("Failed to bind Shizuku UserService", throwable)
+            }
         service = boundService
         return boundService
     }
 
-    // This startup-only service is destroyed after use, so it needs no explicit version for reuse across upgrades.
+    // This startup-only service is destroyed after use, so it needs no explicit version for reuse
+    // across upgrades.
     private fun userServiceArgs(): Shizuku.UserServiceArgs =
         Shizuku.UserServiceArgs(
-            ComponentName(
-                applicationContext.packageName,
-                PrivilegeShizukuStartService::class.java.name,
-            ),
-        )
+                ComponentName(
+                    applicationContext.packageName,
+                    PrivilegeShizukuStartService::class.java.name,
+                ),
+            )
             .daemon(false)
             .tag(SHIZUKU_START_TAG)
             .processNameSuffix(SHIZUKU_START_PROCESS_SUFFIX)
@@ -134,7 +141,8 @@ class PrivilegeShizukuExternalStarter(
 
     private fun removeUserService(connection: ServiceConnection) {
         val args = userServiceArgs()
-        // remove=false clears Shizuku's client-side connection cache; remove=true destroys the remote record.
+        // remove=false clears Shizuku's client-side connection cache; remove=true destroys the
+        // remote record.
         runCatching {
             Shizuku.unbindUserService(args, connection, false)
         }

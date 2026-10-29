@@ -18,35 +18,37 @@ class ActivityImeController(
     val showAnimationRunningFlow: StateFlow<Boolean>
         field = MutableStateFlow(false)
 
-
     private val imeVisible: Boolean
-        get() = ViewCompat.getRootWindowInsets(activity.window.decorView)
-            ?.isVisible(WindowInsetsCompat.Type.ime()) == true // fix #1315
+        get() =
+            ViewCompat.getRootWindowInsets(activity.window.decorView)
+                ?.isVisible(WindowInsetsCompat.Type.ime()) == true // fix #1315
 
-    private val animationCallback = object : WindowInsetsAnimationCompat.Callback(
-        DISPATCH_MODE_CONTINUE_ON_SUBTREE,
-    ) {
-        override fun onStart(
-            animation: WindowInsetsAnimationCompat,
-            bounds: WindowInsetsAnimationCompat.BoundsCompat,
-        ): WindowInsetsAnimationCompat.BoundsCompat {
-            if (animation.isImeAnimation) {
-                showAnimationRunningFlow.value = imeVisible
+    private val animationCallback =
+        object :
+            WindowInsetsAnimationCompat.Callback(
+                DISPATCH_MODE_CONTINUE_ON_SUBTREE,
+            ) {
+            override fun onStart(
+                animation: WindowInsetsAnimationCompat,
+                bounds: WindowInsetsAnimationCompat.BoundsCompat,
+            ): WindowInsetsAnimationCompat.BoundsCompat {
+                if (animation.isImeAnimation) {
+                    showAnimationRunningFlow.value = imeVisible
+                }
+                return bounds
             }
-            return bounds
-        }
 
-        override fun onProgress(
-            insets: WindowInsetsCompat,
-            runningAnimations: List<WindowInsetsAnimationCompat>,
-        ): WindowInsetsCompat = insets
+            override fun onProgress(
+                insets: WindowInsetsCompat,
+                runningAnimations: List<WindowInsetsAnimationCompat>,
+            ): WindowInsetsCompat = insets
 
-        override fun onEnd(animation: WindowInsetsAnimationCompat) {
-            if (animation.isImeAnimation) {
-                showAnimationRunningFlow.value = false
+            override fun onEnd(animation: WindowInsetsAnimationCompat) {
+                if (animation.isImeAnimation) {
+                    showAnimationRunningFlow.value = false
+                }
             }
         }
-    }
 
     init {
         activity.lifecycle.addObserver(this)

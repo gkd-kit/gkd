@@ -1,6 +1,5 @@
 package li.gkd.app.service
 
-import li.gkd.app.util.monotonicTimeMillis
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -21,9 +20,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.appScope
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.AndroidAutomationSession
 import li.gkd.app.matching.AndroidAutomationSessions
 import li.gkd.app.matching.AndroidMatchHost
+import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.updateTopActivity
@@ -35,18 +36,23 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.componentName
-import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.util.monotonicTimeMillis
 
 @SuppressLint("AccessibilityPolicy")
 abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     private val lifecycleHooks = LifecycleHooks()
     override val scope = MainScope()
-    override val mode get() = AutomatorMode.A11y
-    override val windowNodeInfo: AccessibilityNodeInfo? get() = rootInActiveWindow
-    override val windowInfos: List<AccessibilityWindowInfo> get() = windows
+    override val mode
+        get() = AutomatorMode.A11y
+
+    override val windowNodeInfo: AccessibilityNodeInfo?
+        get() = rootInActiveWindow
+
+    override val windowInfos: List<AccessibilityWindowInfo>
+        get() = windows
+
     override suspend fun screenshot(): Bitmap? = suspendCancellableCoroutine { cont ->
         if (AndroidTarget.R) {
             takeScreenshot(
@@ -64,15 +70,16 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
                             if (cont.isActive) {
                                 cont.resume(
                                     Bitmap.wrapHardwareBuffer(
-                                        screenshot.hardwareBuffer, screenshot.colorSpace
-                                    )
+                                        screenshot.hardwareBuffer,
+                                        screenshot.colorSpace,
+                                    ),
                                 )
                             }
                         } finally {
                             screenshot.hardwareBuffer.close()
                         }
                     }
-                }
+                },
             )
         } else {
             cont.resume(null)
@@ -82,6 +89,7 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     override val matchHost by lazy { AndroidMatchHost(this) }
 
     override fun onInterrupt() {}
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = matchHost.onA11yEvent(event)
 
     private val startTime = monotonicTimeMillis()
@@ -146,8 +154,12 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
             val page = AndroidForegroundState.currentPage
             val cpn = context?.topCpn()
             AndroidForegroundState.withTopActivityLock {
-                if (cpn != null && context === privilegeContextFlow.value && page === AndroidForegroundState.currentPage &&
-                    !currentTopActivity.sameAs(cpn.packageName, cpn.className)) {
+                if (
+                    cpn != null &&
+                        context === privilegeContextFlow.value &&
+                        page === AndroidForegroundState.currentPage &&
+                        !currentTopActivity.sameAs(cpn.packageName, cpn.className)
+                ) {
                     updateTopActivity(cpn.packageName, cpn.className)
                 }
             }
@@ -166,7 +178,8 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     }
 
     private fun attachKeepAliveOverlay() {
-        if (!KeepAliveOverlayCoordinator.acquire(
+        if (
+            !KeepAliveOverlayCoordinator.acquire(
                 source = KeepAliveOverlayCoordinator.Source.Accessibility,
                 owner = this,
                 context = this,
@@ -182,8 +195,10 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
             KeepAliveOverlayCoordinator.releaseAfterHandoff(
                 source = KeepAliveOverlayCoordinator.Source.Accessibility,
                 owner = this@A11yService,
-                replacement = KeepAliveOverlayCoordinator.Source.Status
-                    .takeIf { StatusService.isRunning.value },
+                replacement =
+                    KeepAliveOverlayCoordinator.Source.Status.takeIf {
+                        StatusService.isRunning.value
+                    },
             )
         }
     }

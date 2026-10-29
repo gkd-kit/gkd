@@ -1,11 +1,10 @@
 package li.gkd.app.ui.subscription
 
-import li.gkd.app.ui.page.EditorSaveResult
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
@@ -19,34 +18,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import li.gkd.app.resources.*
-import li.gkd.app.ui.component.GkTriggerCount
-import androidx.compose.foundation.layout.padding
+import li.gkd.app.app.AppSort
 import li.gkd.app.model.ExcludeData
-import li.gkd.app.ui.component.GkEditorDialogs
-import li.gkd.app.ui.component.GkMultiTextField
-import li.gkd.app.ui.component.GkIconButton
-import li.gkd.app.ui.component.isFullVisible
+import li.gkd.app.model.findOption
+import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleConfigIndex
 import li.gkd.app.rule.RuleSetting
 import li.gkd.app.rule.RuleSwitchTarget
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
-import li.gkd.app.ui.component.GkAppBarTextField
-import li.gkd.app.ui.component.GkAppFilterContent
-import li.gkd.app.ui.component.GkEmptyState
-import li.gkd.app.ui.component.GkFilterIconButton
 import li.gkd.app.ui.component.GkAnimatedBooleanContent
 import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
+import li.gkd.app.ui.component.GkAppBarTextField
+import li.gkd.app.ui.component.GkAppFilterContent
+import li.gkd.app.ui.component.GkEditorDialogs
+import li.gkd.app.ui.component.GkEmptyState
+import li.gkd.app.ui.component.GkFilterIconButton
+import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkMultiSelectionActions
 import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
+import li.gkd.app.ui.component.GkMultiTextField
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkRuleBatchMenuItems
 import li.gkd.app.ui.component.GkRuleEnableControl
@@ -55,9 +52,12 @@ import li.gkd.app.ui.component.GkRulePropertyIndicators
 import li.gkd.app.ui.component.GkRuleSupportingContent
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkSubscriptionPageContent
+import li.gkd.app.ui.component.GkTriggerCount
 import li.gkd.app.ui.component.GkTwoLineText
 import li.gkd.app.ui.component.RuleProperty
 import li.gkd.app.ui.component.autoFocus
+import li.gkd.app.ui.component.gkTopAppBarScroll
+import li.gkd.app.ui.component.isFullVisible
 import li.gkd.app.ui.component.rememberListScrollState
 import li.gkd.app.ui.component.rememberRuleControlEnvironment
 import li.gkd.app.ui.home.rememberVisitOrder
@@ -65,8 +65,7 @@ import li.gkd.app.ui.icon.GkSearchCloseIconButton
 import li.gkd.app.ui.image.GkAppIcon
 import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.option.AppGroupOption
-import li.gkd.app.app.AppSort
-import li.gkd.app.model.findOption
+import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.hideIme
@@ -112,57 +111,71 @@ fun SubsGlobalGroupExcludePage(
         val configIndex = remember(state.configs) { RuleConfigIndex(state.configs) }
         val group = state.group
         val editing = draft
-        val controls = remember(state, environment) {
-            (environment.apps.keys + state.declaredAppIds).associateWith {
-                environment.resolve(subs, group, it, state.configs, configIndex)
+        val controls =
+            remember(state, environment) {
+                (environment.apps.keys + state.declaredAppIds).associateWith {
+                    environment.resolve(subs, group, it, state.configs, configIndex)
+                }
             }
-        }
-        val matchingIds = remember(controls, environment, query) {
-            controls.keys.filter { id ->
-                id.contains(query, true) || environment.apps[id]?.name?.contains(
-                    query,
-                    true
-                ) == true
+        val matchingIds =
+            remember(controls, environment, query) {
+                controls.keys.filter { id ->
+                    id.contains(query, true) ||
+                        environment.apps[id]
+                            ?.name
+                            ?.contains(
+                                query,
+                                true,
+                            ) == true
+                }
             }
-        }
-        val filteredIds = remember(controls, environment, settings) {
-            controls.keys.filterTo(mutableSetOf()) { id ->
-                (settings.subsExcludeShowBlockApp || id !in environment.blockedApps) &&
+        val filteredIds =
+            remember(controls, environment, settings) {
+                controls.keys.filterTo(mutableSetOf()) { id ->
+                    (settings.subsExcludeShowBlockApp || id !in environment.blockedApps) &&
                         (environment.apps[id]?.let { info ->
-                            (if (info.isSystem) AppGroupOption.SystemGroup else AppGroupOption.UserGroup).include(
-                                settings.subsExcludeAppGroupType
-                            )
+                            (if (info.isSystem) AppGroupOption.SystemGroup
+                                else AppGroupOption.UserGroup)
+                                .include(
+                                    settings.subsExcludeAppGroupType,
+                                )
                         } ?: true)
+                }
             }
-        }
-        val visibleIds = remember(
-            matchingIds,
-            filteredIds,
-            environment,
-            settings,
-            state.appActionOrder,
-            state.triggerStats,
-            visits
-        ) {
-            val named = matchingIds.filter { it in filteredIds }
-                .sortedWith { a, b ->
-                    SortUtils.collator.compare(
-                        environment.apps[a]?.name ?: a,
-                        environment.apps[b]?.name ?: b
-                    )
-                }
-            when (AppSort.options.findOption(settings.subsExcludeSort)) {
-                AppSort.ByTriggerCount -> named.sortedByDescending { state.triggerStats.app(it).count }
-                AppSort.ByAppName -> named
-                AppSort.ByActionTime -> named.sortedBy {
-                    state.appActionOrder[it] ?: Int.MAX_VALUE
-                }
+        val visibleIds =
+            remember(
+                matchingIds,
+                filteredIds,
+                environment,
+                settings,
+                state.appActionOrder,
+                state.triggerStats,
+                visits,
+            ) {
+                val named =
+                    matchingIds
+                        .filter { it in filteredIds }
+                        .sortedWith { a, b ->
+                            SortUtils.collator.compare(
+                                environment.apps[a]?.name ?: a,
+                                environment.apps[b]?.name ?: b,
+                            )
+                        }
+                when (AppSort.options.findOption(settings.subsExcludeSort)) {
+                    AppSort.ByTriggerCount ->
+                        named.sortedByDescending { state.triggerStats.app(it).count }
+                    AppSort.ByAppName -> named
+                    AppSort.ByActionTime ->
+                        named.sortedBy {
+                            state.appActionOrder[it] ?: Int.MAX_VALUE
+                        }
 
-                AppSort.ByUsedTime -> named.sortedBy {
-                    visits.value?.get(it) ?: Int.MAX_VALUE
+                    AppSort.ByUsedTime ->
+                        named.sortedBy {
+                            visits.value?.get(it) ?: Int.MAX_VALUE
+                        }
                 }
             }
-        }
         scroll.ResetOnListChange(visibleIds, key = { it })
         val selectableTargets =
             visibleIds.filterTo(mutableSetOf()) { controls.getValue(it).canEnable }
@@ -172,19 +185,26 @@ fun SubsGlobalGroupExcludePage(
             val request = vm.prepareSwitches(state, ids)
             vm.scope.launchUi {
                 vm.applySwitches(
-                    request, setting,
-                    confirmation = if (confirm) getString(
-                        Res.string.global_rule_app_switch_batch_confirmation,
-                        ids.size.toString(),
-                        setting.labelText()
-                    ) else null,
-                )?.let { ToastUtils.show(it.description()) }
+                        request,
+                        setting,
+                        confirmation =
+                            if (confirm)
+                                getString(
+                                    Res.string.global_rule_app_switch_batch_confirmation,
+                                    ids.size.toString(),
+                                    setting.labelText(),
+                                )
+                            else null,
+                    )
+                    ?.let { ToastUtils.show(it.description()) }
             }
         }
         val editorDialog by vm.editorActions.dialog.collectAsStateWithLifecycle()
         val closeEditor: () -> Unit = {
             vm.editorActions.requestClose(
-                hasChanges = { editing != null && ExcludeData.parse(editing.text) != editing.expected },
+                hasChanges = {
+                    editing != null && ExcludeData.parse(editing.text) != editing.expected
+                },
                 beforeClose = { host.hideIme() },
                 onClose = vm::closeEditor,
             )
@@ -218,7 +238,8 @@ fun SubsGlobalGroupExcludePage(
                     },
                     backOrClose = editing == null && !selectionSnapshot.active,
                     canScroll = editing == null,
-                    onTitleClick = if (showSearchBar || editing != null) null else scroll::resetScroll,
+                    onTitleClick =
+                        if (showSearchBar || editing != null) null else scroll::resetScroll,
                     scrollBehavior = scroll.scrollBehavior,
                     title = {
                         val firstShowSearchBar = remember { showSearchBar }
@@ -230,7 +251,8 @@ fun SubsGlobalGroupExcludePage(
                                     if (showSearchBar) vm.setQuery(it)
                                 },
                                 hint = stringResource(Res.string.app_search_hint),
-                                modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
+                                modifier =
+                                    if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                             )
                         } else {
                             GkTwoLineText(group.name, RuleProperty.Personal.label)
@@ -252,18 +274,26 @@ fun SubsGlobalGroupExcludePage(
                                     if (selectedMode) {
                                         GkMultiSelectionActions(
                                             selectionSnapshot.selectedKeys,
-                                            selectableTargets, selection::selectAll, selection::invert,
+                                            selectableTargets,
+                                            selection::selectAll,
+                                            selection::invert,
                                         ) { dismiss ->
                                             GkRuleBatchMenuItems(
                                                 dismiss,
-                                                { applyToApps(selected, it, true) })
+                                                { applyToApps(selected, it, true) },
+                                            )
                                         }
                                     } else {
                                         GkSearchCloseIconButton(
                                             isSearchOpen = showSearchBar,
-                                            contentDescription = if (!showSearchBar) stringResource(Res.string.search_open) else if (query.isEmpty()) stringResource(
-                                                Res.string.search_close
-                                            ) else stringResource(Res.string.search_clear),
+                                            contentDescription =
+                                                if (!showSearchBar)
+                                                    stringResource(Res.string.search_open)
+                                                else if (query.isEmpty())
+                                                    stringResource(
+                                                        Res.string.search_close,
+                                                    )
+                                                else stringResource(Res.string.search_clear),
                                             onClick = {
                                                 if (!showSearchBar) vm.setShowSearchBar(true)
                                                 else if (query.isNotEmpty()) vm.setQuery("")
@@ -274,12 +304,17 @@ fun SubsGlobalGroupExcludePage(
                                         Box {
                                             GkFilterIconButton(
                                                 filtered = filteredIds.size < controls.size,
-                                                onClick = { menu = true })
-                                            DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                                                onClick = { menu = true },
+                                            )
+                                            DropdownMenu(
+                                                menu,
+                                                onDismissRequest = { menu = false },
+                                            ) {
                                                 GkAppFilterContent(
                                                     sort = settings.subsExcludeSort,
                                                     groupType = settings.subsExcludeAppGroupType,
-                                                    showBlockApps = settings.subsExcludeShowBlockApp,
+                                                    showBlockApps =
+                                                        settings.subsExcludeShowBlockApp,
                                                     onSort = vm::setSortType,
                                                     onAppGroup = vm::setAppGroupType,
                                                     onToggleBlock = vm::toggleShowBlockApps,
@@ -297,7 +332,11 @@ fun SubsGlobalGroupExcludePage(
             },
             floatingActionButton = {
                 GkAnimatedFloatingActionButton(
-                    visible = editing == null && !selectionSnapshot.active && !showSearchBar && scroll.scrollBehavior.isFullVisible,
+                    visible =
+                        editing == null &&
+                            !selectionSnapshot.active &&
+                            !showSearchBar &&
+                            scroll.scrollBehavior.isFullVisible,
                     imageVector = GkIcons.Edit,
                     contentDescription = stringResource(Res.string.action_edit),
                     onClick = { if (draft == null) vm.startEditing(state) },
@@ -318,7 +357,8 @@ fun SubsGlobalGroupExcludePage(
                         val control = controls.getValue(appId)
                         GkRuleListItem(
                             onClick = { mainVm.showRuleGroup(subs.id, appId, group, appId) },
-                            selectedMode = selectionSnapshot.active, selected = appId in selected,
+                            selectedMode = selectionSnapshot.active,
+                            selected = appId in selected,
                             selectable = control.canEnable,
                             onSelect = { selection.toggle(appId) },
                             onLongClick = {
@@ -331,38 +371,46 @@ fun SubsGlobalGroupExcludePage(
                             leading = { GkAppIcon(appId, 32.dp) },
                             trailingInfo = {
                                 val summary = state.triggerStats.app(appId)
-                                GkTriggerCount(summary.count, Modifier.padding(horizontal = 8.dp), lastTriggerTime = summary.lastTime)
+                                GkTriggerCount(
+                                    summary.count,
+                                    Modifier.padding(horizontal = 8.dp),
+                                    lastTriggerTime = summary.lastTime,
+                                )
                             },
                             trailing = { switchModifier ->
                                 GkRuleEnableControl(
-                                    control, onSettingChange = { setting ->
+                                    control,
+                                    onSettingChange = { setting ->
                                         val request = vm.prepareSwitches(state, setOf(appId))
                                         vm.scope.launchUi {
                                             vm.applySwitches(request, setting)
                                                 ?.failureMessage()
                                                 ?.let { ToastUtils.show(it) }
                                         }
-                                    }, modifier = switchModifier,
-                                    identity = RuleSwitchTarget.GlobalApp(
-                                        subs.id,
-                                        group.key,
-                                        appId
-                                    )
+                                    },
+                                    modifier = switchModifier,
+                                    identity =
+                                        RuleSwitchTarget.GlobalApp(
+                                            subs.id,
+                                            group.key,
+                                            appId,
+                                        ),
                                 )
                             },
                         ) {
                             val appInfo = environment.apps[appId]
                             val showAppId = appInfo != null && appInfo.name != appId
                             Row(
-                                Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Text(
                                     appInfo?.name ?: appId,
                                     modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.bodyLarge,
                                     maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                                 if (!showAppId) GkRulePropertyIndicators(control)
                             }
@@ -372,8 +420,9 @@ fun SubsGlobalGroupExcludePage(
                     item("empty") {
                         if (visibleIds.isEmpty()) {
                             GkEmptyState(
-                                if (matchingIds.isEmpty()) stringResource(Res.string.apps_no_matches)
-                                else stringResource(Res.string.apps_no_matches_filter_hint)
+                                if (matchingIds.isEmpty())
+                                    stringResource(Res.string.apps_no_matches)
+                                else stringResource(Res.string.apps_no_matches_filter_hint),
                             )
                         }
                         GkPageBottomSpace()

@@ -14,30 +14,33 @@ data class AppListPageState(
     fun content(
         source: Loadable<AppListSource>,
         settings: SettingsStore,
-        blocked: Set<String>
+        blocked: Set<String>,
     ): AppListContentState {
         val input = source.value
-        val listState = when (source) {
-            Loadable.Loading -> Loadable.Loading
-            is Loadable.Failure -> source
-            is Loadable.Ready -> when (settings.appSort) {
-                AppSort.ByActionTime.value -> source.value.actionOrderState
-                AppSort.ByUsedTime.value -> source.value.visitOrderState
-                else -> Loadable.Ready(Unit)
+        val listState =
+            when (source) {
+                Loadable.Loading -> Loadable.Loading
+                is Loadable.Failure -> source
+                is Loadable.Ready ->
+                    when (settings.appSort) {
+                        AppSort.ByActionTime.value -> source.value.actionOrderState
+                        AppSort.ByUsedTime.value -> source.value.visitOrderState
+                        else -> Loadable.Ready(Unit)
+                    }
             }
-        }
         // Keep rows stable while the user changes whitelist membership.
-        val result = AppQuery.select(
-            if (listState is Loadable.Ready) input?.apps.orEmpty() else emptyList(),
-            query,
-            settings.appGroupType,
-            settings.appSort,
-            settings.showBlockApp,
-            editingFilter ?: blocked,
-            input?.actionOrder.orEmpty(),
-            input?.visitOrder.orEmpty(),
-            triggerCounts = input?.triggerStats?.byApp.orEmpty().mapValues { it.value.count }
-        )
+        val result =
+            AppQuery.select(
+                if (listState is Loadable.Ready) input?.apps.orEmpty() else emptyList(),
+                query,
+                settings.appGroupType,
+                settings.appSort,
+                settings.showBlockApp,
+                editingFilter ?: blocked,
+                input?.actionOrder.orEmpty(),
+                input?.visitOrder.orEmpty(),
+                triggerCounts = input?.triggerStats?.byApp.orEmpty().mapValues { it.value.count },
+            )
         return AppListContentState(
             appInfos = result.apps,
             searchText = search,

@@ -100,7 +100,7 @@ fun CategoryEditorPage(
                 title =
                     stringResource(
                         if (route.categoryKey == null) Res.string.category_add
-                        else Res.string.category_edit
+                        else Res.string.category_edit,
                     ),
                 hasChanges = {
                     name.trim() != draft.originalName.trim() ||
@@ -156,8 +156,8 @@ fun CategoryEditorPage(
                     Card(
                         colors =
                             CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
                     ) {
                         Column(Modifier.fillMaxWidth().padding(16.dp)) {
                             Text(
@@ -168,7 +168,7 @@ fun CategoryEditorPage(
                                 TextButton(
                                     onClick = {
                                         vm.reloadDraft(subscription)
-                                    }
+                                    },
                                 ) {
                                     Text(stringResource(Res.string.action_reload_latest))
                                 }
@@ -239,7 +239,7 @@ fun CategoryEditorPage(
                                         colors =
                                             CardDefaults.cardColors(
                                                 containerColor =
-                                                    MaterialTheme.colorScheme.surfaceContainer
+                                                    MaterialTheme.colorScheme.surfaceContainer,
                                             ),
                                     ) {
                                         Column(

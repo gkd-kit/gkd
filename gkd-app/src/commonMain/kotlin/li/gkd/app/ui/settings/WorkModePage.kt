@@ -1,6 +1,5 @@
 package li.gkd.app.ui.settings
 
-import li.gkd.app.META
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,14 +26,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.META
+import li.gkd.app.model.findOption
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
@@ -45,11 +46,10 @@ import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkPermissionRestrictionDialog
 import li.gkd.app.ui.component.GkScaffold
 import li.gkd.app.ui.component.GkTopAppBar
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.settings.AutomatorMode
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.RefreshPermissions
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.platform.changeAutomatorMode
@@ -65,8 +65,7 @@ fun WorkModePage(host: UiHost) {
     RefreshPermissions()
     val platform = dashboardPlatformState()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val automatorMode: AutomatorMode =
-        AutomatorMode.entries.findOption(store.automatorMode)
+    val automatorMode: AutomatorMode = AutomatorMode.entries.findOption(store.automatorMode)
 
     val onPrivilege: () -> Unit = { mainVm.navigator.navigate(PrivilegeServiceRoute) }
 
@@ -103,7 +102,7 @@ fun WorkModePage(host: UiHost) {
                         if (platform.writeSecureSettings) ""
                         else
                             stringResource(Res.string.keep_alive_permission_missing) +
-                                stringResource(Res.string.keep_alive_permission_description)
+                                stringResource(Res.string.keep_alive_permission_description),
                 )
             },
             confirmButton = {
@@ -111,13 +110,13 @@ fun WorkModePage(host: UiHost) {
                     onClick = {
                         vm.setShowKeepAlive(false)
                         if (!platform.writeSecureSettings) onPrivilege()
-                    }
+                    },
                 ) {
                     Text(
                         stringResource(
                             if (platform.writeSecureSettings) Res.string.action_understood
-                            else Res.string.settings_go_to
-                        )
+                            else Res.string.settings_go_to,
+                        ),
                     )
                 }
             },
@@ -128,7 +127,7 @@ fun WorkModePage(host: UiHost) {
                         TextButton(
                             onClick = {
                                 vm.setShowKeepAlive(false)
-                            }
+                            },
                         ) {
                             Text(stringResource(Res.string.action_close))
                         }
@@ -158,7 +157,7 @@ fun WorkModePage(host: UiHost) {
             modifier =
                 Modifier.fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(contentPadding)
+                    .padding(contentPadding),
         ) {
             Card(
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
@@ -217,7 +216,7 @@ fun WorkModePage(host: UiHost) {
                                 )
                             }
                             TextButton(
-                                onClick = { mainVm.navigator.openWebPage(AppLinks.WorkModeHelp) }
+                                onClick = { mainVm.navigator.openWebPage(AppLinks.WorkModeHelp) },
                             ) {
                                 Text(
                                     text = stringResource(Res.string.help_view),
@@ -350,7 +349,7 @@ private fun TextListItem(
                         Modifier.padding(vertical = (lineHeightDp - 4.dp) / 2)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.tertiary)
-                            .size(4.dp)
+                            .size(4.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = text, style = style)

@@ -37,14 +37,22 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.gkd.app.resources.*
-import org.jetbrains.compose.resources.stringResource
 import li.gkd.db.SubscriptionIds
+import org.jetbrains.compose.resources.stringResource
 
 data class SubscriptionCardData(
-    val id: Long, val enabled: Boolean, val name: String?, val version: Int = 0,
-    val author: String? = null, val globalGroups: Int = 0, val apps: Int = 0,
-    val appGroups: Int = 0, val updatedAt: String, val appName: String,
-    val loadError: String? = null, val updateFailed: Boolean = false,
+    val id: Long,
+    val enabled: Boolean,
+    val name: String?,
+    val version: Int = 0,
+    val author: String? = null,
+    val globalGroups: Int = 0,
+    val apps: Int = 0,
+    val appGroups: Int = 0,
+    val updatedAt: String,
+    val appName: String,
+    val loadError: String? = null,
+    val updateFailed: Boolean = false,
     val triggerCount: Long = 0,
 )
 
@@ -89,56 +97,61 @@ fun GkSubsItemCard(
             }
         }
     }
-    val containerColor = animateColorAsState(
-        if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        tween()
-    )
-    Card(
-        modifier = modifier
-            .padding(16.dp, 4.dp)
-            .clip(MaterialTheme.shapes.small)
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                enabled = !isSelectedMode || selectionEnabled,
-                onClick = onClick,
-                onLongClick = if (handlesLongPress && selectionEnabled) onSelect else null,
-            )
-            .semantics {
-                stateDescription = if (isSelectedMode) {
-                    if (isSelected) selectedLabel else notSelectedLabel
-                } else if (!matchingEnabled) {
-                    pausedLabel
-                } else {
-                    if (data.enabled) enabledLabel else disabledLabel
-                }
-                if (isSelectedMode) {
-                    selected = isSelected
-                    role = Role.Checkbox
-                }
-                this.onClick(
-                    label = if (isSelectedMode) {
-                        if (isSelected) deselectLabel else selectLabel
-                    } else detailsLabel,
-                    action = null,
-                )
-                if (selectionEnabled) {
-                    this.onLongClick(
-                        label = if (isSelectedMode) selectLabel else selectionModeLabel,
-                    ) {
-                        onSelect()
-                        true
-                    }
-                }
+    val containerColor =
+        animateColorAsState(
+            if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
             },
+            tween(),
+        )
+    Card(
+        modifier =
+            modifier
+                .padding(16.dp, 4.dp)
+                .clip(MaterialTheme.shapes.small)
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    enabled = !isSelectedMode || selectionEnabled,
+                    onClick = onClick,
+                    onLongClick = if (handlesLongPress && selectionEnabled) onSelect else null,
+                )
+                .semantics {
+                    stateDescription =
+                        if (isSelectedMode) {
+                            if (isSelected) selectedLabel else notSelectedLabel
+                        } else if (!matchingEnabled) {
+                            pausedLabel
+                        } else {
+                            if (data.enabled) enabledLabel else disabledLabel
+                        }
+                    if (isSelectedMode) {
+                        selected = isSelected
+                        role = Role.Checkbox
+                    }
+                    this.onClick(
+                        label =
+                            if (isSelectedMode) {
+                                if (isSelected) deselectLabel else selectLabel
+                            } else detailsLabel,
+                        action = null,
+                    )
+                    if (selectionEnabled) {
+                        this.onLongClick(
+                            label = if (isSelectedMode) selectLabel else selectionModeLabel,
+                        ) {
+                            onSelect()
+                            true
+                        }
+                    }
+                },
         shape = MaterialTheme.shapes.small,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor.value
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = containerColor.value,
+            ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -150,14 +163,16 @@ fun GkSubsItemCard(
             ) {
                 if (data.name != null) {
                     Text(
-                        modifier = Modifier.semantics {
-                            contentDescription = orderLabel
-                        },
-                        text = stringResource(
-                            Res.string.subscription_numbered_name,
-                            index,
-                            data.name.orEmpty()
-                        ),
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = orderLabel
+                            },
+                        text =
+                            stringResource(
+                                Res.string.subscription_numbered_name,
+                                index,
+                                data.name.orEmpty(),
+                            ),
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -173,14 +188,15 @@ fun GkSubsItemCard(
                     )
                     SubsStatusLine(data) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             if (!SubscriptionIds.isLocal(data.id)) {
                                 if (data.author != null) {
                                     Text(
-                                        modifier = Modifier.weight(1f, fill = false).semantics {
-                                            contentDescription = authorLabel
-                                        },
+                                        modifier =
+                                            Modifier.weight(1f, fill = false).semantics {
+                                                contentDescription = authorLabel
+                                            },
                                         text = data.author,
                                         maxLines = 1,
                                         softWrap = false,
@@ -189,17 +205,20 @@ fun GkSubsItemCard(
                                     )
                                 }
                                 Text(
-                                    modifier = Modifier.semantics {
-                                        contentDescription = versionLabel
-                                    },
-                                    text = stringResource(Res.string.version_prefixed, data.version),
+                                    modifier =
+                                        Modifier.semantics {
+                                            contentDescription = versionLabel
+                                        },
+                                    text =
+                                        stringResource(Res.string.version_prefixed, data.version),
                                     maxLines = 1,
                                     softWrap = false,
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             } else {
                                 Text(
-                                    modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics {},
+                                    modifier =
+                                        Modifier.weight(1f, fill = false).clearAndSetSemantics {},
                                     text = data.appName,
                                     maxLines = 1,
                                     softWrap = false,
@@ -210,9 +229,10 @@ fun GkSubsItemCard(
                             }
                             val timeStr = data.updatedAt
                             Text(
-                                modifier = Modifier.semantics {
-                                    contentDescription = updatedLabel
-                                },
+                                modifier =
+                                    Modifier.semantics {
+                                        contentDescription = updatedLabel
+                                    },
                                 text = timeStr,
                                 maxLines = 1,
                                 softWrap = false,
@@ -228,22 +248,26 @@ fun GkSubsItemCard(
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    val color = if (data.loadError != null) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        Color.Unspecified
-                    }
+                    val color =
+                        if (data.loadError != null) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            Color.Unspecified
+                        }
                     SubsStatusLine(data) {
                         Text(
-                            text = data.loadError
-                                ?: if (refreshing) stringResource(Res.string.loading_progress) else stringResource(
-                                    Res.string.file_missing
-                                ),
+                            text =
+                                data.loadError
+                                    ?: if (refreshing) stringResource(Res.string.loading_progress)
+                                    else
+                                        stringResource(
+                                            Res.string.file_missing,
+                                        ),
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = color
+                            color = color,
                         )
                     }
                 }
@@ -277,12 +301,19 @@ private fun SubsStatusLine(data: SubscriptionCardData, content: @Composable () -
         Spacer(Modifier.width(4.dp))
         Box(Modifier.size(16.dp)) {
             if (data.loadError != null || data.updateFailed) {
-                val description = listOfNotNull(
-                    if (data.loadError != null) stringResource(Res.string.subscription_load_failed) else null,
-                    if (data.updateFailed) stringResource(Res.string.subscription_update_failed) else null,
-                ).joinToString(", ")
+                val description =
+                    listOfNotNull(
+                            if (data.loadError != null)
+                                stringResource(Res.string.subscription_load_failed)
+                            else null,
+                            if (data.updateFailed)
+                                stringResource(Res.string.subscription_update_failed)
+                            else null,
+                        )
+                        .joinToString(", ")
                 GkIcon(
-                    imageVector = if (data.loadError != null) GkIcons.WarningAmber else GkIcons.SyncProblem,
+                    imageVector =
+                        if (data.loadError != null) GkIcons.WarningAmber else GkIcons.SyncProblem,
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.error,
                     contentDescription = description,

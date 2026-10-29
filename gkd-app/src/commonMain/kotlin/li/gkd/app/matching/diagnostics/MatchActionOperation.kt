@@ -12,6 +12,12 @@ class MatchActionOperation(val diagnostics: MatchDiagnostics, val operation: Mat
 
 suspend inline fun <T> observeActionOperation(name: String, block: () -> T): T {
     val action = currentCoroutineContext()[MatchActionOperation] ?: return block()
-    return action.diagnostics.observeOperation(name, action.operation.runId, action.operation.rule,
-        parentOperationId = action.operation.id, sessionId = action.operation.sessionId, block = block)
+    return action.diagnostics.observeOperation(
+        name,
+        action.operation.runId,
+        action.operation.rule,
+        parentOperationId = action.operation.id,
+        sessionId = action.operation.sessionId,
+        block = block,
+    )
 }

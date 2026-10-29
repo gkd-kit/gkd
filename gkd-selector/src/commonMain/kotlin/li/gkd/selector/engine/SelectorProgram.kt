@@ -1,17 +1,17 @@
 package li.gkd.selector.engine
 
-import li.gkd.selector.SelectorEvaluationKind
 import li.gkd.selector.FastQuery
 import li.gkd.selector.LogicalOperator
 import li.gkd.selector.MatchContext
 import li.gkd.selector.MatchOptions
 import li.gkd.selector.NodeAdapter
+import li.gkd.selector.SelectorEvaluation
+import li.gkd.selector.SelectorEvaluationKind
 import li.gkd.selector.SelectorMatch
+import li.gkd.selector.SelectorObserver
 import li.gkd.selector.SelectorSourceMap
 import li.gkd.selector.SelectorType
 import li.gkd.selector.TypeCheckFailure
-import li.gkd.selector.SelectorObserver
-import li.gkd.selector.SelectorEvaluation
 import li.gkd.selector.property.TypeCheckCollector
 
 private const val MATCH_UNIT = 0
@@ -22,7 +22,8 @@ private const val OR_ENTER = 4
 private const val OR_EXIT = 5
 private const val INSTRUCTION_SIZE = 3
 
-internal class SelectorProgram private constructor(
+internal class SelectorProgram
+private constructor(
     private val code: IntArray,
     private val units: List<CompiledUnitSelector>,
     val fastQueryList: List<FastQuery>,
@@ -34,18 +35,40 @@ internal class SelectorProgram private constructor(
         options: MatchOptions,
     ): T? = matchUsing(context, { units[it].match(context, adapter, options) }, { _, _, _ -> })
 
-    fun <T : Any> matchExplained(context: MatchContext<T>, adapter: NodeAdapter<T>, options: MatchOptions,
-        observer: SelectorObserver<T>): T? = matchUsing(context,
-        { units[it].matchExplained(context, adapter, options, observer, it) },
-        { opcode, skipped, result ->
-            if (observer.enabled) observer.record(SelectorEvaluation(node = context.current,
-                kind = if (skipped) SelectorEvaluationKind.SelectorShortCircuit else SelectorEvaluationKind.SelectorNot,
-                expression = when (opcode) { AND_ENTER -> "&&: right operand skipped"; OR_ENTER -> "||: right operand skipped"; else -> "!" },
-                matched = result))
-        })
+    fun <T : Any> matchExplained(
+        context: MatchContext<T>,
+        adapter: NodeAdapter<T>,
+        options: MatchOptions,
+        observer: SelectorObserver<T>,
+    ): T? =
+        matchUsing(
+            context,
+            { units[it].matchExplained(context, adapter, options, observer, it) },
+            { opcode, skipped, result ->
+                if (observer.enabled)
+                    observer.record(
+                        SelectorEvaluation(
+                            node = context.current,
+                            kind =
+                                if (skipped) SelectorEvaluationKind.SelectorShortCircuit
+                                else SelectorEvaluationKind.SelectorNot,
+                            expression =
+                                when (opcode) {
+                                    AND_ENTER -> "&&: right operand skipped"
+                                    OR_ENTER -> "||: right operand skipped"
+                                    else -> "!"
+                                },
+                            matched = result,
+                        ),
+                    )
+            },
+        )
 
-    private inline fun <T : Any> matchUsing(context: MatchContext<T>,
-        matchUnit: (Int) -> T?, logical: (Int, Boolean, Boolean) -> Unit): T? {
+    private inline fun <T : Any> matchUsing(
+        context: MatchContext<T>,
+        matchUnit: (Int) -> T?,
+        logical: (Int, Boolean, Boolean) -> Unit,
+    ): T? {
         var programCounter = 0
         var result: T? = null
         while (programCounter < code.size / INSTRUCTION_SIZE) {
@@ -57,19 +80,22 @@ internal class SelectorProgram private constructor(
                     result = if (result == null) context.current else null
                     logical(NOT, false, result != null)
                 }
-                AND_ENTER -> if (result == null) {
-                    logical(AND_ENTER, true, false)
-                    programCounter = code[base + 2]
-                    continue
-                }
+                AND_ENTER ->
+                    if (result == null) {
+                        logical(AND_ENTER, true, false)
+                        programCounter = code[base + 2]
+                        continue
+                    }
 
-                OR_ENTER -> if (result != null) {
-                    logical(OR_ENTER, true, true)
-                    programCounter = code[base + 2]
-                    continue
-                }
+                OR_ENTER ->
+                    if (result != null) {
+                        logical(OR_ENTER, true, true)
+                        programCounter = code[base + 2]
+                        continue
+                    }
 
-                AND_EXIT, OR_EXIT -> Unit
+                AND_EXIT,
+                OR_EXIT -> Unit
                 else -> error("Unknown selector instruction")
             }
             programCounter++
@@ -89,15 +115,19 @@ internal class SelectorProgram private constructor(
             val base = programCounter * INSTRUCTION_SIZE
             val operand = code[base + 1]
             when (code[base]) {
-                MATCH_UNIT -> result = units[operand]
-                    .matchWithTrace(context, adapter, options)
-                    ?.let { unit -> SelectorMatch(unit.target, arrayOf(unit)) }
+                MATCH_UNIT ->
+                    result =
+                        units[operand].matchWithTrace(context, adapter, options)?.let { unit ->
+                            SelectorMatch(unit.target, arrayOf(unit))
+                        }
 
-                NOT -> result = if (result == null) {
-                    SelectorMatch(context.current, emptyArray())
-                } else {
-                    null
-                }
+                NOT ->
+                    result =
+                        if (result == null) {
+                            SelectorMatch(context.current, emptyArray())
+                        } else {
+                            null
+                        }
 
                 AND_ENTER -> {
                     if (result == null) {
@@ -202,39 +232,40 @@ private class ProgramCompiler(
                 }
 
                 is Emit -> emit(action)
-                is CompileExpression -> when (val expression = action.expression) {
-                    is UnitSelectorExpression -> {
-                        val operand = mutableUnits.size
-                        mutableUnits.add(
-                            CompiledUnitSelector(
-                                expression = expression,
-                                sourceMap = sourceMap,
-                            ),
-                        )
-                        emit(Emit(MATCH_UNIT, operand))
-                    }
+                is CompileExpression ->
+                    when (val expression = action.expression) {
+                        is UnitSelectorExpression -> {
+                            val operand = mutableUnits.size
+                            mutableUnits.add(
+                                CompiledUnitSelector(
+                                    expression = expression,
+                                    sourceMap = sourceMap,
+                                ),
+                            )
+                            emit(Emit(MATCH_UNIT, operand))
+                        }
 
-                    is NotSelectorExpression -> {
-                        actions.add(Emit(NOT, -1))
-                        actions.add(CompileExpression(expression.expression))
-                    }
+                        is NotSelectorExpression -> {
+                            actions.add(Emit(NOT, -1))
+                            actions.add(CompileExpression(expression.expression))
+                        }
 
-                    is LogicalSelectorExpression -> {
-                        val end = Label()
-                        val isAnd = expression.operator == LogicalOperator.And
-                        actions.add(Mark(end))
-                        actions.add(Emit(if (isAnd) AND_EXIT else OR_EXIT, -1))
-                        actions.add(CompileExpression(expression.right))
-                        actions.add(
-                            Emit(
-                                opcode = if (isAnd) AND_ENTER else OR_ENTER,
-                                operand = -1,
-                                target = end,
-                            ),
-                        )
-                        actions.add(CompileExpression(expression.left))
+                        is LogicalSelectorExpression -> {
+                            val end = Label()
+                            val isAnd = expression.operator == LogicalOperator.And
+                            actions.add(Mark(end))
+                            actions.add(Emit(if (isAnd) AND_EXIT else OR_EXIT, -1))
+                            actions.add(CompileExpression(expression.right))
+                            actions.add(
+                                Emit(
+                                    opcode = if (isAnd) AND_ENTER else OR_ENTER,
+                                    operand = -1,
+                                    target = end,
+                                ),
+                            )
+                            actions.add(CompileExpression(expression.left))
+                        }
                     }
-                }
             }
         }
         code = mutableCode.toIntArray()
@@ -270,44 +301,49 @@ private fun analyzeSelector(expression: SelectorExpression): SelectorMetadata {
                 val left = values.removeAt(values.lastIndex)
                 values.add(
                     SelectorMetadata(
-                        fastQueryList = when (action.operator) {
-                            LogicalOperator.And -> when {
-                                left.fastQueryList == null -> right.fastQueryList
-                                right.fastQueryList == null -> left.fastQueryList
-                                else -> (left.fastQueryList + right.fastQueryList).distinct()
-                            }
+                        fastQueryList =
+                            when (action.operator) {
+                                LogicalOperator.And ->
+                                    when {
+                                        left.fastQueryList == null -> right.fastQueryList
+                                        right.fastQueryList == null -> left.fastQueryList
+                                        else ->
+                                            (left.fastQueryList + right.fastQueryList).distinct()
+                                    }
 
-                            LogicalOperator.Or -> if (
-                                left.fastQueryList == null || right.fastQueryList == null
-                            ) {
-                                null
-                            } else {
-                                (left.fastQueryList + right.fastQueryList).distinct()
-                            }
-                        },
-                        isMatchRoot = when (action.operator) {
-                            LogicalOperator.And -> left.isMatchRoot || right.isMatchRoot
-                            LogicalOperator.Or -> left.isMatchRoot && right.isMatchRoot
-                        },
+                                LogicalOperator.Or ->
+                                    if (left.fastQueryList == null || right.fastQueryList == null) {
+                                        null
+                                    } else {
+                                        (left.fastQueryList + right.fastQueryList).distinct()
+                                    }
+                            },
+                        isMatchRoot =
+                            when (action.operator) {
+                                LogicalOperator.And -> left.isMatchRoot || right.isMatchRoot
+                                LogicalOperator.Or -> left.isMatchRoot && right.isMatchRoot
+                            },
                     ),
                 )
             }
 
-            is ReadMetadata -> when (val current = action.expression) {
-                is UnitSelectorExpression -> values.add(
-                    SelectorMetadata(
-                        fastQueryList = current.propertySelectors.last().fastQueryList,
-                        isMatchRoot = current.propertySelectors.last().isMatchRoot,
-                    ),
-                )
+            is ReadMetadata ->
+                when (val current = action.expression) {
+                    is UnitSelectorExpression ->
+                        values.add(
+                            SelectorMetadata(
+                                fastQueryList = current.propertySelectors.last().fastQueryList,
+                                isMatchRoot = current.propertySelectors.last().isMatchRoot,
+                            ),
+                        )
 
-                is NotSelectorExpression -> values.add(SelectorMetadata(null, false))
-                is LogicalSelectorExpression -> {
-                    actions.add(CombineMetadata(current.operator))
-                    actions.add(ReadMetadata(current.right))
-                    actions.add(ReadMetadata(current.left))
+                    is NotSelectorExpression -> values.add(SelectorMetadata(null, false))
+                    is LogicalSelectorExpression -> {
+                        actions.add(CombineMetadata(current.operator))
+                        actions.add(ReadMetadata(current.right))
+                        actions.add(ReadMetadata(current.left))
+                    }
                 }
-            }
         }
     }
     return values.single()

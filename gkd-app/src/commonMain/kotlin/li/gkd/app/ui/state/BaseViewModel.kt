@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.state.Loadable
 
 abstract class BaseViewModel : ViewModel() {
-    val scope get() = viewModelScope
+    val scope
+        get() = viewModelScope
 
     fun <T> Flow<T>.stateInit(initialValue: T): StateFlow<T> {
         return stateIn(scope, SharingStarted.Eagerly, initialValue)
@@ -22,6 +23,4 @@ abstract class BaseViewModel : ViewModel() {
             .catch { emit(Loadable.Failure(it)) }
             .stateIn(scope, SharingStarted.Eagerly, Loadable.Loading)
     }
-
-
 }

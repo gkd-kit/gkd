@@ -1,15 +1,18 @@
 package li.gkd.app.matching.diagnostics
 
-import li.gkd.app.matching.MatchingRuntime
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import li.gkd.app.app.applicationScope
+import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.resources.*
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.app.applicationScope
 import li.gkd.app.util.ToastUtils
 
-actual suspend fun startDiagnosticCapture(detailed: Boolean, ruleFilter: String?,
-    recordQueries: Boolean, recordSystem: Boolean): MatchDiagnosticState {
+actual suspend fun startDiagnosticCapture(
+    detailed: Boolean,
+    ruleFilter: String?,
+    recordQueries: Boolean,
+    recordSystem: Boolean,
+): MatchDiagnosticState {
     val coordinator = MatchingRuntime.coordinator
     val session = coordinator.startDiagnostics(detailed, ruleFilter, recordQueries, recordSystem)
     applicationScope().launchUi {

@@ -20,13 +20,18 @@ class ForegroundTrackerTest {
             val returning = tracker.observe(source, app, policy, 200)
             assertEquals(app, returning.pending)
             assertFalse(returning.appReentered)
-            val confirmed = tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 210)
+            val confirmed =
+                tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 210)
             assertTrue(confirmed.appReentered)
             assertEquals(ForegroundDecisionReason.AppReentered, confirmed.reason)
             assertNull(confirmed.pending)
             assertEquals(app, confirmed.confirmed)
             assertFalse(tracker.observe(source, app, policy, 220).appReentered)
-            assertFalse(tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 230).appReentered)
+            assertFalse(
+                tracker
+                    .observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 230)
+                    .appReentered,
+            )
         }
     }
 
@@ -37,10 +42,18 @@ class ForegroundTrackerTest {
             val tracker = ForegroundTracker(ForegroundIdentity("video", "Splash"))
             tracker.observe(source, ForegroundIdentity("video", "Player"), policy, 100)
             tracker.observe(source, ForegroundIdentity("video", "Splash"), policy, 200)
-            assertFalse(tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 210).appReentered)
+            assertFalse(
+                tracker
+                    .observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 210)
+                    .appReentered,
+            )
             tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("noise"), policy, 220)
             tracker.observe(source, ForegroundIdentity("video", "Splash"), policy, 230)
-            assertFalse(tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 240).appReentered)
+            assertFalse(
+                tracker
+                    .observe(ForegroundSource.Nodes, ForegroundIdentity("video"), policy, 240)
+                    .appReentered,
+            )
         }
     }
 
@@ -55,7 +68,8 @@ class ForegroundTrackerTest {
             tracker.observe(ForegroundSource.TaskStack, task, policy)
             tracker.observe(ForegroundSource.Nodes, ForegroundIdentity(surface), policy)
             time += policy.foregroundRetryMillis
-            val overlay = tracker.observe(ForegroundSource.Nodes, ForegroundIdentity(surface), policy)
+            val overlay =
+                tracker.observe(ForegroundSource.Nodes, ForegroundIdentity(surface), policy)
             assertEquals(surface, overlay.confirmed.appId)
             assertEquals(ForegroundDecisionReason.SurfaceConfirmed, overlay.reason)
             val repeatedTask = tracker.observe(ForegroundSource.TaskStack, task, policy)
@@ -64,7 +78,8 @@ class ForegroundTrackerTest {
             assertEquals(task, repeatedTask.task)
             tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("app"), policy)
             time += policy.foregroundRetryMillis
-            val returned = tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("app"), policy)
+            val returned =
+                tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("app"), policy)
             assertEquals(task, returned.confirmed)
             assertNull(returned.pending)
         }
@@ -82,7 +97,10 @@ class ForegroundTrackerTest {
         val task = ForegroundIdentity("other", "Other")
         assertEquals(task, tracker.observe(ForegroundSource.TaskStack, task, policy).pending)
         assertEquals("systemui", tracker.snapshot().confirmed.appId)
-        assertEquals(task, tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("other"), policy).confirmed)
+        assertEquals(
+            task,
+            tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("other"), policy).confirmed,
+        )
     }
 
     @Test
@@ -90,8 +108,14 @@ class ForegroundTrackerTest {
         var time = 0L
         val tracker = ForegroundTracker(ForegroundIdentity("a"), nowMillis = { time })
         val policy = MatchTimingPolicy()
-        assertNotNull(tracker.observe(ForegroundSource.TaskStack, ForegroundIdentity("b", "B"), policy).pending)
-        assertFalse(tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("a"), policy).changed)
+        assertNotNull(
+            tracker
+                .observe(ForegroundSource.TaskStack, ForegroundIdentity("b", "B"), policy)
+                .pending,
+        )
+        assertFalse(
+            tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("a"), policy).changed,
+        )
         time += 100
         val result = tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("b"), policy)
         assertTrue(result.changed)
@@ -104,10 +128,14 @@ class ForegroundTrackerTest {
         var time = 0L
         val tracker = ForegroundTracker(ForegroundIdentity("a"), nowMillis = { time })
         val policy = MatchTimingPolicy()
-        assertFalse(tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("b"), policy).changed)
+        assertFalse(
+            tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("b"), policy).changed,
+        )
         time = 100
         assertTrue(tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("b"), policy).changed)
-        assertFalse(tracker.observe(ForegroundSource.TaskStack, ForegroundIdentity("a"), policy).changed)
+        assertFalse(
+            tracker.observe(ForegroundSource.TaskStack, ForegroundIdentity("a"), policy).changed,
+        )
         time = 3200
         val result = tracker.observe(ForegroundSource.Nodes, ForegroundIdentity("b"), policy)
         assertEquals("b", result.confirmed.appId)

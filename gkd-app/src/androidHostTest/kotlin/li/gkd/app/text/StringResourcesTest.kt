@@ -29,17 +29,18 @@ class StringResourcesTest {
         val detail = "unexpected %1\$s & <token>"
         assertEquals(
             "非法选择器\n$selector\n$detail",
-            Res.string.selector_invalid_detail.getSync(selector, detail)
+            Res.string.selector_invalid_detail.getSync(selector, detail),
         )
     }
 
     @Test
     fun defaultNotificationTemplateRetainsPersistedRuntimePlaceholderSyntax() {
         // These literal tokens are part of the saved custom-notification template format.
-        // Resource extraction must not turn them into compile-time interpolation or format arguments.
+        // Resource extraction must not turn them into compile-time interpolation or format
+        // arguments.
         assertEquals(
             "\${i}全局/\${k}应用/\${u}规则/\${n}触发",
-            Res.string.notification_summary_template.getSync()
+            Res.string.notification_summary_template.getSync(),
         )
     }
 }

@@ -13,15 +13,13 @@ class JvmRegexContractTest {
         val chinese = TestNode("chinese", "View", mapOf("text" to "中文"))
         assertSame(
             chinese,
-            compileSelector("[text~='(?U)\\\\w+']")
-                .match(chinese, TestNodeAdapter),
+            compileSelector("[text~='(?U)\\\\w+']").match(chinese, TestNodeAdapter),
         )
 
         val ascii = TestNode("ascii", "View", mapOf("text" to "abc"))
         assertSame(
             ascii,
-            compileSelector("[text~='\\\\p{javaLowerCase}+']")
-                .match(ascii, TestNodeAdapter),
+            compileSelector("[text~='\\\\p{javaLowerCase}+']").match(ascii, TestNodeAdapter),
         )
     }
 
@@ -29,11 +27,12 @@ class JvmRegexContractTest {
     fun simpleIncludeOptimizationRemainsLinearForLongAsciiInput() {
         val literal = "a".repeat(60_000) + "b"
         val selector = compileSelector("[text~='(?is).*$literal.*']")
-        val node = TestNode(
-            key = "long-text",
-            name = "View",
-            attributes = mapOf("text" to "a".repeat(120_000)),
-        )
+        val node =
+            TestNode(
+                key = "long-text",
+                name = "View",
+                attributes = mapOf("text" to "a".repeat(120_000)),
+            )
 
         val elapsed = measureTime {
             assertNull(selector.match(node, TestNodeAdapter))

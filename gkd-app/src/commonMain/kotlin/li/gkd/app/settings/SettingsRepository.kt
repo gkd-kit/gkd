@@ -1,7 +1,5 @@
 package li.gkd.app.settings
 
-import li.gkd.app.matching.MatchInvalidationReason
-
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineScope
@@ -20,14 +18,15 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import li.gkd.app.model.isValidAppId
 import li.gkd.app.app.applicationScope
-import li.gkd.app.storage.appStorage
 import li.gkd.app.logging.LogUtils
+import li.gkd.app.matching.MatchInvalidationReason
+import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.model.isValidAppId
+import li.gkd.app.platform.requestAutomatorRestart
+import li.gkd.app.storage.appStorage
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
-import li.gkd.app.matching.MatchingRuntime
-import li.gkd.app.platform.requestAutomatorRestart
 
 private class PreparedValueRestore(
     val begin: suspend () -> Unit,
@@ -53,9 +52,10 @@ private class PersistedValue<T>(
         val error: Throwable?,
     )
 
-    private val mutableState = MutableStateFlow(
-        storage.readValue(filename, decode)
-    )
+    private val mutableState =
+        MutableStateFlow(
+            storage.readValue(filename, decode),
+        )
     val state: StateFlow<T>
         field = mutableState
 
@@ -71,12 +71,13 @@ private class PersistedValue<T>(
     init {
         scope.launch(Dispatchers.IO) {
             for (request in writeRequests) {
-                val result = try {
-                    storage.writeAtomically(filename, encode(request.value))
-                    WriteResult(request.version, null)
-                } catch (e: Exception) {
-                    WriteResult(request.version, e)
-                }
+                val result =
+                    try {
+                        storage.writeAtomically(filename, encode(request.value))
+                        WriteResult(request.version, null)
+                    } catch (e: Exception) {
+                        WriteResult(request.version, e)
+                    }
                 writeResult.value = result
                 result.error?.let { error ->
                     LogUtils.e("Settings write failed: $filename", error)
@@ -122,26 +123,30 @@ private class PersistedValue<T>(
     }
 
     // Enter the per-file queue in call order; the application owns the accepted save.
-    suspend fun save(transform: (T) -> T) = scope.async(start = CoroutineStart.UNDISPATCHED) {
-        saveMutex.withLock {
-            val value = transform(mutableState.value)
-            synchronized(this@PersistedValue) { enqueue(value) }
-            awaitPersistence()
-            synchronized(this@PersistedValue) {
-                rollbackState?.let { it.value = transform(it.value) }
-                mutableState.value = value
+    suspend fun save(transform: (T) -> T) =
+        scope
+            .async(start = CoroutineStart.UNDISPATCHED) {
+                saveMutex.withLock {
+                    val value = transform(mutableState.value)
+                    synchronized(this@PersistedValue) { enqueue(value) }
+                    awaitPersistence()
+                    synchronized(this@PersistedValue) {
+                        rollbackState?.let { it.value = transform(it.value) }
+                        mutableState.value = value
+                    }
+                }
             }
-        }
-    }.await()
+            .await()
 
-    fun update(transform: (T) -> T) = synchronized(this) {
-        val value = transform(mutableState.value)
-        // Keep later commands on both outcomes, without holding a lock across disk I/O.
-        // Like MutableStateFlow.update, transforms must be pure and may run more than once.
-        rollbackState?.let { it.value = transform(it.value) }
-        mutableState.value = value
-        enqueue(value)
-    }
+    fun update(transform: (T) -> T) =
+        synchronized(this) {
+            val value = transform(mutableState.value)
+            // Keep later commands on both outcomes, without holding a lock across disk I/O.
+            // Like MutableStateFlow.update, transforms must be pure and may run more than once.
+            rollbackState?.let { it.value = transform(it.value) }
+            mutableState.value = value
+            enqueue(value)
+        }
 
     suspend fun awaitPersistence() {
         val targetVersion = synchronized(this) { currentVersion }
@@ -156,7 +161,12 @@ private class PersistedValue<T>(
     }
 }
 
-enum class ScreenshotConfigResult { Unchanged, Saved, InvalidApp, InvalidSelector }
+enum class ScreenshotConfigResult {
+    Unchanged,
+    Saved,
+    InvalidApp,
+    InvalidSelector,
+}
 
 object SettingsRepository {
     fun saveHttpServerPort(value: String): Boolean {
@@ -167,19 +177,25 @@ object SettingsRepository {
 
     fun saveCaptureScreenshotConfig(appId: String, eventSelector: String): ScreenshotConfigResult {
         val current = settings.value
-        if (appId == current.screenshotTargetAppId && eventSelector == current.screenshotEventSelector) {
+        if (
+            appId == current.screenshotTargetAppId &&
+                eventSelector == current.screenshotEventSelector
+        ) {
             return ScreenshotConfigResult.Unchanged
         }
         if (appId.isNotEmpty() && !appId.isValidAppId()) {
             return ScreenshotConfigResult.InvalidApp
         }
-        if (eventSelector.isNotEmpty() && Selector.compile(eventSelector) is SelectorCompileResult.Failure) {
+        if (
+            eventSelector.isNotEmpty() &&
+                Selector.compile(eventSelector) is SelectorCompileResult.Failure
+        ) {
             return ScreenshotConfigResult.InvalidSelector
         }
         updateSettings {
             it.copy(
                 screenshotTargetAppId = appId,
-                screenshotEventSelector = eventSelector
+                screenshotEventSelector = eventSelector,
             )
         }
         return ScreenshotConfigResult.Saved
@@ -189,7 +205,9 @@ object SettingsRepository {
         require(text.isNotEmpty() && text.length <= 64)
         val store = settings.value
         val changed =
-            store.toastWhenClick != enabled || store.useSystemToast != useSystemToast || store.actionToast != text
+            store.toastWhenClick != enabled ||
+                store.useSystemToast != useSystemToast ||
+                store.actionToast != text
         updateSettings {
             it.copy(toastWhenClick = enabled, useSystemToast = useSystemToast, actionToast = text)
         }
@@ -200,7 +218,9 @@ object SettingsRepository {
     suspend fun saveNotificationText(enabled: Boolean, title: String, text: String): Boolean {
         val store = settings.value
         val changed =
-            store.useCustomNotifText != enabled || store.customNotifTitle != title || store.customNotifText != text
+            store.useCustomNotifText != enabled ||
+                store.customNotifTitle != title ||
+                store.customNotifText != text
         updateSettings {
             it.copy(
                 useCustomNotifText = enabled,
@@ -220,7 +240,8 @@ object SettingsRepository {
     }
 
     private val storage by lazy { FileSettingsStorage(appStorage().store) }
-    private val scope get() = applicationScope()
+    private val scope
+        get() = applicationScope()
 
     private val restoreMutex = Mutex()
     private val termsMutex = Mutex()
@@ -234,17 +255,24 @@ object SettingsRepository {
         }
     }
 
-    private val json =
-        Json { ignoreUnknownKeys = true; explicitNulls = false; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+        encodeDefaults = true
+    }
 
-    private fun decodeSettings(text: String): SettingsStore = json.decodeFromJsonElement(
-        SettingsStore.serializer(), JsonObject(
-            json.encodeToJsonElement(SettingsStore.serializer(), defaultSettings())
-                .jsonObject.filterKeys { key ->
-                    key in setOf("actionToast", "customNotifTitle", "updateChannel")
-                } + json.parseToJsonElement(text).jsonObject
+    private fun decodeSettings(text: String): SettingsStore =
+        json.decodeFromJsonElement(
+            SettingsStore.serializer(),
+            JsonObject(
+                json
+                    .encodeToJsonElement(SettingsStore.serializer(), defaultSettings())
+                    .jsonObject
+                    .filterKeys { key ->
+                        key in setOf("actionToast", "customNotifTitle", "updateChannel")
+                    } + json.parseToJsonElement(text).jsonObject,
+            ),
         )
-    )
 
     private val settingsValue by lazy {
         PersistedValue(
@@ -310,17 +338,20 @@ object SettingsRepository {
             scope = scope,
         )
     }
-    val overlayPositions: StateFlow<Map<String, List<Int>>> get() = overlayPositionsValue.state
+    val overlayPositions: StateFlow<Map<String, List<Int>>>
+        get() = overlayPositionsValue.state
 
-    fun updateOverlayPosition(key: String, x: Int, y: Int) =
-        overlayPositionsValue.update { it + (key to listOf(x, y)) }
+    fun updateOverlayPosition(key: String, x: Int, y: Int) = overlayPositionsValue.update {
+        it + (key to listOf(x, y))
+    }
 
     val actualBlockA11yAppList: Set<String>
-        get() = AppScopePolicy.blockedA11y(
-            settings.value,
-            blockMatchAppList.value,
-            blockA11yAppList.value
-        )
+        get() =
+            AppScopePolicy.blockedA11y(
+                settings.value,
+                blockMatchAppList.value,
+                blockA11yAppList.value,
+            )
 
     val actualA11yScopeAppList: Set<String>
         get() = AppScopePolicy.a11yScope(settings.value, a11yScopeAppList.value)
@@ -330,14 +361,23 @@ object SettingsRepository {
             settings.value,
             blockMatchAppList.value,
             blockA11yAppList.value,
-            appId
+            appId,
         )
 
-    val settings: StateFlow<SettingsStore> get() = settingsValue.state
-    val actionCount: StateFlow<Long> get() = actionCountValue.state
-    val blockMatchAppList: StateFlow<Set<String>> get() = blockMatchAppListValue.state
-    val blockA11yAppList: StateFlow<Set<String>> get() = blockA11yAppListValue.state
-    val a11yScopeAppList: StateFlow<Set<String>> get() = a11yScopeAppListValue.state
+    val settings: StateFlow<SettingsStore>
+        get() = settingsValue.state
+
+    val actionCount: StateFlow<Long>
+        get() = actionCountValue.state
+
+    val blockMatchAppList: StateFlow<Set<String>>
+        get() = blockMatchAppListValue.state
+
+    val blockA11yAppList: StateFlow<Set<String>>
+        get() = blockA11yAppListValue.state
+
+    val a11yScopeAppList: StateFlow<Set<String>>
+        get() = a11yScopeAppListValue.state
 
     val backupFilenames: Set<String> by lazy {
         setOf(
@@ -350,15 +390,16 @@ object SettingsRepository {
     }
 
     /**
-     * Updates memory and enqueues persistence.
-     * The transform must be pure: a concurrent backup restore may evaluate it twice.
+     * Updates memory and enqueues persistence. The transform must be pure: a concurrent backup
+     * restore may evaluate it twice.
      */
     fun updateSettings(transform: (SettingsStore) -> SettingsStore) {
         val previous = settings.value
         settingsValue.update(transform)
         val current = settings.value
-        if ((previous.enableMatch && !current.enableMatch) ||
-            (previous.enableAutomator && !current.enableAutomator)
+        if (
+            (previous.enableMatch && !current.enableMatch) ||
+                (previous.enableAutomator && !current.enableAutomator)
         ) {
             MatchingRuntime.coordinator.invalidate(MatchInvalidationReason.AutomationDisabled)
         }
@@ -368,10 +409,12 @@ object SettingsRepository {
     fun updateAutomatorMode(value: Int) {
         require(AutomatorMode.entries.any { it.value == value })
         updateSettings {
-            if (it.automatorMode == value) it else it.copy(
-                automatorMode = value,
-                enableAutomator = false
-            )
+            if (it.automatorMode == value) it
+            else
+                it.copy(
+                    automatorMode = value,
+                    enableAutomator = false,
+                )
         }
     }
 
@@ -401,24 +444,33 @@ object SettingsRepository {
 
     suspend fun saveA11yScopeAppList(value: Set<String>) = a11yScopeAppListValue.save { value }
 
-    fun exportBackupEntries(): Map<String, String> = mapOf(
-        settingsValue.filename to settingsValue.encodeCurrent(),
-        actionCountValue.filename to actionCountValue.encodeCurrent(),
-        blockMatchAppListValue.filename to blockMatchAppListValue.encodeCurrent(),
-        blockA11yAppListValue.filename to blockA11yAppListValue.encodeCurrent(),
-        a11yScopeAppListValue.filename to a11yScopeAppListValue.encodeCurrent(),
-    )
+    fun exportBackupEntries(): Map<String, String> =
+        mapOf(
+            settingsValue.filename to settingsValue.encodeCurrent(),
+            actionCountValue.filename to actionCountValue.encodeCurrent(),
+            blockMatchAppListValue.filename to blockMatchAppListValue.encodeCurrent(),
+            blockA11yAppListValue.filename to blockA11yAppListValue.encodeCurrent(),
+            a11yScopeAppListValue.filename to a11yScopeAppListValue.encodeCurrent(),
+        )
 
-    /** Persists imported values before [block]; on failure, rolls back while retaining later commands. */
+    /**
+     * Persists imported values before [block]; on failure, rolls back while retaining later
+     * commands.
+     */
     suspend fun <T> withBackupRestore(entries: Map<String, String>, block: suspend () -> T): T =
         restoreMutex.withLock {
             // Decode everything before changing any value.
-            val restores = listOf(
-                settingsValue, actionCountValue, blockMatchAppListValue,
-                blockA11yAppListValue, a11yScopeAppListValue,
-            ).mapNotNull { value ->
-                entries[value.filename]?.let(value::prepareRestore)
-            }
+            val restores =
+                listOf(
+                        settingsValue,
+                        actionCountValue,
+                        blockMatchAppListValue,
+                        blockA11yAppListValue,
+                        a11yScopeAppListValue,
+                    )
+                    .mapNotNull { value ->
+                        entries[value.filename]?.let(value::prepareRestore)
+                    }
             try {
                 restores.forEach { it.begin() }
                 restores.forEach { it.awaitPersistence() }
@@ -429,15 +481,16 @@ object SettingsRepository {
                 withContext(NonCancellable) {
                     restores.forEach { restore ->
                         runCatching { restore.finish(false) }
-                            .exceptionOrNull()?.let(error::addSuppressed)
+                            .exceptionOrNull()
+                            ?.let(error::addSuppressed)
                     }
                     restores.forEach { restore ->
                         runCatching { restore.awaitPersistence() }
-                            .exceptionOrNull()?.let(error::addSuppressed)
+                            .exceptionOrNull()
+                            ?.let(error::addSuppressed)
                     }
                 }
                 throw error
             }
         }
-
 }

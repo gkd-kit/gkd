@@ -25,19 +25,20 @@ object CompatScreenshot {
         windowManager: IWindowManager,
         userService: IUserService,
     ): Bitmap? {
-        val display = context.getSystemService(DisplayManager::class.java)
-            .getDisplay(DEFAULT_DISPLAY) ?: return null
+        val display =
+            context.getSystemService(DisplayManager::class.java).getDisplay(DEFAULT_DISPLAY)
+                ?: return null
         val displaySize = Point()
-        @Suppress("DEPRECATION")
-        display.getRealSize(displaySize)
+        @Suppress("DEPRECATION") display.getRealSize(displaySize)
         val crop = Rect(0, 0, displaySize.x, displaySize.y)
         return if (AndroidTarget.UPSIDE_DOWN_CAKE) {
-            captureByWindowManager(windowManager, crop)
-        } else {
-            userService.takeScreenshot(crop, display.rotation)
-        }?.apply {
-            setHasAlpha(false)
-        }
+                captureByWindowManager(windowManager, crop)
+            } else {
+                userService.takeScreenshot(crop, display.rotation)
+            }
+            ?.apply {
+                setHasAlpha(false)
+            }
     }
 
     fun captureBySurfaceControl(crop: Rect, rotation: Int): Bitmap? {
@@ -67,8 +68,8 @@ object CompatScreenshot {
         val rotated = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
         val screenshotWidth = if (rotated) displayHeight else displayWidth
         val screenshotHeight = if (rotated) displayWidth else displayHeight
-        var screenshot = SurfaceControlHidden.screenshot(screenshotWidth, screenshotHeight)
-            ?: return null
+        var screenshot =
+            SurfaceControlHidden.screenshot(screenshotWidth, screenshotHeight) ?: return null
         if (rotation != Surface.ROTATION_0) {
             val unrotatedScreenshot = createBitmap(displayWidth, displayHeight)
             Canvas(unrotatedScreenshot).apply {
@@ -92,9 +93,7 @@ object CompatScreenshot {
         return if (useScreenCaptureInternal) {
             captureByWindowManagerInternal(windowManager, crop)
         } else {
-            val captureArgs = ScreenCapture.CaptureArgs.Builder()
-                .setSourceCrop(crop)
-                .build()
+            val captureArgs = ScreenCapture.CaptureArgs.Builder().setSourceCrop(crop).build()
             val listener = ScreenCapture.createSyncCaptureListener()
             windowManager.captureDisplay(DEFAULT_DISPLAY, captureArgs, listener)
             listener.buffer?.let(::copyToSoftwareBitmap)
@@ -106,9 +105,7 @@ object CompatScreenshot {
         windowManager: IWindowManager,
         crop: Rect,
     ): Bitmap? {
-        val captureArgs = ScreenCaptureInternal.CaptureArgs.Builder()
-            .setSourceCrop(crop)
-            .build()
+        val captureArgs = ScreenCaptureInternal.CaptureArgs.Builder().setSourceCrop(crop).build()
         val listener = ScreenCaptureInternal.createSyncCaptureListener()
         windowManager.captureDisplay(DEFAULT_DISPLAY, captureArgs, listener)
         return listener.buffer?.let(::copyToSoftwareBitmap)
@@ -142,12 +139,13 @@ object CompatScreenshot {
         }
     }
 
-    private fun degreesForRotation(rotation: Int): Float = when (rotation) {
-        Surface.ROTATION_90 -> 270f
-        Surface.ROTATION_180 -> 180f
-        Surface.ROTATION_270 -> 90f
-        else -> 0f
-    }
+    private fun degreesForRotation(rotation: Int): Float =
+        when (rotation) {
+            Surface.ROTATION_90 -> 270f
+            Surface.ROTATION_180 -> 180f
+            Surface.ROTATION_270 -> 90f
+            else -> 0f
+        }
 
     private val hasScreenCaptureInternal by lazy {
         HiddenApiDetect.detectHiddenClass(

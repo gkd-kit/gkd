@@ -15,12 +15,13 @@ val itemVerticalPadding = 12.dp
 
 fun Modifier.itemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
 
-fun Modifier.titleItemPadding(showTop: Boolean = true) = this.padding(
-    itemHorizontalPadding,
-    if (showTop) itemVerticalPadding + itemVerticalPadding / 2 else 0.dp,
-    itemHorizontalPadding,
-    itemVerticalPadding - itemVerticalPadding / 2
-)
+fun Modifier.titleItemPadding(showTop: Boolean = true) =
+    this.padding(
+        itemHorizontalPadding,
+        if (showTop) itemVerticalPadding + itemVerticalPadding / 2 else 0.dp,
+        itemHorizontalPadding,
+        itemVerticalPadding - itemVerticalPadding / 2,
+    )
 
 fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
     return padding(

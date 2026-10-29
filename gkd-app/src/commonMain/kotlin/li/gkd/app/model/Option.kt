@@ -8,5 +8,4 @@ interface Option<T> {
     val options: List<Option<T>>
 }
 
-fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T =
-    find { it.value == value } ?: first()
+fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T = find { it.value == value } ?: first()

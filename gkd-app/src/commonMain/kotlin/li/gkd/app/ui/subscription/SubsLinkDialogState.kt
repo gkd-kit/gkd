@@ -107,17 +107,19 @@ class SubsLinkDialogState(
         if (addingJob?.isActive == true) return
         requestFlow.value = request.copy(stage = SubscriptionAddStage.Checking, error = null)
         addingJob = requestScope?.launch {
-            if (LocalNetworkUrls.isLocalNetworkUrl(value) &&
-                !permissions.ensurePermissions(AppPermission.LocalNetwork)
+            if (
+                LocalNetworkUrls.isLocalNetworkUrl(value) &&
+                    !permissions.ensurePermissions(AppPermission.LocalNetwork)
             ) {
                 requestFlow.value = request.copy(stage = null)
                 return@launch
             }
-            val result = SubscriptionRepository.addOrModifyRemote(value) { stage ->
-                withContext(Dispatchers.Main.immediate) {
-                    requestFlow.value = requestFlow.value?.copy(stage = stage)
+            val result =
+                SubscriptionRepository.addOrModifyRemote(value) { stage ->
+                    withContext(Dispatchers.Main.immediate) {
+                        requestFlow.value = requestFlow.value?.copy(stage = stage)
+                    }
                 }
-            }
             if (result is SubscriptionResult.Success) {
                 result.message()?.let { ToastUtils.show(it) }
                 complete(value)
@@ -139,32 +141,35 @@ class SubsLinkDialogState(
     }
 
     suspend fun request(initialValue: String = ""): String? {
-        val existingUrls = withContext(Dispatchers.IO) {
-            SubscriptionRepository.existingUpdateUrls()
-        }
-        val value = withContext(Dispatchers.Main.immediate) {
-            requestMutex.withLock {
-                try {
-                    requestFlow.value = SubsLinkDialogRequest(
-                        initialValue = initialValue,
-                        existingUrls = existingUrls,
-                        value = initialValue,
-                    )
-                    coroutineScope {
-                        requestScope = this
-                        suspendCancellableCoroutine { continuation ->
-                            currentContinuation = continuation
+        val existingUrls =
+            withContext(Dispatchers.IO) {
+                SubscriptionRepository.existingUpdateUrls()
+            }
+        val value =
+            withContext(Dispatchers.Main.immediate) {
+                requestMutex.withLock {
+                    try {
+                        requestFlow.value =
+                            SubsLinkDialogRequest(
+                                initialValue = initialValue,
+                                existingUrls = existingUrls,
+                                value = initialValue,
+                            )
+                        coroutineScope {
+                            requestScope = this
+                            suspendCancellableCoroutine { continuation ->
+                                currentContinuation = continuation
+                            }
                         }
+                    } finally {
+                        addingJob?.cancel()
+                        addingJob = null
+                        requestScope = null
+                        currentContinuation = null
+                        requestFlow.value = null
                     }
-                } finally {
-                    addingJob?.cancel()
-                    addingJob = null
-                    requestScope = null
-                    currentContinuation = null
-                    requestFlow.value = null
                 }
             }
-        }
         return value
     }
 
@@ -178,7 +183,8 @@ class SubsLinkDialogState(
             val editing = currentRequest.initialValue.isNotEmpty()
             GkAlertDialog(
                 textToButtonsSpacing = if (editing) null else 4.dp,
-                properties = DialogProperties(dismissOnClickOutside = false, dismissOnBackPress = !saving),
+                properties =
+                    DialogProperties(dismissOnClickOutside = false, dismissOnBackPress = !saving),
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -186,11 +192,12 @@ class SubsLinkDialogState(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = if (editing) {
-                                stringResource(Res.string.subscription_link)
-                            } else {
-                                stringResource(Res.string.subscription_add)
-                            },
+                            text =
+                                if (editing) {
+                                    stringResource(Res.string.subscription_link)
+                                } else {
+                                    stringResource(Res.string.subscription_add)
+                                },
                         )
                         GkIconButton(
                             imageVector = GkIcons.HelpOutline,
@@ -207,19 +214,21 @@ class SubsLinkDialogState(
                             value = currentRequest.value,
                             onValueChange = ::updateValue,
                             maxLines = 8,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .then(if (editing) Modifier else Modifier.autoFocus()),
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .then(if (editing) Modifier else Modifier.autoFocus()),
                             placeholder = {
                                 Text(text = stringResource(Res.string.subscription_link_input_hint))
                             },
-                            isError = currentRequest.value.isNotEmpty() &&
+                            isError =
+                                currentRequest.value.isNotEmpty() &&
                                     !LocalNetworkUrls.isNetworkUrl(currentRequest.value),
                         )
                         if (!editing) {
-                            val lineHeight = with(LocalDensity.current) {
-                                LocalTextStyle.current.lineHeight.toDp()
-                            }
+                            val lineHeight =
+                                with(LocalDensity.current) {
+                                    LocalTextStyle.current.lineHeight.toDp()
+                                }
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(lineHeight),
                                 contentAlignment = Alignment.CenterStart,
@@ -229,7 +238,10 @@ class SubsLinkDialogState(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(lineHeight), strokeWidth = 2.dp)
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(lineHeight),
+                                            strokeWidth = 2.dp,
+                                        )
                                         AnimatedContent(
                                             targetState = currentRequest.stage,
                                             transitionSpec = {
@@ -238,12 +250,20 @@ class SubsLinkDialogState(
                                             },
                                         ) { stage ->
                                             Text(
-                                                text = stringResource(when (stage) {
-                                                    SubscriptionAddStage.Downloading -> Res.string.subscription_adding_download
-                                                    SubscriptionAddStage.Parsing -> Res.string.subscription_adding_parse
-                                                    SubscriptionAddStage.Saving -> Res.string.subscription_adding_save
-                                                    else -> Res.string.subscription_adding_check
-                                                }),
+                                                text =
+                                                    stringResource(
+                                                        when (stage) {
+                                                            SubscriptionAddStage.Downloading ->
+                                                                Res.string
+                                                                    .subscription_adding_download
+                                                            SubscriptionAddStage.Parsing ->
+                                                                Res.string.subscription_adding_parse
+                                                            SubscriptionAddStage.Saving ->
+                                                                Res.string.subscription_adding_save
+                                                            else ->
+                                                                Res.string.subscription_adding_check
+                                                        },
+                                                    ),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                             )
@@ -256,9 +276,10 @@ class SubsLinkDialogState(
                                             color = MaterialTheme.colorScheme.error,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.fillMaxWidth().clickable {
-                                                showText(error)
-                                            },
+                                            modifier =
+                                                Modifier.fillMaxWidth().clickable {
+                                                    showText(error)
+                                                },
                                         )
                                     }
                                 }
@@ -269,11 +290,18 @@ class SubsLinkDialogState(
                 onDismissRequest = ::cancel,
                 confirmButton = {
                     TextButton(
-                        enabled = !busy && currentRequest.value.isNotEmpty() &&
+                        enabled =
+                            !busy &&
+                                currentRequest.value.isNotEmpty() &&
                                 currentRequest.value != currentRequest.initialValue,
                         onClick = { submit(currentRequest) },
                     ) {
-                        Text(text = stringResource(if (editing) Res.string.action_save else Res.string.action_ok))
+                        Text(
+                            text =
+                                stringResource(
+                                    if (editing) Res.string.action_save else Res.string.action_ok,
+                                ),
+                        )
                     }
                 },
                 dismissButton = {

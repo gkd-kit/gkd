@@ -13,16 +13,17 @@ private class RouteRemovalCallbacks {
     val callbacks = mutableMapOf<String, () -> Unit>()
 }
 
-private val LocalRouteRemovalCallbacks = staticCompositionLocalOf<RouteRemovalCallbacks> {
-    error("OnRouteRemoved must be called inside GkNavigation")
-}
+private val LocalRouteRemovalCallbacks =
+    staticCompositionLocalOf<RouteRemovalCallbacks> {
+        error("OnRouteRemoved must be called inside GkNavigation")
+    }
 
 /**
- * Registers a callback once this entry is out of the back stack and composition.
- * Normally this follows its exit transition. Disposing the host while an already-popped
- * entry is exiting also completes its removal; entries still in the stack do not fire.
- * Registration lasts until the entry is removed, including while another route covers it.
- * Recomposition updates the callback; leaving composition alone does not invoke it.
+ * Registers a callback once this entry is out of the back stack and composition. Normally this
+ * follows its exit transition. Disposing the host while an already-popped entry is exiting also
+ * completes its removal; entries still in the stack do not fire. Registration lasts until the entry
+ * is removed, including while another route covers it. Recomposition updates the callback; leaving
+ * composition alone does not invoke it.
  */
 @Composable
 fun OnRouteRemoved(onRemoved: () -> Unit) {

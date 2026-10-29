@@ -18,13 +18,15 @@ actual fun Modifier.gkTopAppBarScroll(behavior: TopAppBarScrollBehavior): Modifi
     // A child at its scroll boundary rejects wheel input before dispatching nested scroll.
     // Receive that input here so the existing app bar connection can consume it.
     val state = rememberScrollableState { 0f }
-    val appBarState = remember(state, behavior) {
-        object : ScrollableState by state {
-            override val canScrollForward: Boolean
-                get() = behavior.state.heightOffset < 0f
-            override val canScrollBackward: Boolean
-                get() = behavior.state.heightOffset > behavior.state.heightOffsetLimit
+    val appBarState =
+        remember(state, behavior) {
+            object : ScrollableState by state {
+                override val canScrollForward: Boolean
+                    get() = behavior.state.heightOffset < 0f
+
+                override val canScrollBackward: Boolean
+                    get() = behavior.state.heightOffset > behavior.state.heightOffsetLimit
+            }
         }
-    }
     return modifier.scrollable(appBarState, Orientation.Vertical)
 }

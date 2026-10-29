@@ -1,7 +1,5 @@
 package li.gkd.app.matching.query
 
-import li.gkd.app.matching.diagnostics.MatchRecordedValueType
-
 import android.util.Log
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
@@ -10,9 +8,15 @@ import kotlinx.coroutines.CancellationException
 import li.gkd.app.META
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.diagnostics.MatchNodeMetrics
+import li.gkd.app.matching.diagnostics.MatchNodeObservation
+import li.gkd.app.matching.diagnostics.MatchRecordedValue
+import li.gkd.app.matching.diagnostics.MatchRecordedValueType
 import li.gkd.app.matching.diagnostics.NodeCacheKind
 import li.gkd.app.matching.diagnostics.NodeReadOperation
 import li.gkd.app.matching.diagnostics.RuleSelectorDiagnostics
+import li.gkd.app.matching.diagnostics.matchRuleSelectorsExplained
+import li.gkd.app.matching.diagnostics.recordManualQuery
+import li.gkd.app.matching.diagnostics.recordRuleQuery
 import li.gkd.app.matching.input.appChangeTime
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.foregroundRulesFlow
@@ -24,11 +28,6 @@ import li.gkd.selector.NodeAdapter
 import li.gkd.selector.Selector
 import li.gkd.selector.TraversalCandidate
 import li.gkd.selector.relation.RelationExpression
-import li.gkd.app.matching.diagnostics.MatchNodeObservation
-import li.gkd.app.matching.diagnostics.MatchRecordedValue
-import li.gkd.app.matching.diagnostics.matchRuleSelectorsExplained
-import li.gkd.app.matching.diagnostics.recordManualQuery
-import li.gkd.app.matching.diagnostics.recordRuleQuery
 
 private operator fun <K, V> LruCache<K, V>.set(child: K, value: V): V {
     return put(child, value)
@@ -93,7 +92,7 @@ class A11yQueryContext(
                 if (META.debuggable) {
                     Log.d(
                         "cache",
-                        "clear node cache ${eventNode.packageName}/${eventNode.className}"
+                        "clear node cache ${eventNode.packageName}/${eventNode.className}",
                     )
                 }
                 return
@@ -119,6 +118,7 @@ class A11yQueryContext(
     }
 
     private var lastAppChangeTime = appChangeTime
+
     fun clearOldAppNodeCache(): Boolean {
         if (appChangeTime != lastAppChangeTime) {
             lastAppChangeTime = appChangeTime
@@ -130,8 +130,7 @@ class A11yQueryContext(
 
     var currentRule: ResolvedRule? = null
 
-    @Volatile
-    var interruptKey = 0
+    @Volatile var interruptKey = 0
     var queryJob: kotlinx.coroutines.Job? = null
     var queryRunId = 0L
     var queryPage: Any? = null
@@ -157,42 +156,51 @@ class A11yQueryContext(
     private fun getA11Root(): AccessibilityNodeInfo? {
         guardInterrupt()
         // Benchmark callers already time their root supplier.
-        return if (nodeReader == null) getRoot() else measure(NodeReadOperation.Root, block = getRoot)
+        return if (nodeReader == null) getRoot()
+        else measure(NodeReadOperation.Root, block = getRoot)
     }
 
     private fun getA11Child(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? {
         guardInterrupt()
-        return measure(NodeReadOperation.Child, { listOf(node, index) }) { node.getChild(index) }?.setGeneratedTime()
+        return measure(NodeReadOperation.Child, { listOf(node, index) }) { node.getChild(index) }
+            ?.setGeneratedTime()
     }
 
     private fun getA11Parent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         guardInterrupt()
-        return measure(NodeReadOperation.Parent, { listOf(node) }) { node.parent }?.setGeneratedTime()
+        return measure(NodeReadOperation.Parent, { listOf(node) }) { node.parent }
+            ?.setGeneratedTime()
     }
 
     private fun getA11ByText(
         node: AccessibilityNodeInfo,
-        value: String
+        value: String,
     ): List<AccessibilityNodeInfo> {
         guardInterrupt()
-        return measure(NodeReadOperation.FindText, { listOf(node, value) }) { node.findAccessibilityNodeInfosByText(value) }.apply {
-            forEach { it.setGeneratedTime() }
-        }
+        return measure(NodeReadOperation.FindText, { listOf(node, value) }) {
+                node.findAccessibilityNodeInfosByText(value)
+            }
+            .apply {
+                forEach { it.setGeneratedTime() }
+            }
     }
 
     private fun getA11ById(
         node: AccessibilityNodeInfo,
-        value: String
+        value: String,
     ): List<AccessibilityNodeInfo> {
         guardInterrupt()
-        return measure(NodeReadOperation.FindId, { listOf(node, value) }) { node.findAccessibilityNodeInfosByViewId(value) }.apply {
-            forEach { it.setGeneratedTime() }
-        }
+        return measure(NodeReadOperation.FindId, { listOf(node, value) }) {
+                node.findAccessibilityNodeInfosByViewId(value)
+            }
+            .apply {
+                forEach { it.setGeneratedTime() }
+            }
     }
 
     private fun getFastQueryNodes(
         node: AccessibilityNodeInfo,
-        fastQuery: FastQuery
+        fastQuery: FastQuery,
     ): List<AccessibilityNodeInfo> {
         return when (fastQuery) {
             is FastQuery.Id -> getA11ById(node, fastQuery.value)
@@ -217,7 +225,9 @@ class A11yQueryContext(
         }
         val cached = parentCache[node].notExpiredNode
         metrics?.cache(NodeCacheKind.Parent, cached != null)
-        cached?.let { return it }
+        cached?.let {
+            return it
+        }
         return getA11Parent(node).apply {
             if (this != null) {
                 parentCache[node] = this
@@ -236,11 +246,14 @@ class A11yQueryContext(
         }
         val cached = childCache[node to index].notExpiredNode
         metrics?.cache(NodeCacheKind.Child, cached != null)
-        return cached ?: (getA11Child(node, index) ?: throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildUnavailable)).also { child ->
-            indexCache[child] = index
-            parentCache[child] = node
-            childCache[node to index] = child
-        }
+        return cached
+            ?: (getA11Child(node, index)
+                    ?: throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildUnavailable))
+                .also { child ->
+                    indexCache[child] = index
+                    parentCache[child] = node
+                    childCache[node to index] = child
+                }
     }
 
     private fun getPureIndex(node: AccessibilityNodeInfo): Int? {
@@ -248,7 +261,9 @@ class A11yQueryContext(
     }
 
     private fun getCacheIndex(node: AccessibilityNodeInfo): Int {
-        getPureIndex(node)?.let { return it }
+        getPureIndex(node)?.let {
+            return it
+        }
         getCacheChildren(getCacheParent(node)).forEachIndexed { index, child ->
             if (child == node) {
                 indexCache[node] = index
@@ -274,8 +289,11 @@ class A11yQueryContext(
         if (node == null) return emptySequence()
         return sequence {
             repeat(node.childCount) { index ->
-                if (index == MAX_CHILD_SIZE) throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildLimit)
-                val child = getCacheChild(node, index) ?: throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildUnavailable)
+                if (index == MAX_CHILD_SIZE)
+                    throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildLimit)
+                val child =
+                    getCacheChild(node, index)
+                        ?: throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildUnavailable)
                 yield(child)
             }
         }
@@ -283,6 +301,7 @@ class A11yQueryContext(
 
     private var tempVid: CharSequence? = null
     private var tempVidNode: AccessibilityNodeInfo? = null
+
     private fun getTempVid(n: AccessibilityNodeInfo): CharSequence? {
         if (n !== tempVidNode) {
             tempVid = n.getVid()
@@ -328,27 +347,60 @@ class A11yQueryContext(
         }
     }
 
-    private inline fun <T> measure(operation: NodeReadOperation, args: () -> List<Any> = { emptyList() }, noinline block: () -> T): T {
+    private inline fun <T> measure(
+        operation: NodeReadOperation,
+        args: () -> List<Any> = { emptyList() },
+        noinline block: () -> T,
+    ): T {
         val trace = diagnostics
         val runId = queryRunId
         val rule = if (trace?.enabled == true) currentRule?.matchIdentity() ?: "manual" else null
         val page = queryPage
         val collector = metrics
         val observation = MatchNodeObservation.current()
-        val arguments = if (trace?.enabled == true) args().map { value ->
-            observation?.value?.invoke(value) ?: when (value) {
-                is Int -> MatchRecordedValue(MatchRecordedValueType.Int, value.toString())
-                is String -> MatchRecordedValue(MatchRecordedValueType.String, value)
-                else -> MatchRecordedValue(MatchRecordedValueType.NodeIdentity, reference = System.identityHashCode(value))
+        val arguments =
+            if (trace?.enabled == true)
+                args().map { value ->
+                    observation?.value?.invoke(value)
+                        ?: when (value) {
+                            is Int ->
+                                MatchRecordedValue(MatchRecordedValueType.Int, value.toString())
+                            is String -> MatchRecordedValue(MatchRecordedValueType.String, value)
+                            else ->
+                                MatchRecordedValue(
+                                    MatchRecordedValueType.NodeIdentity,
+                                    reference = System.identityHashCode(value),
+                                )
+                        }
+                }
+            else emptyList()
+        val read =
+            if (collector == null) block
+            else {
+                { collector.measure(operation, block) }
             }
-        } else emptyList()
-        val read = if (collector == null) block else { { collector.measure(operation, block) } }
-        val result = if (nodeReader != null) {
-            nodeReader.read(name = operation.name, runId = runId, rule = rule, page = page, arguments = arguments, block = read)
-        } else if (trace?.enabled == true) trace.observeOperation(operation.name, runId, rule, page,
-            parentOperationId = observation?.operation?.id, arguments = arguments,
-            sessionId = observation?.sessionId, block = read)
-        else read()
+        val result =
+            if (nodeReader != null) {
+                nodeReader.read(
+                    name = operation.name,
+                    runId = runId,
+                    rule = rule,
+                    page = page,
+                    arguments = arguments,
+                    block = read,
+                )
+            } else if (trace?.enabled == true)
+                trace.observeOperation(
+                    operation.name,
+                    runId,
+                    rule,
+                    page,
+                    parentOperationId = observation?.operation?.id,
+                    arguments = arguments,
+                    sessionId = observation?.sessionId,
+                    block = read,
+                )
+            else read()
         guardInterrupt()
         return result
     }
@@ -357,37 +409,42 @@ class A11yQueryContext(
         val reader = checkNotNull(nodeReader)
         return reader.query {
             // refresh mutates its receiver, so a cancelled read must own a separate node.
-            @Suppress("DEPRECATION")
-            val copy = AccessibilityNodeInfo.obtain(node)
+            @Suppress("DEPRECATION") val copy = AccessibilityNodeInfo.obtain(node)
             try {
-                if (measure(NodeReadOperation.Refresh, { listOf(copy) }) { copy.refresh() }) copy.setGeneratedTime() else null
+                if (measure(NodeReadOperation.Refresh, { listOf(copy) }) { copy.refresh() })
+                    copy.setGeneratedTime()
+                else null
             } catch (error: CancellationException) {
                 throw error
             } catch (error: InterruptedException) {
                 throw error
-            } catch (_: Exception) { null }
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 
     private inner class A11yNodeAdapter : NodeAdapter<AccessibilityNodeInfo>() {
-        override fun getAttr(target: Any, name: String): Any? = when (target) {
-            is AccessibilityNodeInfo -> getCacheAttr(target, name)
-            else -> null
-        }
-
-        override fun getInvoke(target: Any, name: String, args: List<Any>): Any? = when (target) {
-            is AccessibilityNodeInfo -> when (name) {
-                "getChild" -> getCacheChild(target, args.getInt())
+        override fun getAttr(target: Any, name: String): Any? =
+            when (target) {
+                is AccessibilityNodeInfo -> getCacheAttr(target, name)
                 else -> null
             }
 
-            else -> null
-        }
+        override fun getInvoke(target: Any, name: String, args: List<Any>): Any? =
+            when (target) {
+                is AccessibilityNodeInfo ->
+                    when (name) {
+                        "getChild" -> getCacheChild(target, args.getInt())
+                        else -> null
+                    }
+
+                else -> null
+            }
 
         override fun getName(node: AccessibilityNodeInfo): String? = node.className?.toString()
 
-        override fun getChildCount(node: AccessibilityNodeInfo): Int =
-            node.childCount
+        override fun getChildCount(node: AccessibilityNodeInfo): Int = node.childCount
 
         override fun getChild(node: AccessibilityNodeInfo, index: Int): AccessibilityNodeInfo? =
             getCacheChild(node, index)
@@ -400,7 +457,8 @@ class A11yQueryContext(
 
         override fun getNodeKey(node: AccessibilityNodeInfo): Any = node
 
-        override fun getRoot(node: AccessibilityNodeInfo): AccessibilityNodeInfo = requireQueryRoot()
+        override fun getRoot(node: AccessibilityNodeInfo): AccessibilityNodeInfo =
+            requireQueryRoot()
 
         override fun getDescendants(node: AccessibilityNodeInfo): Sequence<AccessibilityNodeInfo> =
             sequence {
@@ -423,7 +481,8 @@ class A11yQueryContext(
                         tempNodes.clear()
                     }
                 } while (stack.isNotEmpty())
-            }.withQueryLimit(MAX_DESCENDANTS_SIZE, MatchQueryIncompleteReason.DescendantLimit)
+            }
+            .withQueryLimit(MAX_DESCENDANTS_SIZE, MatchQueryIncompleteReason.DescendantLimit)
 
         override fun traverseChildren(
             node: AccessibilityNodeInfo,
@@ -433,7 +492,8 @@ class A11yQueryContext(
                 relationExpression.maxOffset?.let { maxOffset ->
                     if (offset > maxOffset) return@sequence
                 }
-                if (offset == MAX_CHILD_SIZE) throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildLimit)
+                if (offset == MAX_CHILD_SIZE)
+                    throw MatchQueryIncomplete(MatchQueryIncompleteReason.ChildLimit)
                 if (relationExpression.checkOffset(offset)) {
                     getCacheChild(node, offset)?.let { child ->
                         yield(TraversalCandidate(child, offset))
@@ -533,6 +593,7 @@ class A11yQueryContext(
                 if (relationExpression.maxOffset?.let { offset > it } == true) return@sequence
             }
         }
+
         override fun getFastQueryDescendants(
             node: AccessibilityNodeInfo,
             fastQueryList: List<FastQuery>,
@@ -559,10 +620,26 @@ class A11yQueryContext(
         if (diagnostics != null) {
             val session = if (diagnostics.enabled) diagnostics.state.value else null
             if (session?.recordSystem == true && diagnostics.shouldRecordQuery(session.id)) {
-                return recordManualQuery(selector, options, node, ::requireQueryRoot, adapter, diagnostics, session, queryRunId)
+                return recordManualQuery(
+                    selector,
+                    options,
+                    node,
+                    ::requireQueryRoot,
+                    adapter,
+                    diagnostics,
+                    session,
+                    queryRunId,
+                )
             }
         }
-        return querySingleSelector(node, selector, ::requireQueryRoot, adapter, options, rootOnlySelectors = true)
+        return querySingleSelector(
+            node,
+            selector,
+            ::requireQueryRoot,
+            adapter,
+            options,
+            rootOnlySelectors = true,
+        )
     }
 
     fun queryRule(
@@ -573,18 +650,55 @@ class A11yQueryContext(
         currentRule = rule
         try {
             val session = if (diagnostics.enabled) diagnostics.state.value else null
-            if (session?.recordQueries == true && (session.recordSystem || session.ruleFilter == rule.matchIdentity()) && diagnostics.shouldRecordQuery(session.id)) {
-                return recordRuleQuery(rule, node, ::requireQueryRoot, adapter,
-                    diagnostics, session, queryRunId, rootOnlySelectors = true)
+            if (
+                session?.recordQueries == true &&
+                    (session.recordSystem || session.ruleFilter == rule.matchIdentity()) &&
+                    diagnostics.shouldRecordQuery(session.id)
+            ) {
+                return recordRuleQuery(
+                    rule,
+                    node,
+                    ::requireQueryRoot,
+                    adapter,
+                    diagnostics,
+                    session,
+                    queryRunId,
+                    rootOnlySelectors = true,
+                )
             }
-            if (session?.detailed == true && (session.ruleFilter == null || session.ruleFilter == rule.matchIdentity())) {
-                val observer = RuleSelectorDiagnostics<AccessibilityNodeInfo>(diagnostics, session.id, queryRunId, rule.matchIdentity())
-                return matchRuleSelectorsExplained(rule, node, ::requireQueryRoot, { target, selector ->
-                    querySingleSelector(target, selector, ::requireQueryRoot, adapter, rule.matchOptions, rootOnlySelectors = true, observer)
-                }, observer)
+            if (
+                session?.detailed == true &&
+                    (session.ruleFilter == null || session.ruleFilter == rule.matchIdentity())
+            ) {
+                val observer =
+                    RuleSelectorDiagnostics<AccessibilityNodeInfo>(
+                        diagnostics,
+                        session.id,
+                        queryRunId,
+                        rule.matchIdentity(),
+                    )
+                return matchRuleSelectorsExplained(
+                    rule,
+                    node,
+                    ::requireQueryRoot,
+                    { target, selector ->
+                        querySingleSelector(
+                            target,
+                            selector,
+                            ::requireQueryRoot,
+                            adapter,
+                            rule.matchOptions,
+                            rootOnlySelectors = true,
+                            observer,
+                        )
+                    },
+                    observer,
+                )
             }
             return matchRuleSelectors(
-                rule, node, ::requireQueryRoot,
+                rule,
+                node,
+                ::requireQueryRoot,
                 { target, selector -> querySelfOrSelector(target, selector, rule.matchOptions) },
             )
         } finally {

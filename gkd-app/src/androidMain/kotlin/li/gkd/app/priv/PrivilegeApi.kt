@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import li.gkd.app.app
 import li.gkd.app.appScope
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.service.StatusService
@@ -17,7 +18,6 @@ import li.gkd.app.service.currentAppUseA11y
 import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.util.AndroidStorage
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import priv.kit.core.Privilege
@@ -30,11 +30,12 @@ val currentUserId by lazy { Process.myUserHandle().hashCode() }
 val privilegeContextFlow: StateFlow<PrivilegeContext?>
     field = MutableStateFlow(null)
 
-private val userServiceSpec = PrivilegeUserServiceSpec(
-    serviceClassName = UserService::class.java.name,
-    version = 3, // Bump whenever the UserService implementation or its AIDL contract changes.
-    embedded = true,
-)
+private val userServiceSpec =
+    PrivilegeUserServiceSpec(
+        serviceClassName = UserService::class.java.name,
+        version = 3, // Bump whenever the UserService implementation or its AIDL contract changes.
+        embedded = true,
+    )
 
 private suspend fun clearPrivilegeContext(context: PrivilegeContext) {
     if (!privilegeContextFlow.compareAndSet(context, null)) return
@@ -71,9 +72,9 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             }
             if (
                 SettingsRepository.settings.value.enableAutomator &&
-                SettingsRepository.settings.value.useAutomation &&
-                !currentAppBlocked &&
-                !currentAppUseA11y
+                    SettingsRepository.settings.value.useAutomation &&
+                    !currentAppBlocked &&
+                    !currentAppUseA11y
             ) {
                 AutomationService.tryConnect(true)
             }

@@ -1,12 +1,23 @@
 package li.gkd.app.rule
 
-import li.gkd.app.util.monotonicTimeMillis
 import kotlinx.atomicfu.atomic
+import li.gkd.app.util.monotonicTimeMillis
 
-/** Observes actual rule transitions under the runtime lock; absent observers allocate no snapshots. */
+/**
+ * Observes actual rule transitions under the runtime lock; absent observers allocate no snapshots.
+ */
 fun interface RuleStateObserver {
-    fun recordRule(operation: RuleStateOperation, time: Long, runtime: RuleRuntime, rule: ResolvedRule, state: RuleExecutionState,
-        before: RuleStateValues, parameters: RuleExecutionParameters, prerequisites: Set<ResolvedRule>, status: RuleStatus?)
+    fun recordRule(
+        operation: RuleStateOperation,
+        time: Long,
+        runtime: RuleRuntime,
+        rule: ResolvedRule,
+        state: RuleExecutionState,
+        before: RuleStateValues,
+        parameters: RuleExecutionParameters,
+        prerequisites: Set<ResolvedRule>,
+        status: RuleStatus?,
+    )
 }
 
 data class RuleMatchEnvironment(
@@ -25,9 +36,14 @@ class RuleRuntime(
 
     private val trigger = atomic(Trigger(null, 0L))
     private val changedAt = atomic(0L)
-    val lastTriggerRule: ResolvedRule? get() = trigger.value.rule
-    val lastTriggerTime: Long get() = trigger.value.time
-    val appChangeTime: Long get() = changedAt.value
+    val lastTriggerRule: ResolvedRule?
+        get() = trigger.value.rule
+
+    val lastTriggerTime: Long
+        get() = trigger.value.time
+
+    val appChangeTime: Long
+        get() = changedAt.value
 
     @Synchronized
     fun onAppChanged(time: Long) {

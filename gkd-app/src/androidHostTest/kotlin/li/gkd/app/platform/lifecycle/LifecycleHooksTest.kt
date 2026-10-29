@@ -16,10 +16,11 @@ class LifecycleHooksTest {
     @Test
     fun lifecycleLoggingUsesOwnerAndRegistrationLocation() {
         val events = mutableListOf<String>()
-        val hooks = LifecycleHooks(
-            onLifecycleEvent = { event, loc -> events += "$event@$loc" },
-            onCleanupError = { error, _ -> throw error },
-        )
+        val hooks =
+            LifecycleHooks(
+                onLifecycleEvent = { event, loc -> events += "$event@$loc" },
+                onCleanupError = { error, _ -> throw error },
+            )
         hooks.useLogLifecycle(this, loc = "lifecycle-registration-loc")
         hooks.onCreated { events += "created-callback" }
         hooks.onDestroyed { events += "destroyed-callback" }

@@ -47,10 +47,11 @@ actual fun PrivilegeServicePage(host: UiHost) {
 private class GkdPrivilegeUiViewModel(
     application: Application,
     private val backAction: () -> Unit,
-) : PrivilegeUiViewModel(
-    application,
-    gkdPrivilegeUiConfig,
-) {
+) :
+    PrivilegeUiViewModel(
+        application,
+        gkdPrivilegeUiConfig,
+    ) {
     override fun onBackClick(): Boolean {
         backAction()
         return true

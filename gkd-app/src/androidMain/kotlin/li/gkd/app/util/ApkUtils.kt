@@ -1,8 +1,8 @@
 package li.gkd.app.util
 
+import java.io.File
 import li.gkd.app.META
 import li.gkd.app.app
-import java.io.File
 
 object ApkUtils {
     fun createShareFile(): File =

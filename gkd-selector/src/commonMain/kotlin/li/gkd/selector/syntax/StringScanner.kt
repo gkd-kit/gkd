@@ -54,12 +54,18 @@ internal fun scanString(
                 index++
                 when (val escaped = source.getOrNull(index)) {
                     null -> return failure("escape character")
-                    '\\', '\'', '"', '`' -> {
+                    '\\',
+                    '\'',
+                    '"',
+                    '`' -> {
                         value?.append(escaped)
                         index++
                     }
 
-                    'n', 'r', 't', 'b' -> {
+                    'n',
+                    'r',
+                    't',
+                    'b' -> {
                         value?.append(
                             when (escaped) {
                                 'n' -> '\n'
@@ -71,7 +77,8 @@ internal fun scanString(
                         index++
                     }
 
-                    'x', 'u' -> {
+                    'x',
+                    'u' -> {
                         val length = if (escaped == 'x') 2 else 4
                         val digitsStart = index + 1
                         index = digitsStart

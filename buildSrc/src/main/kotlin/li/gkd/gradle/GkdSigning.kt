@@ -14,9 +14,14 @@ inline fun Project.getOrCreateSigningConfigs(
     configs: NamedDomainObjectContainer<out ApkSigningConfig>,
 ): GkdSigningConfigs<ApkSigningConfig> {
     // Preserve each signing property's existing relative-path base.
-    val gkd = resolveSigningConfig(
-        configs, "gkd", "GKD", rootProject.file("gkd-android"), configs.getByName("debug"),
-    )
+    val gkd =
+        resolveSigningConfig(
+            configs,
+            "gkd",
+            "GKD",
+            rootProject.file("gkd-android"),
+            configs.getByName("debug"),
+        )
     val play = resolveSigningConfig(configs, "play", "PLAY", projectDir, gkd)
     return GkdSigningConfigs(gkd, play)
 }
@@ -30,7 +35,9 @@ internal inline fun Project.resolveSigningConfig(
     baseDir: File,
     fallback: ApkSigningConfig,
 ): ApkSigningConfig {
-    configs.findByName(name)?.let { return it }
+    configs.findByName(name)?.let {
+        return it
+    }
     val path = buildProperty("${prefix}_STORE_FILE").orNull ?: return fallback
     return configs.create(name).apply {
         storeFile = baseDir.resolve(path)

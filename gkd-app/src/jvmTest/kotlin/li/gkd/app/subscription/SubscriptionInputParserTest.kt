@@ -1,24 +1,26 @@
 package li.gkd.app.subscription
 
+import li.gkd.app.error.ErrorMessage
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import li.gkd.app.error.ErrorMessage
 
 class SubscriptionInputParserTest {
 
     @Test
     fun singleGroupGetsDefaultKey() {
-        val input = parseInput(
-            source = """
-            {
-              name: 'Rule',
-              rules: [],
-            }
-            """.trimIndent(),
-            defaultGroupKey = 7,
-        )
+        val input =
+            parseInput(
+                source =
+                    """
+                    {
+                      name: 'Rule',
+                      rules: [],
+                    }
+                    """
+                        .trimIndent(),
+                defaultGroupKey = 7,
+            )
 
         val appGroup = input.parseAppGroup("app.id").expectValue()
         val globalGroup = input.parseGlobalGroup().expectValue()
@@ -29,18 +31,21 @@ class SubscriptionInputParserTest {
 
     @Test
     fun fullAppGetsUniqueKeysWithoutDroppingGroups() {
-        val input = parseInput(
-            source = """
-            {
-              id: 'app.id',
-              groups: [
-                { name: 'First', rules: [] },
-                { key: 2, name: 'Explicit', rules: [] },
-                { name: 'Second', rules: [] },
-              ],
-            }
-            """.trimIndent(),
-        )
+        val input =
+            parseInput(
+                source =
+                    """
+                    {
+                      id: 'app.id',
+                      groups: [
+                        { name: 'First', rules: [] },
+                        { key: 2, name: 'Explicit', rules: [] },
+                        { name: 'Second', rules: [] },
+                      ],
+                    }
+                    """
+                        .trimIndent(),
+            )
 
         val groups = input.parseAppGroups("app.id").expectValue()
 
@@ -50,17 +55,20 @@ class SubscriptionInputParserTest {
 
     @Test
     fun quotedNumericKeyIsReservedWhenFillingMissingKeys() {
-        val input = parseInput(
-            source = """
-            {
-              id: 'app.id',
-              groups: [
-                { key: '0', name: 'Quoted', rules: [] },
-                { name: 'Filled', rules: [] },
-              ],
-            }
-            """.trimIndent(),
-        )
+        val input =
+            parseInput(
+                source =
+                    """
+                    {
+                      id: 'app.id',
+                      groups: [
+                        { key: '0', name: 'Quoted', rules: [] },
+                        { name: 'Filled', rules: [] },
+                      ],
+                    }
+                    """
+                        .trimIndent(),
+            )
 
         val groups = input.parseAppGroups("app.id").expectValue()
 
@@ -70,18 +78,21 @@ class SubscriptionInputParserTest {
 
     @Test
     fun appGroupInputAcceptsFullAppAndSingleGroup() {
-        val fullApp = parseInput(
-            source = """
-            {
-              id: 'app.id',
-              groups: [{ key: 3, name: 'Wrapped', rules: [] }],
-            }
-            """.trimIndent(),
-        )
-        val singleGroup = parseInput(
-            source =
-                "{ key: 4, name: 'Single', rules: [] }",
-        )
+        val fullApp =
+            parseInput(
+                source =
+                    """
+                    {
+                      id: 'app.id',
+                      groups: [{ key: 3, name: 'Wrapped', rules: [] }],
+                    }
+                    """
+                        .trimIndent(),
+            )
+        val singleGroup =
+            parseInput(
+                source = "{ key: 4, name: 'Single', rules: [] }",
+            )
 
         assertEquals("Wrapped", fullApp.parseAppGroup("app.id").expectValue().name)
         assertEquals("Single", singleGroup.parseAppGroup("app.id").expectValue().name)
@@ -89,14 +100,17 @@ class SubscriptionInputParserTest {
 
     @Test
     fun fullAppMustMatchExpectedAppId() {
-        val input = parseInput(
-            source = """
-            {
-              id: 'other.app',
-              groups: [{ key: 0, name: 'Rule', rules: [] }],
-            }
-            """.trimIndent(),
-        )
+        val input =
+            parseInput(
+                source =
+                    """
+                    {
+                      id: 'other.app',
+                      groups: [{ key: 0, name: 'Rule', rules: [] }],
+                    }
+                    """
+                        .trimIndent(),
+            )
 
         val error = assertRejected {
             input.parseAppGroups("app.id")
@@ -107,9 +121,10 @@ class SubscriptionInputParserTest {
 
     @Test
     fun appInputRequiresAtLeastOneGroup() {
-        val input = parseInput(
-            source = "{ id: 'app.id', groups: [] }"
-        )
+        val input =
+            parseInput(
+                source = "{ id: 'app.id', groups: [] }",
+            )
 
         val error = assertRejected {
             input.parseApp()

@@ -14,18 +14,21 @@ sealed interface OptionIcon {
 
 sealed class UpdateTimeOption(
     override val value: Long,
-    override val labelResource: StringResource
+    override val labelResource: StringResource,
 ) : Option<Long> {
-    override val options get() = objects
+    override val options
+        get() = objects
 
     data object Pause : UpdateTimeOption(SubscriptionUpdateInterval.Paused, Res.string.action_pause)
+
     data object Everyday :
         UpdateTimeOption(SubscriptionUpdateInterval.Daily, Res.string.update_interval_daily)
 
-    data object Every3Days : UpdateTimeOption(
-        SubscriptionUpdateInterval.EveryThreeDays,
-        Res.string.update_interval_three_days
-    )
+    data object Every3Days :
+        UpdateTimeOption(
+            SubscriptionUpdateInterval.EveryThreeDays,
+            Res.string.update_interval_three_days,
+        )
 
     data object Every7Days :
         UpdateTimeOption(SubscriptionUpdateInterval.Weekly, Res.string.update_interval_weekly)
@@ -38,12 +41,15 @@ sealed class UpdateTimeOption(
 sealed class DarkThemeOption(
     override val value: Boolean?,
     override val labelResource: StringResource,
-    override val icon: ImageVector
+    override val icon: ImageVector,
 ) : Option<Boolean?>, OptionIcon {
-    override val options get() = objects
+    override val options
+        get() = objects
 
     data object FollowSystem : DarkThemeOption(null, Res.string.theme_auto, GkIcons.BrightnessAuto)
+
     data object AlwaysEnable : DarkThemeOption(true, Res.string.theme_dark, GkIcons.DarkMode)
+
     data object AlwaysDisable : DarkThemeOption(false, Res.string.theme_light, GkIcons.LightMode)
 
     companion object {
@@ -53,6 +59,7 @@ sealed class DarkThemeOption(
 
 sealed interface BinaryOption : Option<Int> {
     fun include(flag: Int): Boolean = (value and flag) != 0
+
     fun invert(flag: Int): Int = value xor flag
 
     companion object {
@@ -64,12 +71,15 @@ sealed interface BinaryOption : Option<Int> {
 
 sealed class AppGroupOption(
     override val value: Int,
-    override val labelResource: StringResource
+    override val labelResource: StringResource,
 ) : BinaryOption {
-    override val options get() = allObjects
+    override val options
+        get() = allObjects
 
     data object SystemGroup : AppGroupOption(AppGroupFlags.System, Res.string.apps_system)
+
     data object UserGroup : AppGroupOption(AppGroupFlags.User, Res.string.apps_user)
+
     data object UnInstalledGroup :
         AppGroupOption(AppGroupFlags.Uninstalled, Res.string.apps_not_installed)
 

@@ -1,6 +1,5 @@
 package li.gkd.app.priv
 
-import li.gkd.app.util.monotonicTimeMillis
 import android.annotation.SuppressLint
 import android.app.UiAutomation
 import android.app.UiAutomationHidden
@@ -17,30 +16,35 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import li.gkd.app.appScope
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.AndroidAutomationSession
 import li.gkd.app.matching.AndroidAutomationSessions
 import li.gkd.app.matching.AndroidMatchHost
+import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.logging.LogUtils
 import li.gkd.app.util.SystemServiceDump
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
-import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.util.monotonicTimeMillis
 
-class AutomationService private constructor(
+class AutomationService
+private constructor(
     private val privilegeContext: PrivilegeContext,
 ) : AndroidAutomationSession {
-    override val mode get() = AutomatorMode.Automation
+    override val mode
+        get() = AutomatorMode.Automation
+
     private val handlerThread = HandlerThread("UiAutomatorHandlerThread")
     private val uiAutomationDelegate = lazy {
         UiAutomationHidden(
-            handlerThread.looper,
-            ProxyUiAutomationConnection(privilegeContext),
-        ).toPublic
+                handlerThread.looper,
+                ProxyUiAutomationConnection(privilegeContext),
+            )
+            .toPublic
     }
     private val uiAutomation by uiAutomationDelegate
 
@@ -52,12 +56,17 @@ class AutomationService private constructor(
         matchHost.onA11yEvent(it)
     }
 
-    override suspend fun screenshot(): Bitmap? = withContext(Dispatchers.IO) {
-        privilegeContext.screenshot()
-    }
+    override suspend fun screenshot(): Bitmap? =
+        withContext(Dispatchers.IO) {
+            privilegeContext.screenshot()
+        }
 
-    override val windowNodeInfo: AccessibilityNodeInfo? get() = uiAutomation.rootInActiveWindow
-    override val windowInfos: List<AccessibilityWindowInfo> get() = uiAutomation.windows
+    override val windowNodeInfo: AccessibilityNodeInfo?
+        get() = uiAutomation.rootInActiveWindow
+
+    override val windowInfos: List<AccessibilityWindowInfo>
+        get() = uiAutomation.windows
+
     private val startTime = monotonicTimeMillis()
     override var justStarted: Boolean = true
         get() {
@@ -109,6 +118,7 @@ class AutomationService private constructor(
 
     private var tempShutdownFlag = false
     private val shutdown = atomic(false)
+
     override fun shutdown(temp: Boolean) {
         if (!shutdown.compareAndSet(expect = false, update = true)) return
         if (temp) {
@@ -154,7 +164,8 @@ class AutomationService private constructor(
                 val privilegeContext = privilegeContextFlow.value ?: return@synchronized
                 try {
                     if (queryPrivilegeCapabilities().restricted) {
-                        if (!silent) ToastUtils.show(Res.string.automation_permission_restricted.getSync())
+                        if (!silent)
+                            ToastUtils.show(Res.string.automation_permission_restricted.getSync())
                         return@synchronized
                     }
                     if (isOtherUiAutomationRunning()) {
@@ -175,7 +186,7 @@ class AutomationService private constructor(
                     }
                     if (
                         privilegeContextFlow.value !== privilegeContext ||
-                        !privilegeContext.serverLifecycleBinder.pingBinder()
+                            !privilegeContext.serverLifecycleBinder.pingBinder()
                     ) {
                         instance.shutdown(true)
                     }

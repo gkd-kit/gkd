@@ -88,8 +88,7 @@ private fun subsManageContent(
     val subsIdToRaw = state?.subscriptions.orEmpty()
 
     val refreshProgress by SubscriptionRepository.refreshing.collectAsStateWithLifecycle()
-    val refreshing by
-        SubscriptionRepository.updating.collectAsStateWithLifecycle()
+    val refreshing by SubscriptionRepository.updating.collectAsStateWithLifecycle()
     val selectionState = vm.selection
     val selectionSnapshot by selectionState.state.collectAsStateWithLifecycle()
     val allIds = remember(subItems) { subItems.mapTo(mutableSetOf()) { it.id } }

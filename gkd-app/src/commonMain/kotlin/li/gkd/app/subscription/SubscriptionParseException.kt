@@ -9,10 +9,17 @@ class SubscriptionParseException(
     val detail: String,
     cause: Throwable? = null,
 ) : IllegalArgumentException("$path: $detail", cause), BusinessError {
-    override val errorCode: String get() = "INVALID_SUBSCRIPTION"
-    override val errorPath: String get() = path
+    override val errorCode: String
+        get() = "INVALID_SUBSCRIPTION"
+
+    override val errorPath: String
+        get() = path
+
     override val errorMessage: ErrorMessage
-        get() = ErrorMessage.WithDetail(
-            ErrorMessage.Resource(Res.string.rpc_invalid_subscription), ErrorMessage.Text(detail), ": ",
-        )
+        get() =
+            ErrorMessage.WithDetail(
+                ErrorMessage.Resource(Res.string.rpc_invalid_subscription),
+                ErrorMessage.Text(detail),
+                ": ",
+            )
 }

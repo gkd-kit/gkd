@@ -29,19 +29,28 @@ interface RuleTriggerStatsDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIfAbsent(stats: RuleTriggerStats)
 
-    @Query("""
+    @Query(
+        """
         UPDATE rule_trigger_stats SET trigger_count = trigger_count + 1,
             last_trigger_time = MAX(last_trigger_time, :time)
         WHERE subs_id = :subsId AND group_type = :groupType AND group_key = :groupKey AND app_id = :appId
-    """)
+    """,
+    )
     suspend fun increment(subsId: Long, groupType: Int, groupKey: Int, appId: String, time: Long)
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM rule_trigger_stats
         WHERE (:subsId IS NULL OR subs_id = :subsId)
             AND (:appId IS NULL OR app_id = :appId)
             AND (:groupType IS NULL OR group_type = :groupType)
             AND (:groupKey IS NULL OR group_key = :groupKey)
-    """)
-    fun observe(subsId: Long? = null, appId: String? = null, groupType: Int? = null, groupKey: Int? = null): Flow<List<RuleTriggerStats>>
+    """,
+    )
+    fun observe(
+        subsId: Long? = null,
+        appId: String? = null,
+        groupType: Int? = null,
+        groupKey: Int? = null,
+    ): Flow<List<RuleTriggerStats>>
 }

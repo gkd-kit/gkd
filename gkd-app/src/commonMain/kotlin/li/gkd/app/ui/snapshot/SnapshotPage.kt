@@ -49,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import li.gkd.app.ui.component.gkTopAppBarScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -72,10 +71,13 @@ import coil3.request.ImageRequest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import li.gkd.app.app.ActivityNames.getShowActivityId
+import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.model.date
+import li.gkd.app.model.findOption
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.snapshot.SnapshotDisplayMode
 import li.gkd.app.state.Loadable
 import li.gkd.app.time.format
 import li.gkd.app.ui.MainViewModel
@@ -91,10 +93,9 @@ import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkRetainedSheet
 import li.gkd.app.ui.component.GkScaffold
+import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.image.appImageLoader
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
-import li.gkd.app.snapshot.SnapshotDisplayMode
-import li.gkd.app.model.findOption
 import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.ListPlaceholder
@@ -102,11 +103,10 @@ import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.upload.createSnapshotUploadItem
 import li.gkd.app.util.ToastUtils
+import li.gkd.db.Db
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import li.gkd.app.app.AppInfoRepository
-import li.gkd.db.Db
 
 @Composable
 fun SnapshotPage(
@@ -115,9 +115,12 @@ fun SnapshotPage(
     val mainVm = MainViewModel.requireCurrent()
     val imageLoader = appImageLoader()
     fun uploadSnapshots(snapshots: List<Snapshot>, onFinished: () -> Unit) =
-        mainVm.githubUpload.startBatchTask(snapshots.map {
-            createSnapshotUploadItem(it, it.appId + " · " + it.date)
-        }, onFinished)
+        mainVm.githubUpload.startBatchTask(
+            snapshots.map {
+                createSnapshotUploadItem(it, it.appId + " · " + it.date)
+            },
+            onFinished,
+        )
     val vm = viewModel { SnapshotViewModel() }
     val shareProgress by vm.shareProgress.collectAsStateWithLifecycle()
 
@@ -131,9 +134,10 @@ fun SnapshotPage(
     val catalog by AppInfoRepository.state.collectAsStateWithLifecycle()
     val appNames =
         remember(catalog.snapshot) { catalog.snapshot?.apps.orEmpty().mapValues { it.value.name } }
-    val groups = remember(snapshots, appNames, displayMode) {
-        buildSnapshotGroups(snapshots, appNames, displayMode)
-    }
+    val groups =
+        remember(snapshots, appNames, displayMode) {
+            buildSnapshotGroups(snapshots, appNames, displayMode)
+        }
     val displayedSnapshots = remember(groups) { groups.flatMap { it.snapshots } }
     val previewSnapshotIds = remember(displayedSnapshots) { displayedSnapshots.map { it.id } }
     fun openPreview(snapshotId: Long) {
@@ -167,30 +171,35 @@ fun SnapshotPage(
     fun saveSelected(targets: List<Snapshot>, toAlbum: Boolean) {
         actionScope.launchUi {
             val title =
-                if (toAlbum) getString(Res.string.action_save_to_album) else getString(Res.string.action_save_to_downloads)
-            val confirmation = if (toAlbum) {
-                getString(
-                    Res.string.snapshot_save_selected_to_album_confirmation,
-                    targets.size.toString()
-                )
-            } else {
-                getString(
-                    Res.string.snapshot_save_selected_to_downloads_confirmation,
-                    targets.size.toString()
-                )
-            }
-            if (!mainVm.dialogRequests.confirm(
+                if (toAlbum) getString(Res.string.action_save_to_album)
+                else getString(Res.string.action_save_to_downloads)
+            val confirmation =
+                if (toAlbum) {
+                    getString(
+                        Res.string.snapshot_save_selected_to_album_confirmation,
+                        targets.size.toString(),
+                    )
+                } else {
+                    getString(
+                        Res.string.snapshot_save_selected_to_downloads_confirmation,
+                        targets.size.toString(),
+                    )
+                }
+            if (
+                !mainVm.dialogRequests.confirm(
                     title = title,
                     text = confirmation,
                     confirmText = title,
                 )
-            ) return@launchUi
+            )
+                return@launchUi
             val actions = host.snapshotActions(mainVm, vm, {}, {}, {})
-            val savedCount = if (toAlbum) {
-                actions.saveSelectedToAlbum(targets)
-            } else {
-                actions.saveSelectedToDownloads(targets)
-            } ?: return@launchUi
+            val savedCount =
+                if (toAlbum) {
+                    actions.saveSelectedToAlbum(targets)
+                } else {
+                    actions.saveSelectedToDownloads(targets)
+                } ?: return@launchUi
             ToastUtils.show(
                 if (savedCount == targets.size) {
                     getString(Res.string.snapshot_save_selected_success, savedCount.toString())
@@ -198,9 +207,9 @@ fun SnapshotPage(
                     getString(
                         Res.string.snapshot_save_selected_partial,
                         savedCount.toString(),
-                        (targets.size - savedCount).toString()
+                        (targets.size - savedCount).toString(),
                     )
-                }
+                },
             )
         }
     }
@@ -261,7 +270,10 @@ fun SnapshotPage(
                                 enabled = selectedSnapshots.isNotEmpty() && shareProgress == null,
                                 onDismiss = dismiss,
                                 onClick = {
-                                    vm.shareSnapshots(selectedSnapshots, host.snapshotPlatformActions())
+                                    vm.shareSnapshots(
+                                        selectedSnapshots,
+                                        host.snapshotPlatformActions(),
+                                    )
                                 },
                             )
                             GkBatchActionMenuItem(
@@ -284,16 +296,30 @@ fun SnapshotPage(
                                     onClick = {
                                         val targets = pendingUploads
                                         actionScope.launchUi {
-                                            if (!mainVm.dialogRequests.confirm(
-                                                    title = getString(Res.string.snapshot_generate_link),
-                                                    text = getString(
-                                                        Res.string.snapshot_generate_links_confirmation,
-                                                        targets.size.toString()
-                                                    ) +
-                                                            "\n\n" + getString(Res.string.snapshot_upload_privacy_warning),
-                                                    confirmText = getString(Res.string.snapshot_generate_link),
+                                            if (
+                                                !mainVm.dialogRequests.confirm(
+                                                    title =
+                                                        getString(
+                                                            Res.string.snapshot_generate_link,
+                                                        ),
+                                                    text =
+                                                        getString(
+                                                            Res.string
+                                                                .snapshot_generate_links_confirmation,
+                                                            targets.size.toString(),
+                                                        ) +
+                                                            "\n\n" +
+                                                            getString(
+                                                                Res.string
+                                                                    .snapshot_upload_privacy_warning,
+                                                            ),
+                                                    confirmText =
+                                                        getString(
+                                                            Res.string.snapshot_generate_link,
+                                                        ),
                                                 )
-                                            ) return@launchUi
+                                            )
+                                                return@launchUi
                                             if (uploadSnapshots(targets, {}) == true) {
                                                 selectionState.clear()
                                             } else {
@@ -315,29 +341,45 @@ fun SnapshotPage(
                                         showLinks(targets)
                                     } else {
                                         actionScope.launchUi {
-                                            val upload = mainVm.dialogRequests.confirm(
-                                                title = getString(Res.string.link_copy),
-                                                text = (if (pending.size == targets.size) {
-                                                    getString(
-                                                        Res.string.snapshot_copy_links_upload_all_confirmation,
-                                                        targets.size.toString()
-                                                    )
-                                                } else {
-                                                    getString(
-                                                        Res.string.snapshot_copy_links_upload_some_confirmation,
-                                                        pending.size.toString()
-                                                    )
-                                                }) + "\n\n" + getString(Res.string.snapshot_upload_privacy_warning),
-                                                confirmText = getString(Res.string.snapshot_generate_link),
-                                            )
+                                            val upload =
+                                                mainVm.dialogRequests.confirm(
+                                                    title = getString(Res.string.link_copy),
+                                                    text =
+                                                        (if (pending.size == targets.size) {
+                                                            getString(
+                                                                Res.string
+                                                                    .snapshot_copy_links_upload_all_confirmation,
+                                                                targets.size.toString(),
+                                                            )
+                                                        } else {
+                                                            getString(
+                                                                Res.string
+                                                                    .snapshot_copy_links_upload_some_confirmation,
+                                                                pending.size.toString(),
+                                                            )
+                                                        }) +
+                                                            "\n\n" +
+                                                            getString(
+                                                                Res.string
+                                                                    .snapshot_upload_privacy_warning,
+                                                            ),
+                                                    confirmText =
+                                                        getString(
+                                                            Res.string.snapshot_generate_link,
+                                                        ),
+                                                )
                                             if (upload) {
-                                                if (uploadSnapshots(
+                                                if (
+                                                    uploadSnapshots(
                                                         pending,
-                                                        { showCurrentLinks(targetIds) }) == true
+                                                        { showCurrentLinks(targetIds) },
+                                                    ) == true
                                                 ) {
                                                     selectionState.clear()
                                                 } else {
-                                                    ToastUtils.show(getString(Res.string.upload_busy))
+                                                    ToastUtils.show(
+                                                        getString(Res.string.upload_busy),
+                                                    )
                                                 }
                                             } else if (pending.size < targets.size) {
                                                 showLinks(targets)
@@ -353,23 +395,27 @@ fun SnapshotPage(
                                 onClick = {
                                     val targets = selectedSnapshots
                                     actionScope.launchUi {
-                                        if (!mainVm.dialogRequests.confirm(
+                                        if (
+                                            !mainVm.dialogRequests.confirm(
                                                 title = getString(Res.string.snapshot_delete),
-                                                text = getString(
-                                                    Res.string.snapshot_delete_selected_confirmation,
-                                                    targets.size.toString()
-                                                ),
+                                                text =
+                                                    getString(
+                                                        Res.string
+                                                            .snapshot_delete_selected_confirmation,
+                                                        targets.size.toString(),
+                                                    ),
                                                 error = true,
                                             )
-                                        ) return@launchUi
+                                        )
+                                            return@launchUi
                                         val result = vm.deleteSnapshots(targets)
                                         selectionState.removeDeleted(result.deletedIds)
                                         ToastUtils.show(
                                             getString(
                                                 Res.string.snapshot_delete_selected_result,
                                                 result.deletedIds.size.toString(),
-                                                result.failedCount.toString()
-                                            )
+                                                result.failedCount.toString(),
+                                            ),
                                         )
                                     }
                                 },
@@ -377,23 +423,31 @@ fun SnapshotPage(
                         }
                     } else {
                         val displayModeLabel = stringResource(displayMode.labelResource)
-                        val nextMode = SnapshotDisplayMode.entries.findOption(
-                            SnapshotDisplayMode.switch(settings.snapshotDisplayMode)
-                        )
+                        val nextMode =
+                            SnapshotDisplayMode.entries.findOption(
+                                SnapshotDisplayMode.switch(settings.snapshotDisplayMode),
+                            )
                         GkIconButton(
-                            imageVector = when (displayMode) {
-                                SnapshotDisplayMode.ByTime -> GkIcons.CalendarMonth
-                                SnapshotDisplayMode.ByApp -> GkIcons.Apps
-                            },
+                            imageVector =
+                                when (displayMode) {
+                                    SnapshotDisplayMode.ByTime -> GkIcons.CalendarMonth
+                                    SnapshotDisplayMode.ByApp -> GkIcons.Apps
+                                },
                             animateMorph = true,
                             modifier = Modifier.semantics { stateDescription = displayModeLabel },
-                            contentDescription = when (nextMode) {
-                                SnapshotDisplayMode.ByTime -> stringResource(Res.string.snapshot_view_switch_to_time)
-                                SnapshotDisplayMode.ByApp -> stringResource(Res.string.snapshot_view_switch_to_app)
-                            },
+                            contentDescription =
+                                when (nextMode) {
+                                    SnapshotDisplayMode.ByTime ->
+                                        stringResource(Res.string.snapshot_view_switch_to_time)
+                                    SnapshotDisplayMode.ByApp ->
+                                        stringResource(Res.string.snapshot_view_switch_to_app)
+                                },
                             onClick = {
                                 SettingsRepository.updateSettings {
-                                    it.copy(snapshotDisplayMode = SnapshotDisplayMode.switch(it.snapshotDisplayMode))
+                                    it.copy(
+                                        snapshotDisplayMode =
+                                            SnapshotDisplayMode.switch(it.snapshotDisplayMode),
+                                    )
                                 }
                                 resetScroll()
                             },
@@ -413,15 +467,17 @@ fun SnapshotPage(
         ) {
             groups.forEach { group ->
                 stickyHeader(key = group.key) {
-                    val groupIds = remember(group) {
-                        group.snapshots.mapTo(mutableSetOf()) { it.id }
-                    }
+                    val groupIds =
+                        remember(group) {
+                            group.snapshots.mapTo(mutableSetOf()) { it.id }
+                        }
                     val selectedCount = groupIds.count { it in selectedIds }
-                    val groupSelectionState = when (selectedCount) {
-                        0 -> ToggleableState.Off
-                        groupIds.size -> ToggleableState.On
-                        else -> ToggleableState.Indeterminate
-                    }
+                    val groupSelectionState =
+                        when (selectedCount) {
+                            0 -> ToggleableState.Off
+                            groupIds.size -> ToggleableState.On
+                            else -> ToggleableState.Indeterminate
+                        }
                     SnapshotGroupHeader(
                         title = group.title,
                         appId = group.appId,
@@ -438,7 +494,8 @@ fun SnapshotPage(
                 }
                 items(group.snapshots, key = { it.id }) { snapshot ->
                     SnapshotCard(
-                        imageLoader, snapshot = snapshot,
+                        imageLoader,
+                        snapshot = snapshot,
                         appName = appNames[snapshot.appId] ?: snapshot.appId,
                         showAppName = displayMode != SnapshotDisplayMode.ByApp,
                         thumbnailVersion = thumbnailVersions[snapshot.id] ?: 0,
@@ -461,12 +518,14 @@ fun SnapshotPage(
                     Column {
                         if (groups.isEmpty()) {
                             GkEmptyState(
-                                text = when {
-                                    loadError != null -> loadError.message
-                                        ?: stringResource(Res.string.data_load_failed)
+                                text =
+                                    when {
+                                        loadError != null ->
+                                            loadError.message
+                                                ?: stringResource(Res.string.data_load_failed)
 
-                                    else -> stringResource(Res.string.data_empty)
-                                },
+                                        else -> stringResource(Res.string.data_empty)
+                                    },
                             )
                         }
                         GkPageBottomSpace()
@@ -479,19 +538,23 @@ fun SnapshotPage(
     GkRetainedSheet(
         request = actionRequest,
         snapshot = actionSnapshot,
-        missing = actionRequest != null && actionSnapshot == null && loadableState is Loadable.Ready,
+        missing =
+            actionRequest != null && actionSnapshot == null && loadableState is Loadable.Ready,
         onDismissRequest = { request ->
             vm.dismissActions(request)
         },
     ) { _, snapshot, sheetState, dismiss ->
         val actions =
-            host.snapshotActions(mainVm,
+            host.snapshotActions(
+                mainVm,
                 vm,
                 { id -> thumbnailVersions[id] = (thumbnailVersions[id] ?: 0) + 1 },
                 {},
-                {})
+                {},
+            )
         GkSnapshotActionsSheet(
-            imageLoader, snapshot = snapshot,
+            imageLoader,
+            snapshot = snapshot,
             appName = appNames[snapshot.appId] ?: snapshot.appId,
             sheetState = sheetState,
             onDismissRequest = dismiss,
@@ -539,9 +602,10 @@ private fun SnapshotGroupHeader(
                 TriStateCheckbox(
                     state = groupSelectionState,
                     onClick = onToggleSelection,
-                    modifier = Modifier.semantics {
-                        contentDescription = title
-                    },
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription = title
+                        },
                 )
             }
         }
@@ -566,47 +630,58 @@ private fun SnapshotCard(
     val cardShape = RoundedCornerShape(12.dp)
     val screenshotFile = snapshot.image()
     val modifiedAt = screenshotFile.modifiedAt
-    val cacheKey = remember(snapshot.id, modifiedAt, thumbnailVersion) {
-        "snapshot-" + snapshot.id + "-" + modifiedAt + "-" + thumbnailVersion
-    }
-    val request = remember(context, screenshotFile, cacheKey) {
-        ImageRequest.Builder(context)
-            .data(screenshotFile.path)
-            .memoryCacheKey(cacheKey)
-            .diskCachePolicy(CachePolicy.DISABLED)
-            .build()
-    }
+    val cacheKey =
+        remember(snapshot.id, modifiedAt, thumbnailVersion) {
+            "snapshot-" + snapshot.id + "-" + modifiedAt + "-" + thumbnailVersion
+        }
+    val request =
+        remember(context, screenshotFile, cacheKey) {
+            ImageRequest.Builder(context)
+                .data(screenshotFile.path)
+                .memoryCacheKey(cacheKey)
+                .diskCachePolicy(CachePolicy.DISABLED)
+                .build()
+        }
     var imageFailed by remember(cacheKey) { mutableStateOf(!screenshotFile.exists) }
     Card(
-        modifier = Modifier.fillMaxWidth().clip(cardShape)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-                onClickLabel = if (selectedMode) stringResource(Res.string.selection_toggle) else stringResource(
-                    Res.string.action_view
-                ),
-                onLongClickLabel = stringResource(Res.string.selection_mode_enter),
-            )
-            .semantics {
-                if (selectedMode) {
-                    role = Role.Checkbox
-                    this.selected = selected
-                }
-            },
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(cardShape)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    onClickLabel =
+                        if (selectedMode) stringResource(Res.string.selection_toggle)
+                        else
+                            stringResource(
+                                Res.string.action_view,
+                            ),
+                    onLongClickLabel = stringResource(Res.string.selection_mode_enter),
+                )
+                .semantics {
+                    if (selectedMode) {
+                        role = Role.Checkbox
+                        this.selected = selected
+                    }
+                },
         shape = cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) colorScheme.primaryContainer
-            else colorScheme.surfaceContainer,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (selected) colorScheme.primaryContainer else colorScheme.surfaceContainer,
+            ),
         border = if (selected) BorderStroke(2.dp, colorScheme.primary) else null,
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                .background(colorScheme.surfaceVariant),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                    .background(colorScheme.surfaceVariant),
         ) {
             AsyncImage(
-                imageLoader = imageLoader, model = request,
+                imageLoader = imageLoader,
+                model = request,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -614,12 +689,15 @@ private fun SnapshotCard(
                 onError = { imageFailed = true },
             )
             Box(
-                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(56.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent),
-                        )
-                    ),
+                modifier =
+                    Modifier.align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent),
+                            ),
+                        ),
             )
             if (imageFailed) {
                 Text(
@@ -629,8 +707,11 @@ private fun SnapshotCard(
                 )
             }
             Row(
-                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(56.dp)
-                    .padding(horizontal = 8.dp),
+                modifier =
+                    Modifier.align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -649,7 +730,8 @@ private fun SnapshotCard(
                         GkIconButton(
                             imageVector = GkIcons.MoreVert,
                             contentDescription = stringResource(Res.string.more_label),
-                            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                            colors =
+                                IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                             onClick = onMore,
                         )
                     }
@@ -657,12 +739,15 @@ private fun SnapshotCard(
             }
         }
         val fullTime = remember(snapshot.id) { snapshot.id.format("yyyy-MM-dd HH:mm:ss") }
-        val firstLineHeight = with(LocalDensity.current) {
-            MaterialTheme.typography.bodyMedium.lineHeight.toDp()
-        }
+        val firstLineHeight =
+            with(LocalDensity.current) {
+                MaterialTheme.typography.bodyMedium.lineHeight.toDp()
+            }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 8.dp)
-                .heightIn(min = firstLineHeight),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(start = 10.dp, end = 10.dp, top = 8.dp)
+                    .heightIn(min = firstLineHeight),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -678,16 +763,21 @@ private fun SnapshotCard(
                 TooltipBox(
                     tooltip = { PlainTooltip { Text(fullTime) } },
                     state = timeTooltipState,
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                        TooltipAnchorPosition.Above,
-                    ),
+                    positionProvider =
+                        TooltipDefaults.rememberTooltipPositionProvider(
+                            TooltipAnchorPosition.Above,
+                        ),
                     enableUserInput = false,
                 ) {
                     GkFixedTimeText(
                         text = snapshot.id.format("HH:mm:ss"),
-                        modifier = (if (selectedMode) Modifier else Modifier.clickable {
-                            timeTooltipScope.launch { timeTooltipState.show() }
-                        }).semantics { contentDescription = fullTime },
+                        modifier =
+                            (if (selectedMode) Modifier
+                                else
+                                    Modifier.clickable {
+                                        timeTooltipScope.launch { timeTooltipState.show() }
+                                    })
+                                .semantics { contentDescription = fullTime },
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
@@ -699,11 +789,13 @@ private fun SnapshotCard(
                 )
             }
         }
-        val activityLabel = getShowActivityId(snapshot.appId, snapshot.activityId)
-            ?.takeIf(String::isNotBlank)
+        val activityLabel =
+            getShowActivityId(snapshot.appId, snapshot.activityId)?.takeIf(String::isNotBlank)
         Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp)
-                .padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .heightIn(min = 28.dp)
+                    .padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -712,8 +804,9 @@ private fun SnapshotCard(
                 maxLines = 1,
                 overflow = TextOverflow.MiddleEllipsis,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (activityLabel == null) colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                else colorScheme.onSurface,
+                color =
+                    if (activityLabel == null) colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    else colorScheme.onSurface,
             )
         }
     }

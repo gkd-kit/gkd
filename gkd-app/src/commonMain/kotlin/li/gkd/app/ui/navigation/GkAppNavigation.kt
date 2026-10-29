@@ -13,6 +13,7 @@ import li.gkd.app.ui.home.HomePage
 import li.gkd.app.ui.home.NotificationTextPage
 import li.gkd.app.ui.log.A11yEventLogPage
 import li.gkd.app.ui.log.ActivityLogPage
+import li.gkd.app.ui.log.MatchDebugPage
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.settings.A11yScopeAppListPage
 import li.gkd.app.ui.settings.AboutPage
@@ -36,7 +37,6 @@ import li.gkd.app.ui.subscription.SubsCategoryPage
 import li.gkd.app.ui.subscription.SubsGlobalGroupExcludePage
 import li.gkd.app.ui.subscription.SubsGlobalGroupListPage
 import li.gkd.app.ui.subscription.UpsertRuleGroupPage
-import li.gkd.app.ui.log.MatchDebugPage
 
 /** Shared production route registry for both hosts. */
 @Composable

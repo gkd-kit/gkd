@@ -1,12 +1,12 @@
 package li.gkd.app.model
 
-import kotlinx.serialization.SerializationException
-import li.gkd.app.util.JsonUtils
-import li.gkd.db.A11yEventLog
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.serialization.SerializationException
+import li.gkd.app.util.JsonUtils
+import li.gkd.db.A11yEventLog
 
 class A11yEventLogItemTest {
     @Test
@@ -42,13 +42,14 @@ class A11yEventLogItemTest {
         )
     }
 
-    private fun eventLog(text: String) = A11yEventLog(
-        id = 1,
-        ctime = 1,
-        type = 0x20,
-        appId = "sample.app",
-        name = "sample.Activity",
-        desc = null,
-        text = text,
-    )
+    private fun eventLog(text: String) =
+        A11yEventLog(
+            id = 1,
+            ctime = 1,
+            type = 0x20,
+            appId = "sample.app",
+            name = "sample.Activity",
+            desc = null,
+            text = text,
+        )
 }

@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.appScope
-import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.PrivilegeCapabilities
+import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.queryPrivilegeCapabilities
 import li.gkd.app.resources.*
 import li.gkd.app.util.AndroidTarget
@@ -41,12 +41,16 @@ class PermissionState(
     private val onChanged: (() -> Unit)? = null,
     val recheckPolicy: PermissionRecheckPolicy = PermissionRecheckPolicy.Immediate,
 ) {
-    val name: String get() = nameResource.getSync()
-    val purpose: String? get() = purposeResource?.getSync()
+    val name: String
+        get() = nameResource.getSync()
+
+    val purpose: String?
+        get() = purposeResource?.getSync()
 
     val stateFlow: StateFlow<Boolean>
         field = MutableStateFlow(false)
-    val value get() = stateFlow.value
+    val value
+        get() = stateFlow.value
 
     @Volatile
     var lastCheck: PermissionCheck? = null
@@ -82,8 +86,11 @@ class PermissionResolution(
     private val confirmResource: StringResource = Res.string.permission_open_settings,
     val navigateToPrivilegeService: Boolean = false,
 ) {
-    val message: String get() = messageProvider()
-    val confirmText: String get() = confirmResource.getSync()
+    val message: String
+        get() = messageProvider()
+
+    val confirmText: String
+        get() = confirmResource.getSync()
 }
 
 private fun requestablePermissionState(
@@ -94,26 +101,33 @@ private fun requestablePermissionState(
     check: () -> Boolean = { XXPermissions.isGrantedPermission(app, permission) },
     onChanged: (() -> Unit)? = null,
     recheckPolicy: PermissionRecheckPolicy = PermissionRecheckPolicy.Immediate,
-) = PermissionState(
-    id = id,
-    nameResource = nameResource,
-    check = check,
-    permission = permission,
-    purposeResource = purposeResource,
-    resolution = PermissionResolution(
-        messageProvider = { Res.string.permission_not_granted_description.getSync(nameResource.getSync()) },
-    ),
-    onChanged = onChanged,
-    recheckPolicy = recheckPolicy,
-)
+) =
+    PermissionState(
+        id = id,
+        nameResource = nameResource,
+        check = check,
+        permission = permission,
+        purposeResource = purposeResource,
+        resolution =
+            PermissionResolution(
+                messageProvider = {
+                    Res.string.permission_not_granted_description.getSync(nameResource.getSync())
+                },
+            ),
+        onChanged = onChanged,
+        recheckPolicy = recheckPolicy,
+    )
 
-private fun checkAllowedOp(op: String): Boolean = app.appOpsManager.checkOpNoThrow(
-    op,
-    Process.myUid(),
-    app.packageName
-).let {
-    it != AppOpsManager.MODE_IGNORED && it != AppOpsManager.MODE_ERRORED
-}
+private fun checkAllowedOp(op: String): Boolean =
+    app.appOpsManager
+        .checkOpNoThrow(
+            op,
+            Process.myUid(),
+            app.packageName,
+        )
+        .let {
+            it != AppOpsManager.MODE_IGNORED && it != AppOpsManager.MODE_ERRORED
+        }
 
 object PermissionStates {
     // https://github.com/gkd-kit/gkd/issues/954
@@ -129,26 +143,29 @@ object PermissionStates {
                     true
                 }
             },
-            resolution = PermissionResolution(
-                messageProvider = { Res.string.permission_special_foreground_service_restricted.getSync() },
-                confirmResource = Res.string.permission_go_authorize,
-                navigateToPrivilegeService = true,
-            ),
+            resolution =
+                PermissionResolution(
+                    messageProvider = {
+                        Res.string.permission_special_foreground_service_restricted.getSync()
+                    },
+                    confirmResource = Res.string.permission_go_authorize,
+                    navigateToPrivilegeService = true,
+                ),
         )
     }
 
     // https://github.com/orgs/gkd-kit/discussions/1234
     private fun checkAccessA11y(): Boolean {
-        return !AndroidTarget.Q ||
-                checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
+        return !AndroidTarget.Q || checkAllowedOp(AppOpsManagerHidden.OPSTR_ACCESS_ACCESSIBILITY)
     }
 
     private var canRestrictsRead = true
+
     private fun checkAccessRestrictedSettings(): Boolean {
         return if (
             canRestrictsRead &&
-            AndroidTarget.UPSIDE_DOWN_CAKE &&
-            app.checkGrantedPermission(AndroidPermissions.GET_APP_OPS_STATS)
+                AndroidTarget.UPSIDE_DOWN_CAKE &&
+                app.checkGrantedPermission(AndroidPermissions.GET_APP_OPS_STATS)
         ) {
             try {
                 // https://cs.android.com/android/platform/superproject/+/android-14.0.0_r55:frameworks/base/services/core/java/com/android/server/appop/AppOpsService.java;l=4237
@@ -174,7 +191,8 @@ object PermissionStates {
                 val accessRestrictedSettingsAllowed = checkAccessRestrictedSettings()
                 accessRestrictions.value = buildSet {
                     if (!accessA11yAllowed) add(AppPermissionRestriction.Accessibility)
-                    if (!accessRestrictedSettingsAllowed) add(AppPermissionRestriction.RestrictedSettings)
+                    if (!accessRestrictedSettingsAllowed)
+                        add(AppPermissionRestriction.RestrictedSettings)
                 }
                 accessA11yAllowed && accessRestrictedSettingsAllowed
             },
@@ -183,11 +201,13 @@ object PermissionStates {
 
     val appRestrictionsFlow by lazy {
         combine(
-            accessRestrictions,
-            foregroundServiceSpecialUse.stateFlow,
-        ) { access, foregroundServiceAllowed ->
-            if (foregroundServiceAllowed) access else access + AppPermissionRestriction.ForegroundService
-        }.stateIn(appScope, SharingStarted.Eagerly, emptySet())
+                accessRestrictions,
+                foregroundServiceSpecialUse.stateFlow,
+            ) { access, foregroundServiceAllowed ->
+                if (foregroundServiceAllowed) access
+                else access + AppPermissionRestriction.ForegroundService
+            }
+            .stateIn(appScope, SharingStarted.Eagerly, emptySet())
     }
 
     val appOpsRestrictedFlow by lazy { appRestrictionsFlow.mapState(appScope) { it.isNotEmpty() } }
@@ -304,8 +324,9 @@ object PermissionStates {
         all.forEach {
             it.refresh()
         }
-        privilegeCapabilities.value = if (privilegeGranted.value) {
-            queryPrivilegeCapabilities()
-        } else null
+        privilegeCapabilities.value =
+            if (privilegeGranted.value) {
+                queryPrivilegeCapabilities()
+            } else null
     }
 }

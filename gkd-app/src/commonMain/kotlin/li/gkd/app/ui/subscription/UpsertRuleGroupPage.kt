@@ -72,7 +72,7 @@ fun UpsertRuleGroupPage(
                 )
             Box(modifier = Modifier.scaffoldPadding(paddingValues).fillMaxSize()) {
                 CompositionLocalProvider(
-                    LocalTextStyle provides MaterialTheme.typography.bodyLarge
+                    LocalTextStyle provides MaterialTheme.typography.bodyLarge,
                 ) {
                     val modifier =
                         Modifier.autoFocus(immediateFocus = true).fillMaxSize().then(inputInsets)
@@ -80,9 +80,17 @@ fun UpsertRuleGroupPage(
                         value = text,
                         onValueChange = vm::setDraft,
                         isError = missingGroup,
-                        supportingText = if (missingGroup) {
-                            { Text(stringResource(Res.string.subscription_rule_missing_detail, route.groupKey.toString())) }
-                        } else null,
+                        supportingText =
+                            if (missingGroup) {
+                                {
+                                    Text(
+                                        stringResource(
+                                            Res.string.subscription_rule_missing_detail,
+                                            route.groupKey.toString(),
+                                        ),
+                                    )
+                                }
+                            } else null,
                         modifier = modifier,
                         shape = RectangleShape,
                         colors = textColors,
@@ -91,7 +99,7 @@ fun UpsertRuleGroupPage(
                             Text(
                                 text =
                                     if (vm.isApp) stringResource(Res.string.app_rule_input_hint)
-                                    else stringResource(Res.string.global_rule_input_hint)
+                                    else stringResource(Res.string.global_rule_input_hint),
                             )
                         },
                     )

@@ -4,8 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.ServiceSpecificException
 import androidx.annotation.Keep
-import li.gkd.aidl.IUserService
 import li.gkd.aidl.ISystemSurfaceListener
+import li.gkd.aidl.IUserService
 
 private const val SCREENSHOT_ERROR_CODE = 1
 private const val MAX_SCREENSHOT_ERROR_LENGTH = 16_384
@@ -29,9 +29,13 @@ class UserService : IUserService.Stub() {
         } catch (e: ThreadDeath) {
             throw e
         } catch (e: Throwable) {
-            throw ServiceSpecificException(2, e.stackTraceToString().take(MAX_SCREENSHOT_ERROR_LENGTH))
+            throw ServiceSpecificException(
+                2,
+                e.stackTraceToString().take(MAX_SCREENSHOT_ERROR_LENGTH),
+            )
         }
     }
+
     override fun takeScreenshot(crop: Rect, rotation: Int): Bitmap? {
         return try {
             CompatScreenshot.captureBySurfaceControl(crop, rotation)

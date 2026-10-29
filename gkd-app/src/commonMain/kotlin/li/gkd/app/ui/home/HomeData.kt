@@ -9,18 +9,25 @@ object HomeDataText {
     fun latest(
         record: ActionLog?,
         subscriptions: Map<Long, RawSubscription>,
-        apps: Map<String, AppInfo>
+        apps: Map<String, AppInfo>,
     ): String? {
         record ?: return null
         val appRule = record.groupType == RuleGroupType.App
         val sub = subscriptions[record.subsId]
         val name =
-            if (appRule) sub?.apps?.find { it.id == record.appId }?.groups?.find { it.key == record.groupKey }?.name
+            if (appRule)
+                sub?.apps
+                    ?.find { it.id == record.appId }
+                    ?.groups
+                    ?.find { it.key == record.groupKey }
+                    ?.name
             else sub?.globalGroups?.find { it.key == record.groupKey }?.name
         val app = apps[record.appId]?.name ?: record.appId
         return when {
-            name == null -> app; name.startsWith(app) -> name; appRule -> "$app/$name"; else -> "$name/$app"
+            name == null -> app
+            name.startsWith(app) -> name
+            appRule -> "$app/$name"
+            else -> "$name/$app"
         }
     }
-
 }

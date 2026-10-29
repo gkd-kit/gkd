@@ -77,7 +77,9 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 fun runDesktop(args: Array<String>) {
-    require(args.all { it == "--test" || it == "--focus" }) { "Only --test and --focus are supported" }
+    require(args.all { it == "--test" || it == "--focus" }) {
+        "Only --test and --focus are supported"
+    }
     DesktopStorage.initialize("--test" in args)
     val backgroundTest = DesktopStorage.isolated && "--focus" !in args
     val testWindows = if (backgroundTest) DesktopTestWindows.install() else null
@@ -85,21 +87,25 @@ fun runDesktop(args: Array<String>) {
         DisposableEffect(Unit) { onDispose { testWindows?.close() } }
         val windowIcon = rememberVectorPainter(GkIcons.Logo)
         val hostScope = rememberCoroutineScope()
-        val persistence =
-            remember { SimulatorPersistence(hostScope, environment = DesktopProfile.environment) }
+        val persistence = remember {
+            SimulatorPersistence(hostScope, environment = DesktopProfile.environment)
+        }
         val simulator = persistence.store
         LaunchedEffect(simulator) {
             while (true) {
-                val percent =
-                    withContext(Dispatchers.IO) { DesktopBattery.readPercent() }
+                val percent = withContext(Dispatchers.IO) { DesktopBattery.readPercent() }
                 simulator.updateHostBattery(percent)
                 delay(30_000)
             }
         }
-        val runtime =
-            remember { DesktopRuntime(simulator) }
-        val state =
-            remember { DesktopState(toast = runtime.toast, isolated = DesktopStorage.isolated, simulator = simulator) }
+        val runtime = remember { DesktopRuntime(simulator) }
+        val state = remember {
+            DesktopState(
+                toast = runtime.toast,
+                isolated = DesktopStorage.isolated,
+                simulator = simulator,
+            )
+        }
         LaunchedEffect(runtime) {
             runtime.crashInitialization.join()
             state.mainVm.showCrashReports(runtime.takeCrashDataList())
@@ -107,15 +113,18 @@ fun runDesktop(args: Array<String>) {
         var appWindow by remember { mutableStateOf<ComposeWindow?>(null) }
         val initialSize = remember { simulator.settings.value.device }
         val testPosition =
-            if (backgroundTest) WindowPosition.Absolute(
-                (-10000).dp,
-                (-10000).dp
-            )
+            if (backgroundTest)
+                WindowPosition.Absolute(
+                    (-10000).dp,
+                    (-10000).dp,
+                )
             else WindowPosition.PlatformDefault
-        val windowState = rememberWindowState(
-            width = (initialSize.width * initialSize.density).dp,
-            height = (initialSize.height * initialSize.density).dp, position = testPosition
-        )
+        val windowState =
+            rememberWindowState(
+                width = (initialSize.width * initialSize.density).dp,
+                height = (initialSize.height * initialSize.density).dp,
+                position = testPosition,
+            )
         var appReady by remember { mutableStateOf(false) }
         val backDispatcher = remember { DesktopBackDispatcher() }
         val keyDispatcher = remember { DesktopKeyDispatcher() }
@@ -135,7 +144,10 @@ fun runDesktop(args: Array<String>) {
             }
         }
         val flushSettings: () -> Unit = { hostScope.launch { persistence.flush() } }
-        val closeControls: () -> Unit = { flushSettings(); controlsVisible = false }
+        val closeControls: () -> Unit = {
+            flushSettings()
+            controlsVisible = false
+        }
         var closeAttempt by remember { mutableIntStateOf(0) }
         var browsersStopped by remember { mutableStateOf(false) }
         val closing = closeAttempt > 0
@@ -160,25 +172,35 @@ fun runDesktop(args: Array<String>) {
                 else -> false
             }
         }
-        val hostKeyHandler by rememberUpdatedState<(Int) -> Boolean>({ key ->
-            when (key) {
-                KeyEvent.VK_F12 -> handleHostKey("F12")
-                KeyEvent.VK_ESCAPE -> handleHostKey("Escape")
-                else -> false
-            }
-        })
-        val session = remember(state.revision) {
-            DesktopSession(
-                state,
-                runtime,
-                fileDialogOwner = { requireNotNull(appWindow) },
-                browsersRunning = { closeAttempt == 0 },
-                onBrowserKey = { hostKeyHandler(it) },
+        val hostKeyHandler by
+            rememberUpdatedState<(Int) -> Boolean>(
+                { key ->
+                    when (key) {
+                        KeyEvent.VK_F12 -> handleHostKey("F12")
+                        KeyEvent.VK_ESCAPE -> handleHostKey("Escape")
+                        else -> false
+                    }
+                },
             )
-        }
+        val session =
+            remember(state.revision) {
+                DesktopSession(
+                    state,
+                    runtime,
+                    fileDialogOwner = { requireNotNull(appWindow) },
+                    browsersRunning = { closeAttempt == 0 },
+                    onBrowserKey = { hostKeyHandler(it) },
+                )
+            }
         var renderedRevision by remember { mutableStateOf(-1) }
         var appFrameClock by remember { mutableStateOf<MonotonicFrameClock?>(null) }
-        DisposableEffect(Unit) { onDispose { persistence.close(); state.close(); runtime.close() } }
+        DisposableEffect(Unit) {
+            onDispose {
+                persistence.close()
+                state.close()
+                runtime.close()
+            }
+        }
         DisposableEffect(appWindow) {
             val host = appWindow
             host?.let {
@@ -191,7 +213,12 @@ fun runDesktop(args: Array<String>) {
                         hostKey = handleHostKey,
                         awaitFrame = {
                             snapshotFlow { renderedRevision == state.revision }.first { it }
-                            appFrameClock?.let { clock -> withContext(clock) { withFrameNanos { }; withFrameNanos { } } }
+                            appFrameClock?.let { clock ->
+                                withContext(clock) {
+                                    withFrameNanos {}
+                                    withFrameNanos {}
+                                }
+                            }
                         },
                     )
                 }
@@ -214,17 +241,23 @@ fun runDesktop(args: Array<String>) {
                 CompositionLocalProvider(LocalDarkTheme provides systemDark) {
                     GkTheme(
                         colorScheme = DesktopProfile.colors(systemDark, true),
-                        typography = DesktopProfile.typography
+                        typography = DesktopProfile.typography,
                     ) {
                         GkDesktopWindowFrame(
-                            window, controlsWindowState, "模拟设置", systemDark,
-                            onCloseRequest = closeControls, onReady = { controlsReady = true }) {
+                            window,
+                            controlsWindowState,
+                            "模拟设置",
+                            systemDark,
+                            onCloseRequest = closeControls,
+                            onReady = { controlsReady = true },
+                        ) {
                             DesktopControls(
                                 state,
                                 session,
                                 persistence,
                                 flushSettings,
-                                onBack = { (state.dismissIme() || backDispatcher.dispatch()) })
+                                onBack = { (state.dismissIme() || backDispatcher.dispatch()) },
+                            )
                         }
                     }
                 }
@@ -242,18 +275,22 @@ fun runDesktop(args: Array<String>) {
         ) {
             LaunchedEffect(closeAttempt) {
                 if (closing) {
-                    val released = withTimeoutOrNull(5000) {
-                        // The scene acknowledges running=false after its DisposableEffects are applied.
-                        while (!browsersStopped) delay(20)
-                        // A failed native library load cannot have created browser hosts.
-                        while (runCatching { WebViewDiagnostics.activeNativeHosts }.getOrDefault(
-                                0
-                            ) != 0
-                        ) {
-                            delay(20)
-                        }
-                        true
-                    } == true
+                    val released =
+                        withTimeoutOrNull(5000) {
+                            // The scene acknowledges running=false after its DisposableEffects are
+                            // applied.
+                            while (!browsersStopped) delay(20)
+                            // A failed native library load cannot have created browser hosts.
+                            while (
+                                runCatching { WebViewDiagnostics.activeNativeHosts }
+                                    .getOrDefault(
+                                        0,
+                                    ) != 0
+                            ) {
+                                delay(20)
+                            }
+                            true
+                        } == true
                     if (released) {
                         println("GKD Desktop browser teardown complete")
                         exitApplication()
@@ -283,44 +320,60 @@ fun runDesktop(args: Array<String>) {
 
             LaunchedEffect(appReady, size.width, size.height, size.density, platformDensity) {
                 if (appReady) {
-                    withFrameNanos { }
+                    withFrameNanos {}
                     val insets = window.insets
-                    val titleHeight =
-                        if (DesktopWindowGeometry.isCustom(window)) 32 else 0
-                    windowState.size = DpSize(
-                        (size.width * size.density + insets.left + insets.right).dp,
-                        (size.height * size.density + insets.top + insets.bottom + titleHeight).dp,
-                    )
+                    val titleHeight = if (DesktopWindowGeometry.isCustom(window)) 32 else 0
+                    windowState.size =
+                        DpSize(
+                            (size.width * size.density + insets.left + insets.right).dp,
+                            (size.height * size.density + insets.top + insets.bottom + titleHeight)
+                                .dp,
+                        )
                 }
             }
             GkTheme(
-                colorScheme = DesktopProfile.colors(
-                    darkTheme,
-                    appearance.dynamicColor
-                ), typography = DesktopProfile.typography
+                colorScheme =
+                    DesktopProfile.colors(
+                        darkTheme,
+                        appearance.dynamicColor,
+                    ),
+                typography = DesktopProfile.typography,
             ) {
                 GkDesktopWindowFrame(
-                    window, windowState, "GKD", darkTheme,
+                    window,
+                    windowState,
+                    "GKD",
+                    darkTheme,
                     onCloseRequest = requestExit,
-                    viewportSize = if (appReady) null else DpSize(
-                        (size.width * size.density).dp,
-                        (size.height * size.density).dp
-                    ),
-                    onReady = { appReady = true }, onOpenControls = openControls
+                    viewportSize =
+                        if (appReady) null
+                        else
+                            DpSize(
+                                (size.width * size.density).dp,
+                                (size.height * size.density).dp,
+                            ),
+                    onReady = { appReady = true },
+                    onOpenControls = openControls,
                 ) {
                     CompositionLocalProvider(
-                        androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner provides state,
-                        LocalDensity provides Density(
-                            platformDensity * size.density,
-                            size.fontScale
-                        ),
+                        androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner provides
+                            state,
+                        LocalDensity provides
+                            Density(
+                                platformDensity * size.density,
+                                size.fontScale,
+                            ),
                         LocalDarkTheme provides darkTheme,
                         LocalIsTalkbackEnabled provides false,
                         LocalDesktopBackDispatcher provides backDispatcher,
                         LocalDesktopKeyDispatcher provides keyDispatcher,
-                        LocalOverlayBackHandler provides { dismiss -> GkDesktopBackHandler(overlay = true, onBack = dismiss) },
+                        LocalOverlayBackHandler provides
+                            { dismiss ->
+                                GkDesktopBackHandler(overlay = true, onBack = dismiss)
+                            },
                     ) {
-                        // The JVM resource environment reads Locale.getDefault(); recreate resource consumers on language changes.
+                        // The JVM resource environment reads Locale.getDefault(); recreate resource
+                        // consumers on language changes.
                         key(size.locale) {
                             Surface(Modifier.fillMaxSize()) {
                                 GkAndroidWindow(
@@ -331,21 +384,25 @@ fun runDesktop(args: Array<String>) {
                                 ) {
                                     key(session.revision) {
                                         DesktopContent(session)
-                                        // Window content and application sessions recompose independently.
-                                        // Acknowledge the session actually rendered, not the latest requested revision.
+                                        // Window content and application sessions recompose
+                                        // independently.
+                                        // Acknowledge the session actually rendered, not the latest
+                                        // requested revision.
                                         val revision = session.revision
                                         SideEffect {
                                             renderedRevision = revision
                                             browsersStopped = closing
                                         }
                                     }
-                                    val termsAccepted by SettingsRepository.termsAccepted.collectAsStateWithLifecycle()
+                                    val termsAccepted by
+                                        SettingsRepository.termsAccepted
+                                            .collectAsStateWithLifecycle()
                                     if (!termsAccepted) {
                                         GkTermsAcceptDialog(
                                             onAccept = SettingsRepository::acceptTerms,
                                             onError = {
                                                 state.toast.show(
-                                                    it.message ?: it.toString()
+                                                    it.message ?: it.toString(),
                                                 )
                                             },
                                             onDisagree = requestExit,
@@ -364,14 +421,20 @@ fun runDesktop(args: Array<String>) {
                                         )
                                         session.state.mainVm.ruleControlDialog.Render()
                                     }
-                                    GkToastHost(state.toast, overlayHost = { toastContent ->
-                                        Popup(
-                                            alignment = Alignment.BottomCenter,
-                                            properties = PopupProperties(
-                                                focusable = false
-                                            ),
-                                        ) { toastContent() }
-                                    })
+                                    GkToastHost(
+                                        state.toast,
+                                        overlayHost = { toastContent ->
+                                            Popup(
+                                                alignment = Alignment.BottomCenter,
+                                                properties =
+                                                    PopupProperties(
+                                                        focusable = false,
+                                                    ),
+                                            ) {
+                                                toastContent()
+                                            }
+                                        },
+                                    )
                                 }
                             }
                         }
@@ -380,14 +443,14 @@ fun runDesktop(args: Array<String>) {
             }
         }
     }
-
 }
 
 @Composable
 private fun DesktopContent(session: DesktopSession) {
     val state = session.state
     GkDesktopBackHandler {
-        if (state.showingComponentCatalog) state.closeComponentCatalog() else state.mainVm.navigator.pop()
+        if (state.showingComponentCatalog) state.closeComponentCatalog()
+        else state.mainVm.navigator.pop()
     }
     if (state.showingComponentCatalog) {
         ComponentCatalog(state)
@@ -404,16 +467,24 @@ private fun ComponentCatalog(state: DesktopState) {
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             GkSettingItem(
                 stringResource(Res.string.settings_title),
-                onClick = { state.load(ScenarioRequest("settings")) })
+                onClick = { state.load(ScenarioRequest("settings")) },
+            )
             GkSettingItem(
                 stringResource(Res.string.action_toast),
-                onClick = { state.load(ScenarioRequest("action-toast")) })
+                onClick = { state.load(ScenarioRequest("action-toast")) },
+            )
             GkSettingItem(
                 stringResource(Res.string.notification_text),
-                onClick = { state.load(ScenarioRequest("notification-text")) })
+                onClick = { state.load(ScenarioRequest("notification-text")) },
+            )
             GkTextSwitch(
-                title = stringResource(Res.string.action_toast_enable), checked = checked,
-                onCheckedChange = { checked = it; state.record("switch: $it") })
+                title = stringResource(Res.string.action_toast_enable),
+                checked = checked,
+                onCheckedChange = {
+                    checked = it
+                    state.record("switch: $it")
+                },
+            )
             Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 GkIcon(GkIcons.Android)
                 GkIcon(GkIcons.Settings)

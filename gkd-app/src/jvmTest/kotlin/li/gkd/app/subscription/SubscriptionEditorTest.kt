@@ -11,10 +11,11 @@ class SubscriptionEditorTest {
 
     @Test
     fun updatesArbitrarySubscriptionAndNestedFieldsInOneSnapshot() {
-        val source = createSubscription(
-            apps = listOf(RawSubscription.RawApp("app.id", "Old name")),
-            categories = listOf(RawSubscription.RawCategory(0, "Old", null, null)),
-        )
+        val source =
+            createSubscription(
+                apps = listOf(RawSubscription.RawApp("app.id", "Old name")),
+                categories = listOf(RawSubscription.RawCategory(0, "Old", null, null)),
+            )
 
         val edited = source.edit {
             update { copy(name = "Edited", author = "Author") }
@@ -43,19 +44,21 @@ class SubscriptionEditorTest {
 
     @Test
     fun removingLastAppGroupCanRemoveItsApp() {
-        val source = RawSubscriptionParser.parse(
-            """
-            {
-              id: -2,
-              name: 'Local',
-              version: 0,
-              apps: [{
-                id: 'app.id',
-                groups: [{ key: 0, name: 'Rule', rules: [] }],
-              }],
-            }
-            """.trimIndent(),
-        )
+        val source =
+            RawSubscriptionParser.parse(
+                """
+                {
+                  id: -2,
+                  name: 'Local',
+                  version: 0,
+                  apps: [{
+                    id: 'app.id',
+                    groups: [{ key: 0, name: 'Rule', rules: [] }],
+                  }],
+                }
+                """
+                    .trimIndent(),
+            )
 
         val edited = source.edit {
             val removed = removeAppGroups("app.id", removeAppIfEmpty = true) { it.key == 0 }
@@ -67,20 +70,22 @@ class SubscriptionEditorTest {
 
     @Test
     fun replacesAndRemovesAppAndGlobalGroupsByKey() {
-        val source = RawSubscriptionParser.parse(
-            """
-            {
-              id: -2,
-              name: 'Local',
-              version: 0,
-              globalGroups: [{ key: 1, name: 'Global', rules: [] }],
-              apps: [{
-                id: 'app.id',
-                groups: [{ key: 2, name: 'App', rules: [] }],
-              }],
-            }
-            """.trimIndent(),
-        )
+        val source =
+            RawSubscriptionParser.parse(
+                """
+                {
+                  id: -2,
+                  name: 'Local',
+                  version: 0,
+                  globalGroups: [{ key: 1, name: 'Global', rules: [] }],
+                  apps: [{
+                    id: 'app.id',
+                    groups: [{ key: 2, name: 'App', rules: [] }],
+                  }],
+                }
+                """
+                    .trimIndent(),
+            )
 
         val edited = source.edit {
             val globalGroup = source.globalGroups.single()
@@ -122,15 +127,17 @@ class SubscriptionEditorTest {
 
     @Test
     fun appendingGroupsCreatesMissingAppAndNormalizesConflictingKeys() {
-        val source = createSubscription(
-            apps = listOf(
-                RawSubscription.RawApp(
-                    id = "existing.app",
-                    name = null,
-                    groups = listOf(createAppGroup(0, "Existing")),
-                ),
-            ),
-        )
+        val source =
+            createSubscription(
+                apps =
+                    listOf(
+                        RawSubscription.RawApp(
+                            id = "existing.app",
+                            name = null,
+                            groups = listOf(createAppGroup(0, "Existing")),
+                        ),
+                    ),
+            )
 
         val edited = source.edit {
             appendAppGroups(
@@ -154,15 +161,17 @@ class SubscriptionEditorTest {
 
     @Test
     fun duplicateGroupNamesAreRejectedWhenAppending() {
-        val source = createSubscription(
-            apps = listOf(
-                RawSubscription.RawApp(
-                    id = "app.id",
-                    name = null,
-                    groups = listOf(createAppGroup(0, "Duplicate")),
-                ),
-            ),
-        )
+        val source =
+            createSubscription(
+                apps =
+                    listOf(
+                        RawSubscription.RawApp(
+                            id = "app.id",
+                            name = null,
+                            groups = listOf(createAppGroup(0, "Duplicate")),
+                        ),
+                    ),
+            )
 
         val error = assertRejected {
             source.editResult {
@@ -181,23 +190,25 @@ class SubscriptionEditorTest {
     fun replacingGroupCreatesMissingAppAndRejectsStaleEdits() {
         val originalGroup = createAppGroup(0, "Original")
         val replacement = createAppGroup(0, "Replacement")
-        val missingAppEdited = createSubscription().edit {
-            replaceAppGroup(
-                targetApp = RawSubscription.RawApp("missing.app", "Missing app"),
-                groupKey = 0,
-                expectedGroup = originalGroup,
-                newGroup = replacement,
-            )
-        }
+        val missingAppEdited =
+            createSubscription().edit {
+                replaceAppGroup(
+                    targetApp = RawSubscription.RawApp("missing.app", "Missing app"),
+                    groupKey = 0,
+                    expectedGroup = originalGroup,
+                    newGroup = replacement,
+                )
+            }
 
         assertEquals("missing.app", missingAppEdited.apps.single().id)
         assertEquals("Missing app", missingAppEdited.apps.single().name)
         assertEquals("Replacement", missingAppEdited.apps.single().groups.single().name)
 
         val changedGroup = createAppGroup(0, "Changed elsewhere")
-        val changedSource = createSubscription(
-            apps = listOf(RawSubscription.RawApp("app.id", null, listOf(changedGroup))),
-        )
+        val changedSource =
+            createSubscription(
+                apps = listOf(RawSubscription.RawApp("app.id", null, listOf(changedGroup))),
+            )
         val error = assertRejected {
             changedSource.editResult {
                 replaceAppGroup(
@@ -234,19 +245,21 @@ class SubscriptionEditorTest {
     private fun createSubscription(
         apps: List<RawSubscription.RawApp> = emptyList(),
         categories: List<RawSubscription.RawCategory> = emptyList(),
-    ) = RawSubscription(
-        id = -2,
-        name = "Local",
-        version = 0,
-        apps = apps,
-        categories = categories,
-    )
+    ) =
+        RawSubscription(
+            id = -2,
+            name = "Local",
+            version = 0,
+            apps = apps,
+            categories = categories,
+        )
 
     private fun createAppGroup(
         key: Int,
         name: String,
-    ): RawSubscription.RawAppGroup = RawSubscriptionParser.parse(
-        """
+    ): RawSubscription.RawAppGroup =
+        RawSubscriptionParser.parse(
+                """
         {
           id: -2,
           name: 'Local',
@@ -256,6 +269,11 @@ class SubscriptionEditorTest {
             groups: [{ key: $key, name: '$name', rules: [] }],
           }],
         }
-        """.trimIndent(),
-    ).apps.single().groups.single()
+        """
+                    .trimIndent(),
+            )
+            .apps
+            .single()
+            .groups
+            .single()
 }

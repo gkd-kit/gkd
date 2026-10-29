@@ -1,8 +1,8 @@
 package li.gkd.app.priv
 
-import li.gkd.app.logging.LogUtils
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
+import li.gkd.app.logging.LogUtils
 
 object HiddenApiDetect {
     fun detectHiddenClass(className: String): Boolean {

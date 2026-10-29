@@ -54,16 +54,17 @@ private sealed interface TypeResolution {
 
 internal fun ValueExpression.inferType(
     collector: TypeCheckCollector,
-): TypeInferenceResult = when (this) {
-    is ValueExpression.LiteralExpression -> literalType
-        ?.let(TypeInferenceResult::Known)
-        ?: TypeInferenceResult.NullValue
+): TypeInferenceResult =
+    when (this) {
+        is ValueExpression.LiteralExpression ->
+            literalType?.let(TypeInferenceResult::Known) ?: TypeInferenceResult.NullValue
 
-    is ValueExpression.Variable -> when (val resolution = inferVariableType(collector)) {
-        is TypeResolution.Known -> TypeInferenceResult.Known(resolution.type.type)
-        TypeResolution.Invalid -> TypeInferenceResult.Invalid
+        is ValueExpression.Variable ->
+            when (val resolution = inferVariableType(collector)) {
+                is TypeResolution.Known -> TypeInferenceResult.Known(resolution.type.type)
+                TypeResolution.Invalid -> TypeInferenceResult.Invalid
+            }
     }
-}
 
 private fun ValueExpression.Variable.inferVariableType(
     collector: TypeCheckCollector,
@@ -75,17 +76,18 @@ private fun ValueExpression.Variable.inferVariableType(
     while (true) {
         when (current) {
             is ValueExpression.Identifier -> {
-                result = collector.globalType.props
-                    .firstOrNull { it.name == current.name }
-                    ?.type
-                    ?.let(TypeResolution::Known)
-                    ?: run {
-                        collector.report(
-                            current.typeFailure(SelectorTypeErrorKind.UnknownIdentifier),
-                        )
-                        if (collector.isFull) return TypeResolution.Invalid
-                        TypeResolution.Invalid
-                    }
+                result =
+                    collector.globalType.props
+                        .firstOrNull { it.name == current.name }
+                        ?.type
+                        ?.let(TypeResolution::Known)
+                        ?: run {
+                            collector.report(
+                                current.typeFailure(SelectorTypeErrorKind.UnknownIdentifier),
+                            )
+                            if (collector.isFull) return TypeResolution.Invalid
+                            TypeResolution.Invalid
+                        }
             }
 
             is ValueExpression.MemberExpression -> {
@@ -121,33 +123,37 @@ private fun ValueExpression.Variable.inferVariableType(
             when (val frame = stack.last()) {
                 is MemberFrame -> {
                     stack.removeAt(stack.lastIndex)
-                    result = when (val receiver = result) {
-                        is TypeResolution.Known -> receiver.type.props
-                            .firstOrNull { it.name == frame.expression.property }
-                            ?.type
-                            ?.let(TypeResolution::Known)
-                            ?: run {
-                                collector.report(
-                                    frame.expression.typeFailure(
-                                        SelectorTypeErrorKind.UnknownMember,
-                                    ),
-                                )
-                                if (collector.isFull) return TypeResolution.Invalid
-                                TypeResolution.Invalid
-                            }
+                    result =
+                        when (val receiver = result) {
+                            is TypeResolution.Known ->
+                                receiver.type.props
+                                    .firstOrNull { it.name == frame.expression.property }
+                                    ?.type
+                                    ?.let(TypeResolution::Known)
+                                    ?: run {
+                                        collector.report(
+                                            frame.expression.typeFailure(
+                                                SelectorTypeErrorKind.UnknownMember,
+                                            ),
+                                        )
+                                        if (collector.isFull) return TypeResolution.Invalid
+                                        TypeResolution.Invalid
+                                    }
 
-                        TypeResolution.Invalid -> TypeResolution.Invalid
-                    }
+                            TypeResolution.Invalid -> TypeResolution.Invalid
+                        }
                 }
 
                 is CallFrame -> {
                     if (frame.receiver == null) {
                         frame.receiver = result
                     } else {
-                        frame.arguments[frame.argumentIndex] = when (val argument = result) {
-                            is TypeResolution.Known -> TypeInferenceResult.Known(argument.type.type)
-                            TypeResolution.Invalid -> TypeInferenceResult.Invalid
-                        }
+                        frame.arguments[frame.argumentIndex] =
+                            when (val argument = result) {
+                                is TypeResolution.Known ->
+                                    TypeInferenceResult.Known(argument.type.type)
+                                TypeResolution.Invalid -> TypeInferenceResult.Invalid
+                            }
                     }
                     nextVariableArgument(frame)?.let { argument ->
                         current = argument
@@ -166,9 +172,10 @@ private fun nextVariableArgument(frame: CallFrame): ValueExpression.Variable? {
     var index = frame.argumentIndex + 1
     while (index < frame.expression.arguments.size) {
         when (val argument = frame.expression.arguments[index]) {
-            is ValueExpression.LiteralExpression -> frame.arguments[index] = argument.literalType
-                ?.let(TypeInferenceResult::Known)
-                ?: TypeInferenceResult.NullValue
+            is ValueExpression.LiteralExpression ->
+                frame.arguments[index] =
+                    argument.literalType?.let(TypeInferenceResult::Known)
+                        ?: TypeInferenceResult.NullValue
 
             is ValueExpression.Variable -> {
                 frame.argumentIndex = index
@@ -188,21 +195,23 @@ private fun finishCall(
     val expression = frame.expression
     val methods = resolveMethods(frame, collector) ?: return TypeResolution.Invalid
     val checks = methods.map { method ->
-        method to parameterMismatches(
-            call = expression,
-            method = method,
-            arguments = frame.arguments,
-            limit = if (collector.collectsAll) Int.MAX_VALUE else 1,
-        )
+        method to
+            parameterMismatches(
+                call = expression,
+                method = method,
+                arguments = frame.arguments,
+                limit = if (collector.collectsAll) Int.MAX_VALUE else 1,
+            )
     }
-    val matchingMethods = checks.filter { (_, failures) -> failures.isEmpty() }
-        .map { (method) -> method }
+    val matchingMethods =
+        checks.filter { (_, failures) -> failures.isEmpty() }.map { (method) -> method }
     if (matchingMethods.isEmpty()) {
-        val failures = if (collector.collectsAll) {
-            checks.minBy { (_, failures) -> failures.size }.second
-        } else {
-            checks.last().second
-        }
+        val failures =
+            if (collector.collectsAll) {
+                checks.minBy { (_, failures) -> failures.size }.second
+            } else {
+                checks.last().second
+            }
         failures.forEach { failure ->
             collector.report(failure)
             if (collector.isFull) return TypeResolution.Invalid
@@ -211,7 +220,7 @@ private fun finishCall(
     }
     if (
         frame.arguments.any { it === TypeInferenceResult.Invalid } &&
-        matchingMethods.drop(1).any { it.returnType !== matchingMethods.first().returnType }
+            matchingMethods.drop(1).any { it.returnType !== matchingMethods.first().returnType }
     ) {
         return TypeResolution.Invalid
     }
@@ -223,15 +232,19 @@ private fun resolveMethods(
     collector: TypeCheckCollector,
 ): List<SelectorMethod>? {
     val expression = frame.expression
-    val methods = when (val callee = expression.callee) {
-        is ValueExpression.CallExpression -> error("Unsupported nested call")
-        is ValueExpression.Identifier -> collector.globalType.methods.filter { it.name == callee.name }
-        is ValueExpression.MemberExpression -> when (val receiver = frame.receiver) {
-            is TypeResolution.Known -> receiver.type.methods.filter { it.name == callee.property }
-            TypeResolution.Invalid -> return null
-            null -> error("Missing call receiver")
+    val methods =
+        when (val callee = expression.callee) {
+            is ValueExpression.CallExpression -> error("Unsupported nested call")
+            is ValueExpression.Identifier ->
+                collector.globalType.methods.filter { it.name == callee.name }
+            is ValueExpression.MemberExpression ->
+                when (val receiver = frame.receiver) {
+                    is TypeResolution.Known ->
+                        receiver.type.methods.filter { it.name == callee.property }
+                    TypeResolution.Invalid -> return null
+                    null -> error("Missing call receiver")
+                }
         }
-    }
     if (methods.isEmpty()) {
         collector.report(
             expression.callee.typeFailure(SelectorTypeErrorKind.UnknownMethod),
@@ -260,11 +273,13 @@ private fun parameterMismatches(
 ): List<TypeCheckFailure> {
     val failures = mutableListOf<TypeCheckFailure>()
     call.arguments.indices.forEach { index ->
-        val actualType = when (val argument = arguments[index]) {
-            is TypeInferenceResult.Known -> argument.type
-            TypeInferenceResult.NullValue, TypeInferenceResult.Invalid -> return@forEach
-            null -> error("Missing call argument type")
-        }
+        val actualType =
+            when (val argument = arguments[index]) {
+                is TypeInferenceResult.Known -> argument.type
+                TypeInferenceResult.NullValue,
+                TypeInferenceResult.Invalid -> return@forEach
+                null -> error("Missing call argument type")
+            }
         if (actualType != method.params[index].type) {
             val argument = call.arguments[index]
             failures.add(
@@ -286,10 +301,11 @@ private fun ValueExpression.typeFailure(
     kind: SelectorTypeErrorKind,
     expected: String? = null,
     actual: String? = null,
-): TypeCheckFailure = TypeCheckFailure(
-    kind = kind,
-    positionValue = this,
-    expression = SelectorPrinter.render(this),
-    expected = expected,
-    actual = actual,
-)
+): TypeCheckFailure =
+    TypeCheckFailure(
+        kind = kind,
+        positionValue = this,
+        expression = SelectorPrinter.render(this),
+        expected = expected,
+        actual = actual,
+    )

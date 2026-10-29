@@ -442,10 +442,11 @@ class MatchDiagnostics(
                 val capture = previous.capture
                 if (capture.session.openOperations.none { it.id == operation.id }) return
                 val elapsed = nanoTime() - previous.origin
-                val finished = operation.copy(
-                    durationNanos = elapsed - operation.startedNanos,
-                    outcome = outcome,
-                )
+                val finished =
+                    operation.copy(
+                        durationNanos = elapsed - operation.startedNanos,
+                        outcome = outcome,
+                    )
                 val event =
                     MatchTrace(
                         ++previous.sequence,
@@ -546,7 +547,16 @@ class MatchDiagnostics(
     ): T {
         if (!enabled) return block()
         val operation =
-            beginOperation(name, runId, rule, page, parentOperationId, arguments, sessionId, recording)
+            beginOperation(
+                name,
+                runId,
+                rule,
+                page,
+                parentOperationId,
+                arguments,
+                sessionId,
+                recording,
+            )
         try {
             val result = block()
             endOperation(
@@ -747,7 +757,9 @@ class MatchDiagnostics(
             session.openOperations.isEmpty() &&
             queriesCompleted &&
             systemSealed != false &&
-            requests.none { it.phase == MatchDebugRunPhase.Running || it.phase == MatchDebugRunPhase.Cancelling }
+            requests.none {
+                it.phase == MatchDebugRunPhase.Running || it.phase == MatchDebugRunPhase.Cancelling
+            }
 
     // Keep pending evidence until its actual completion. Finished sessions retain a bounded
     // in-memory history.

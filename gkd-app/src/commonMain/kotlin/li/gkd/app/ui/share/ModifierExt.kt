@@ -13,11 +13,12 @@ fun Modifier.noRippleClickable(
     onClickLabel: String? = null,
     role: Role? = null,
     onClick: () -> Unit,
-): Modifier = clickable(
-    interactionSource = remember { MutableInteractionSource() },
-    indication = null,
-    enabled = enabled,
-    onClickLabel = onClickLabel,
-    role = role,
-    onClick = onClick,
-)
+): Modifier =
+    clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        enabled = enabled,
+        onClickLabel = onClickLabel,
+        role = role,
+        onClick = onClick,
+    )

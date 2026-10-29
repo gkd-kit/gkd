@@ -1,8 +1,8 @@
 package li.gkd.app.matching.query
 
-import li.gkd.app.util.monotonicTimeMillis
 import android.view.accessibility.AccessibilityNodeInfo
 import li.gkd.app.util.AndroidTarget
+import li.gkd.app.util.monotonicTimeMillis
 import li.gkd.selector.createDefaultSelectorTypeModel
 
 fun AccessibilityNodeInfo.getVid(): CharSequence? {
@@ -11,7 +11,7 @@ fun AccessibilityNodeInfo.getVid(): CharSequence? {
     if (id.startsWith(appId) && id.startsWith(":id/", appId.length)) {
         return id.subSequence(
             appId.length + ":id/".length,
-            id.length
+            id.length,
         )
     }
     return null
@@ -24,6 +24,7 @@ const val MAX_CHILD_SIZE = 512
 const val MAX_DESCENDANTS_SIZE = 4096
 
 private const val A11Y_NODE_TIME_KEY = "generatedTime"
+
 fun AccessibilityNodeInfo.setGeneratedTime(): AccessibilityNodeInfo {
     extras.putLong(A11Y_NODE_TIME_KEY, monotonicTimeMillis())
     return this
@@ -38,17 +39,18 @@ fun AccessibilityNodeInfo.isExpired(expiryMillis: Long): Boolean {
     return (monotonicTimeMillis() - generatedTime) > expiryMillis
 }
 
-val selectorTypeModel get() = createDefaultSelectorTypeModel()
+val selectorTypeModel
+    get() = createDefaultSelectorTypeModel()
 
 val AccessibilityNodeInfo.compatChecked: Boolean?
-    get() = if (AndroidTarget.BAKLAVA) {
-        when (checked) {
-            AccessibilityNodeInfo.CHECKED_STATE_TRUE -> true
-            AccessibilityNodeInfo.CHECKED_STATE_FALSE -> false
-            AccessibilityNodeInfo.CHECKED_STATE_PARTIAL -> null
-            else -> null
+    get() =
+        if (AndroidTarget.BAKLAVA) {
+            when (checked) {
+                AccessibilityNodeInfo.CHECKED_STATE_TRUE -> true
+                AccessibilityNodeInfo.CHECKED_STATE_FALSE -> false
+                AccessibilityNodeInfo.CHECKED_STATE_PARTIAL -> null
+                else -> null
+            }
+        } else {
+            @Suppress("DEPRECATION") isChecked
         }
-    } else {
-        @Suppress("DEPRECATION")
-        isChecked
-    }
