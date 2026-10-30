@@ -182,13 +182,23 @@ class ForegroundTracker(
         lastNodes = value.appId
         if (lastNodesAt == null || repeated || previousNodes != value.appId) lastNodesAt = now
         val candidate = pending
+        // A node associated with a specific window cannot confirm a different pending Activity
+        // merely because both windows belong to the same package.
+        val knownNodeConflictsWithPendingIdentity =
+            value.activityId != null && candidate != null && candidate != value
+        if (knownNodeConflictsWithPendingIdentity) {
+            return decision(ForegroundDecisionReason.ForegroundConflict)
+        }
         if (
-            (candidate?.appId == value.appId &&
-                (pendingSource != ForegroundSource.Nodes || repeated)) || (!same && repeated)
+            (value.activityId != null && !same) ||
+                (candidate?.appId == value.appId &&
+                    (pendingSource != ForegroundSource.Nodes || repeated)) ||
+                (!same && repeated)
         ) {
             val matchingTask = task?.takeIf { it.appId == value.appId }
             val next =
-                if (candidate?.appId == value.appId) {
+                if (value.activityId != null) value
+                else if (candidate?.appId == value.appId) {
                     if (candidate.activityId == null) matchingTask ?: candidate else candidate
                 } else matchingTask ?: value
             val changed = next != confirmed

@@ -9,8 +9,95 @@ import kotlinx.serialization.json.Json
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 
 class MatchInputsTest {
+    @Test
+    fun repeatedTaskObservationsKeepPendingDeadlineAndConfirmedPage() {
+        val app = ForegroundIdentity("app", "Main")
+        val reducer = MatchInputReducer(ForegroundIdentity("launcher", "Home"))
+        val policy = MatchTimingPolicy()
+        fun task(time: Long) =
+            reducer.accept(
+                MatchInput.Foreground(ForegroundSource.TaskStack, app),
+                policy,
+                time,
+                null,
+            )
+        assertTrue(task(100).cancelWork)
+        assertFalse(task(110).cancelWork)
+        assertFalse(task(500).cancelWork)
+        assertEquals(100L, reducer.checkpoint(0, 500).foreground.pendingSince)
+        val confirmed =
+            reducer.accept(
+                MatchInput.Foreground(ForegroundSource.Nodes, ForegroundIdentity("app")),
+                policy,
+                510,
+                null,
+            )
+        assertTrue(checkNotNull(confirmed.foreground).changed)
+        val repeated = task(520)
+        assertFalse(repeated.cancelWork)
+        assertFalse(checkNotNull(repeated.foreground).changed)
+        assertEquals(null, repeated.foreground.pending)
+        assertEquals(app, repeated.foreground.confirmed)
+    }
+
+    @Test
+    fun returningToSearchAfterVideoAcceptsPreviouslyObservedTask() {
+        val search = ForegroundIdentity("bili", "Search")
+        val video = ForegroundIdentity("bili", "Video")
+        val reducer = MatchInputReducer(search)
+        val policy = MatchTimingPolicy()
+        fun observe(source: ForegroundSource, value: ForegroundIdentity, time: Long) =
+            reducer.accept(MatchInput.Foreground(source, value), policy, time, null)
+        assertFalse(observe(ForegroundSource.TaskStack, search, 100).cancelWork)
+        observe(ForegroundSource.Accessibility, video, 200)
+        observe(ForegroundSource.Nodes, ForegroundIdentity("bili"), 210)
+        // The remembered task still says Search, but the confirmed page is now Video.
+        val returning = observe(ForegroundSource.TaskStack, search, 13000)
+        assertTrue(returning.cancelWork)
+        assertEquals(video, checkNotNull(returning.foreground).confirmed)
+        assertEquals(search, returning.foreground.pending)
+        assertFalse(observe(ForegroundSource.TaskStack, search, 13010).cancelWork)
+        val confirmed = observe(ForegroundSource.Nodes, ForegroundIdentity("bili"), 13020)
+        assertEquals(search, checkNotNull(confirmed.foreground).confirmed)
+        assertTrue(confirmed.foreground.changed)
+        assertFalse(confirmed.foreground.appReentered)
+    }
+
     private fun MatchInputReducer.acceptRecord(record: MatchInputRecord) =
         accept(record.input, record.policy, record.receivedAtMillis, record.sourceTimeMillis)
+
+    @Test
+    fun taskMatchingConfirmedActivityStillReplacesConflictingPendingActivity() {
+        val search = ForegroundIdentity("bili", "Search")
+        val reducer = MatchInputReducer(search)
+        val policy = MatchTimingPolicy()
+        reducer.accept(
+            MatchInput.Foreground(ForegroundSource.TaskStack, ForegroundIdentity("bili", "Video")),
+            policy,
+            100,
+            null,
+        )
+        val returning =
+            reducer.accept(
+                MatchInput.Foreground(ForegroundSource.TaskStack, search),
+                policy,
+                200,
+                null,
+            )
+        assertTrue(returning.cancelWork)
+        assertEquals(search, checkNotNull(returning.foreground).pending)
+        assertEquals(200L, reducer.checkpoint(0, 200).foreground.pendingSince)
+        val confirmed =
+            reducer.accept(
+                MatchInput.Foreground(ForegroundSource.Nodes, ForegroundIdentity("bili")),
+                policy,
+                210,
+                null,
+            )
+        assertEquals(null, checkNotNull(confirmed.foreground).pending)
+        assertFalse(confirmed.foreground.changed)
+        assertFalse(confirmed.foreground.appReentered)
+    }
 
     @Test
     fun returningToTheSameActivityInvalidatesOldReadsBeforeNodeConfirmation() {
@@ -94,6 +181,23 @@ class MatchInputsTest {
     }
 
     private val context = MatchEventContext(true, "self", true, "ime", "app.a", 10000, 10000)
+
+    @Test
+    fun delayedWindowStateSurvivesNewerContentButNotNewerWindowState() {
+        val reducer = MatchInputReducer(ForegroundIdentity("app.a"))
+        val policy = MatchTimingPolicy()
+        val window =
+            event().copy(key = MatchEventKey(MatchEventKind.WindowState, "app.a", "Search"))
+        assertTrue(reducer.accept(event(), policy, 100, 300).accepted)
+        assertTrue(reducer.accept(window, policy, 200, 200).accepted)
+        assertEquals(300L, reducer.checkpoint(0, 200).lastEventSourceTime)
+        assertEquals(200L, reducer.checkpoint(0, 200).lastWindowSourceTime)
+        assertFalse(reducer.accept(window, policy, 300, 190).accepted)
+        assertFalse(reducer.accept(event(), policy, 400, 290).accepted)
+        assertTrue(reducer.accept(window, policy, 500, 400).accepted)
+        reducer.accept(MatchInput.ServiceChanged, policy, 600, null)
+        assertTrue(reducer.accept(window, policy, 700, 10).accepted)
+    }
 
     @Test
     fun platformEventPathPreservesDecisionsAndCaptureAcrossDiagnosticToggles() {
@@ -180,7 +284,7 @@ class MatchInputsTest {
                 "screen_off_content",
                 "event_accepted",
                 "content_merged",
-                "stale_accessibility_event",
+                "event_accepted",
                 "event_accepted",
                 "service_changed",
                 "event_accepted",

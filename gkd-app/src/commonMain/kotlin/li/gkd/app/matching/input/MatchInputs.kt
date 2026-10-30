@@ -79,6 +79,7 @@ data class MatchInputCheckpoint(
     val foreground: ForegroundCheckpoint,
     val lastContentAt: Long? = null,
     val lastEventSourceTime: Long? = null,
+    val lastWindowSourceTime: Long? = null,
 )
 
 /** Production input decisions; snapshots describe state but cannot restore execution. */
@@ -86,6 +87,7 @@ class MatchInputReducer(initial: ForegroundIdentity) {
     private val foreground = ForegroundTracker(initial)
     private var lastContentAt: Long? = null
     private var lastEventSourceTime: Long? = null
+    private var lastWindowSourceTime: Long? = null
 
     fun checkpoint(sequence: Long, receivedAtMillis: Long) =
         MatchInputCheckpoint(
@@ -94,6 +96,7 @@ class MatchInputReducer(initial: ForegroundIdentity) {
             foreground.checkpoint(),
             lastContentAt,
             lastEventSourceTime,
+            lastWindowSourceTime,
         )
 
     fun foregroundSnapshot() = foreground.snapshot()
@@ -139,6 +142,7 @@ class MatchInputReducer(initial: ForegroundIdentity) {
             MatchInput.ServiceChanged -> {
                 lastContentAt = null
                 lastEventSourceTime = null
+                lastWindowSourceTime = null
                 MatchInputDecision(true, "service_changed", cancelWork = true)
             }
             is MatchInput.Screen ->
@@ -217,9 +221,15 @@ class MatchInputReducer(initial: ForegroundIdentity) {
         // Only accessibility source timestamps share this clock domain.
         val sourceTime = sourceTimeMillis
         if (sourceTime != null) {
-            if (sourceTime < 0 || lastEventSourceTime?.let { sourceTime < it } == true)
+            // Window-state delivery can lag behind newer content events. Only a newer
+            // window-state event supersedes its Activity/window association.
+            val previousSourceTime =
+                if (key.kind == MatchEventKind.WindowState) lastWindowSourceTime
+                else lastEventSourceTime
+            if (sourceTime < 0 || previousSourceTime?.let { sourceTime < it } == true)
                 return MatchEventDecision.StaleAccessibilityEvent
-            lastEventSourceTime = sourceTime
+            if (key.kind == MatchEventKind.WindowState) lastWindowSourceTime = sourceTime
+            lastEventSourceTime = maxOf(lastEventSourceTime ?: sourceTime, sourceTime)
         }
         return MatchEventDecision.EventAccepted
     }

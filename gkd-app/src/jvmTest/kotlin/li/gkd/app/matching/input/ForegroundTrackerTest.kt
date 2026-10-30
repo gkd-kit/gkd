@@ -9,6 +9,36 @@ import kotlin.test.assertTrue
 
 class ForegroundTrackerTest {
     @Test
+    fun oldWindowCannotConfirmPendingActivityInSamePackage() {
+        val video = ForegroundIdentity("bili", "Video")
+        val search = ForegroundIdentity("bili", "Search")
+        val tracker = ForegroundTracker(video)
+        val policy = MatchTimingPolicy()
+        tracker.observe(ForegroundSource.TaskStack, search, policy, 100)
+        val oldRoot = tracker.observe(ForegroundSource.Nodes, video, policy, 110)
+        assertEquals(video, oldRoot.confirmed)
+        assertEquals(search, oldRoot.pending)
+        assertFalse(oldRoot.changed)
+        val newRoot = tracker.observe(ForegroundSource.Nodes, search, policy, 120)
+        assertEquals(search, newRoot.confirmed)
+        assertNull(newRoot.pending)
+        assertTrue(newRoot.changed)
+    }
+
+    @Test
+    fun knownWindowCanCorrectActivityBeforeTaskCallbackWithoutCreatingAppVisit() {
+        val video = ForegroundIdentity("bili", "Video")
+        val search = ForegroundIdentity("bili", "Search")
+        val tracker = ForegroundTracker(video)
+        val policy = MatchTimingPolicy()
+        val root = tracker.observe(ForegroundSource.Nodes, search, policy, 100)
+        assertEquals(search, root.confirmed)
+        assertTrue(root.changed)
+        assertFalse(root.appReentered)
+        assertFalse(tracker.observe(ForegroundSource.TaskStack, search, policy, 110).changed)
+    }
+
+    @Test
     fun leaveAndReturnWithoutIntermediateNodesStartsOneNewVisitInBothModes() {
         // No launcher node is ever returned: accessibility-only and task-stack inputs
         // must both preserve the visit, while waiting for fresh app nodes to act.

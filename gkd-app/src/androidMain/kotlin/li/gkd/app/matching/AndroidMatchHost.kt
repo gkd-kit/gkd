@@ -21,11 +21,15 @@ import li.gkd.app.matching.diagnostics.MatchNodeProvenance
 import li.gkd.app.matching.diagnostics.MatchNodeReadReason
 import li.gkd.app.matching.diagnostics.MatchNodeRole
 import li.gkd.app.matching.diagnostics.MatchNodeSource
+import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.matching.diagnostics.MatchStage
+import li.gkd.app.matching.diagnostics.MatchWindowEvent
 import li.gkd.app.matching.input.A11yEvent
 import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.matching.input.CONTENT_CHANGED
+import li.gkd.app.matching.input.ForegroundIdentity
+import li.gkd.app.matching.input.ForegroundWindowTracker
 import li.gkd.app.matching.input.MatchEventKey
 import li.gkd.app.matching.input.MatchEventKind
 import li.gkd.app.matching.input.MatchEventQueue
@@ -48,6 +52,7 @@ import li.gkd.app.matching.query.isExpired
 import li.gkd.app.matching.query.queryRules
 import li.gkd.app.matching.query.readA11yWindow
 import li.gkd.app.matching.query.setGeneratedTime
+import li.gkd.app.model.ActionResult
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.record.addActionLog
@@ -68,8 +73,11 @@ private val diagnosticReadIds = AtomicLong()
 
 class AndroidMatchHost(private val service: AndroidAutomationSession) {
     val connectionId = diagnosticConnectionIds.incrementAndGet()
+    // This boundary belongs to the service connection, not to a diagnostic capture.
+    private var firstQueryStarted = false
     private var querySource: PageNode? = null
     private var queryRoot: PageNode? = null
+    private val windows = ForegroundWindowTracker()
     private val a11yContext =
         A11yQueryContext(
             getRoot = { queryRootNode() },
@@ -104,8 +112,14 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     a11yContext.queryRule(rule, node, coordinator.diagnostics)
                 }
 
-            override suspend fun perform(rule: ResolvedRule, node: AccessibilityNodeInfo) =
-                ActionPerformer.getAction(
+            override suspend fun perform(
+                rule: ResolvedRule,
+                node: AccessibilityNodeInfo,
+            ): ActionResult {
+                if (!isActionContextCurrent(node)) {
+                    throw CancellationException("action_window_changed")
+                }
+                return ActionPerformer.getAction(
                         rule.parameters.action
                             ?: rule.parameters.position?.let {
                                 ActionPerformer.ClickCenter.action
@@ -115,6 +129,14 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                             },
                     )
                     .perform(node, rule.parameters, coordinator.diagnostics.enabled)
+            }
+        }
+
+    private fun isActionContextCurrent(node: AccessibilityNodeInfo): Boolean =
+        AndroidForegroundState.withTopActivityLock {
+            a11yContext.queryPage === AndroidForegroundState.currentPage &&
+                !AndroidForegroundState.foregroundPending &&
+                windows.isCurrentKnownWindow(node.windowId, node.packageName?.toString())
         }
 
     private val coordinator
@@ -177,6 +199,23 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     private var eventConsumer: Job? = null
 
     fun onA11yEvent(event: AccessibilityEvent?) {
+        if (event != null && coordinator.diagnostics.enabled) {
+            coordinator.diagnostics.record(
+                0,
+                MatchStage.Root,
+                "accessibility_event_received",
+                windowEvent =
+                    MatchWindowEvent(
+                        event.eventType,
+                        event.windowId,
+                        event.contentChangeTypes,
+                        if (AndroidTarget.P) event.windowChanges else null,
+                        event.eventTime,
+                        event.packageName?.toString(),
+                        event.className?.toString(),
+                    ),
+            )
+        }
         if (!effective) {
             coordinator.diagnostics.entry("event", "service_not_effective")
             return
@@ -232,6 +271,22 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         lastEventTime = event.eventTime
         if (event.eventType == STATE_CHANGED) {
             latestStateEvent = a11yEvent
+            AndroidForegroundState.withTopActivityLock {
+                val foreground = AndroidForegroundState.foregroundSnapshot()
+                val appId = a11yEvent.key.appId
+                val identity =
+                    if (isActivity(appId, a11yEvent.key.name)) {
+                        ForegroundIdentity(appId, a11yEvent.key.name)
+                    } else {
+                        windows.knownIdentity(event.windowId, appId)
+                            ?: foreground.pending?.takeIf { it.appId == appId }
+                            ?: foreground.confirmed.takeIf { it.appId == appId }
+                            ?: ForegroundIdentity(appId)
+                    }
+                if (windows.observeState(event.windowId, identity)) {
+                    AndroidForegroundState.onWindowChanged()
+                }
+            }
             // Window metadata is available without fetching source. Both service modes
             // must record visits even while their accessibility Binder reads are stalled.
             if (isActivity(a11yEvent.key.appId, a11yEvent.key.name)) {
@@ -297,7 +352,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     reason = reason,
                     page = System.identityHashCode(page),
                     appId = node.packageName?.toString().orEmpty(),
-                    activityId = currentTopActivity.activityId,
+                    observedActivityId = currentTopActivity.activityId,
                     windowId = node.windowId,
                     acquiredAtMillis = monotonicTimeMillis(),
                     parentReadId = parentReadId,
@@ -314,7 +369,11 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     }
 
     private fun queryRootNode(): AccessibilityNodeInfo? {
-        val root = availablePageRoot()
+        val root = AndroidForegroundState.withTopActivityLock {
+            availablePageRoot()?.takeIf {
+                a11yContext.queryPage == null || it.page === a11yContext.queryPage
+            }
+        }
         queryRoot = root
         return root?.node
     }
@@ -404,8 +463,16 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     coordinator.diagnostics.entry("consume_event", "source_foreground_mismatch")
                     return@withTopActivityLock false
                 }
-                // Actual event nodes corroborate window/task observations without a root read.
-                updateTopActivity(latestEvent.key.appId, null, ActivityScene.Nodes)
+                // A delayed source from another window must not confirm the active page.
+                if (!windows.isCurrentKnownWindow(node.windowId, latestEvent.key.appId)) {
+                    coordinator.diagnostics.entry("consume_event", "source_window_mismatch")
+                    return@withTopActivityLock false
+                }
+                updateTopActivity(
+                    latestEvent.key.appId,
+                    windows.identity?.activityId,
+                    ActivityScene.Nodes,
+                )
                 if (
                     AndroidForegroundState.foregroundPending ||
                         currentTopActivity.appId != latestEvent.key.appId
@@ -436,7 +503,9 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     }
 
     private fun availablePageRoot(): PageNode? = rootNode?.takeIf {
-        it.page === AndroidForegroundState.currentPage && !it.node.isExpired(1000)
+        it.page === AndroidForegroundState.currentPage &&
+            !it.node.isExpired(1000) &&
+            windows.isCurrentKnownWindow(it.node.windowId, it.node.packageName?.toString())
     }
 
     private var rootRequest: Job? = null
@@ -469,7 +538,19 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                                 return@withTopActivityLock false
                             val appId =
                                 node.packageName?.toString() ?: return@withTopActivityLock false
-                            updateTopActivity(appId, null, ActivityScene.Nodes)
+                            val foreground = AndroidForegroundState.foregroundSnapshot()
+                            if (windows.observeRoot(node.windowId, appId, foreground.confirmed)) {
+                                AndroidForegroundState.onWindowChanged()
+                            }
+                            val identity = windows.identity
+                            if (identity == null) {
+                                coordinator.diagnostics.entry(
+                                    "root_read",
+                                    "window_identity_pending",
+                                )
+                                return@withTopActivityLock false
+                            }
+                            updateTopActivity(appId, identity.activityId, ActivityScene.Nodes)
                             if (
                                 AndroidForegroundState.foregroundPending ||
                                     currentTopActivity.appId != appId
@@ -625,6 +706,10 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             return
         }
         val tempStateEvent = latestStateEvent
+        if (!firstQueryStarted) {
+            firstQueryStarted = true
+            AndroidAutomationSessions.recordServiceEvent(service, MatchServiceEvent.QueryStarted)
+        }
         val activityRule = AndroidForegroundState.currentRule
         val page = AndroidForegroundState.currentPage
         work.trackRules(activityRule)
@@ -657,6 +742,9 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     effective &&
                         isInteractive &&
                         !AndroidForegroundState.foregroundPending &&
+                        AndroidForegroundState.withTopActivityLock {
+                            windows.identity != null
+                        } &&
                         SettingsRepository.settings.value.enableMatch &&
                         !checkOutDate(page, tempStateEvent)
                 },

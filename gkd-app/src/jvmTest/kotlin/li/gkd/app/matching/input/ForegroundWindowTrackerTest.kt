@@ -1,0 +1,95 @@
+package li.gkd.app.matching.input
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class ForegroundWindowTrackerTest {
+    private val search = ForegroundIdentity("bili", "Search")
+    private val video = ForegroundIdentity("bili", "Video")
+
+    @Test
+    fun newRootCannotInheritOldActivityBeforeWindowEvent() {
+        val windows = ForegroundWindowTracker()
+        windows.observeState(10, video)
+        assertFalse(windows.observeRoot(10, "bili", video))
+        // Recorded regression: the search root arrives before either Activity callback.
+        assertTrue(windows.observeRoot(20, "bili", video))
+        assertNull(windows.identity)
+        assertFalse(windows.isCurrentKnownWindow(10, "bili"))
+        assertFalse(windows.isCurrentKnownWindow(20, "bili"))
+        assertFalse(windows.observeRoot(20, "bili", video))
+        assertTrue(windows.observeState(20, search))
+        assertTrue(windows.isCurrentKnownWindow(20, "bili"))
+        assertEquals(search, windows.identity)
+    }
+
+    @Test
+    fun returningToKnownSearchWindowNeverUsesVideoIdentity() {
+        val windows = ForegroundWindowTracker()
+        windows.observeState(20, search)
+        windows.observeState(10, video)
+        assertTrue(windows.observeRoot(20, "bili", video))
+        assertEquals(search, windows.identity)
+        assertFalse(windows.isCurrentKnownWindow(10, "bili"))
+    }
+
+    @Test
+    fun dialogAndItsDismissalKeepActivityWithoutNeedingAnotherActivityEvent() {
+        val windows = ForegroundWindowTracker()
+        val foreground = ForegroundTracker(video)
+        val policy = MatchTimingPolicy()
+        windows.observeState(10, video)
+        windows.observeRoot(11, "bili", video)
+        assertNull(windows.identity)
+        windows.observeState(11, video)
+        assertTrue(windows.isCurrentKnownWindow(11, "bili"))
+        assertEquals(video, windows.identity)
+        val dialog = foreground.observe(ForegroundSource.Nodes, windows.identity!!, policy, 100)
+        assertFalse(dialog.changed)
+        assertFalse(dialog.appReentered)
+        assertNull(dialog.pending)
+        // Dialog dismissal can expose the underlying root without a new Activity event.
+        assertTrue(windows.observeRoot(10, "bili", video))
+        assertEquals(video, windows.identity)
+        assertTrue(windows.isCurrentKnownWindow(10, "bili"))
+        val dismissed = foreground.observe(ForegroundSource.Nodes, windows.identity!!, policy, 200)
+        assertFalse(dismissed.changed)
+        assertFalse(dismissed.appReentered)
+        assertNull(dismissed.pending)
+    }
+
+    @Test
+    fun notificationShadeWithoutWindowEventIdDoesNotLoseUnderlyingWindow() {
+        val windows = ForegroundWindowTracker()
+        val foreground = ForegroundTracker(video)
+        val policy = MatchTimingPolicy()
+        windows.observeState(10, video)
+        foreground.observeSurface(true, 100)
+        val system = ForegroundIdentity("com.android.systemui")
+        assertFalse(windows.observeState(-1, system))
+        assertTrue(windows.observeRoot(30, system.appId, video))
+        assertFalse(windows.isCurrentKnownWindow(10, "bili"))
+        assertTrue(windows.observeRoot(10, "bili", system))
+        foreground.observeSurface(false, 200)
+        assertEquals(video, windows.identity)
+        assertTrue(windows.isCurrentKnownWindow(10, "bili"))
+        val returned = foreground.observe(ForegroundSource.Nodes, windows.identity!!, policy, 210)
+        assertEquals(video, returned.confirmed)
+        assertNull(returned.pending)
+        assertTrue(returned.appReentered)
+        assertFalse(foreground.observe(ForegroundSource.Nodes, video, policy, 220).appReentered)
+    }
+
+    @Test
+    fun connectionBootstrapDoesNotCarryBindingsIntoAnotherConnection() {
+        val first = ForegroundWindowTracker()
+        first.observeState(10, video)
+        val second = ForegroundWindowTracker()
+        assertTrue(second.observeRoot(20, "bili", search))
+        assertEquals(search, second.identity)
+        assertNull(second.knownIdentity(10, "bili"))
+    }
+}
