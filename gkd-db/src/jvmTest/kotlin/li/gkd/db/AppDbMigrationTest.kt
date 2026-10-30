@@ -76,12 +76,54 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun everyExportedSchemaMigratesToVersion18() = runBlocking {
+    fun everyExportedSchemaMigratesToVersion19() = runBlocking {
         // Protects the persisted schema compatibility contract for every released version.
-        for (startVersion in 1 until 18) {
+        for (startVersion in 1 until 19) {
             val helper = migrationHelper("all-migrations-$startVersion.db")
             helper.createDatabase(startVersion).close()
-            helper.runMigrationsAndValidate(18, listOf(Migration14To15)).close()
+            helper.runMigrationsAndValidate(19, listOf(Migration14To15)).close()
+        }
+    }
+
+    @Test
+    fun diagnosticSummarySurvivesReopenAndUpdatesWithoutDuplicatingApps() = runBlocking {
+        val name = "diagnostics.db"
+        val helper = migrationHelper(name)
+        helper.createDatabase(18).use {
+            it.execSQL(
+                "INSERT INTO app_last_visit (app_id, last_visit_time) VALUES ('existing.app', 123)",
+            )
+        }
+        helper.runMigrationsAndValidate(19).use {
+            assertEquals(1L, it.queryLong("SELECT COUNT(*) FROM app_last_visit"))
+            assertEquals(0L, it.queryLong("SELECT COUNT(*) FROM match_diagnostic"))
+        }
+        val record =
+            MatchDiagnosticRecord(
+                1000,
+                1000,
+                3500,
+                2500,
+                42,
+                listOf("app.one", "app.\"quoted", "应用"),
+            )
+        openDatabase(name).let { db ->
+            try {
+                db.matchDiagnosticRecordDao().upsert(record)
+                db.matchDiagnosticRecordDao().upsert(record.copy(sizeBytes = 84))
+            } finally {
+                db.close()
+            }
+        }
+        openDatabase(name).let { db ->
+            try {
+                val dao = db.matchDiagnosticRecordDao()
+                assertEquals(listOf(record.copy(sizeBytes = 84)), dao.observeAll().first())
+                dao.delete(record.id)
+                assertTrue(dao.observeAll().first().isEmpty())
+            } finally {
+                db.close()
+            }
         }
     }
 

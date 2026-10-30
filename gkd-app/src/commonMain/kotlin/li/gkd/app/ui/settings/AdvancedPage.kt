@@ -17,16 +17,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.GithubCookieStore
@@ -46,10 +42,8 @@ import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedSection
 import li.gkd.app.ui.navigation.AppNavEntry
-import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.DebugSettingsRoute
 import li.gkd.app.ui.navigation.ExternalCallsRoute
-import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.QuickSettingsTilesRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotSettingsRoute
@@ -185,16 +179,6 @@ fun AdvancedPage(
                 onCheckedChange = {
                     if (it) vm.setShowTrackNotice(true) else host.setTrackServiceEnabled(false)
                 },
-            )
-            AdvancedSectionTitle(stringResource(Res.string.advanced_logs_diagnostics))
-            DiagnosticCapture(vm, sectionFocusModifier(AdvancedSection.Diagnostics))
-            GkSettingItem(
-                title = stringResource(Res.string.match_debug_records),
-                onClick = { mainVm.navigator.navigate(MatchDebugRoute) },
-            )
-            GkSettingItem(
-                title = stringResource(Res.string.crash_reports),
-                onClick = { mainVm.navigator.navigate(CrashReportRoute) },
             )
             AdvancedSectionTitle(stringResource(Res.string.integration_tools_title))
             GkSettingItem(
@@ -340,27 +324,5 @@ private fun AdvancedSectionTitle(title: String, showTop: Boolean = true) {
         modifier = Modifier.titleItemPadding(showTop = showTop),
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-    )
-}
-
-@Composable
-private fun DiagnosticCapture(vm: AdvancedViewModel, modifier: Modifier) {
-    val diagnostics = MatchingRuntime.coordinator.diagnostics
-    val control =
-        remember(diagnostics) {
-            diagnostics.state.map { it?.id to (it?.active == true) }.distinctUntilChanged()
-        }
-    val current by
-        control.collectAsStateWithLifecycle(
-            initialValue = diagnostics.state.value.let { it?.id to (it?.active == true) },
-        )
-    GkTextSwitch(
-        modifier = modifier,
-        title = stringResource(Res.string.match_debug_collect),
-        checked = current.second,
-        onCheckedChange = { enabled ->
-            if (enabled) vm.requestDiagnosticCapture()
-            else current.first?.let { MatchingRuntime.coordinator.stopDiagnostics(it) }
-        },
     )
 }

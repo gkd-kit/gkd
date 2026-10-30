@@ -16,107 +16,92 @@ import li.gkd.app.testing.TestFiles
 
 class MatchDiagnosticFileStoreTest {
     @Test
-    fun directoryUsesStartTimeAndKeepsAttachmentsWithoutCapacityCleanup() {
-        val directory =
-            Files.createTempDirectory(TestFiles.root.toPath(), "diagnostic-directory-").toFile()
+    fun savesSummaryAndFileAndDoesNotResurrectDeletedCapture() {
+        val directory = Files.createTempDirectory(TestFiles.root.toPath(), "diagnostic-").toFile()
         try {
             val store = MatchDiagnosticFileStore(directory)
-            val diagnostics = MatchDiagnostics(wallTime = { 0L })
+            var nanos = 0L
+            var wall = 1000L
+            val diagnostics = MatchDiagnostics(nanoTime = { nanos }, wallTime = { wall })
             val session = diagnostics.start(MatchTimingPolicy())
             assertFails { store.save(diagnostics.export(session.id)) }
-            assertTrue(directory.listFiles()!!.isEmpty())
+            nanos = 2_500_000_000L
+            wall = 500L // A wall-clock adjustment must not change elapsed duration.
             diagnostics.stop(session.id)
             val capture = diagnostics.export(session.id)
-            store.save(capture)
-            val saved = directory.resolve("19700101000000Z-${session.id.take(8)}")
-            val record = store.records().single()
-            assertEquals(saved, record.file)
-            assertEquals(0L, record.startedAt)
-            assertEquals(session.id.take(8), record.id)
-            assertEquals(saved.resolve("diagnostic.json").length(), record.sizeBytes)
-            val attachment = saved.resolve("attachments/evidence.txt")
-            assertTrue(attachment.parentFile.mkdirs())
-            attachment.writeText("evidence")
-            store.save(capture)
-            assertEquals(listOf(saved), directory.listFiles()!!.toList())
-            assertEquals("evidence", attachment.readText())
-            assertEquals(
-                capture,
-                Json.decodeFromString<MatchDiagnosticCapture>(
-                    saved.resolve("diagnostic.json").readText(),
-                ),
-            )
-            // Saving another capture must not remove older records or large attachments.
-            java.io.RandomAccessFile(attachment, "rw").use { it.setLength(33L * 1024 * 1024) }
-            val legacy = directory.resolve("matching-old.json").apply { writeText("{}") }
-            store.save(capture)
-            assertTrue(legacy.exists())
-            assertTrue(attachment.exists())
-            val next = diagnostics.start(MatchTimingPolicy())
-            diagnostics.stop(next.id)
-            store.save(diagnostics.export(next.id))
-            assertTrue(saved.exists())
-            assertEquals(
-                2,
-                store.records().size,
-                "Root-level legacy JSON is not a capture directory",
-            )
-        } finally {
-            directory.deleteRecursively()
-        }
-    }
-
-    @Test
-    fun deletesDirectoriesWithoutLateWriteResurrection() {
-        val directory =
-            Files.createTempDirectory(TestFiles.root.toPath(), "diagnostic-actions-").toFile()
-        try {
-            val store = MatchDiagnosticFileStore(directory)
-            val diagnostics = MatchDiagnostics()
-            val captures =
-                (0..2).map {
-                    val session = diagnostics.start(MatchTimingPolicy())
-                    diagnostics.stop(session.id)
-                    diagnostics.export(session.id).also(store::save)
-                }
-            val records = store.records()
-            records.first().file.resolve("attachment.txt").writeText("evidence")
-            store.delete(records.take(2))
-            assertEquals(listOf(records.last()), store.records())
-            captures.forEach(store::save)
-            assertEquals(
-                listOf(records.last()),
-                store.records(),
-                "Late stopped-capture updates must not recreate deleted records",
-            )
-            store.delete(listOf(records.last()))
-            assertTrue(store.records().isEmpty())
-        } finally {
-            directory.deleteRecursively()
-        }
-    }
-
-    @Test
-    fun sizeIncludesDiagnosticAndNestedAttachmentsWithoutReadingText() {
-        val directory =
-            Files.createTempDirectory(TestFiles.root.toPath(), "diagnostic-size-").toFile()
-        try {
-            val captureDirectory = directory.resolve("19700101000000Z-12345678").apply { mkdirs() }
-            val file =
-                captureDirectory.resolve("diagnostic.json").apply { writeText("节点".repeat(40_000)) }
-            val attachment = captureDirectory.resolve("attachments/data.bin")
+            val record = assertNotNull(store.save(capture))
+            assertEquals(1000L, record.id)
+            assertEquals(1000L, record.startedAt)
+            assertEquals(500L, record.stoppedAt)
+            assertEquals(2500L, record.durationMillis)
+            val file = store.directory(record.id).resolve("diagnostic.json")
+            assertEquals(file.length(), record.sizeBytes)
+            assertEquals(capture, Json.decodeFromString<MatchDiagnosticCapture>(file.readText()))
+            val attachment = file.parentFile.resolve("attachments/evidence.txt")
             attachment.parentFile.mkdirs()
-            attachment.writeBytes(ByteArray(1234))
-            val record = MatchDiagnosticFileStore(directory).records().single()
-            assertEquals(file.length() + attachment.length(), record.sizeBytes)
-            attachment.appendBytes(ByteArray(10))
+            attachment.writeText("evidence")
             assertEquals(
                 file.length() + attachment.length(),
-                MatchDiagnosticFileStore(directory).records().single().sizeBytes,
+                assertNotNull(store.save(capture)).sizeBytes,
             )
+            store.delete(record.id)
+            assertFalse(file.parentFile.exists())
+            assertNull(store.save(capture))
+            store.delete(record.id) // Retrying after database deletion failure is safe.
+            assertTrue(directory.listFiles()!!.isEmpty())
         } finally {
             directory.deleteRecursively()
         }
+    }
+
+    @Test
+    fun observedAppsSurviveEventEvictionAndRemainFrozenAfterStop() {
+        val diagnostics = MatchDiagnostics()
+        val session = diagnostics.start(MatchTimingPolicy(), capacity = 10)
+        val reducer =
+            li.gkd.app.matching.input.MatchInputReducer(
+                li.gkd.app.matching.input.ForegroundIdentity("first.app"),
+            )
+        repeat(25) { index ->
+            val input =
+                li.gkd.app.matching.input.MatchInput.Foreground(
+                    li.gkd.app.matching.input.ForegroundSource.entries.first(),
+                    li.gkd.app.matching.input.ForegroundIdentity("app.$index"),
+                )
+            val before = reducer.checkpoint(index.toLong(), index.toLong())
+            // Feed confirmed foreground decisions, independent of platform observation policy.
+            val decision =
+                li.gkd.app.matching.input.MatchInputDecision(
+                    true,
+                    "confirmed",
+                    before.foreground.let {
+                        li.gkd.app.matching.input.ForegroundDecision(
+                            confirmed = input.identity,
+                            pending = null,
+                            changed = true,
+                            reason =
+                                li.gkd.app.matching.input.ForegroundDecisionReason.entries.first(),
+                        )
+                    },
+                )
+            diagnostics.recordInput(
+                before,
+                li.gkd.app.matching.input.MatchInputRecord(
+                    index.toLong(),
+                    index.toLong(),
+                    null,
+                    MatchTimingPolicy(),
+                    input,
+                ),
+                decision,
+            )
+        }
+        diagnostics.stop(session.id)
+        val stopped = diagnostics.export(session.id)
+        assertTrue(stopped.session.dropped > 0)
+        assertEquals(listOf("first.app") + (0 until 25).map { "app.$it" }, stopped.session.appIds)
+        diagnostics.start(MatchTimingPolicy())
+        assertEquals(stopped.session.appIds, diagnostics.export(session.id).session.appIds)
     }
 
     @Test
@@ -296,7 +281,8 @@ class MatchDiagnosticFileStoreTest {
     fun allSevenCapturesSurviveAndFailureCanBeRetriedWithoutPartialJson() {
         val directory = Files.createTempDirectory(TestFiles.root.toPath(), "diagnostic-").toFile()
         try {
-            val diagnostics = MatchDiagnostics()
+            var wall = 0L
+            val diagnostics = MatchDiagnostics(wallTime = { wall++ })
             val store = MatchDiagnosticFileStore(directory)
             val ids =
                 (0..6).map {
@@ -306,7 +292,11 @@ class MatchDiagnosticFileStoreTest {
                     session.id
                 }
             assertEquals(7, directory.listFiles()!!.size)
-            assertTrue(directory.listFiles()!!.any { it.name.endsWith(ids.last().take(8)) })
+            assertTrue(
+                directory
+                    .resolve(diagnostics.export(ids.last()).session.startedAt.toString())
+                    .isDirectory,
+            )
             directory.listFiles()!!.forEach {
                 Json.decodeFromString<MatchDiagnosticCapture>(
                     it.resolve("diagnostic.json").readText(),

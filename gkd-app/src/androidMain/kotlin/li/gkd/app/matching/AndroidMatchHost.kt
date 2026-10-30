@@ -199,6 +199,8 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     private var eventConsumer: Job? = null
 
     fun onA11yEvent(event: AccessibilityEvent?) {
+        // Own content changes are ignored by matching; omit their diagnostic noise as well.
+        if (event?.eventType == CONTENT_CHANGED && event.packageName == META.appId) return
         if (event != null && coordinator.diagnostics.enabled) {
             coordinator.diagnostics.record(
                 0,

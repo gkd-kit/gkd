@@ -120,6 +120,8 @@ data class MatchDiagnosticState(
     val openOperations: List<MatchOperation> = emptyList(),
     val omittedOperations: Long = 0,
     val stoppedAt: Long? = null,
+    val durationMillis: Long? = null,
+    val appIds: List<String> = emptyList(),
     val operationsAtStop: List<MatchOperation> = emptyList(),
     val trackingComplete: Boolean = false,
 )
@@ -290,6 +292,7 @@ class MatchDiagnostics(
                     current.copy(
                         active = false,
                         stoppedAt = wallTime(),
+                        durationMillis = (nanoTime() - origin) / 1_000_000,
                         operationsAtStop = current.openOperations,
                     )
         }
@@ -297,6 +300,7 @@ class MatchDiagnostics(
     fun captureRuntime(value: MatchDebugSnapshot) =
         synchronized(lock) {
             if (enabled) {
+                value.foreground?.foreground?.confirmed?.appId?.let(::observeApp)
                 runtime = value
                 runtimeCapturedAt = wallTime()
             }
@@ -320,6 +324,8 @@ class MatchDiagnostics(
             val current = checkNotNull(state.value)
             if (current.inputCheckpoint == null)
                 state.value = current.copy(inputCheckpoint = before)
+            observeApp(before.foreground.confirmed.appId)
+            decision.foreground?.confirmed?.appId?.let(::observeApp)
             val key = "input" to decision.reason
             entries[key] = (entries[key] ?: 0) + 1
             record(0, MatchStage.Root, decision.reason, input = input, inputDecision = decision)
@@ -330,6 +336,7 @@ class MatchDiagnostics(
         if (!enabled) return
         synchronized(lock) {
             if (!enabled) return
+            observeApp(rules.topActivity.appId)
             if (lastRules !== rules) {
                 if (ruleSnapshots.size == 16) {
                     ruleSnapshots.removeFirst()
@@ -346,6 +353,13 @@ class MatchDiagnostics(
                 lastRules = rules
             }
             record(runId, MatchStage.Rule, "rule_snapshot", ruleSnapshotId = snapshotSequence)
+        }
+    }
+
+    private fun observeApp(appId: String) {
+        val current = checkNotNull(state.value)
+        if (appId.isNotEmpty() && appId !in current.appIds) {
+            state.value = current.copy(appIds = current.appIds + appId)
         }
     }
 

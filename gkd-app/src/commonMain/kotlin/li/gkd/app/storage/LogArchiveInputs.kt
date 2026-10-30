@@ -1,11 +1,11 @@
 package li.gkd.app.storage
 
 import java.io.File
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
-import li.gkd.app.matching.diagnostics.MatchDiagnosticRecord
+import li.gkd.db.Db
+import li.gkd.db.MatchDiagnosticRecord
 
 data class LogArchiveInputs(
     val metadata: Map<String, () -> String>,
@@ -14,16 +14,14 @@ data class LogArchiveInputs(
 
 expect fun logArchiveInputs(): LogArchiveInputs
 
-suspend fun createLogArchive(): File = createLogArchive(emptyList())
-
-suspend fun createLogArchive(diagnostics: List<MatchDiagnosticRecord>): File =
-    withContext(Dispatchers.IO) {
+/** An empty selection includes all saved diagnostic records. */
+suspend fun createLogArchive(diagnostics: List<MatchDiagnosticRecord> = emptyList()): File =
+    MatchDiagnosticFiles.withSavedFiles {
         val inputs = logArchiveInputs()
-        fun build() =
-            LogArchive.build(
-                inputs.metadata + ("log-writer.txt" to { LogUtils.status().toString() }),
-                inputs.additionalDirectories,
-                diagnostics.map { it.file },
-            )
-        if (diagnostics.isEmpty()) build() else MatchDiagnosticFiles.withSavedFiles { build() }
+        val records = diagnostics.ifEmpty { Db.matchDiagnosticRecordDao.observeAll().first() }
+        LogArchive.build(
+            inputs.metadata + ("log-writer.txt" to { LogUtils.status().toString() }),
+            inputs.additionalDirectories,
+            records.map { MatchDiagnosticFiles.directory(it) },
+        )
     }

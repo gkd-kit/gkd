@@ -17,4 +17,6 @@ suspend fun feedbackNotice(primary: Color): AnnotatedString = buildAnnotatedStri
     append(getString(Res.string.feedback_subscription_notice))
     withStyle(highlight) { append(getString(Res.string.feedback_app_issue_prefix)) }
     append(getString(Res.string.feedback_continue_suffix))
+    append("\n\n")
+    append(getString(Res.string.feedback_diagnostic_notice))
 }

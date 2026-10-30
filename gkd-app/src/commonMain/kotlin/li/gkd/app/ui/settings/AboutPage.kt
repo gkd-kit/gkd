@@ -50,6 +50,7 @@ import li.gkd.app.ui.component.GkTextMenu
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.icon.GkAnimatedLogoIcon
+import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.page.GkVersionInfoDialog
 import li.gkd.app.ui.page.feedbackNotice
 import li.gkd.app.ui.platform.LocalUiHost
@@ -197,6 +198,10 @@ fun AboutPage() {
                         mainVm.textDialog.showUrl(AppLinks.Issues)
                 }
             }
+            GkSettingItem(
+                title = stringResource(Res.string.crash_reports),
+                onClick = { mainVm.navigator.navigate(CrashReportRoute) },
+            )
             GkSettingItem(
                 title = stringResource(Res.string.logs_export),
                 imageVector = GkIcons.Share,

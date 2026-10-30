@@ -36,7 +36,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
   const tapText = async (text: string, name: string, long = false) => {
     const xml = await dump(name);
     const tags = [...xml.matchAll(/<node\b[^>]*>/g)].map(m => m[0]);
-    const matches = tags.filter(t => t.includes(`text="${text}"`) || t.includes(`content-desc="${text}"`) || (text.startsWith("ID · ") && t.includes(`text="${text} · `)));
+    const matches = tags.filter(t => t.includes(`text="${text}"`) || t.includes(`content-desc="${text}"`));
     assert.equal(matches.length, 1, `Expected unique visible ${text}`);
     const bounds = matches[0]!.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/)!.slice(1).map(Number);
     const x = String((bounds[0]! + bounds[2]!) / 2), y = String((bounds[1]! + bounds[3]!) / 2);
@@ -61,7 +61,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
     await writeFile(`${folder}/original.json`, JSON.stringify({ enableAutomator: original.enableAutomator, automatorMode: original.automatorMode }));
     await installGkdDebug(adb);
     if (appId) await enableDebugAccessibility(adb);
-    await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/1', '-n', `${pkg}/li.gkd.app.MainActivity`);
+    await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/matching-diagnostics', '-n', `${pkg}/li.gkd.app.MainActivity`);
     try {
       await pause(1200);
       await withExistingDebugConnection(adb, signal, async ({ port, token }) => {
@@ -86,19 +86,11 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
           assert.deepEqual(captures.map(([, bytes]) => JSON.parse(Buffer.from(bytes).toString()).session.id).sort(), [...ids].sort());
         };
         await screenshot('idle');
-        for (let attempt = 0; attempt < 5; attempt++) {
-          const xml = await dump(`settings-${attempt}`);
-          if (xml.includes('text="诊断采集"')) break;
-          const bounds = xml.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/)!.slice(1).map(Number);
-          const x = (bounds[0]! + bounds[2]!) / 2;
-          const height = bounds[3]! - bounds[1]!;
-          await adb('shell', 'input', 'swipe', String(x), String(bounds[1]! + height * 0.8), String(x), String(bounds[1]! + height * 0.3), '300');
-        }
-        await tapText('诊断采集', 'before-start');
+        await tapText('开启诊断', 'before-start');
         assert.notEqual((await request('debug/readiness')).session?.active, true, 'Opening notice must not start capture');
         await tapText('取消', 'notice-cancel');
         assert.notEqual((await request('debug/readiness')).session?.active, true, 'Cancelling notice must leave capture stopped');
-        await tapText('诊断采集', 'before-confirm');
+        await tapText('开启诊断', 'before-confirm');
         await screenshot('start-notice');
         await tapText('开始采集', 'notice-start');
         const ready = await until(() => request('debug/readiness'), r => r.session?.active === true, 'UI starts capture');
@@ -131,9 +123,8 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         await pause(500);
         await screenshot('notification');
         await openNotification('正在采集', '诊断采集', 'notification-open');
-        await screenshot('notification-advanced');
-        // Re-enter the existing Advanced entry from its records child.
-        await tapText('诊断记录', 'open-records-while-capturing');
+        await screenshot('notification-diagnostics');
+        // Re-enter the existing diagnostic page through its notification.
         await adb('shell', 'cmd', 'statusbar', 'expand-notifications');
         await pause(500);
         await openNotification('正在采集', '诊断采集', 'notification-from-records');
@@ -158,7 +149,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         const capture = await request(`debug/sessions/${id}/export`, {});
         assert.equal(capture.session.id, id);
         const files = (await adb('shell', 'ls', `/sdcard/Android/data/${pkg}/files/matching-diagnostics`)).toString();
-        const captureDirectory = files.trim().split(/\s+/).find(name => name.endsWith(`-${id.slice(0, 8)}`));
+        const captureDirectory = files.trim().split(/\s+/).find(name => name === String(capture.session.startedAt));
         assert.ok(captureDirectory);
         const savedCapture = JSON.parse((await adb('shell', 'cat', `/sdcard/Android/data/${pkg}/files/matching-diagnostics/${captureDirectory}/diagnostic.json`)).toString());
         assert.equal(savedCapture.session.id, id);
@@ -169,14 +160,16 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         await adb('shell', 'cmd', 'statusbar', 'expand-notifications');
         await pause(500);
         await screenshot('saved-notification');
-        await openNotification('已保存诊断记录', '诊断记录', 'saved-notification-open');
+        await openNotification('已保存诊断记录', '诊断采集', 'saved-notification-open');
         await pause(700);
         const savedUi = await dump('saved-ui');
-        assert.ok(savedUi.includes('诊断记录') && !savedUi.includes('text="诊断采集"'), 'Record page must contain records without the collection switch');
+        assert.ok(savedUi.includes('text="诊断采集"'), 'Diagnostic page must contain capture controls');
         assert.ok(!savedUi.includes('当前引擎') && !savedUi.includes('运行记录'), 'Technical details must not appear on the user page');
-        assert.ok(savedUi.includes(id.slice(0, 8)), 'Saved capture must appear in the record list');
+        const cardTime = async (startedAt: number) => (await adb('shell', 'date', '-d', `@${Math.floor(startedAt / 1000)}`, "'+%m-%d %H:%M:%S'")).toString().trim();
+        const savedTime = await cardTime(capture.session.startedAt);
+        assert.ok(savedUi.includes(savedTime), 'Saved capture must appear in the record list');
         await screenshot('saved');
-        await tapText(`ID · ${id.slice(0, 8)}`, 'open-record');
+        await tapText(savedTime, 'open-record');
         await pause(500);
         assert.ok((await dump('record-preview')).includes('分享'));
         await screenshot('record-preview');
@@ -188,26 +181,25 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         assert.match(await dump('share-record-ui'), /ResolverActivity|ChooserActivity|导出诊断|分享|发送/);
         await writeFile(`${folder}/share-record-window.txt`, (await adb('shell', 'dumpsys', 'window', 'windows')).toString());
         await adb('shell', 'input', 'keyevent', 'KEYCODE_BACK');
-        await tapText(`ID · ${id.slice(0, 8)}`, 'reopen-single');
+        await tapText(savedTime, 'reopen-single');
         await tapText('删除', 'delete-single');
         assert.match(await dump('delete-single-confirm'), /删除选中的 1 条诊断记录/);
         await tapText('删除', 'delete-single-confirm-action');
-        assert.ok(!(await dump('single-deleted')).includes(`ID · ${id.slice(0, 8)}`));
+        assert.ok(!(await dump('single-deleted')).includes(savedTime));
         const timed = await request('debug/sessions', { recordSystem: true });
         await pause(61_000);
         assert.equal((await request(`debug/sessions/${timed.id}`)).active, true, 'Capture must remain active after 60 seconds');
-        await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/1?section=diagnostics', '-n', `${pkg}/li.gkd.app.MainActivity`);
-        await tapText('诊断采集', 'page-stop');
+        await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/matching-diagnostics', '-n', `${pkg}/li.gkd.app.MainActivity`);
+        await tapText('关闭诊断', 'page-stop');
         await until(async () => (await adb('shell', 'dumpsys', 'activity', 'services', service)).toString(), s => !s.includes('isForeground=true'), 'manual stop removes notification');
         const notifications = (await adb('shell', 'dumpsys', 'notification', '--noredact')).toString().split('Historical notifications')[0]!;
         assert.ok(!notifications.includes('android.title=String (已保存诊断记录)'), 'Page stop must not post a completion notification');
-        await tapText('诊断记录', 'records-after-page-stop');
         const extra = await request('debug/sessions', { recordSystem: true });
         await request(`debug/sessions/${extra.id}/stop`, {});
         await until(() => request('debug/readiness'), r => r.session?.active === false, 'second stopped record');
         await pause(500);
-        await tapText(`ID · ${timed.id.slice(0, 8)}`, 'select-first', true);
-        await tapText(`ID · ${extra.id.slice(0, 8)}`, 'select-second');
+        await tapText(await cardTime(timed.startedAt), 'select-first', true);
+        await tapText(await cardTime(extra.startedAt), 'select-second');
         assert.match(await dump('selected-two'), /已选 2 项/);
         await screenshot('selected-two');
         await tapText('更多', 'batch-menu');

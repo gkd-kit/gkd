@@ -11,8 +11,7 @@ enum class AdvancedSection(val linkValue: String) {
     Http("http"),
     Activity("activity"),
     Event("event"),
-    Track("track"),
-    Diagnostics("diagnostics");
+    Track("track");
 
     val uri: String
         get() = "gkd://page/1?section=$linkValue"

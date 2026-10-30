@@ -39,13 +39,13 @@ import li.gkd.app.ui.navigation.AdvancedPageRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.KeepAliveRoute
+import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.option.DarkThemeOption
 import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.page.GkBackupDialogs
 import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.dynamicColorAvailable
-import li.gkd.app.ui.platform.privilegeAvailable
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
 import org.jetbrains.compose.resources.getString
@@ -65,7 +65,6 @@ fun settingsPage(
             mutableStateOf(store.enableDarkTheme)
         }
     var themeUpdateJob by remember { mutableStateOf<Job?>(null) }
-    val privilegeAvailable = privilegeAvailable()
     val backupDialog by vm.backupDialog.collectAsStateWithLifecycle()
     GkBackupDialogs(
         dialog = backupDialog,
@@ -81,7 +80,10 @@ fun settingsPage(
                 !enabled ||
                     mainVm.dialogRequests.confirm(
                         title = getString(Res.string.hide_from_recents),
-                        text = getString(Res.string.hide_from_recents_warning),
+                        text =
+                            getString(Res.string.hide_from_recents_description) +
+                                "\n\n" +
+                                getString(Res.string.hide_from_recents_warning),
                         confirmText = getString(Res.string.action_continue),
                     )
             )
@@ -172,7 +174,6 @@ fun settingsPage(
 
                 GkTextSwitch(
                     title = stringResource(Res.string.hide_from_recents),
-                    subtitle = stringResource(Res.string.hide_from_recents_description),
                     checked = store.excludeFromRecents,
                     onCheckedChange = ::setExcludeFromRecents,
                 )
@@ -192,13 +193,7 @@ fun settingsPage(
                 }
                 GkTextSwitch(
                     title = stringResource(Res.string.service_partial_disable),
-                    subtitle =
-                        if (store.enableBlockA11yAppList && !privilegeAvailable)
-                            stringResource(Res.string.privilege_service_disconnected)
-                        else stringResource(Res.string.service_partial_disable_description),
                     checked = store.enableBlockA11yAppList,
-                    onClick = { mainVm.navigator.navigate(BlockA11ySetupRoute) },
-                    onClickLabel = stringResource(Res.string.partial_disable_setup_open),
                     onCheckedChange = {
                         if (it) {
                             mainVm.navigator.navigate(BlockA11ySetupRoute)
@@ -261,18 +256,21 @@ fun settingsPage(
                 )
 
                 GkSettingItem(
+                    title = stringResource(Res.string.backup_restore),
+                    onClick = {
+                        vm.setBackupDialog(BackupDialog.Main)
+                    },
+                )
+                GkSettingItem(
                     title = stringResource(Res.string.advanced_settings),
                     onClick = {
                         mainVm.navigator.navigate(AdvancedPageRoute)
                     },
                 )
                 GkSettingItem(
-                    title = stringResource(Res.string.backup_restore),
-                    onClick = {
-                        vm.setBackupDialog(BackupDialog.Main)
-                    },
+                    title = stringResource(Res.string.advanced_logs_diagnostics),
+                    onClick = { mainVm.navigator.navigate(MatchDebugRoute) },
                 )
-
                 GkSettingItem(
                     title = stringResource(Res.string.about_title),
                     onClick = {

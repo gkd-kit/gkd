@@ -8,10 +8,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
-import li.gkd.app.matching.diagnostics.MatchDiagnosticFileStore
+import kotlinx.coroutines.flow.first
 import li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.input.MatchTimingPolicy
+import li.gkd.db.Db
 
 class LogArchiveChecks {
     fun archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance() {
@@ -34,7 +35,7 @@ class LogArchiveChecks {
                 .writeText("{\"reason\":\"external_null_fallback\"}")
             val captureDirectory =
                 layout.matchingDiagnostics.listFiles()!!.single {
-                    it.name.endsWith(session.id.take(8))
+                    it.name == session.startedAt.toString()
                 }
             captureDirectory
                 .resolve("attachments")
@@ -42,9 +43,11 @@ class LogArchiveChecks {
                 .resolve("evidence.txt")
                 .writeText("evidence")
             val record =
-                MatchDiagnosticFileStore(layout.matchingDiagnostics).records().single {
-                    it.id == session.id.take(8)
-                }
+                kotlinx.coroutines
+                    .runBlocking { Db.matchDiagnosticRecordDao.observeAll().first() }
+                    .single {
+                        it.id == session.startedAt
+                    }
             val second = diagnostics.start(MatchTimingPolicy())
             diagnostics.stop(second.id)
             MatchDiagnosticFiles.enqueue(diagnostics.export(second.id))
@@ -59,12 +62,12 @@ class LogArchiveChecks {
                 )
                 assertTrue(names.any { it.startsWith("metadata/") })
                 assertTrue(names.any { it.endsWith("event.txt") })
-                assertFalse(names.any { it.contains(second.id.take(8)) })
+                assertFalse(names.any { it.contains("/${second.startedAt}/") })
             }
             val selectedRecords =
                 kotlinx.coroutines
-                    .runBlocking { MatchDiagnosticFiles.records() }
-                    .filter { it.id in setOf(record.id, second.id.take(8)) }
+                    .runBlocking { Db.matchDiagnosticRecordDao.observeAll().first() }
+                    .filter { it.id in setOf(record.id, second.startedAt) }
             val batchArchive = kotlinx.coroutines.runBlocking { createLogArchive(selectedRecords) }
             ZipFile(batchArchive).use { zip ->
                 val names = zip.entries().asSequence().map { it.name }.toList()
@@ -73,6 +76,28 @@ class LogArchiveChecks {
                     names.count {
                         it.startsWith("matching-diagnostics/") && it.endsWith("/diagnostic.json")
                     },
+                )
+            }
+            // About-page export includes every saved capture and its attachments.
+            val allArchive = kotlinx.coroutines.runBlocking { createLogArchive() }
+            ZipFile(allArchive).use { zip ->
+                assertTrue(
+                    zip.getEntry("matching-diagnostics/${session.startedAt}/diagnostic.json") !=
+                        null,
+                )
+                assertTrue(
+                    zip.getEntry("matching-diagnostics/${second.startedAt}/diagnostic.json") !=
+                        null,
+                )
+                assertEquals(
+                    "evidence",
+                    zip.getInputStream(
+                            zip.getEntry(
+                                "matching-diagnostics/${session.startedAt}/attachments/evidence.txt",
+                            ),
+                        )
+                        .bufferedReader()
+                        .readText(),
                 )
             }
             val previousNormal = layout.tempCache.listFiles().orEmpty().toSet()
@@ -106,9 +131,7 @@ class LogArchiveChecks {
             }
             kotlinx.coroutines.runBlocking {
                 val files = MatchDiagnosticFiles
-                val beforeDelete = files.changes.value
                 files.delete(listOf(record))
-                assertTrue(files.changes.value > beforeDelete)
                 assertFalse(captureDirectory.exists())
                 files.enqueue(diagnostics.export(session.id))
                 files.flush()
@@ -116,7 +139,9 @@ class LogArchiveChecks {
                     captureDirectory.exists(),
                     "Queued updates must not restore a deleted record",
                 )
-                assertFalse(files.records().any { it.file == captureDirectory })
+                assertFalse(
+                    Db.matchDiagnosticRecordDao.observeAll().first().any { it.id == record.id },
+                )
             }
             val staging = layout.tempCache.listFiles()!!.single { it !in previousNormal }
             assertEquals("[]", staging.resolve("metadata/apps.json").readText())

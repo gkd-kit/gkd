@@ -10,7 +10,7 @@ import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.migration.AutoMigrationSpec
 
 @Database(
-    version = 18,
+    version = 19,
     entities =
         [
             SubsItem::class,
@@ -24,6 +24,7 @@ import androidx.room3.migration.AutoMigrationSpec
             SubsAppConfig::class,
             AppLastVisit::class,
             A11yEventLog::class,
+            MatchDiagnosticRecord::class,
         ],
     autoMigrations =
         [
@@ -43,10 +44,13 @@ import androidx.room3.migration.AutoMigrationSpec
             AutoMigration(from = 15, to = 16, spec = Migration15To16Spec::class),
             AutoMigration(from = 16, to = 17),
             AutoMigration(from = 17, to = 18),
+            AutoMigration(from = 18, to = 19),
         ],
 )
 @ConstructedBy(AppDbConstructor::class)
 abstract class AppDb : RoomDatabase() {
+    abstract fun matchDiagnosticRecordDao(): MatchDiagnosticRecordDao
+
     abstract fun subsItemDao(): SubsItem.SubsItemDao
 
     abstract fun snapshotDao(): Snapshot.SnapshotDao

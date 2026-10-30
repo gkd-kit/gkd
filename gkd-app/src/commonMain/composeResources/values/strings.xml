@@ -122,7 +122,7 @@
     <string name="activity_service_label">界面服务</string>
     <string name="activity_switch_logs">界面切换日志</string>
     <string name="add_success">添加成功</string>
-    <string name="advanced_settings">高级设置</string>
+    <string name="advanced_settings">工具</string>
     <string name="apk_continue_suffix">，或点击下方继续操作</string>
     <string name="apk_download_official_link">建议点此从官网下载</string>
     <string name="apk_google_services_required">当前导出的 APK 文件只能在已安装 Google 框架的设备上才能使用，否则安装打开后会提示报错，</string>
@@ -709,7 +709,6 @@
     <string name="service_launch_failed">%1$s启动服务失败: %2$s</string>
     <string name="service_not_connected">服务未连接</string>
     <string name="service_partial_disable">局部关闭</string>
-    <string name="service_partial_disable_description">白名单内关闭服务</string>
     <string name="service_partially_disabled_detail">局部关闭 · %1$s</string>
     <string name="service_started">%1$s已启动</string>
     <string name="service_state">服务状态</string>
@@ -999,7 +998,6 @@
     <string name="partial_disable_background_detail">服务关闭后，应用若被系统暂停或结束，可能无法恢复服务</string>
     <string name="partial_disable_limits_title">其他限制</string>
     <string name="partial_disable_limits_detail">其他无障碍应用可能影响效果；若服务多次启动后不工作，建议停用此功能</string>
-    <string name="partial_disable_setup_open">打开局部关闭引导</string>
     <string name="rule_control_view">查看控制</string>
     <string name="rule_control_title">控制关系</string>
     <string name="rule_control_legend">实线：当前采用 · 虚线：未采用\n点击节点查看来源；此图只表示开关与适用限制，不表示正在运行</string>
@@ -1123,9 +1121,10 @@
     <string name="match_debug_service_busy">诊断正在采集或保存，请等待完成</string>
     <string name="match_debug_service_failed">诊断服务未能启动，采集未开启</string>
     <string name="match_debug_notification_required">请先允许通知，以便在通知栏停止诊断采集</string>
-    <string name="match_debug_notification_help">点击查看诊断设置，可在通知中停止采集</string>
+    <string name="match_debug_notification_help">点击查看诊断，可在通知中停止采集</string>
     <string name="match_debug_saved_notification_help">点击查看诊断记录</string>
     <string name="match_debug_saving">正在保存诊断…</string>
+    <string name="match_debug_idle">未开始</string>
     <string name="match_debug_collect">诊断采集</string>
     <string name="match_debug_intro">记录运行过程，帮助排查问题</string>
     <string name="match_debug_records">诊断记录</string>
@@ -1137,4 +1136,15 @@
     <string name="match_debug_start_title">开启诊断采集</string>
     <string name="match_debug_start_description">记录规则匹配、操作结果和耗时，用于排查问题。\n开启后复现问题，完成后关闭采集，记录会自动保存。</string>
     <string name="match_debug_start_confirm">开始采集</string>
+    <string name="match_debug_no_apps">未检测到应用</string>
+    <string name="match_debug_seconds">%1$s秒</string>
+    <string name="match_debug_minutes">%1$s分%2$s秒</string>
+    <string name="match_debug_hours">%1$s时%2$s分%3$s秒</string>
+    <string name="match_debug_uninstalled_apps">已卸载的 %1$s 个应用</string>
+    <string name="match_debug_range_end">→ %1$s</string>
+    <string name="match_debug_time_range_description">开始时间：%1$s；结束时间：%2$s；持续时长：%3$s</string>
+    <string name="match_debug_elapsed_description">已采集 %1$s</string>
+    <string name="match_debug_help_title">诊断说明</string>
+    <string name="match_debug_help_description">诊断会记录应用运行时的规则匹配、操作结果和耗时，帮助排查规则未生效、误触或执行缓慢等问题。\n\n使用方法\n1. 开始采集。\n2. 前往出现问题的应用，重现问题。\n3. 返回停止采集，或在通知中停止。\n4. 点击诊断记录的「分享」，导出附带所选记录的日志，发给开发者。也可以通过「关于 → 导出日志」，导出包含所有已保存诊断记录的日志。\n\n反馈时请同时说明预期行为、实际表现和复现步骤，方便定位原因。\n\n日志可能包含应用信息和界面内容，请确认后再分享。</string>
+    <string name="feedback_diagnostic_notice">如果问题可以重现，建议先在「设置 → 诊断」中采集并停止，再通过「关于 → 导出日志」导出包含诊断记录的日志。反馈时请附上日志，并说明复现步骤、预期行为和实际表现。</string>
 </resources>

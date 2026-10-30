@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.SyncProblem
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.filled.ViewStream
@@ -190,6 +191,9 @@ object GkIcons {
 
     val TileEvent
         get() = SharedTileEvent
+
+    val Stop
+        get() = Icons.Filled.Stop
 
     val PlayArrow
         get() = Icons.Filled.PlayArrow

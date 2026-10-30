@@ -30,15 +30,17 @@ sealed interface GkdLink {
                                 )
 
                             "/1" ->
-                                Page(
-                                    AdvancedPageRoute,
-                                    section =
-                                        query("section")?.let { value ->
-                                            AdvancedSection.entries.firstOrNull {
-                                                it.linkValue == value
-                                            }
-                                        },
-                                )
+                                if (query("section") == "diagnostics") Page(MatchDebugRoute)
+                                else
+                                    Page(
+                                        AdvancedPageRoute,
+                                        section =
+                                            query("section")?.let { value ->
+                                                AdvancedSection.entries.firstOrNull {
+                                                    it.linkValue == value
+                                                }
+                                            },
+                                    )
                             "/2" -> Page(SnapshotPageRoute)
                             "/matching-diagnostics" -> Page(MatchDebugRoute)
                             "/3",

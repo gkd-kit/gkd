@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="match_debug_seconds">%1$s s</string>
+    <string name="match_debug_minutes">%1$s min %2$s s</string>
+    <string name="match_debug_hours">%1$s h %2$s min %3$s s</string>
+    <string name="match_debug_range_end">→ %1$s</string>
+    <string name="match_debug_time_range_description">Start time: %1$s; End time: %2$s; Duration: %3$s</string>
+    <string name="match_debug_idle">Not started</string>
+    <string name="match_debug_elapsed_description">Captured for %1$s</string>
+    <string name="advanced_settings">Tools</string>
+</resources>

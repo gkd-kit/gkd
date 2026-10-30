@@ -98,7 +98,7 @@ object NotificationCatalog {
                 (if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing)
                     .getSync(),
             text = if (saving) null else Res.string.match_debug_notification_help.getSync(),
-            uri = AdvancedSection.Diagnostics.uri,
+            uri = "gkd://page/matching-diagnostics",
             stopService = if (saving) null else MatchDiagnosticService::class,
         )
 

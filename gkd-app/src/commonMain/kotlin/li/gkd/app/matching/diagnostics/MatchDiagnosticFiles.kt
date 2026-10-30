@@ -3,7 +3,6 @@ package li.gkd.app.matching.diagnostics
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.time.ZoneOffset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,51 +13,21 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import li.gkd.app.app.applicationScope
 import li.gkd.app.logging.LogUtils
-import li.gkd.app.storage.ExportFileNames
 import li.gkd.app.storage.appStorage
 import li.gkd.app.util.JsonUtils
+import li.gkd.db.Db
+import li.gkd.db.MatchDiagnosticRecord
 
 class MatchDiagnosticFileStore(private val directory: File) {
-    private val deleted = mutableSetOf<String>()
+    private val deleted = mutableSetOf<Long>()
 
-    fun records(): List<MatchDiagnosticRecord> =
-        directory
-            .listFiles()
-            .orEmpty()
-            .mapNotNull { file ->
-                val name = file.name
-                if (file.isDirectory && file.resolve("diagnostic.json").isFile) {
-                    val split = name.indexOf("Z-")
-                    if (split < 0) return@mapNotNull null
-                    val startedAt =
-                        java.time.LocalDateTime.parse(
-                                name.substring(0, split),
-                                java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"),
-                            )
-                            .toInstant(ZoneOffset.UTC)
-                            .toEpochMilli()
-                    MatchDiagnosticRecord(
-                        file,
-                        name.substring(split + 2),
-                        startedAt,
-                        file
-                            .walkTopDown()
-                            .onFail { _, error -> throw error }
-                            .filter { it.isFile }
-                            .sumOf { it.length() },
-                    )
-                } else null
-            }
-            .sortedByDescending { it.startedAt }
+    fun directory(id: Long): File = directory.resolve(id.toString())
 
-    fun save(capture: MatchDiagnosticCapture) {
+    fun save(capture: MatchDiagnosticCapture): MatchDiagnosticRecord? {
         check(!capture.session.active)
         val session = capture.session
-        val captureDirectory =
-            directory.resolve(
-                "${ExportFileNames.timestamp(session.startedAt, ZoneOffset.UTC)}Z-${session.id.take(8)}",
-            )
-        if (captureDirectory.name in deleted) return
+        val captureDirectory = directory(session.startedAt)
+        if (session.startedAt in deleted) return null
         check(captureDirectory.isDirectory || captureDirectory.mkdirs())
         val target = captureDirectory.resolve("diagnostic.json")
         val temporary = Files.createTempFile(captureDirectory.toPath(), "capture-", ".tmp")
@@ -68,26 +37,28 @@ class MatchDiagnosticFileStore(private val directory: File) {
         } finally {
             Files.deleteIfExists(temporary)
         }
+        return MatchDiagnosticRecord(
+            id = session.startedAt,
+            startedAt = session.startedAt,
+            stoppedAt = checkNotNull(session.stoppedAt),
+            durationMillis = checkNotNull(session.durationMillis),
+            sizeBytes =
+                captureDirectory
+                    .walkTopDown()
+                    .onFail { _, error -> throw error }
+                    .filter { it.isFile }
+                    .sumOf { it.length() },
+            appIds = session.appIds,
+        )
     }
 
-    fun delete(records: List<MatchDiagnosticRecord>) {
-        records.forEach { record ->
-            require(record.file.parentFile == directory)
-            check(record.file.deleteRecursively()) {
-                "Cannot remove diagnostic: ${record.file.name}"
-            }
-            // Physical API completion can still enqueue an updated stopped capture.
-            deleted.add(record.file.name)
-        }
+    fun delete(id: Long) {
+        val file = directory(id)
+        check(file.deleteRecursively()) { "Cannot remove diagnostic: $id" }
+        // Physical API completion can still enqueue an updated stopped capture.
+        deleted.add(id)
     }
 }
-
-data class MatchDiagnosticRecord(
-    val file: File,
-    val id: String,
-    val startedAt: Long,
-    val sizeBytes: Long,
-)
 
 data class MatchDiagnosticSaveState(
     val id: String,
@@ -101,8 +72,6 @@ object MatchDiagnosticFiles {
     private val pending = ArrayDeque<MatchDiagnosticCapture>()
     private val writing = Mutex()
     private val store by lazy { MatchDiagnosticFileStore(appStorage().matchingDiagnostics) }
-    val changes: StateFlow<Long>
-        field = MutableStateFlow(0L)
     val state: StateFlow<Map<String, MatchDiagnosticSaveState>>
         field = MutableStateFlow(emptyMap())
 
@@ -127,29 +96,24 @@ object MatchDiagnosticFiles {
         }
     }
 
-    suspend fun records(): List<MatchDiagnosticRecord> =
-        withContext(Dispatchers.IO) {
-            writing.withLock { store.records() }
-        }
+    fun directory(record: MatchDiagnosticRecord): File = store.directory(record.id)
 
     suspend fun delete(records: List<MatchDiagnosticRecord>) = withSavedFiles {
-        try {
-            store.delete(records)
-        } finally {
-            changes.value++
+        records.forEach { record ->
+            store.delete(record.id)
+            Db.matchDiagnosticRecordDao.delete(record.id)
         }
     }
 
     suspend fun flush() = withSavedFiles {}
 
-    suspend fun <T> withSavedFiles(block: () -> T): T =
+    suspend fun <T> withSavedFiles(block: suspend () -> T): T =
         withContext(Dispatchers.IO) {
             writing.withLock {
                 while (true) {
                     val capture = synchronized(lock) { pending.firstOrNull() } ?: break
                     try {
-                        store.save(capture)
-                        changes.value++
+                        store.save(capture)?.let { Db.matchDiagnosticRecordDao.upsert(it) }
                     } catch (error: Exception) {
                         synchronized(lock) {
                             updateState(

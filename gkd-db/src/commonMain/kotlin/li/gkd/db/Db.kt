@@ -46,6 +46,9 @@ object Db {
     val a11yEventLogDao
         get() = database.a11yEventLogDao()
 
+    val matchDiagnosticRecordDao
+        get() = database.matchDiagnosticRecordDao()
+
     fun close() = database.close()
 
     suspend fun <T> withTransaction(block: suspend () -> T): T = database.withWriteTransaction {

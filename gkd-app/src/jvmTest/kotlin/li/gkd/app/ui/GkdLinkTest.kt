@@ -25,8 +25,8 @@ class GkdLinkTest {
     }
 
     @Test
-    fun diagnosticNotificationLinkTargetsAdvancedSectionWithoutChangingExistingLinks() {
-        val target = GkdLink.Page(AdvancedPageRoute, AdvancedSection.Diagnostics)
+    fun legacyDiagnosticNotificationTargetsDiagnosticPage() {
+        val target = GkdLink.Page(MatchDebugRoute)
         assertEquals(target, GkdLink.parse("gkd://page/1?section=diagnostics"))
         assertEquals(target, GkdLink.parse("gkd://page/1?section=%64iagnostics"))
         assertEquals(

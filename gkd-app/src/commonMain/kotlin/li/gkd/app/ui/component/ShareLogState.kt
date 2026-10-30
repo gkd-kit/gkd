@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.gkd.app.matching.diagnostics.MatchDiagnosticRecord
 import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.storage.StorageMaintenance
@@ -18,6 +17,7 @@ import li.gkd.app.ui.share.shareArchive
 import li.gkd.app.ui.upload.GithubUploadItem
 import li.gkd.app.ui.upload.GithubUploadState
 import li.gkd.app.util.ToastUtils
+import li.gkd.db.MatchDiagnosticRecord
 import org.jetbrains.compose.resources.getString
 
 class ShareLogState(
