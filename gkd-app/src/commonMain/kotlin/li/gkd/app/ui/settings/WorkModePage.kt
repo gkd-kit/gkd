@@ -49,7 +49,6 @@ import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.AutomationScopeAppListRoute
-import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.RefreshPermissions
@@ -232,12 +231,6 @@ fun WorkModePage() {
                     ) {
                         Text(
                             text = stringResource(Res.string.automation_scoped),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                    TextButton(onClick = { mainVm.navigator.navigate(KeepAliveRoute) }) {
-                        Text(
-                            text = stringResource(Res.string.keep_alive_strategy),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
