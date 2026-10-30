@@ -322,7 +322,9 @@ private fun DebugServerAddresses(
                             .clickable(
                                 onClickLabel =
                                     stringResource(Res.string.debug_view_addresses, address),
-                                onClick = { onAddressClick("http://${hosts[index]}:$port") },
+                                onClick = {
+                                    onAddressClick(AppLinks.localServer(hosts[index], port))
+                                },
                             )
                             .padding(horizontal = horizontalPadding, vertical = 6.dp),
                 )

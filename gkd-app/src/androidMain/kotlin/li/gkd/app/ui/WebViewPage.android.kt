@@ -36,6 +36,7 @@ import li.gkd.app.MainActivity
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.logging.logUrl
 import li.gkd.app.model.WebViewEnvironment
+import li.gkd.app.network.AppLinks
 import li.gkd.app.network.NetworkClients
 import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkWebViewErrorContent
@@ -200,12 +201,9 @@ private val chromeVersion by lazy {
     } ?: 0
 }
 
-private const val DOC_CONFIG_URL =
-    "https://registry.npmmirror.com/@gkd-kit/docs/latest/files/_config.json"
-
 private const val DEBUG_JS_TEXT =
     """
-<script src="https://registry.npmmirror.com/eruda/latest/files"></script>
+<script src="${AppLinks.ErudaScript}"></script>
 <script>eruda.init();</script>
 """
 
@@ -315,7 +313,8 @@ private class GkdWebViewClient(private val state: BrowserState) : WebViewClient(
             ) {
                 LogUtils.d { "${request.method} ${logUrl(request.url.toString())}" }
                 runBlocking(Dispatchers.IO) {
-                        val docConfig = NetworkClients.client.get(DOC_CONFIG_URL).body<DocConfig>()
+                        val docConfig =
+                            NetworkClients.client.get(AppLinks.DocConfig).body<DocConfig>()
                         val path = request.url.path.let { if (it.isNullOrEmpty()) "/" else it }
                         val textUrl =
                             docConfig.htmlUrlMap[path]?.let { docConfig.mirrorBaseUrl + it }

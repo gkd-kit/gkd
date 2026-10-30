@@ -31,6 +31,6 @@ fun createSnapshotUploadItem(
             SnapshotStore.deleteArchive(it)
             prepared = null
         },
-        showHref = { AppLinks.ImportSnapshot + it.id },
+        showHref = { AppLinks.snapshot(it.id) },
     )
 }

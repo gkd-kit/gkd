@@ -13,6 +13,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
+import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.ui.component.GkAlertDialog
 import li.gkd.app.ui.component.GkIconButton
@@ -63,7 +64,7 @@ fun PrivilegeServiceInfoDialog(onDismissRequest: () -> Unit) {
                             append(stringResource(Res.string.privilege_service_project_prefix))
                             withLink(
                                 LinkAnnotation.Url(
-                                    url = "https://github.com/priv-kit/priv-kit",
+                                    url = AppLinks.PrivilegeRepository,
                                     styles = linkStyles,
                                 ),
                             ) {

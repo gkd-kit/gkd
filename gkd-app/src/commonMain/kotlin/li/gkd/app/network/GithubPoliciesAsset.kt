@@ -8,5 +8,5 @@ data class GithubPoliciesAsset(
     val href: String,
 ) {
     val shortHref: String
-        get() = AppLinks.FileShort + id
+        get() = AppLinks.file(id)
 }

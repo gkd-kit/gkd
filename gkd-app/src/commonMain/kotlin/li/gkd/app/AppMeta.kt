@@ -16,11 +16,7 @@ data class AppMeta(
     val appId: String,
     val appName: String,
 ) {
-    val commitUrl =
-        "${AppLinks.Repository}/"
-            .run {
-                plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")
-            }
+    val commitUrl = AppLinks.revision(commitId, tagName)
     val isGkdChannel
         get() = channel == "gkd"
 

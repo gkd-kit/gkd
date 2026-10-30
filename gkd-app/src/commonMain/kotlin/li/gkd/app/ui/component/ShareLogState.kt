@@ -6,6 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.gkd.app.matching.diagnostics.MatchDiagnosticRecord
+import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
@@ -38,7 +39,7 @@ class ShareLogState(
             GithubUploadItem(
                 label = getString(Res.string.logs_title),
                 getFile = { createLogArchive(diagnostics) },
-                showHref = { "http://i.gkd.li/log/${it.id}" },
+                showHref = { AppLinks.log(it.id) },
                 releaseFile = { StorageMaintenance.deleteSharedFile(appStorage(), it) },
             )
         if (!githubUpload.startTask(item)) ToastUtils.show(getString(Res.string.upload_busy))

@@ -158,7 +158,7 @@ class DesktopDebugService(
         server = candidate
         update(ServicePhase.Running)
         println(
-            "GKD debug service: http://${Constants.loopbackHost}:$port; connection: ${connectionFile.absolutePath}",
+            "GKD debug service: ${AppLinks.localServer(Constants.loopbackHost, port)}; connection: ${connectionFile.absolutePath}",
         )
     }
 

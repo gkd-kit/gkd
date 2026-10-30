@@ -96,8 +96,7 @@ fun GkSnapshotActionsSheet(
                 trailingText = snapshot.githubAssetId?.let { "#$it" },
                 onClick = {
                     val assetId = snapshot.githubAssetId
-                    if (assetId == null) perform(onUpload)
-                    else copyText(AppLinks.ImportSnapshot + assetId)
+                    if (assetId == null) perform(onUpload) else copyText(AppLinks.snapshot(assetId))
                 },
             )
             SnapshotActionRow(

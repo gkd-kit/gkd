@@ -27,6 +27,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import li.gkd.app.DesktopProfile
 import li.gkd.app.DesktopStorage
+import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.component.GkWebViewErrorContent
@@ -79,7 +80,7 @@ actual fun WebViewPage(
         val active by rememberUpdatedState(mainVm.navigator.topEntry === entry && running)
         val bindings =
             rememberWebViewBindings(bridge, route) {
-                allowOrigin("https://gkd.li")
+                allowOrigin(AppLinks.Home)
                 // The selected document can read the same read-only environment API.
                 runCatching { URI(route.initUrl) }
                     .getOrNull()
@@ -219,7 +220,7 @@ actual fun WebViewPage(
                         TextButton(
                             onClick = {
                                 SystemActionFeedback.openExternal(
-                                    "https://developer.microsoft.com/microsoft-edge/webview2/",
+                                    AppLinks.WebView2Download,
                                 )
                             },
                         ) {

@@ -155,7 +155,7 @@ fun SnapshotPage() {
     val pendingUploads = selectedSnapshots.filter { it.githubAssetId == null }
     fun showLinks(targets: List<Snapshot>) {
         val links = targets.mapNotNull { snapshot ->
-            snapshot.githubAssetId?.let { AppLinks.ImportSnapshot + it }
+            snapshot.githubAssetId?.let { AppLinks.snapshot(it) }
         }
         if (links.isNotEmpty()) mainVm.textDialog.showText(links.joinToString("\n"))
     }

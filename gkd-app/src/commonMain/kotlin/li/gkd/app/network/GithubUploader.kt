@@ -29,8 +29,8 @@ private val json = Json {
 
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
     header("Cookie", cookie)
-    header("Referer", "https://github.com/gkd-kit/inspect/issues/46")
-    header("Origin", "https://github.com")
+    header("Referer", AppLinks.GithubUploadReferer)
+    header("Origin", AppLinks.Github)
     header(
         "User-Agent",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0",
@@ -57,7 +57,7 @@ private suspend fun graphqlFetch(
     cookie: String,
     data: String,
 ): HttpResponse {
-    return NetworkClients.client.post("https://github.com/_graphql") {
+    return NetworkClients.client.post(AppLinks.GithubGraphql) {
         setCommonHeaders(cookie)
         header("Accept", "application/json")
         header("Content-Type", "text/plain;charset=UTF-8")
@@ -75,7 +75,7 @@ object GithubUploader {
     ): GithubPoliciesAsset {
         // prepare upload asset
         val policiesRawResp =
-            NetworkClients.client.post("https://github.com/upload/policies/assets") {
+            NetworkClients.client.post(AppLinks.GithubUploadPolicies) {
                 setCommonHeaders(cookie)
                 header("GitHub-Verified-Fetch", "true")
                 header("X-Requested-With", "XMLHttpRequest")
@@ -122,7 +122,7 @@ object GithubUploader {
         }
 
         // check assets
-        NetworkClients.client.put("https://github.com" + policiesResp.asset_upload_url) {
+        NetworkClients.client.put(AppLinks.githubAssetUpload(policiesResp.asset_upload_url)) {
             setCommonHeaders(cookie)
             header("Accept", "application/json")
             setBody(
