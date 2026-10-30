@@ -674,7 +674,7 @@ private fun SnapshotCard(
         Box(
             modifier =
                 Modifier.fillMaxWidth()
-                    .aspectRatio(1f)
+                    .aspectRatio(4f / 3f)
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                     .background(colorScheme.surfaceVariant),
         ) {
