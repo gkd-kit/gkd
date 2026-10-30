@@ -45,6 +45,7 @@ import li.gkd.app.META
 import li.gkd.app.app.AppCatalogState
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.app.launcherAppIdFlow
+import li.gkd.app.error.messageResource
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
@@ -149,13 +150,13 @@ fun MatchDebugPage() {
                 )
             }
             when (val state = records) {
-                Loadable.Loading -> item { Text(stringResource(Res.string.loading_progress)) }
+                Loadable.Loading -> item { GkLoadingState() }
                 is Loadable.Failure ->
                     item {
                         Text(
                             stringResource(
                                 Res.string.match_debug_read_failed,
-                                state.cause.message.orEmpty(),
+                                state.cause.messageResource(),
                             ),
                         )
                     }

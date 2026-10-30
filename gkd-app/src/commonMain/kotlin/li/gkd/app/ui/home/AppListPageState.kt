@@ -54,7 +54,7 @@ data class AppListPageState(
             queryPackagesAbnormal = input?.queryPackagesAbnormal ?: false,
             refreshing = input?.refreshing ?: false,
             listState = listState,
-            ruleStatsFailed = input?.ruleStatsFailed ?: false,
+            ruleStatsError = input?.ruleStatsError,
             sort = settings.appSort,
             group = settings.appGroupType,
             showBlocked = settings.showBlockApp,

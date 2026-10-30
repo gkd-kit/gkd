@@ -41,7 +41,7 @@ object AppListSources {
                                     snapshot.queryPackagesAbnormal,
                                     state.refreshing,
                                 )
-                                .copy(ruleStatsFailed = loaded is Loadable.Failure),
+                                .copy(ruleStatsError = (loaded as? Loadable.Failure)?.cause),
                         )
                 }
             }

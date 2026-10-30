@@ -36,6 +36,7 @@ import li.gkd.app.ui.component.GkAnimatedFloatingActionButton
 import li.gkd.app.ui.component.GkBatchActionMenuItem
 import li.gkd.app.ui.component.GkDesktopKeyHandler
 import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkLoadingState
 import li.gkd.app.ui.component.GkMatchingBanner
 import li.gkd.app.ui.component.GkMultiSelectionActions
 import li.gkd.app.ui.component.GkMultiSelectionTopAppBar
@@ -310,16 +311,16 @@ private fun subsManageContent(
                 ) {
                     if (loadableState !is Loadable.Ready) {
                         item("load-state") {
-                            Text(
-                                text =
-                                    (loadableState as? Loadable.Failure)?.cause?.messageResource()
-                                        ?: stringResource(
-                                            if (loadableState is Loadable.Loading)
-                                                Res.string.loading_progress
-                                            else Res.string.data_load_failed,
-                                        ),
-                                modifier = Modifier.padding(16.dp),
-                            )
+                            when (loadableState) {
+                                Loadable.Loading -> GkLoadingState()
+                                is Loadable.Failure ->
+                                    Text(
+                                        text = loadableState.cause.messageResource(),
+                                        modifier = Modifier.padding(16.dp),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                is Loadable.Ready -> Unit
+                            }
                         }
                     }
                     itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->

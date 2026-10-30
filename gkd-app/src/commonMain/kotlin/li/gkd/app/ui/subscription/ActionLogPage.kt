@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import li.gkd.app.app.AppInfoRepository
+import li.gkd.app.error.messageResource
 import li.gkd.app.model.showActivityId
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleSetting
@@ -78,6 +79,7 @@ import li.gkd.app.ui.component.GkGroupNameText
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkLoadingState
 import li.gkd.app.ui.component.GkLogTimeText
 import li.gkd.app.ui.component.GkLogTimeline
 import li.gkd.app.ui.component.GkModalBottomSheet
@@ -455,16 +457,13 @@ private fun ActionLogAppFilterSheet(
                         when (displayedApps) {
                             Loadable.Loading ->
                                 item(span = { GridItemSpan(maxLineSpan) }) {
-                                    Text(
-                                        stringResource(Res.string.loading_progress),
-                                        Modifier.padding(16.dp),
-                                    )
+                                    GkLoadingState()
                                 }
                             is Loadable.Failure ->
                                 item(span = { GridItemSpan(maxLineSpan) }) {
                                     Text(
-                                        stringResource(Res.string.data_load_failed),
-                                        Modifier.padding(16.dp),
+                                        text = displayedApps.cause.messageResource(),
+                                        modifier = Modifier.padding(16.dp),
                                         color = MaterialTheme.colorScheme.error,
                                     )
                                 }
@@ -765,12 +764,12 @@ private fun ActionLogDialog(
         val configs = state.configs
         if (state.loadState is Loadable.Failure) {
             Text(
-                stringResource(Res.string.data_load_failed),
-                Modifier.padding(16.dp),
+                text = state.loadState.cause.messageResource(),
+                modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.error,
             )
         } else if (state.loadState is Loadable.Loading) {
-            Text(stringResource(Res.string.loading_progress), Modifier.padding(16.dp))
+            GkLoadingState()
         } else if (state.subscription == null || state.group == null) {
             Text(
                 stringResource(

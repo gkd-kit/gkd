@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.app.AppSort
 import li.gkd.app.error.displayMessage
+import li.gkd.app.error.messageResource
 import li.gkd.app.model.AppInfo
 import li.gkd.app.model.findOption
 import li.gkd.app.permission.AppPermission
@@ -59,6 +60,7 @@ import li.gkd.app.ui.component.GkFilterIconButton
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkLoadingState
 import li.gkd.app.ui.component.GkMenuGroupCard
 import li.gkd.app.ui.component.GkMenuItemCheckbox
 import li.gkd.app.ui.component.GkMenuItemRadioButton
@@ -93,7 +95,7 @@ import org.jetbrains.compose.resources.stringResource
 data class AppListContentState(
     val appInfos: List<AppInfo>,
     val listState: Loadable<Unit> = Loadable.Ready(Unit),
-    val ruleStatsFailed: Boolean = false,
+    val ruleStatsError: Throwable? = null,
     val triggerStats: TriggerStats? = null,
     val searchText: String = "",
     val showSearchBar: Boolean = false,
@@ -333,15 +335,19 @@ fun appListPage(
                         )
                     }
                 }
-                if (state.listState !is Loadable.Ready || state.ruleStatsFailed) {
-                    item("load-state") {
-                        Text(
-                            stringResource(
-                                if (state.listState is Loadable.Loading) Res.string.loading_progress
-                                else Res.string.data_load_failed,
-                            ),
-                            modifier = Modifier.padding(16.dp),
-                        )
+                if (state.listState is Loadable.Loading) {
+                    item("load-state") { GkLoadingState() }
+                } else {
+                    val error =
+                        (state.listState as? Loadable.Failure)?.cause ?: state.ruleStatsError
+                    if (error != null) {
+                        item("load-state") {
+                            Text(
+                                text = error.messageResource(),
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 }
                 items(appInfos, { it.id }) { appInfo ->

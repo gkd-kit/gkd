@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import li.gkd.app.app.AppQuery
 import li.gkd.app.app.AppSort
+import li.gkd.app.error.messageResource
 import li.gkd.app.model.findOption
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -41,6 +42,7 @@ import li.gkd.app.ui.component.GkEmptyState
 import li.gkd.app.ui.component.GkFilterIconButton
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
+import li.gkd.app.ui.component.GkLoadingState
 import li.gkd.app.ui.component.GkMenuGroupCard
 import li.gkd.app.ui.component.GkMenuItemCheckbox
 import li.gkd.app.ui.component.GkMenuItemRadioButton
@@ -331,7 +333,14 @@ fun ServiceScopeAppListPage(kind: ServiceScopeKind) {
                 }
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     if (result is Loadable.Loading) {
-                        CircularProgressIndicator()
+                        GkLoadingState()
+                        GkPageBottomSpace()
+                    } else if (result is Loadable.Failure) {
+                        Text(
+                            text = result.cause.messageResource(),
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.error,
+                        )
                         GkPageBottomSpace()
                     } else if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
                         GkEmptyState(text = stringResource(Res.string.search_no_results))

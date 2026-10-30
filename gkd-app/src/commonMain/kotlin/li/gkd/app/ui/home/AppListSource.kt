@@ -15,6 +15,6 @@ data class AppListSource(
     val refreshing: Boolean = false,
     val actionOrderState: Loadable<Unit> = Loadable.Ready(Unit),
     val visitOrderState: Loadable<Unit> = Loadable.Ready(Unit),
-    val ruleStatsFailed: Boolean = false,
+    val ruleStatsError: Throwable? = null,
     val triggerStats: TriggerStats? = null,
 )

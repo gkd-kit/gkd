@@ -95,9 +95,10 @@ class AppListSourcesTest {
         assertEquals(3L, current().triggerStats?.app("app.example")?.count)
 
         // Rule failure remains a partial-data warning, independent of usable app/history data.
-        rules.value = Loadable.Failure(IllegalStateException("rules unavailable"))
+        val failure = IllegalStateException("rules unavailable")
+        rules.value = Loadable.Failure(failure)
         runCurrent()
-        assertTrue(current().ruleStatsFailed)
+        assertSame(failure, current().ruleStatsError)
         assertTrue(current().ruleStats.isEmpty())
         assertEquals(2, current().apps.size)
         assertEquals(listOf("app.example"), current().actionOrder)

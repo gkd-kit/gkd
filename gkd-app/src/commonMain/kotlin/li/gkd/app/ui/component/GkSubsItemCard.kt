@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -255,20 +256,21 @@ fun GkSubsItemCard(
                             Color.Unspecified
                         }
                     SubsStatusLine(data) {
-                        Text(
-                            text =
-                                data.loadError
-                                    ?: if (refreshing) stringResource(Res.string.loading_progress)
-                                    else
-                                        stringResource(
-                                            Res.string.file_missing,
-                                        ),
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = color,
-                        )
+                        if (data.loadError == null && refreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(
+                                text = data.loadError ?: stringResource(Res.string.file_missing),
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = color,
+                            )
+                        }
                     }
                 }
             }
