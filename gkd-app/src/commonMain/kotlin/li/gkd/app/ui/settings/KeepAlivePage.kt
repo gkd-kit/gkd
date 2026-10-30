@@ -1,8 +1,12 @@
 package li.gkd.app.ui.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -12,7 +16,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import li.gkd.app.META
@@ -21,6 +28,7 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkAlertDialog
+import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIconButton
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.component.GkPageBottomSpace
@@ -38,6 +46,7 @@ import li.gkd.app.ui.platform.openRecents
 import li.gkd.app.ui.platform.setStatusServiceEnabled
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.titleItemPadding
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -51,26 +60,58 @@ fun KeepAlivePage() {
     val batteryUnrestricted = ignoresBatteryOptimizations()
     val showKeepAlive by vm.showKeepAlive.collectAsStateWithLifecycle()
     if (showKeepAlive) {
-        val tutorial =
-            stringResource(Res.string.keep_alive_tile_description, META.appName) +
-                stringResource(Res.string.keep_alive_setup_heading) +
-                stringResource(Res.string.keep_alive_setup_open_tiles) +
-                stringResource(
-                    Res.string.keep_alive_setup_add_tile,
-                    META.appName,
-                ) +
-                stringResource(Res.string.keep_alive_setup_place_tile)
         GkAlertDialog(
             onDismissRequest = { vm.setShowKeepAlive(false) },
             title = { Text(stringResource(Res.string.keep_alive_title)) },
             text = {
-                Text(
-                    tutorial +
-                        if (platform.writeSecureSettings) ""
-                        else
-                            stringResource(Res.string.keep_alive_permission_missing) +
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        stringResource(Res.string.keep_alive_tile_description, META.appName).trim(),
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            stringResource(Res.string.keep_alive_setup_heading).trim(),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(stringResource(Res.string.keep_alive_setup_open_tiles).trim())
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(
+                                modifier = Modifier.width(64.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                GkIcon(
+                                    imageVector = GkIcons.TileStatus,
+                                    modifier = Modifier.size(32.dp),
+                                    contentDescription = null,
+                                )
+                                Text(
+                                    META.appName,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                            Text(
+                                stringResource(Res.string.keep_alive_setup_add_tile, META.appName)
+                                    .trim(),
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Text(stringResource(Res.string.keep_alive_setup_place_tile))
+                    }
+                    if (!platform.writeSecureSettings) {
+                        Text(
+                            stringResource(Res.string.keep_alive_permission_missing).trimStart() +
                                 stringResource(Res.string.keep_alive_permission_description),
-                )
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
@@ -142,8 +183,8 @@ fun KeepAlivePage() {
                 color = MaterialTheme.colorScheme.primary,
             )
             GkSettingItem(
-                title = stringResource(Res.string.keep_alive_ignore_battery_optimization),
-                imageVector = GkIcons.OpenInNew,
+                title = stringResource(Res.string.battery_optimization_ignore),
+                imageVector = if (batteryUnrestricted) GkIcons.Check else GkIcons.OpenInNew,
                 onClickLabel =
                     stringResource(
                         if (batteryUnrestricted) Res.string.app_details_open
@@ -162,13 +203,39 @@ fun KeepAlivePage() {
                 title = stringResource(Res.string.autostart_allow),
                 imageVector = GkIcons.OpenInNew,
                 onClickLabel = stringResource(Res.string.app_details_open),
-                onClick = ::openAppDetails,
+                onClick =
+                    scope.launchUiAction {
+                        if (
+                            mainVm.dialogRequests.confirm(
+                                title = getString(Res.string.autostart_allow),
+                                text = getString(Res.string.autostart_manual_description),
+                                confirmText = getString(Res.string.settings_go_to),
+                                dismissText = getString(Res.string.action_cancel),
+                                dismissOnRequest = true,
+                            )
+                        ) {
+                            openAppDetails()
+                        }
+                    },
             )
             GkSettingItem(
                 title = stringResource(Res.string.keep_alive_recents_lock),
                 imageVector = GkIcons.OpenInNew,
                 onClickLabel = stringResource(Res.string.recents_open),
-                onClick = scope.launchUiAction { openRecents() },
+                onClick =
+                    scope.launchUiAction {
+                        if (
+                            mainVm.dialogRequests.confirm(
+                                title = getString(Res.string.keep_alive_recents_lock),
+                                text = getString(Res.string.recents_lock_manual_description),
+                                confirmText = getString(Res.string.settings_go_to),
+                                dismissText = getString(Res.string.action_cancel),
+                                dismissOnRequest = true,
+                            )
+                        ) {
+                            openRecents()
+                        }
+                    },
             )
             GkSettingItem(
                 title = stringResource(Res.string.keep_alive_title),

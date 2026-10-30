@@ -185,6 +185,7 @@
     <string name="automation_unauthorized">自动化未授权</string>
     <string name="automation_undetectable_a11y">不会被应用检测为无障碍</string>
     <string name="autostart_allow">允许自启动</string>
+    <string name="autostart_manual_description">无法检测设备是否支持及当前设置状态。若系统提供自启动管理，请手动允许本应用自启动；没有此选项可跳过。</string>
     <string name="background_running">持续后台运行</string>
     <string name="backup_archive_too_large">备份压缩包超过大小限制</string>
     <string name="backup_duplicate_subscription_id">备份中存在重复订阅id</string>
@@ -200,7 +201,7 @@
     <string name="backup_unknown_rule_config_type">备份中存在未知的规则配置类型</string>
     <string name="backup_version_unsupported">不支持的备份版本: %1$s，请升级应用后重试</string>
     <string name="battery_optimization_settings_open">打开忽略电池优化设置页面</string>
-    <string name="battery_strategy_unrestricted">省电策略无限制</string>
+    <string name="battery_optimization_ignore">忽略电池优化</string>
     <string name="beta_channel_warning">测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用</string>
     <string name="build_channel">构建渠道</string>
     <string name="categories_empty">暂无类别</string>
@@ -537,6 +538,7 @@
     <string name="recents_open">打开最近任务</string>
     <string name="recents_lock_manual_hint">请手动打开最近任务界面，锁定 GKD 的任务卡片</string>
     <string name="recents_lock">在「最近任务」锁定</string>
+    <string name="recents_lock_manual_description">无法检测设备是否支持及当前设置状态。若最近任务界面提供锁定功能，请手动锁定本应用；没有此选项可跳过。</string>
     <string name="remote_category_delete_unsupported">远程订阅类别不可删除</string>
     <string name="remote_category_edit_unsupported">远程订阅类别不可编辑</string>
     <string name="remote_rule_delete_unsupported">远程订阅规则不可删除</string>
@@ -904,7 +906,6 @@
     <string name="keep_alive_strategy">保活策略</string>
     <string name="keep_alive_app_measures">应用措施</string>
     <string name="keep_alive_system_settings">系统设置</string>
-    <string name="keep_alive_ignore_battery_optimization">忽略电池优化</string>
     <string name="keep_alive_recents_lock">锁定最近任务</string>
     <string name="integration_tools_title">快捷操作</string>
     <string name="upload_configured">已配置</string>

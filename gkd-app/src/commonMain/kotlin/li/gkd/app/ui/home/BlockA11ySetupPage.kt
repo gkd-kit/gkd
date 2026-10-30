@@ -54,6 +54,7 @@ import li.gkd.app.ui.platform.openRecents
 import li.gkd.app.ui.platform.setStatusServiceEnabled
 import li.gkd.app.ui.share.launchUiAction
 import li.gkd.app.ui.style.itemHorizontalPadding
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -167,7 +168,7 @@ fun BlockA11ySetupPage() {
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 BlockA11yRequirementItem(
-                    text = stringResource(Res.string.battery_strategy_unrestricted),
+                    text = stringResource(Res.string.battery_optimization_ignore),
                     satisfied = ignoreBatteryOptimizations,
                     imageVector =
                         if (ignoreBatteryOptimizations) GkIcons.Check else GkIcons.OpenInNew,
@@ -189,7 +190,20 @@ fun BlockA11ySetupPage() {
                     text = stringResource(Res.string.autostart_allow),
                     imageVector = GkIcons.OpenInNew,
                     onClickLabel = stringResource(Res.string.app_details_open),
-                    onClick = ::openAppDetails,
+                    onClick =
+                        scope.launchUiAction {
+                            if (
+                                mainVm.dialogRequests.confirm(
+                                    title = getString(Res.string.autostart_allow),
+                                    text = getString(Res.string.autostart_manual_description),
+                                    confirmText = getString(Res.string.settings_go_to),
+                                    dismissText = getString(Res.string.action_cancel),
+                                    dismissOnRequest = true,
+                                )
+                            ) {
+                                openAppDetails()
+                            }
+                        },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 BlockA11yRequirementItem(
@@ -198,7 +212,20 @@ fun BlockA11ySetupPage() {
                     onClickLabel =
                         if (platform.privilegeAvailable) stringResource(Res.string.recents_open)
                         else stringResource(Res.string.recents_lock_manual_hint),
-                    onClick = scope.launchUiAction { openRecents() },
+                    onClick =
+                        scope.launchUiAction {
+                            if (
+                                mainVm.dialogRequests.confirm(
+                                    title = getString(Res.string.recents_lock),
+                                    text = getString(Res.string.recents_lock_manual_description),
+                                    confirmText = getString(Res.string.settings_go_to),
+                                    dismissText = getString(Res.string.action_cancel),
+                                    dismissOnRequest = true,
+                                )
+                            ) {
+                                openRecents()
+                            }
+                        },
                 )
             }
             BlockA11ySectionTitle(text = stringResource(Res.string.usage_notice))
