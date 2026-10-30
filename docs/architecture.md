@@ -35,6 +35,8 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 `AndroidAutomationSessions` 选择真实服务；应用生命周期的 `MatchingRuntime.coordinator` 统一自动规则、业务 HTTP 与单次诊断的输入通道。commonMain 的 `queryRules`、`matchRuleSelectors`、`ForegroundTracker`、`MatchInputReducer` 和规则运行状态承载共享决策；规则快照安装通过 `RuleReconciliation` 保留未受依赖变更影响的状态；Android 引擎保留事件接入、节点缓存和平台调用。服务交接会取消旧上下文，旧输入收尾完成后才能开始新输入。事件使用独立副本与有界队列，资源随所属 Android 组件释放。页面退出不销毁应用仓库；Desktop 场景重建不清空持久化数据。实现边界与操作说明见 [匹配引擎调试](matching-engine-debugging.md)。
 
+匹配决策的 JVM 场景组织、运行入口和验证边界见 [匹配引擎场景回归](matching-regression.md)。
+
 匹配相关代码按职责组织在 `li.gkd.app` 下，Android/JVM 实现在各自源码集的对应包中：
 
 | 包 | 当前职责 |

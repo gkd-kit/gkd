@@ -72,10 +72,20 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
-      - name: build Windows portable package
-        run: ./gradlew.bat :gkd-app:packageWindowsPortable
+      - name: run matching regression and build Windows portable package
+        run: ./gradlew.bat :gkd-app:matchingRegression :gkd-app:packageWindowsPortable
         env:
           GKD_RENAME_PACKAGE_FLAG: "1"
+
+      - name: upload matching regression report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: matching-regression
+          path: |
+            gkd-app/build/reports/tests/matchingRegression
+            gkd-app/build/test-results/matchingRegression
+          if-no-files-found: warn
 
       - uses: actions/upload-artifact@v7
         with:

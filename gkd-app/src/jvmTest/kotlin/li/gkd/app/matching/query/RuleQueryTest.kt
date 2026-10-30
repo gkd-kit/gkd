@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import li.gkd.app.development.matching.evaluateDebugRule
 import li.gkd.app.matching.ForegroundRuleSnapshot
+import li.gkd.app.matching.MatchExecutionState
 import li.gkd.app.matching.MatchWork
 import li.gkd.app.matching.diagnostics.MatchDebugRunRequest
 import li.gkd.app.matching.diagnostics.MatchDiagnosticCapture
@@ -33,6 +34,64 @@ import li.gkd.db.SubsItem
 import li.gkd.selector.NodeAdapter
 
 class RuleQueryTest {
+    /** Losing an execution prerequisite during matching must prevent both click and commit. */
+    @Test
+    fun executionConditionChangeDuringMatchingPreventsClickAndCommit() = runTest {
+        val page = Any()
+        val ready = MatchExecutionState(page, true, true, false, true, true)
+        val conditions =
+            listOf(
+                Triple("unchanged", ready, 1),
+                Triple("page changed", ready.copy(page = Any()), 0),
+                Triple("foreground pending", ready.copy(foregroundPending = true), 0),
+                Triple("matching disabled", ready.copy(matchingEnabled = false), 0),
+                Triple("screen off", ready.copy(interactive = false), 0),
+                Triple("service ineffective", ready.copy(serviceEffective = false), 0),
+                Triple("unknown window", ready.copy(windowKnown = false), 0),
+            )
+        for ((label, afterMatch, expectedActions) in conditions) {
+            val rule = rule({ 10_000 })
+            var state = ready
+            var actions = 0
+            var commits = 0
+            val nodes =
+                object : RuleQueryNodes<Int> {
+                    override suspend fun root() = 1
+
+                    override fun appId(node: Int) = "app.test"
+
+                    override suspend fun refresh(node: Int) = node
+
+                    override suspend fun match(rule: ResolvedRule, node: Int): Int {
+                        state = afterMatch
+                        return node
+                    }
+
+                    override suspend fun perform(rule: ResolvedRule, node: Int): ActionResult {
+                        actions++
+                        return ActionResult("click", true)
+                    }
+                }
+            queryRules(
+                MatchWork(1, MatchTimingPolicy(), MatchDiagnostics()) { true },
+                ForegroundRuleSnapshot(
+                    TopActivity("app.test", null),
+                    false,
+                    RuleSummary(appIdToRules = mapOf("app.test" to listOf(rule))),
+                ),
+                nodes,
+                null,
+                false,
+                { state.permits(page) },
+                { _, _, _ -> },
+                {},
+                { _, _, _ -> commits++ },
+            )
+            assertEquals(expectedActions, actions, label)
+            assertEquals(expectedActions, commits, label)
+        }
+    }
+
     /** An unvisited excluded node must not become a false negative or allow an action. */
     @Test
     fun incompleteExclusionAbortsAutomaticAndDebugActionsAndCanBeRetried() = runTest {
@@ -50,10 +109,13 @@ class RuleQueryTest {
                 else null
             val work = MatchWork(1, MatchTimingPolicy(), diagnostics) { true }
             var children = listOf(1, 2, 3)
+            var excluded = false
             val adapter =
                 object : NodeAdapter<Int>() {
                     override fun getAttr(target: Any, name: String): Any? =
-                        if (name == "text") "safe" else null
+                        if (name == "text") {
+                            if (excluded && target == 1) "blocked" else "safe"
+                        } else null
 
                     override fun getName(node: Int) = "Node"
 
@@ -144,6 +206,10 @@ class RuleQueryTest {
             children = listOf(1, 2) // Exactly at the limit is complete; a later query can act.
             automaticQuery()
             assertEquals(1, actions)
+            assertEquals(1, commits)
+            excluded = true
+            automaticQuery()
+            assertEquals(1, actions, "A matching exclusion must prevent another action")
             assertEquals(1, commits)
         }
     }

@@ -1,0 +1,89 @@
+{
+  "title": "重复窗口确认与真实页面切换",
+  "description": "公共输入模拟从分享页返回应用主页，比较查询期间的重复窗口确认与真实窗口、Activity 切换。时间为相对首个任务栈通知的毫秒偏移，用于验证事件顺序而非真实设备耗时；节点和包名已脱敏。cases 分别描述输入变化及预期行为。",
+  "diagnosticUrl": "https://i.gkd.li/log/34169924",
+  "engineVersion": "1.13.0-beta-2-81e5277",
+  "appId": "app.test.share",
+  "initialActivity": "app.test.share.ShareActivity",
+  "activity": "app.test.share.MainActivity",
+  "initialWindow": 16144,
+  "window": 16145,
+  "taskAt": 0,
+  "windowAt": 115,
+  "rootAt": 259,
+  "candidateAt": 354,
+  "repeatAt": 366,
+  "completedAt": 499,
+  "root": {
+    "name": "android.widget.FrameLayout",
+    "children": [
+      {
+        "name": "android.widget.TextView",
+        "attributes": {
+          "text": "6 跳过",
+          "visibleToUser": true
+        }
+      },
+      {
+        "name": "android.widget.TextView",
+        "attributes": {
+          "text": "合成消息列表"
+        }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "WE-001",
+      "title": "重复窗口确认不取消点击",
+      "description": "找到跳过目标后、查询完成前，同一 Activity 和窗口再次被确认。",
+      "source": "recorded",
+      "inputChange": {
+        "type": "RepeatWindow",
+        "description": "保持窗口和 Activity 不变，在 repeatAt 重复发送窗口确认。"
+      },
+      "expected": {
+        "description": "完整匹配成功后点击 6 跳过并提交一次，无需倒计时更新。",
+        "matched": true,
+        "actions": [
+          "6 跳过"
+        ],
+        "commits": 1
+      }
+    },
+    {
+      "id": "WE-002",
+      "title": "切换窗口后不点击旧目标",
+      "description": "找到目标后切换到同一 Activity 的另一个窗口。",
+      "source": "derived",
+      "inputChange": {
+        "type": "NewWindow",
+        "description": "在 repeatAt 将 windowId 改为 16146，Activity 保持不变。",
+        "windowId": 16146
+      },
+      "expected": {
+        "description": "旧查询失效，不点击旧目标，不提交成功次数。",
+        "matched": true,
+        "actions": [],
+        "commits": 0
+      }
+    },
+    {
+      "id": "WE-003",
+      "title": "切换 Activity 后不点击旧目标",
+      "description": "找到目标后，同一窗口的 Activity 身份发生变化。",
+      "source": "derived",
+      "inputChange": {
+        "type": "NewActivity",
+        "description": "在 repeatAt 将 Activity 改为 app.test.share.OtherActivity，windowId 保持不变。",
+        "activityId": "app.test.share.OtherActivity"
+      },
+      "expected": {
+        "description": "旧查询失效，不点击旧目标，不提交成功次数。",
+        "matched": true,
+        "actions": [],
+        "commits": 0
+      }
+    }
+  ]
+}

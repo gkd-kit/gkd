@@ -705,7 +705,6 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             confirmForeground()
             return
         }
-        val tempStateEvent = latestStateEvent
         if (!firstQueryStarted) {
             firstQueryStarted = true
             AndroidAutomationSessions.recordServiceEvent(service, MatchServiceEvent.QueryStarted)
@@ -739,14 +738,17 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 source = lastNode,
                 forced = byForced,
                 isCurrent = {
-                    effective &&
-                        isInteractive &&
-                        !AndroidForegroundState.foregroundPending &&
-                        AndroidForegroundState.withTopActivityLock {
-                            windows.identity != null
-                        } &&
-                        SettingsRepository.settings.value.enableMatch &&
-                        !checkOutDate(page, tempStateEvent)
+                    AndroidForegroundState.withTopActivityLock {
+                        MatchExecutionState(
+                                page = AndroidForegroundState.currentPage,
+                                serviceEffective = effective,
+                                interactive = isInteractive,
+                                foregroundPending = AndroidForegroundState.foregroundPending,
+                                windowKnown = windows.identity != null,
+                                matchingEnabled = SettingsRepository.settings.value.enableMatch,
+                            )
+                            .permits(page)
+                    }
                 },
                 schedule = { rule, kind, duration ->
                     coordinator.scheduleRule(service, rule, kind, duration) {
@@ -761,7 +763,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 completed = { rule, target, result ->
                     AndroidForegroundState.withTopActivityLock {
                         if (
-                            !checkOutDate(page, tempStateEvent) &&
+                            page === AndroidForegroundState.currentPage &&
                                 !AndroidForegroundState.foregroundPending &&
                                 coordinator.canCommit(work.id, rule)
                         ) {
@@ -780,13 +782,5 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             querySource = null
             queryRoot = null
         }
-    }
-
-    private fun checkOutDate(
-        page: Any,
-        stateEvent: A11yEvent?,
-    ): Boolean {
-        if (stateEvent !== latestStateEvent) return true
-        return page !== AndroidForegroundState.currentPage
     }
 }

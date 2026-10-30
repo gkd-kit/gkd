@@ -145,6 +145,17 @@ dependencies {
     remapApi(project(":gkd-hidden-api"))
 }
 
+val jvmRegressionTests = tasks.named<Test>("jvmTest")
+
+tasks.register<Test>("matchingRegression") {
+    group = "verification"
+    description = "Runs matching scenarios and existing engine regressions on the JVM."
+    testClassesDirs = jvmRegressionTests.get().testClassesDirs
+    classpath = jvmRegressionTests.get().classpath
+    filter { includeTestsMatching("li.gkd.app.matching.*") }
+    testLogging { events("failed", "skipped") }
+}
+
 val collectDesktopConsumerRules =
     tasks.register<CollectConsumerProguardRulesTask>("collectDesktopConsumerRules") {
         group = "compose desktop"

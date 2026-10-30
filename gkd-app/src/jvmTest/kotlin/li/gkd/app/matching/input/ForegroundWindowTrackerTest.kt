@@ -11,6 +11,21 @@ class ForegroundWindowTrackerTest {
     private val video = ForegroundIdentity("bili", "Video")
 
     @Test
+    fun repeatedActivityConfirmationKeepsWindowButReplacementInvalidatesIt() {
+        val windows = ForegroundWindowTracker()
+        val main = ForegroundIdentity("app.test.share", "MainActivity")
+        windows.observeState(16145, main)
+        assertFalse(windows.observeRoot(16145, main.appId, main))
+        // Share return regression: a second Activity event arrives after the skip node.
+        assertFalse(windows.observeState(16145, main))
+        assertTrue(windows.isCurrentKnownWindow(16145, main.appId))
+        // A different window with the same Activity still invalidates the old target.
+        assertTrue(windows.observeState(16146, main))
+        assertFalse(windows.isCurrentKnownWindow(16145, main.appId))
+        assertTrue(windows.observeState(16146, main.copy(activityId = "OtherActivity")))
+    }
+
+    @Test
     fun newRootCannotInheritOldActivityBeforeWindowEvent() {
         val windows = ForegroundWindowTracker()
         windows.observeState(10, video)
