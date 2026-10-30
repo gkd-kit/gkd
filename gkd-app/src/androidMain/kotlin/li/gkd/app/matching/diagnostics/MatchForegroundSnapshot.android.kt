@@ -13,5 +13,6 @@ actual fun matchForegroundSnapshot(): ForegroundDebugState? {
         service?.mode?.value,
         AndroidForegroundState.foregroundSnapshot(),
         service?.let(AndroidAutomationSessions::isEffective) == true,
+        service?.subscribedEventTypes,
     )
 }

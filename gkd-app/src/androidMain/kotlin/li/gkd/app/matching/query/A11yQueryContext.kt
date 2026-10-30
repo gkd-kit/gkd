@@ -7,6 +7,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
 import li.gkd.app.META
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
+import li.gkd.app.matching.diagnostics.MatchFastQueryCandidate
 import li.gkd.app.matching.diagnostics.MatchFastQueryKind
 import li.gkd.app.matching.diagnostics.MatchFastQueryResult
 import li.gkd.app.matching.diagnostics.MatchNodeMetrics
@@ -40,6 +41,9 @@ private operator fun <K, V> LruCache<K, V>.set(child: K, value: V): V {
 private fun List<Any>.getInt(i: Int = 0) = get(i) as Int
 
 private const val MAX_CACHE_SIZE = MAX_DESCENDANTS_SIZE
+// Bound diagnostic samples without changing the candidates used for matching.
+private const val MAX_ANOMALOUS_CANDIDATES = 3
+private const val MAX_CANDIDATE_FIELD_LENGTH = 256
 
 private val AccessibilityNodeInfo?.notExpiredNode: AccessibilityNodeInfo?
     get() {
@@ -229,6 +233,32 @@ class A11yQueryContext(
                             },
                         value = fastQuery.value,
                         count = nodes.size,
+                        anomalousCandidates =
+                            if (fastQuery is FastQuery.Text)
+                                nodes
+                                    .asSequence()
+                                    .filter { it.text == null }
+                                    .take(MAX_ANOMALOUS_CANDIDATES)
+                                    .map {
+                                        MatchFastQueryCandidate(
+                                            className =
+                                                it.className
+                                                    ?.toString()
+                                                    ?.take(MAX_CANDIDATE_FIELD_LENGTH),
+                                            viewId =
+                                                it.viewIdResourceName?.take(
+                                                    MAX_CANDIDATE_FIELD_LENGTH,
+                                                ),
+                                            contentDescription =
+                                                it.contentDescription
+                                                    ?.toString()
+                                                    ?.take(MAX_CANDIDATE_FIELD_LENGTH),
+                                            windowId = it.windowId,
+                                            visibleToUser = it.isVisibleToUser,
+                                        )
+                                    }
+                                    .toList()
+                            else emptyList(),
                     ),
             )
         }

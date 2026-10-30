@@ -13,6 +13,7 @@ interface AndroidAutomationSession {
     val windowInfos: List<AccessibilityWindowInfo>
     val scope: CoroutineScope
     val mode: AutomatorMode
+    val subscribedEventTypes: Int?
     val matchHost: AndroidMatchHost
 
     fun shutdown(temp: Boolean = false)

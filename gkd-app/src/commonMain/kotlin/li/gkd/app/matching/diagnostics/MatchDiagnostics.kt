@@ -83,6 +83,9 @@ data class MatchTrace(
     val pageObservation: MatchPageObservation? = null,
     val nodeRole: MatchNodeRole? = null,
     val serviceConnection: MatchServiceConnection? = null,
+    val windowEvent: MatchWindowEvent? = null,
+    val actionTarget: MatchActionTarget? = null,
+    val taskObservation: MatchTaskObservation? = null,
 )
 
 @Serializable
@@ -130,6 +133,8 @@ class MatchDiagnostics(
     private val lock = Any()
     private val events = ArrayDeque<MatchTrace>()
     private val keyEvents = ArrayDeque<MatchTrace>()
+    private val boundaryEvents = ArrayDeque<MatchTrace>()
+    private var droppedBoundaryEvents = 0L
     private var droppedKeyEvents = 0L
     private var sequence = 0L
     private var operationSequence = 0L
@@ -204,6 +209,8 @@ class MatchDiagnostics(
             operationStatistics = MatchOperationStatisticsRecorder()
             events.clear()
             keyEvents.clear()
+            boundaryEvents.clear()
+            droppedBoundaryEvents = 0
             droppedKeyEvents = 0
             ruleSnapshots.clear()
             ruleDefinitions.clear()
@@ -617,6 +624,9 @@ class MatchDiagnostics(
         pageObservation: MatchPageObservation? = null,
         nodeRole: MatchNodeRole? = null,
         serviceConnection: MatchServiceConnection? = null,
+        windowEvent: MatchWindowEvent? = null,
+        actionTarget: MatchActionTarget? = null,
+        taskObservation: MatchTaskObservation? = null,
     ) {
         if (!enabled) return
         synchronized(lock) {
@@ -652,6 +662,9 @@ class MatchDiagnostics(
                     pageObservation,
                     nodeRole,
                     serviceConnection,
+                    windowEvent,
+                    actionTarget,
+                    taskObservation,
                 )
             retainKeyEvent(event)
             val dropped =
@@ -681,6 +694,13 @@ class MatchDiagnostics(
     }
 
     private fun retainKeyEvent(event: MatchTrace) {
+        if (event.serviceConnection != null || event.pageObservation != null) {
+            if (boundaryEvents.size == capacity) {
+                boundaryEvents.removeFirst()
+                droppedBoundaryEvents++
+            }
+            boundaryEvents.addLast(event)
+        }
         if (!event.isKeyTrace()) return
         if (keyEvents.size == capacity) {
             keyEvents.removeFirst()
@@ -740,6 +760,8 @@ class MatchDiagnostics(
                     platform = System.getProperty("os.name", "unknown") ?: "unknown",
                     keyEvents = keyEvents.toList(),
                     droppedKeyEvents = droppedKeyEvents,
+                    boundaryEvents = boundaryEvents.toList(),
+                    droppedBoundaryEvents = droppedBoundaryEvents,
                 ),
             )
         }

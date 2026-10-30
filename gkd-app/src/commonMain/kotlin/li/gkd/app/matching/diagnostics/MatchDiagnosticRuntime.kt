@@ -11,6 +11,7 @@ data class ForegroundDebugState(
     val serviceMode: Int?,
     val foreground: ForegroundDecision,
     val serviceEffective: Boolean,
+    val subscribedEventTypes: Int? = null,
 )
 
 @Serializable
@@ -19,5 +20,5 @@ data class MatchDebugSnapshot(
     val foreground: ForegroundDebugState?,
 )
 
-/** Cached foreground observations; not an atomic OS snapshot. */
+/** Foreground observations and service subscription at capture; not an atomic OS snapshot. */
 expect fun matchForegroundSnapshot(): ForegroundDebugState?

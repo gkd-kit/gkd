@@ -136,4 +136,6 @@ data class MatchDiagnosticCapture(
     val platform: String,
     val keyEvents: List<MatchTrace> = emptyList(),
     val droppedKeyEvents: Long = 0,
+    val boundaryEvents: List<MatchTrace> = emptyList(),
+    val droppedBoundaryEvents: Long = 0,
 )

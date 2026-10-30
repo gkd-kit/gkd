@@ -2,7 +2,7 @@ type ServiceMode = 'A11y' | 'Automation';
 export type NodeProvenance = {
   readId: number; connectionId: number; service: ServiceMode;
   source: 'Root' | 'Event' | 'Refresh'; reason: 'Event' | 'SourceReused' | 'MissingOrExpired' | 'ForegroundConfirmation';
-  page: number; appId: string; activityId: string | null; windowId: number;
+  page: number; appId: string; observedActivityId: string | null; windowId: number;
   acquiredAtMillis: number; ageMillis: number; parentReadId?: number | null;
 };
 
@@ -10,9 +10,11 @@ export type LatencyTrace = {
   sequence: number; elapsedNanos: number; runId: number; reason: string;
   rule?: string | null; entrySource?: string | null; node?: NodeProvenance | null;
   nodeRole?: 'Source' | 'Root' | null;
-  serviceConnection?: { event: 'Connected' | 'HandoffShutdownRequested'; service: ServiceMode; connectionId: number } | null;
-  pageObservation?: { page: number; appId: string; activityId: string | null } | null;
-  fastQuery?: { kind: 'Text' | 'Id' | 'Vid'; value: string; count: number } | null;
+  serviceConnection?: { event: 'Connected' | 'QueryStarted' | 'HandoffShutdownRequested' | 'Disconnected'; service: ServiceMode; connectionId: number; targetConnectionId?: number | null } | null;
+  pageObservation?: { page: number; appId: string; activityId: string | null; firstConfirmation?: boolean | null } | null;
+  fastQuery?: { kind: 'Text' | 'Id' | 'Vid'; value: string; count: number;
+    anomalousCandidates?: { className: string | null; viewId: string | null;
+      contentDescription: string | null; windowId: number; visibleToUser: boolean }[] } | null;
   operation?: { name: string; startedNanos: number; durationNanos?: number | null; outcome?: string | null } | null;
 };
 
@@ -59,7 +61,9 @@ export function matchingLatency(events: LatencyTrace[]) {
         queries.set(event.runId, byRule);
       }
     }
-    const identity = event.node ?? event.pageObservation;
+    const identity = event.node
+      ? { page: event.node.page, appId: event.node.appId, activityId: event.node.observedActivityId }
+      : event.pageObservation;
     if (!identity) continue;
     const page = pages.get(identity.page) ?? { identity, events: [], runs: new Set<number>() };
     page.events.push(event);
@@ -71,7 +75,7 @@ export function matchingLatency(events: LatencyTrace[]) {
     const firstQuery = related.find(event => event.operation?.name === 'Query');
     const firstMatch = related.find(event => event.reason === 'matched');
     const action = related.find(event => event.reason === 'action_succeeded');
-    const confirmed = page.events.find(event => event.pageObservation != null);
+    const confirmed = page.events.find(event => event.pageObservation?.firstConfirmation === true);
     const services = [...new Map(page.events.flatMap(event => event.node ? [[event.node.connectionId, event.node] as const] : [])).values()];
     const pageQueries = [...page.runs].flatMap(run => [...(queries.get(run)?.values() ?? [])]);
     const completed = pageQueries.filter(query => query.operation?.durationNanos != null);

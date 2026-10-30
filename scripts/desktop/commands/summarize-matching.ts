@@ -35,7 +35,8 @@ export async function summarizeMatching(input: string, output?: string) {
   });
   const detailEvents = decodeTraces(capture.events);
   const keyEvents = decodeTraces(Array.isArray(capture.keyEvents) ? capture.keyEvents : []);
-  const events = [...new Map([...detailEvents, ...keyEvents].map(event => [event.sequence, event])).values()]
+  const boundaryEvents = decodeTraces(Array.isArray(capture.boundaryEvents) ? capture.boundaryEvents : []);
+  const events = [...new Map([...detailEvents, ...keyEvents, ...boundaryEvents].map(event => [event.sequence, event])).values()]
     .sort((a, b) => a.sequence - b.sequence);
   const warnings: string[] = [];
   const gaps = events.filter((event, index) => event.sequence !== (events[index - 1]?.sequence ?? 0) + 1).length;
@@ -44,6 +45,8 @@ export async function summarizeMatching(input: string, output?: string) {
   if (capture.droppedRuleSnapshots) warnings.push('部分规则快照已被覆盖。');
   if (!Array.isArray(capture.keyEvents)) warnings.push('此记录没有独立关键时间线或节点来源，缺失的延迟边界保持未知。');
   if (capture.droppedKeyEvents) warnings.push('关键时间线也达到容量上限；摘要中的首次时间仅指保留下来的首次观测。');
+  if (!Array.isArray(capture.boundaryEvents)) warnings.push('此记录没有独立服务交接时间线。');
+  if (capture.droppedBoundaryEvents) warnings.push('服务交接时间线达到容量上限，早期边界可能缺失。');
   const recordings = (Array.isArray(capture.queryRecordings) ? capture.queryRecordings : []).map(value => {
     const recording = object(value);
     const calls = (Array.isArray(recording.calls) ? recording.calls : []).map((value, index) => {
@@ -235,7 +238,9 @@ export async function summarizeMatching(input: string, output?: string) {
       ruleSnapshots: Array.isArray(capture.ruleSnapshots) ? capture.ruleSnapshots.length : 0,
       droppedRuleSnapshots: capture.droppedRuleSnapshots ?? 0 },
     timingNote: 'durationMillis 是 query_started 到终态的运行总耗时，包含等待与动作；cancellationMillis 仅在存在 Cancelling 和终态记录时计算，不代表触点抬起延迟。缺失边界为 null。Completed 不表示匹配成功；Finished 仅表示调度收尾，未推断执行结果。请求终态可补齐状态，但不补造阶段时间戳。',
+    serviceTimeline: events.filter(event => event.serviceConnection).map(event => ({ atMillis: event.elapsedNanos / 1e6, ...event.serviceConnection })),
     evidenceCoverage: {
+      boundary: { available: Array.isArray(capture.boundaryEvents), count: boundaryEvents.length, dropped: capture.droppedBoundaryEvents ?? null },
       detail: { count: detailEvents.length, dropped: session.dropped ?? 0, firstMillis: detailEvents[0]?.elapsedNanos == null ? null : detailEvents[0].elapsedNanos / 1e6, lastMillis: detailEvents.at(-1)?.elapsedNanos == null ? null : detailEvents.at(-1)!.elapsedNanos / 1e6 },
       key: { available: Array.isArray(capture.keyEvents), count: keyEvents.length, dropped: capture.droppedKeyEvents ?? null, firstMillis: keyEvents[0]?.elapsedNanos == null ? null : keyEvents[0].elapsedNanos / 1e6, lastMillis: keyEvents.at(-1)?.elapsedNanos == null ? null : keyEvents.at(-1)!.elapsedNanos / 1e6 },
     },

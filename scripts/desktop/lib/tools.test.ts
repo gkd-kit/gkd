@@ -353,7 +353,7 @@ test('offline summary distinguishes incomplete traces, cancellation cleanup and 
     assert.equal(pressure.eventDrops[0]?.eventDrop?.ageMillis, 700);
     assert.equal(pressure.nodePressure[0]?.nodePressure?.activeReads, 4);
     assert.equal(pressure.incompleteQueries.length, 1);
-    assert.equal(pressure.warnings.length, 4);
+    assert.equal(pressure.warnings.length, 5);
     assert.ok(pressure.warnings.some(warning => warning.includes('没有独立关键时间线')));
     assert.equal(pressure.actionResults.length, 0);
     await writeFile(input, JSON.stringify({ samples: [] }));

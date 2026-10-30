@@ -15,6 +15,25 @@ import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.util.ThreadUtils
 
 object AndroidAutomationSessions {
+    fun recordServiceEvent(
+        service: AndroidAutomationSession,
+        event: MatchServiceEvent,
+        target: AndroidAutomationSession? = null,
+    ) {
+        MatchingRuntime.coordinator.diagnostics.record(
+            0,
+            MatchStage.Idle,
+            event.name,
+            serviceConnection =
+                MatchServiceConnection(
+                    event,
+                    service.mode,
+                    service.matchHost.connectionId,
+                    target?.matchHost?.connectionId,
+                ),
+        )
+    }
+
     private val latestServiceMode = atomic(0)
     private val connectionGeneration = atomic(0L)
 
@@ -33,34 +52,18 @@ object AndroidAutomationSessions {
             MatchInput.ServiceChanged,
             MatchingRuntime.coordinator.policy.value,
         )
-        MatchingRuntime.coordinator.diagnostics.record(
-            0,
-            MatchStage.Idle,
-            MatchServiceEvent.Connected.name,
-            serviceConnection =
-                MatchServiceConnection(
-                    MatchServiceEvent.Connected,
-                    service.mode,
-                    engine.connectionId,
-                ),
-        )
+        recordServiceEvent(service, MatchServiceEvent.Connected)
         engine.onA11yConnected()
         ThreadUtils.runMainOrPost(MatchingRuntime.coordinator.policy.value.serviceHandoffMillis) {
             if (connectionGeneration.value == generation) {
-                MatchingRuntime.coordinator.diagnostics.record(
-                    0,
-                    MatchStage.Idle,
-                    MatchServiceEvent.HandoffShutdownRequested.name,
-                    serviceConnection =
-                        MatchServiceConnection(
-                            MatchServiceEvent.HandoffShutdownRequested,
-                            service.mode,
-                            engine.connectionId,
-                        ),
-                )
-                when (service.mode) {
-                    AutomatorMode.A11y -> uiAutomationFlow.value?.shutdown(true)
-                    AutomatorMode.Automation -> A11yService.instance?.shutdown(true)
+                val target =
+                    when (service.mode) {
+                        AutomatorMode.A11y -> uiAutomationFlow.value
+                        AutomatorMode.Automation -> A11yService.instance
+                    }
+                if (target != null) {
+                    recordServiceEvent(service, MatchServiceEvent.HandoffShutdownRequested, target)
+                    target.shutdown(true)
                 }
             }
         }

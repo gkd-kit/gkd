@@ -21,6 +21,7 @@ import li.gkd.app.matching.AndroidAutomationSession
 import li.gkd.app.matching.AndroidAutomationSessions
 import li.gkd.app.matching.AndroidMatchHost
 import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
 import li.gkd.app.settings.AutomatorMode
@@ -50,6 +51,8 @@ private constructor(
     override val scope = MainScope()
 
     override val matchHost by lazy { AndroidMatchHost(this) }
+    override val subscribedEventTypes: Int?
+        get() = uiAutomation.serviceInfo?.eventTypes
 
     private val listener = UiAutomation.OnAccessibilityEventListener {
         matchHost.onA11yEvent(it)
@@ -90,6 +93,8 @@ private constructor(
                 uiAutomation.setOnAccessibilityEventListener(null)
             }
             uiAutomation.toHidden.disconnect()
+            if (wasConnected)
+                AndroidAutomationSessions.recordServiceEvent(this, MatchServiceEvent.Disconnected)
         } catch (e: Exception) {
             LogUtils.e("disconnect automation failed", e)
         } finally {

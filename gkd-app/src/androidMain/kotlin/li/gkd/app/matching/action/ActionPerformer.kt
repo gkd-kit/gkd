@@ -2,11 +2,16 @@ package li.gkd.app.matching.action
 
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
+import android.graphics.Rect
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import li.gkd.app.data.calc
+import li.gkd.app.matching.diagnostics.MatchActionOperation
+import li.gkd.app.matching.diagnostics.MatchActionTarget
+import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.diagnostics.observeActionOperation
 import li.gkd.app.model.ActionResult
 import li.gkd.app.priv.privilegeContextFlow
@@ -25,6 +30,28 @@ sealed class ActionPerformer(val action: String) {
         captureInputs: Boolean = false,
     ): ActionResult =
         try {
+            currentCoroutineContext()[MatchActionOperation]?.let { context ->
+                val bounds = Rect()
+                node.getBoundsInScreen(bounds)
+                context.diagnostics.record(
+                    context.operation.runId,
+                    MatchStage.Action,
+                    "action_target",
+                    rule = context.operation.rule,
+                    sessionId = context.operation.sessionId,
+                    actionTarget =
+                        MatchActionTarget(
+                            node.windowId,
+                            node.packageName?.toString(),
+                            node.viewIdResourceName,
+                            bounds.left,
+                            bounds.top,
+                            bounds.right,
+                            bounds.bottom,
+                            node.isVisibleToUser,
+                        ),
+                )
+            }
             performAction(node, locationProps, captureInputs)
         } catch (error: PositionCalculationException) {
             ActionResult(action, false, coordinateError = error.error)

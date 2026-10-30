@@ -34,7 +34,9 @@ enum class MatchFastQueryKind {
 @Serializable
 enum class MatchServiceEvent {
     Connected,
+    QueryStarted,
     HandoffShutdownRequested,
+    Disconnected,
 }
 
 @Serializable
@@ -42,6 +44,7 @@ data class MatchServiceConnection(
     val event: MatchServiceEvent,
     val service: AutomatorMode,
     val connectionId: Long,
+    val targetConnectionId: Long? = null,
 )
 
 /** Values copied from a completed read; never retains an Android node or service. */
@@ -54,7 +57,7 @@ data class MatchNodeProvenance(
     val reason: MatchNodeReadReason,
     val page: Int,
     val appId: String,
-    val activityId: String?,
+    val observedActivityId: String?,
     val windowId: Int,
     val acquiredAtMillis: Long,
     val ageMillis: Long = 0,
@@ -62,15 +65,68 @@ data class MatchNodeProvenance(
 )
 
 @Serializable
-data class MatchFastQueryResult(val kind: MatchFastQueryKind, val value: String, val count: Int)
+data class MatchFastQueryResult(
+    val kind: MatchFastQueryKind,
+    val value: String,
+    val count: Int,
+    val anomalousCandidates: List<MatchFastQueryCandidate> = emptyList(),
+)
 
 @Serializable
-data class MatchPageObservation(val page: Int, val appId: String, val activityId: String?)
+data class MatchFastQueryCandidate(
+    val className: String?,
+    val viewId: String?,
+    val contentDescription: String?,
+    val windowId: Int,
+    val visibleToUser: Boolean,
+)
+
+@Serializable
+data class MatchPageObservation(
+    val page: Int,
+    val appId: String,
+    val activityId: String?,
+    val firstConfirmation: Boolean? = null,
+)
+
+@Serializable
+data class MatchWindowEvent(
+    val eventType: Int,
+    val windowId: Int,
+    val contentChangeTypes: Int,
+    val windowChanges: Int?,
+    val sourceTimeMillis: Long,
+    val appId: String?,
+    val className: String?,
+)
+
+@Serializable
+data class MatchActionTarget(
+    val windowId: Int,
+    val appId: String?,
+    val viewId: String?,
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+    val visibleToUser: Boolean,
+)
+
+@Serializable
+data class MatchTaskObservation(
+    val requestId: Long,
+    val callback: String,
+    val appId: String? = null,
+    val activityId: String? = null,
+)
 
 /** The key timeline intentionally omits per-property comparisons and low-level calls. */
 fun MatchTrace.isKeyTrace(): Boolean =
     condition == null &&
-        (node != null ||
+        (windowEvent != null ||
+            actionTarget != null ||
+            taskObservation != null ||
+            node != null ||
             nodeRole != null ||
             serviceConnection != null ||
             pageObservation != null ||

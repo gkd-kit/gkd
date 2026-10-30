@@ -25,6 +25,7 @@ import li.gkd.app.matching.AndroidAutomationSession
 import li.gkd.app.matching.AndroidAutomationSessions
 import li.gkd.app.matching.AndroidMatchHost
 import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.updateTopActivity
@@ -86,6 +87,8 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     }
 
     override val matchHost by lazy { AndroidMatchHost(this) }
+    override val subscribedEventTypes: Int?
+        get() = serviceInfo?.eventTypes
 
     override fun onInterrupt() {}
 
@@ -213,6 +216,7 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     override fun onDestroy() {
         lifecycleHooks.dispatchDestroyed()
         super.onDestroy()
+        AndroidAutomationSessions.recordServiceEvent(this, MatchServiceEvent.Disconnected)
     }
 
     companion object {
