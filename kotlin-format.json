@@ -1,6 +1,0 @@
-{
-  "style": "KOTLINLANG",
-  "maxWidth": 100,
-  "removeUnusedImports": true,
-  "preserveLambdaBreaks": true
-}
