@@ -398,11 +398,6 @@ object SettingsRepository {
             appId,
         )
 
-    val hasServiceScope: Boolean
-        get() =
-            if (settings.value.useA11y) automationScopeAppList.value.isNotEmpty()
-            else a11yScopeAppList.value.isNotEmpty()
-
     val backupFilenames: Set<String> by lazy {
         setOf(
             settingsValue.filename,
@@ -430,16 +425,11 @@ object SettingsRepository {
         }
     }
 
-    /** Re-selecting the active mode must not stop automation. */
+    /** Mode selection preserves the enabled state until service handoff. */
     fun updateAutomatorMode(value: Int) {
         require(AutomatorMode.entries.any { it.value == value })
         updateSettings {
-            if (it.automatorMode == value) it
-            else
-                it.copy(
-                    automatorMode = value,
-                    enableAutomator = false,
-                )
+            it.copy(automatorMode = value)
         }
     }
 

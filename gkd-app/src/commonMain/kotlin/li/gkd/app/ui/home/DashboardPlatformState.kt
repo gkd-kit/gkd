@@ -32,20 +32,20 @@ data class DashboardPlatformState(
         automationScope: Set<String> = emptySet(),
     ) = AppScopePolicy.usesA11y(store, scope, automationScope, topAppId)
 
-    fun serviceEnabled(
-        store: SettingsStore,
-        scope: Set<String>,
-        automationScope: Set<String> = emptySet(),
-    ) = if (usesA11y(store, scope, automationScope)) a11yRunning else automationRunning
+    val serviceEnabled: Boolean
+        get() = a11yRunning || automationRunning
 
     fun subtitle(
         store: SettingsStore,
         scope: Set<String>,
         automationScope: Set<String> = emptySet(),
     ): StringResource =
-        if (usesA11y(store, scope, automationScope)) {
+        if (automationRunning) {
+            Res.string.automation_running
+        } else if (a11yRunning) {
+            Res.string.a11y_running
+        } else if (usesA11y(store, scope, automationScope)) {
             when {
-                a11yRunning -> Res.string.a11y_running
                 a11yEnabled -> Res.string.a11y_fault
                 !writeSecureSettings -> Res.string.a11y_unauthorized
                 store.enableAutomator && partiallyDisabled -> Res.string.a11y_partially_disabled
@@ -53,7 +53,6 @@ data class DashboardPlatformState(
             }
         } else {
             when {
-                automationRunning -> Res.string.automation_running
                 !privilegeAvailable -> Res.string.automation_unauthorized
                 store.enableAutomator && partiallyDisabled ->
                     Res.string.automation_partially_disabled

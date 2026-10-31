@@ -50,9 +50,7 @@ import li.gkd.app.ui.home.dashboardPlatformState
 import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.AutomationScopeAppListRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
-import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.RefreshPermissions
-import li.gkd.app.ui.platform.changeAutomatorMode
 import li.gkd.app.ui.platform.openA11ySettings
 import li.gkd.app.ui.style.itemHorizontalPadding
 import li.gkd.app.ui.style.surfaceCardColors
@@ -60,7 +58,6 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun WorkModePage() {
-    val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { WorkModeViewModel() }
     RefreshPermissions()
@@ -95,7 +92,9 @@ fun WorkModePage() {
                             WorkModePrivilegeAction.EditScope ->
                                 mainVm.navigator.navigate(AutomationScopeAppListRoute)
                             WorkModePrivilegeAction.SwitchMode ->
-                                host.changeAutomatorMode(AutomatorMode.Automation)
+                                SettingsRepository.updateAutomatorMode(
+                                    AutomatorMode.Automation.value,
+                                )
                             null -> Unit
                         }
                     },
@@ -136,7 +135,7 @@ fun WorkModePage() {
         ) {
             Card(
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
-                onClick = { host.changeAutomatorMode(AutomatorMode.A11y) },
+                onClick = { SettingsRepository.updateAutomatorMode(AutomatorMode.A11y.value) },
                 colors = surfaceCardColors,
             ) {
                 Row(
@@ -242,7 +241,7 @@ fun WorkModePage() {
                 modifier = Modifier.padding(horizontal = itemHorizontalPadding).fillMaxWidth(),
                 onClick = {
                     if (automationAvailable) {
-                        host.changeAutomatorMode(AutomatorMode.Automation)
+                        SettingsRepository.updateAutomatorMode(AutomatorMode.Automation.value)
                     } else vm.setPrivilegeAction(WorkModePrivilegeAction.SwitchMode)
                 },
                 colors = surfaceCardColors,

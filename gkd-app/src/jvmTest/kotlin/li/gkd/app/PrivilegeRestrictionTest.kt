@@ -7,6 +7,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import li.gkd.app.permission.AndroidPermissions
 import li.gkd.app.priv.PrivilegeCapabilities
+import li.gkd.app.resources.*
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.SettingsStore
 import li.gkd.app.testing.TestFiles
@@ -37,6 +38,20 @@ class PrivilegeRestrictionTest {
         )
 
     @Test
+    fun pendingModeChangeShowsTheRunningServiceAndAllowsStoppingIt() {
+        val oldAccessibility = dashboard(allowed, secure = false).copy(a11yRunning = true)
+        assertTrue(oldAccessibility.serviceEnabled)
+        assertEquals(Res.string.a11y_running, oldAccessibility.subtitle(automation, emptySet()))
+        assertNull(oldAccessibility.authorizationRoute(false, automation, emptySet()))
+        val oldAutomation = dashboard(allowed, secure = false).copy(automationRunning = true)
+        assertEquals(
+            Res.string.automation_running,
+            oldAutomation.subtitle(SettingsStore(), emptySet()),
+        )
+        assertNull(oldAutomation.authorizationRoute(false, SettingsStore(), emptySet()))
+    }
+
+    @Test
     fun scopedAutomationUsesAutomationStatusAndAuthorization() {
         val settings = SettingsStore()
         val selected = setOf("example.app")
@@ -47,13 +62,11 @@ class PrivilegeRestrictionTest {
         )
         assertNull(state.authorizationRoute(false, settings, emptySet(), selected))
         assertTrue(
-            state.copy(automationRunning = true).serviceEnabled(settings, emptySet(), selected),
+            state.copy(automationRunning = true).serviceEnabled,
         )
-        assertFalse(state.copy(a11yRunning = true).serviceEnabled(settings, emptySet(), selected))
+        assertTrue(state.copy(a11yRunning = true).serviceEnabled)
         assertTrue(
-            state
-                .copy(topAppId = "other.app", a11yRunning = true)
-                .serviceEnabled(settings, emptySet(), selected),
+            state.copy(topAppId = "other.app", a11yRunning = true).serviceEnabled,
         )
     }
 

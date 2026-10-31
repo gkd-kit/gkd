@@ -39,6 +39,7 @@ import li.gkd.app.network.isNetworkRequestAllowed
 import li.gkd.app.record.assertRuntimeRecords
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleSwitchPolicyTest
+import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepositoryChecks
@@ -147,6 +148,7 @@ class ApplicationIntegrationTest {
                     ),
                 )
                 .use { runtime ->
+                    assertDeferredModeHandoff(runtime)
                     assertLogCallerValues()
                     withTimeout(20_000) { runtime.subscriptionInitialization.join() }
                     withTimeout(5_000) { runtime.crashInitialization.join() }
@@ -736,5 +738,50 @@ class ApplicationIntegrationTest {
         )
         assertTrue(layout.tempCache.listFiles().orEmpty().isEmpty())
         assertInspectionProtocol(layout, repository)
+    }
+}
+
+private fun assertDeferredModeHandoff(runtime: DesktopRuntime) {
+    val original = SettingsRepository.settings.value
+    val simulator = runtime.simulator.settings.value
+    try {
+        SettingsRepository.updateSettings {
+            it.copy(
+                enableAutomator = true,
+                enableBlockA11yAppList = false,
+                automatorMode = AutomatorMode.A11y.value,
+            )
+        }
+        runtime.simulator.setPrivilegeAvailable(true)
+        runtime.simulator.update {
+            it.copy(permissions = it.permissions.copy(writeSecureSettings = true))
+        }
+        runtime.services.setEnabled(SimulatedService.Accessibility, true)
+        SettingsRepository.updateAutomatorMode(AutomatorMode.Automation.value)
+        assertTrue(runtime.simulator.settings.value.services.serviceEnabled)
+        assertFalse(runtime.simulator.settings.value.services.automationRunning)
+        runtime.simulator.update { it.copy(device = it.device.copy(topAppId = "handoff.first")) }
+        assertTrue(runtime.simulator.settings.value.services.automationRunning)
+        assertFalse(runtime.simulator.settings.value.services.serviceEnabled)
+        SettingsRepository.updateAutomatorMode(AutomatorMode.A11y.value)
+        runtime.simulator.update {
+            it.copy(permissions = it.permissions.copy(writeSecureSettings = false))
+        }
+        runtime.simulator.update { it.copy(device = it.device.copy(topAppId = "handoff.denied")) }
+        assertTrue(runtime.simulator.settings.value.services.automationRunning)
+        runtime.simulator.update {
+            it.copy(permissions = it.permissions.copy(writeSecureSettings = true))
+        }
+        runtime.simulator.update { it.copy(device = it.device.copy(topAppId = "handoff.second")) }
+        assertTrue(runtime.simulator.settings.value.services.serviceEnabled)
+        assertFalse(runtime.simulator.settings.value.services.automationRunning)
+        runtime.services.setEnabled(SimulatedService.Accessibility, false)
+        SettingsRepository.updateSettings { it.copy(enableAutomator = false) }
+        SettingsRepository.updateAutomatorMode(AutomatorMode.Automation.value)
+        runtime.simulator.update { it.copy(device = it.device.copy(topAppId = "handoff.disabled")) }
+        assertFalse(runtime.simulator.settings.value.services.automationRunning)
+    } finally {
+        SettingsRepository.updateSettings { original }
+        runtime.simulator.update { simulator }
     }
 }

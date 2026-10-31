@@ -23,6 +23,8 @@ class SimulatorStore(
 
     var onAppCatalogChanged: (() -> Unit)? = null
 
+    var onTopAppChanged: ((String) -> Unit)? = null
+
     private val json = Json { encodeDefaults = true }
     private var hostBatteryPercent: Int? = null
 
@@ -87,6 +89,8 @@ class SimulatorStore(
                 previous.permissions.queryPackagesAbnormal != next.permissions.queryPackagesAbnormal
         )
             onAppCatalogChanged?.invoke()
+        if (previous.device.topAppId != next.device.topAppId)
+            onTopAppChanged?.invoke(next.device.topAppId)
     }
 
     fun configure(value: DesktopEnvironment) = update { it.withEnvironment(value) }

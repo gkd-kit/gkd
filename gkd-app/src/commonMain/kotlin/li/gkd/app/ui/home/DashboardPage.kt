@@ -239,7 +239,7 @@ fun dashboardPage(
                 }
                 ServiceStatusCard(
                     stringResource(platform.subtitle(store, scopeApps, automationScopeApps)),
-                    platform.serviceEnabled(store, scopeApps, automationScopeApps),
+                    platform.serviceEnabled,
                     { enabled ->
                         when (
                             val route =

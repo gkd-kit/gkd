@@ -229,6 +229,12 @@ object SettingsRepositoryChecks {
             repo.updateAutomatorMode(AutomatorMode.A11y.value)
             assertTrue(repo.settings.value.enableAutomator)
             repo.updateAutomatorMode(AutomatorMode.Automation.value)
+            assertTrue(repo.settings.value.enableAutomator)
+            repo.awaitPersistence()
+            assertTrue(diskSettings().enableAutomator)
+            assertEquals(AutomatorMode.Automation.value, diskSettings().automatorMode)
+            repo.updateSettings { it.copy(enableAutomator = false) }
+            repo.updateAutomatorMode(AutomatorMode.A11y.value)
             assertFalse(repo.settings.value.enableAutomator)
             assertEquals(8123, repo.settings.value.httpServerPort)
             coroutineScope {

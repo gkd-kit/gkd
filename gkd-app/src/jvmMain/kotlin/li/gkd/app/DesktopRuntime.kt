@@ -118,6 +118,22 @@ class DesktopRuntime(
             toast.show(service.lifecycleToast(running))
         }
         simulator.onAppCatalogChanged = { AppInfoRepository.requestRefresh() }
+        simulator.onTopAppChanged = { appId ->
+            if (SettingsRepository.settings.value.enableAutomator) {
+                val blocked =
+                    SettingsRepository.settings.value.enableBlockA11yAppList &&
+                        appId in SettingsRepository.actualBlockA11yAppList
+                if (blocked) {
+                    services.setEnabled(SimulatedService.Accessibility, false)
+                    services.setEnabled(SimulatedService.Automation, false)
+                } else if (SettingsRepository.appUsesA11y(appId)) {
+                    if (simulator.settings.value.permissions.writeSecureSettings)
+                        services.setEnabled(SimulatedService.Accessibility, true)
+                } else {
+                    services.setEnabled(SimulatedService.Automation, true)
+                }
+            }
+        }
         AppInfoRepository.requestRefresh()
         Thread.setDefaultUncaughtExceptionHandler(crashHandler)
     }
@@ -173,6 +189,7 @@ class DesktopRuntime(
     override fun close() {
         simulator.onServiceRunningChanged = null
         simulator.onAppCatalogChanged = null
+        simulator.onTopAppChanged = null
         if (Thread.getDefaultUncaughtExceptionHandler() === crashHandler)
             Thread.setDefaultUncaughtExceptionHandler(
                 previousCrashHandler,

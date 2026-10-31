@@ -2,10 +2,7 @@ package li.gkd.app.ui
 
 import android.content.Intent
 import android.net.Uri
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.gkd.app.crash.FileCrashStorage
 import li.gkd.app.entry.EntryActivity
@@ -14,12 +11,7 @@ import li.gkd.app.logging.LogUtils
 import li.gkd.app.permission.PermissionRequests
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.service.ServiceController
-import li.gkd.app.priv.AutomationService
-import li.gkd.app.priv.privilegeContextFlow
-import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.resources.*
-import li.gkd.app.service.A11yService
-import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.StorageMaintenance
@@ -106,46 +98,7 @@ class AndroidMainState(
             }
         }
 
-    override fun close() {
-        updateAutomatorModeJob?.cancel()
-    }
-
-    private var updateAutomatorModeJob: Job? = null
-
-    private fun applyAutomatorMode(option: AutomatorMode) {
-        SettingsRepository.updateAutomatorMode(option.value)
-        A11yService.instance?.shutdown()
-        uiAutomationFlow.value?.shutdown()
-    }
-
-    fun updateAutomatorMode(option: AutomatorMode) {
-        updateAutomatorModeJob?.cancel()
-        if (SettingsRepository.settings.value.automatorMode == option.value) return
-        if (option != AutomatorMode.Automation || privilegeContextFlow.value == null) {
-            applyAutomatorMode(option)
-            return
-        }
-        updateAutomatorModeJob =
-            mainVm.scope.launch {
-                val occupied =
-                    try {
-                        withContext(Dispatchers.IO) {
-                            AutomationService.isOtherUiAutomationRunning()
-                        }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        ToastUtils.show(Res.string.automation_state_check_failed.getSync(e.message))
-                        LogUtils.e("detect automation state failed", e)
-                        return@launch
-                    }
-                if (occupied) {
-                    AutomationService.showOccupiedWarning()
-                    return@launch
-                }
-                applyAutomatorMode(option)
-            }
-    }
+    override fun close() {}
 
     init {
         mainVm.scope.launchLogged(Dispatchers.IO) {

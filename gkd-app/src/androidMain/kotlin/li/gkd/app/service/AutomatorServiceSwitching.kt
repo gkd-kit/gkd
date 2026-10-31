@@ -65,41 +65,31 @@ private suspend fun enableA11yService(restartIfEnabled: Boolean): Boolean {
     return true
 }
 
-private suspend fun switchA11yService() {
-    if (A11yService.isRunning.value) {
-        A11yService.instance?.disableSelf()
-    } else {
-        if (!PermissionStates.writeSecureSettings.updateAndGet()) {
-            if (!PermissionStates.writeSecureSettings.value) {
-                ToastUtils.show(Res.string.secure_settings_permission_required.getSync())
-                return
-            }
-        }
-        if (!enableA11yService(restartIfEnabled = true)) return
-        delay(A11Y_AWAIT_START_TIME.milliseconds)
-        // https://github.com/orgs/gkd-kit/discussions/799
-        if (!A11yService.isRunning.value) {
-            ToastUtils.show(Res.string.a11y_enable_failed.getSync())
-            showAccessRestrictedSettingsDialog()
+private suspend fun startA11yService() {
+    if (!PermissionStates.writeSecureSettings.updateAndGet()) {
+        if (!PermissionStates.writeSecureSettings.value) {
+            ToastUtils.show(Res.string.secure_settings_permission_required.getSync())
             return
         }
     }
-}
-
-private fun switchAutomationService() {
-    val newEnabled = uiAutomationFlow.value == null
-    uiAutomationFlow.value?.shutdown()
-    if (newEnabled && privilegeContextFlow.value != null) {
-        AutomationService.tryConnect()
+    if (!enableA11yService(restartIfEnabled = true)) return
+    delay(A11Y_AWAIT_START_TIME.milliseconds)
+    // https://github.com/orgs/gkd-kit/discussions/799
+    if (!A11yService.isRunning.value) {
+        ToastUtils.show(Res.string.a11y_enable_failed.getSync())
+        showAccessRestrictedSettingsDialog()
     }
 }
 
 fun switchAutomatorService(@CallSite loc: String = "") =
     modifyAutomatorService(loc = loc) {
-        if (currentAppUseA11y) {
-            switchA11yService()
+        if (A11yService.isRunning.value || uiAutomationFlow.value != null) {
+            A11yService.instance?.shutdown()
+            uiAutomationFlow.value?.shutdown()
+        } else if (currentAppUseA11y) {
+            startA11yService()
         } else {
-            switchAutomationService()
+            AutomationService.tryConnect()
         }
     }
 
@@ -199,9 +189,7 @@ val a11yPartDisabledFlow by lazy {
 }
 
 fun updateTopTaskAppId(value: String) {
-    if (settings.value.enableBlockA11yAppList || SettingsRepository.hasServiceScope) {
-        topAppIdFlow.value = value
-    }
+    topAppIdFlow.value = value
 }
 
 fun initServiceScope() {
