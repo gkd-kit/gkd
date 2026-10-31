@@ -1,0 +1,63 @@
+{
+  "title": "开屏根窗口缺少状态事件",
+  "description": "依据诊断 34213794 的窗口错位构造回归：任务栈已报告开屏 Activity，状态事件属于 17944，广告根窗口为 17945且没有状态事件。包名和节点为合成数据，时间为确定性测试顺序，不代表真机耗时；成功点击是修复后的预期，不是原日志结果。",
+  "diagnosticUrl": "https://i.gkd.li/log/34213794",
+  "engineVersion": "1.13.0-beta-3-dcdea2d7",
+  "appId": "app.test.splash",
+  "initialAppId": "app.test.launcher",
+  "initialActivity": "app.test.launcher.Home",
+  "activity": "app.test.splash.Welcome",
+  "initialWindow": 3,
+  "window": 17944,
+  "rootWindow": 17945,
+  "taskAt": 0,
+  "windowAt": 100,
+  "rootAt": 200,
+  "candidateAt": 210,
+  "repeatAt": 250,
+  "completedAt": 300,
+  "root": {
+    "name": "android.widget.FrameLayout",
+    "children": [
+      {
+        "name": "android.widget.TextView",
+        "attributes": { "text": "跳过 3", "visibleToUser": true }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "WI-001",
+      "title": "没有后续状态事件也能跳过",
+      "description": "广告根窗口不同于状态事件窗口，根节点结合任务栈确认前台后执行匹配。",
+      "source": "derived",
+      "inputChange": {
+        "type": "None",
+        "description": "查询期间不再发送状态事件或倒计时更新。"
+      },
+      "expected": {
+        "description": "匹配并点击跳过 3，仅提交一次。",
+        "matched": true,
+        "actions": ["跳过 3"],
+        "commits": 1
+      }
+    },
+    {
+      "id": "WI-002",
+      "title": "新的根窗口使旧点击失效",
+      "description": "找到广告目标后，查询完成前另一个没有状态事件的根窗口出现。",
+      "source": "derived",
+      "inputChange": {
+        "type": "NewRoot",
+        "description": "根窗口切换至 17946，不发送窗口状态事件。",
+        "windowId": 17946
+      },
+      "expected": {
+        "description": "取消旧查询，不点击旧广告目标，也不提交成功次数。",
+        "matched": true,
+        "actions": [],
+        "commits": 0
+      }
+    }
+  ]
+}

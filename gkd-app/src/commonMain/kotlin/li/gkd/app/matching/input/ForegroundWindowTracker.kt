@@ -24,6 +24,10 @@ class ForegroundWindowTracker {
         // A service may attach to an already open window without receiving a new window event.
         if (windowId == null) {
             identities[id] = initialIdentity?.takeIf { it.appId == app } ?: ForegroundIdentity(app)
+        } else if (knownIdentity(id, app) == null) {
+            // Content-only windows still provide package evidence. Do not inherit the
+            // previous window's Activity; ForegroundTracker reconciles task evidence.
+            identities[id] = ForegroundIdentity(app)
         }
         return select(id, app)
     }

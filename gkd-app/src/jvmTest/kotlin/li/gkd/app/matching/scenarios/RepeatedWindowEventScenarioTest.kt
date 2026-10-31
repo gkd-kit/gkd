@@ -56,6 +56,8 @@ private data class ShareScenario(
     val completedAt: Long,
     val root: MatchSimulatedNode,
     val cases: List<ScenarioCase>,
+    val initialAppId: String = appId,
+    val rootWindow: Int = window,
 )
 
 @Serializable
@@ -70,6 +72,8 @@ private data class ScenarioCase(
 
 @Serializable
 private enum class InputChangeType {
+    None,
+    NewRoot,
     RepeatWindow,
     NewWindow,
     NewActivity,
@@ -98,9 +102,15 @@ class RepeatedWindowEventScenarioTest {
 
     @Test fun WE003_newActivityNeverClicksOldSkip() = replay("WE-003")
 
-    private fun replay(caseId: String) = runTest {
-        val fixture =
-            checkNotNull(javaClass.getResource("/matching-scenarios/repeated-window-event.json"))
+    @Test
+    fun WI001_contentOnlySplashStillClicks() = replay("WI-001", "content-only-splash-window.json")
+
+    @Test
+    fun WI002_replacedContentOnlyRootNeverClicksOldSkip() =
+        replay("WI-002", "content-only-splash-window.json")
+
+    private fun replay(caseId: String, file: String = "repeated-window-event.json") = runTest {
+        val fixture = checkNotNull(javaClass.getResource("/matching-scenarios/$file"))
         val sample = Json.decodeFromString<ShareScenario>(fixture.readText())
         val case = sample.cases.single { it.id == caseId }
         val change = case.inputChange
@@ -109,7 +119,7 @@ class RepeatedWindowEventScenarioTest {
             "${case.id} ${case.title}: ${case.description}; " +
                 "输入：${change.description}; 预期：${expected.description}; ${sample.diagnosticUrl}"
         val main = ForegroundIdentity(sample.appId, sample.activity)
-        val initial = main.copy(activityId = sample.initialActivity)
+        val initial = ForegroundIdentity(sample.initialAppId, sample.initialActivity)
         val foreground = ForegroundTracker(initial)
         val windows = ForegroundWindowTracker()
         val policy = MatchTimingPolicy()
@@ -149,7 +159,7 @@ class RepeatedWindowEventScenarioTest {
             advanceTo(sample.windowAt)
             observeWindow(sample.window, main)
             advanceTo(sample.rootAt)
-            windows.observeRoot(sample.window, sample.appId, initial)
+            windows.observeRoot(sample.rootWindow, sample.appId, initial)
             val confirmed =
                 foreground.observe(
                     ForegroundSource.Nodes,
@@ -257,6 +267,13 @@ class RepeatedWindowEventScenarioTest {
             assertTrue(actions.isEmpty(), label)
             advanceTo(sample.repeatAt)
             when (change.type) {
+                InputChangeType.None -> Unit
+                InputChangeType.NewRoot -> {
+                    if (windows.observeRoot(requireNotNull(change.windowId), sample.appId, main)) {
+                        state = state.copy(page = Any())
+                        coordinator.invalidate(MatchInvalidationReason.ForegroundConflict)
+                    }
+                }
                 InputChangeType.NewWindow -> observeWindow(requireNotNull(change.windowId), main)
                 InputChangeType.NewActivity ->
                     observeWindow(

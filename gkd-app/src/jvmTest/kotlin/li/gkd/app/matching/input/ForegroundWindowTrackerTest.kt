@@ -32,9 +32,9 @@ class ForegroundWindowTrackerTest {
         assertFalse(windows.observeRoot(10, "bili", video))
         // Recorded regression: the search root arrives before either Activity callback.
         assertTrue(windows.observeRoot(20, "bili", video))
-        assertNull(windows.identity)
+        assertEquals(ForegroundIdentity("bili"), windows.identity)
         assertFalse(windows.isCurrentKnownWindow(10, "bili"))
-        assertFalse(windows.isCurrentKnownWindow(20, "bili"))
+        assertTrue(windows.isCurrentKnownWindow(20, "bili"))
         assertFalse(windows.observeRoot(20, "bili", video))
         assertTrue(windows.observeState(20, search))
         assertTrue(windows.isCurrentKnownWindow(20, "bili"))
@@ -58,7 +58,7 @@ class ForegroundWindowTrackerTest {
         val policy = MatchTimingPolicy()
         windows.observeState(10, video)
         windows.observeRoot(11, "bili", video)
-        assertNull(windows.identity)
+        assertEquals(ForegroundIdentity("bili"), windows.identity)
         windows.observeState(11, video)
         assertTrue(windows.isCurrentKnownWindow(11, "bili"))
         assertEquals(video, windows.identity)
@@ -106,5 +106,25 @@ class ForegroundWindowTrackerTest {
         assertTrue(second.observeRoot(20, "bili", search))
         assertEquals(search, second.identity)
         assertNull(second.knownIdentity(10, "bili"))
+    }
+
+    @Test
+    fun splashRootWithoutStateEventConfirmsPendingTask() {
+        val launcher = ForegroundIdentity("launcher", "Home")
+        val splash = ForegroundIdentity("smzdm", "Welcome")
+        val windows = ForegroundWindowTracker()
+        val foreground = ForegroundTracker(launcher)
+        val policy = MatchTimingPolicy()
+        windows.observeState(3, launcher)
+        foreground.observe(ForegroundSource.TaskStack, splash, policy, 100)
+        // Regression: state event belongs to 17944, countdown content/root to 17945.
+        windows.observeState(17944, splash)
+        windows.observeRoot(17945, splash.appId, launcher)
+        assertEquals(ForegroundIdentity(splash.appId), windows.identity)
+        val result = foreground.observe(ForegroundSource.Nodes, windows.identity!!, policy, 200)
+        assertEquals(splash, result.confirmed)
+        assertNull(result.pending)
+        assertTrue(windows.isCurrentKnownWindow(17945, splash.appId))
+        assertFalse(windows.isCurrentKnownWindow(17944, splash.appId))
     }
 }
