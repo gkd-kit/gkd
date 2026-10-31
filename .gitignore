@@ -2,6 +2,8 @@
 .idea
 .vscode
 .kotlin
+.local
+.temp
 
 node_modules
 kotlin-js-store
@@ -9,16 +11,15 @@ kotlin-js-store
 /*/build
 /*/dist
 
-.cxx
-.DS_Store
-.externalNativeBuild
-
 *.jks
 *.keystore
 *.apk
 *.zip
 *.cache
+
+.cxx
+.DS_Store
+.externalNativeBuild
+
 local.properties
 libs.versions.updates.toml
-/.local/
-/.temp/
