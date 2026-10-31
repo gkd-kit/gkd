@@ -2,7 +2,9 @@ package li.gkd.app.service
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Bitmap
+import android.os.SystemClock
 import android.view.Display
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -11,6 +13,7 @@ import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -97,6 +100,7 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     private var tempShutdownFlag = false
 
     override fun shutdown(temp: Boolean) {
+        keepAliveOverlayJob?.cancel()
         if (temp) {
             tempShutdownFlag = true
         }
@@ -170,17 +174,41 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
         }
     }
 
+    private var keepAliveOverlayJob: Job? = null
+
     private fun attachKeepAliveOverlay() {
-        if (
-            !KeepAliveOverlayCoordinator.acquire(
-                source = KeepAliveOverlayCoordinator.Source.Accessibility,
-                owner = this,
-                context = this,
-                windowType = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            )
-        ) {
-            ToastUtils.show(Res.string.a11y_keep_alive_failed.getSync())
-        }
+        keepAliveOverlayJob?.cancel()
+        val connectedAt = SystemClock.elapsedRealtime()
+        keepAliveOverlayJob =
+            scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                val retryDelays = longArrayOf(250, 750, 1500)
+                for (attempt in 0..retryDelays.size) {
+                    if (attempt > 0) delay(retryDelays[attempt - 1])
+                    val result =
+                        KeepAliveOverlayCoordinator.acquire(
+                            source = KeepAliveOverlayCoordinator.Source.Accessibility,
+                            owner = this@A11yService,
+                            context = this@A11yService,
+                            windowType = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                        )
+                    val elapsed = SystemClock.elapsedRealtime() - connectedAt
+                    if (result.isSuccess) {
+                        LogUtils.i(
+                            "A11y keep-alive overlay attached: attempt=${attempt + 1}, elapsed=${elapsed}ms",
+                        )
+                        return@launch
+                    }
+                    val retry =
+                        result.exceptionOrNull() is WindowManager.BadTokenException &&
+                            attempt < retryDelays.size
+                    LogUtils.w(
+                        "A11y keep-alive overlay failed: attempt=${attempt + 1}, elapsed=${elapsed}ms, retry=$retry",
+                        result.exceptionOrNull(),
+                    )
+                    if (!retry) break
+                }
+                ToastUtils.show(Res.string.a11y_keep_alive_failed.getSync())
+            }
     }
 
     private fun releaseKeepAliveOverlayAfterHandoff() {
@@ -217,6 +245,11 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
         lifecycleHooks.dispatchDestroyed()
         super.onDestroy()
         AndroidAutomationSessions.recordServiceEvent(this, MatchServiceEvent.Disconnected)
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        keepAliveOverlayJob?.cancel()
+        return super.onUnbind(intent)
     }
 
     companion object {
