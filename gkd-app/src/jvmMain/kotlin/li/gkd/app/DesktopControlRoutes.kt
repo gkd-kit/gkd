@@ -320,6 +320,7 @@ fun Route.desktopControlRoutes(
                 "doubleClick",
                 "longClick",
                 "drag",
+                "longDrag",
                 "hover",
                 "scroll",
                 "key" ->

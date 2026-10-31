@@ -1,7 +1,6 @@
 package li.gkd.app.ui.component
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,7 +89,7 @@ class ReorderSession<T, K>(
     initialItems: List<T>,
     private val keyOf: (T) -> K,
 ) {
-    private var sourceItems = initialItems
+    private var sourceItems by mutableStateOf(initialItems)
 
     var items by mutableStateOf(initialItems)
         private set
@@ -103,9 +102,7 @@ class ReorderSession<T, K>(
     fun sync(items: List<T>) {
         if (items == sourceItems) return
         sourceItems = items
-        if (!dragging) {
-            this.items = items
-        }
+        this.items = if (dragging) mergeOrder(items) else items
     }
 
     fun startDragging() {
@@ -133,19 +130,7 @@ class ReorderSession<T, K>(
         val wasMoved = moved
         val mergedItems =
             if (wasMoved) {
-                val latestByKey = sourceItems.associateBy(keyOf)
-                val consumedKeys = mutableSetOf<K>()
-                buildList {
-                    items.forEach { item ->
-                        val key = keyOf(item)
-                        latestByKey[key]?.let { latestItem ->
-                            if (consumedKeys.add(key)) add(latestItem)
-                        }
-                    }
-                    sourceItems.forEach { item ->
-                        if (consumedKeys.add(keyOf(item))) add(item)
-                    }
-                }
+                mergeOrder(sourceItems)
             } else {
                 sourceItems
             }
@@ -161,6 +146,22 @@ class ReorderSession<T, K>(
         moved = false
         return result
     }
+
+    private fun mergeOrder(latestItems: List<T>): List<T> {
+        val latestByKey = latestItems.associateBy(keyOf)
+        val consumedKeys = mutableSetOf<K>()
+        return buildList {
+            items.forEach { item ->
+                val key = keyOf(item)
+                latestByKey[key]?.let { latestItem ->
+                    if (consumedKeys.add(key)) add(latestItem)
+                }
+            }
+            latestItems.forEach { item ->
+                if (consumedKeys.add(keyOf(item))) add(item)
+            }
+        }
+    }
 }
 
 @Composable
@@ -169,6 +170,7 @@ fun <T, K> rememberReorderSession(
     keyOf: (T) -> K,
 ): ReorderSession<T, K> {
     val state = remember { ReorderSession(items, keyOf) }
-    SideEffect { state.sync(items) }
+    // Reconcile before consumers combine the list with data from this composition.
+    state.sync(items)
     return state
 }

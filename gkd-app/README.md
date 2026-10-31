@@ -168,6 +168,7 @@ Invoke-RestMethod -NoProxy "$api/desktop/semantics?window=app"
 {"window":"app","type":"text","node":"可编辑节点 id","text":"新内容"}
 {"window":"app","type":"click","x":120,"y":200}
 {"window":"app","type":"longClick","x":120,"y":200}
+{"window":"app","type":"longDrag","x":120,"y":300,"endX":120,"endY":180}
 {"window":"app","type":"scroll","x":120,"y":500,"amount":3}
 {"window":"app","type":"key","key":"Escape"}
 ```

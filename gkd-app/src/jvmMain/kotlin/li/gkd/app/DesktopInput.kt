@@ -126,7 +126,8 @@ object DesktopInput {
                 }
             }
 
-            "drag" -> {
+            "drag",
+            "longDrag" -> {
                 require(
                     request.endX in -bounds.width..bounds.width * 2 &&
                         request.endY in -bounds.height..bounds.height * 2,
@@ -140,6 +141,7 @@ object DesktopInput {
                     InputEvent.BUTTON1_DOWN_MASK,
                 )
                 try {
+                    if (request.type == "longDrag") delay(800)
                     repeat(12) { step ->
                         mouse(
                             MouseEvent.MOUSE_DRAGGED,
@@ -147,6 +149,7 @@ object DesktopInput {
                             request.y + (request.endY - request.y) * (step + 1) / 12,
                             modifiers = InputEvent.BUTTON1_DOWN_MASK,
                         )
+                        if (request.type == "longDrag") delay(16)
                     }
                 } finally {
                     mouse(
