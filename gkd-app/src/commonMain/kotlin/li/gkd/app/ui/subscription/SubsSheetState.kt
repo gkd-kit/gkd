@@ -361,6 +361,8 @@ class SubsSheetState(
                                     GkTriggerCount(
                                         count = stats.value.count,
                                         lastTriggerTime = stats.value.lastTime,
+                                        showTooltipOnClick = true,
+                                        showExactTime = true,
                                     )
                                 is Loadable.Loading -> Unit
                                 is Loadable.Failure ->

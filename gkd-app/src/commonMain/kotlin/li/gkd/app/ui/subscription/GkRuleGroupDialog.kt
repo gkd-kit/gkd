@@ -156,6 +156,8 @@ fun GkRuleGroupDialog(
                         GkTriggerCount(
                             count = triggerStats.value.count,
                             lastTriggerTime = triggerStats.value.lastTime,
+                            showTooltipOnClick = true,
+                            showExactTime = true,
                         )
                     is Loadable.Loading -> Unit
                     is Loadable.Failure ->

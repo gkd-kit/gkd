@@ -12,6 +12,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import li.gkd.app.resources.*
+import li.gkd.app.time.format
 import li.gkd.app.ui.text.formatTimeAgo
 import org.jetbrains.compose.resources.stringResource
 
@@ -21,11 +22,16 @@ fun GkTriggerCount(
     modifier: Modifier = Modifier,
     lastTriggerTime: Long? = null,
     showTooltip: Boolean = true,
+    showTooltipOnClick: Boolean = false,
+    showExactTime: Boolean = false,
 ) {
     if (count == 0L) return
     val text = count.toString()
     val timeDescription = lastTriggerTime?.let {
-        stringResource(Res.string.trigger_last_time, formatTimeAgo(it))
+        stringResource(
+            Res.string.trigger_last_time,
+            if (showExactTime) it.format("yyyy-MM-dd HH:mm:ss") else formatTimeAgo(it),
+        )
     }
     val description =
         listOfNotNull(
@@ -37,6 +43,7 @@ fun GkTriggerCount(
         if (showTooltip)
             timeDescription ?: stringResource(Res.string.notification_variable_triggers)
         else null,
+        showOnClick = showTooltipOnClick,
     ) {
         Row(
             modifier.clearAndSetSemantics { contentDescription = description },
