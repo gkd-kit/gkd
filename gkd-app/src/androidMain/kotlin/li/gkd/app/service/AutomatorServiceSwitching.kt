@@ -48,6 +48,23 @@ private fun modifyAutomatorService(
     }
 }
 
+private suspend fun enableA11yService(restartIfEnabled: Boolean): Boolean {
+    if (A11yService.isRunning.value) return false
+    val names = app.getSecureA11yServices()
+    app.putSecureInt(Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+    if (restartIfEnabled && names.contains(A11yService.a11yCn)) {
+        // 无障碍出现故障，先移除再添加以触发系统重启服务。
+        names.remove(A11yService.a11yCn)
+        app.putSecureA11yServices(names)
+        // 必须等待一段时间，否则概率不会触发系统重启无障碍。
+        delay(A11Y_AWAIT_FIX_TIME.milliseconds)
+        if (!currentAppUseA11y) return false
+    }
+    names.add(A11yService.a11yCn)
+    app.putSecureA11yServices(names)
+    return true
+}
+
 private suspend fun switchA11yService() {
     if (A11yService.isRunning.value) {
         A11yService.instance?.disableSelf()
@@ -58,15 +75,7 @@ private suspend fun switchA11yService() {
                 return
             }
         }
-        val names = app.getSecureA11yServices()
-        app.putSecureInt(Settings.Secure.ACCESSIBILITY_ENABLED, 1)
-        if (names.contains(A11yService.a11yCn)) { // 当前无障碍异常, 重启服务
-            names.remove(A11yService.a11yCn)
-            app.putSecureA11yServices(names)
-            delay(A11Y_AWAIT_FIX_TIME.milliseconds)
-        }
-        names.add(A11yService.a11yCn)
-        app.putSecureA11yServices(names)
+        if (!enableA11yService(restartIfEnabled = true)) return
         delay(A11Y_AWAIT_START_TIME.milliseconds)
         // https://github.com/orgs/gkd-kit/discussions/799
         if (!A11yService.isRunning.value) {
@@ -112,18 +121,7 @@ private fun skipBlockApp(): Boolean {
 private suspend fun fixA11yService() {
     if (!A11yService.isRunning.value && PermissionStates.writeSecureSettings.updateAndGet()) {
         if (skipBlockApp()) return
-        val names = app.getSecureA11yServices()
-        val a11yBroken = names.contains(A11yService.a11yCn)
-        if (a11yBroken) {
-            // 无障碍出现故障, 重启服务
-            names.remove(A11yService.a11yCn)
-            app.putSecureA11yServices(names)
-            // 必须等待一段时间, 否则概率不会触发系统重启无障碍
-            delay(A11Y_AWAIT_FIX_TIME.milliseconds)
-            if (!currentAppUseA11y) return
-        }
-        names.add(A11yService.a11yCn)
-        app.putSecureA11yServices(names)
+        if (!enableA11yService(restartIfEnabled = true)) return
         delay(A11Y_AWAIT_START_TIME.milliseconds)
         if (currentAppUseA11y && !A11yService.isRunning.value) {
             ToastUtils.show(Res.string.a11y_restart_failed.getSync())
@@ -159,7 +157,7 @@ val currentAppBlocked
         settings.value.enableBlockA11yAppList &&
             topAppIdFlow.value in SettingsRepository.actualBlockA11yAppList
 
-private fun applyScopedService(disabled: Boolean) {
+private suspend fun applyScopedService(disabled: Boolean) {
     if (!settings.value.enableAutomator) {
         return
     }
@@ -175,9 +173,7 @@ private fun applyScopedService(disabled: Boolean) {
         if (!PermissionStates.writeSecureSettings.stateFlow.value) {
             return
         }
-        val names = app.getSecureA11yServices()
-        names.add(A11yService.a11yCn)
-        app.putSecureA11yServices(names)
+        enableA11yService(restartIfEnabled = false)
     } else {
         AutomationService.tryConnect(true)
     }
