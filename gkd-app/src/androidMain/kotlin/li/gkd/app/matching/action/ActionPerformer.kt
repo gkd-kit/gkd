@@ -12,6 +12,7 @@ import li.gkd.app.data.calc
 import li.gkd.app.matching.diagnostics.MatchActionOperation
 import li.gkd.app.matching.diagnostics.MatchActionTarget
 import li.gkd.app.matching.diagnostics.MatchStage
+import li.gkd.app.matching.diagnostics.diagnosticText
 import li.gkd.app.matching.diagnostics.observeActionOperation
 import li.gkd.app.model.ActionResult
 import li.gkd.app.priv.privilegeContextFlow
@@ -49,6 +50,7 @@ sealed class ActionPerformer(val action: String) {
                             bounds.right,
                             bounds.bottom,
                             node.isVisibleToUser,
+                            text = node.text.diagnosticText(),
                         ),
                 )
             }

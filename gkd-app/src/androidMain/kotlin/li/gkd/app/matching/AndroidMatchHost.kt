@@ -1,5 +1,6 @@
 package li.gkd.app.matching
 
+import android.graphics.Rect
 import android.util.Log
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
@@ -16,14 +17,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.gkd.app.META
 import li.gkd.app.matching.action.ActionPerformer
+import li.gkd.app.matching.diagnostics.MatchEventBatch
 import li.gkd.app.matching.diagnostics.MatchEventDrop
 import li.gkd.app.matching.diagnostics.MatchNodeProvenance
 import li.gkd.app.matching.diagnostics.MatchNodeReadReason
 import li.gkd.app.matching.diagnostics.MatchNodeRole
 import li.gkd.app.matching.diagnostics.MatchNodeSource
+import li.gkd.app.matching.diagnostics.MatchNodeSummary
 import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.diagnostics.MatchWindowEvent
+import li.gkd.app.matching.diagnostics.diagnosticText
 import li.gkd.app.matching.input.A11yEvent
 import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.AndroidForegroundState
@@ -70,6 +74,7 @@ import li.gkd.app.util.monotonicTimeMillis
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 private val diagnosticConnectionIds = AtomicLong()
 private val diagnosticReadIds = AtomicLong()
+private val diagnosticEventIds = AtomicLong()
 
 class AndroidMatchHost(private val service: AndroidAutomationSession) {
     val connectionId = diagnosticConnectionIds.incrementAndGet()
@@ -201,7 +206,11 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     fun onA11yEvent(event: AccessibilityEvent?) {
         // Own content changes are ignored by matching; omit their diagnostic noise as well.
         if (event?.eventType == CONTENT_CHANGED && event.packageName == META.appId) return
-        if (event != null && coordinator.diagnostics.enabled) {
+        val diagnosticEventId =
+            if (event != null && coordinator.diagnostics.enabled)
+                diagnosticEventIds.incrementAndGet()
+            else null
+        if (event != null && diagnosticEventId != null) {
             coordinator.diagnostics.record(
                 0,
                 MatchStage.Root,
@@ -215,6 +224,9 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                         event.eventTime,
                         event.packageName?.toString(),
                         event.className?.toString(),
+                        eventId = diagnosticEventId,
+                        text = event.text.take(8).map { it.diagnosticText().orEmpty() },
+                        contentDescription = event.contentDescription.diagnosticText(),
                     ),
             )
         }
@@ -258,7 +270,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             )
         if (!accepted) return
         val a11yEvent =
-            event.toA11yEvent(key)
+            event.toA11yEvent(key, diagnosticEventId)
                 ?: run {
                     coordinator.diagnostics.entry("event", "event_metadata_unavailable")
                     return
@@ -343,6 +355,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         source: MatchNodeSource,
         reason: MatchNodeReadReason,
         parentReadId: Long? = null,
+        eventId: Long? = null,
     ): PageNode {
         val provenance =
             if (coordinator.diagnostics.enabled)
@@ -358,6 +371,22 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     windowId = node.windowId,
                     acquiredAtMillis = monotonicTimeMillis(),
                     parentReadId = parentReadId,
+                    eventId = eventId,
+                    summary =
+                        Rect().let { bounds ->
+                            node.getBoundsInScreen(bounds)
+                            MatchNodeSummary(
+                                node.className?.toString(),
+                                node.viewIdResourceName,
+                                node.text.diagnosticText(),
+                                node.contentDescription.diagnosticText(),
+                                bounds.left,
+                                bounds.top,
+                                bounds.right,
+                                bounds.bottom,
+                                node.childCount,
+                            )
+                        },
                 )
             else null
         if (provenance != null)
@@ -415,6 +444,18 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         if (consumedEvents.isEmpty()) return
         try {
             val latestEvent = consumedEvents.last()
+            if (coordinator.diagnostics.enabled) {
+                coordinator.diagnostics.record(
+                    0,
+                    MatchStage.Root,
+                    "event_batch_selected",
+                    eventBatch =
+                        MatchEventBatch(
+                            consumedEvents.mapNotNull { it.diagnosticEventId },
+                            latestEvent.diagnosticEventId,
+                        ),
+                )
+            }
             val stateEvent = latestStateEvent
             if (stateEvent != null && latestEvent.sourceTimeMillis < stateEvent.sourceTimeMillis) {
                 coordinator.diagnostics.entry("consume_event", "stale_event_before_source")
@@ -490,6 +531,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                             node,
                             MatchNodeSource.Event,
                             MatchNodeReadReason.Event,
+                            eventId = latestEvent.diagnosticEventId,
                         )
                 }
                 true

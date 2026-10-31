@@ -73,10 +73,24 @@ class MatchDiagnosticsTest {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy(), capacity = 10)
         // An undefined event window must remain distinguishable from a real target window.
-        val event = MatchWindowEvent(32, -1, 0, 0, 100, "app", "Search")
-        val target = MatchActionTarget(7, "app", "more", -100, 20, 0, 120, true)
+        val event =
+            MatchWindowEvent(
+                32,
+                -1,
+                0,
+                0,
+                100,
+                "app",
+                "Search",
+                eventId = 41,
+                text = listOf("6 跳过"),
+                contentDescription = "页面变化",
+            )
+        val batch = MatchEventBatch(listOf(40, 41), 41)
+        val target = MatchActionTarget(7, "app", "more", -100, 20, 0, 120, true, text = "6 跳过")
         val task = MatchTaskObservation(9, "onTaskStackChanged", "app", "Search")
         diagnostics.record(0, MatchStage.Root, "accessibility_event_received", windowEvent = event)
+        diagnostics.record(0, MatchStage.Root, "event_batch_selected", eventBatch = batch)
         diagnostics.record(12, MatchStage.Action, "action_target", "rule", actionTarget = target)
         diagnostics.record(0, MatchStage.Root, "task_result_received", taskObservation = task)
         repeat(30) {
@@ -91,6 +105,7 @@ class MatchDiagnosticsTest {
             )
         assertTrue(capture.session.dropped > 0)
         assertEquals(event, capture.keyEvents.single { it.windowEvent != null }.windowEvent)
+        assertEquals(batch, capture.keyEvents.single { it.eventBatch != null }.eventBatch)
         val action = capture.keyEvents.single { it.actionTarget != null }
         assertEquals(target, action.actionTarget)
         assertEquals(12L, action.runId)
@@ -107,13 +122,26 @@ class MatchDiagnosticsTest {
                 1,
                 2,
                 li.gkd.app.settings.AutomatorMode.A11y,
-                MatchNodeSource.Root,
+                MatchNodeSource.Event,
                 MatchNodeReadReason.Event,
                 3,
                 "app",
                 "Login",
                 4,
                 100,
+                eventId = 41,
+                summary =
+                    MatchNodeSummary(
+                        "android.widget.FrameLayout",
+                        "app:id/content",
+                        null,
+                        "广告容器",
+                        0,
+                        0,
+                        1080,
+                        1920,
+                        2,
+                    ),
             )
         val connection =
             MatchServiceConnection(MatchServiceEvent.Connected, origin.service, origin.connectionId)

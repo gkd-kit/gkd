@@ -86,6 +86,7 @@ data class MatchTrace(
     val windowEvent: MatchWindowEvent? = null,
     val actionTarget: MatchActionTarget? = null,
     val taskObservation: MatchTaskObservation? = null,
+    val eventBatch: MatchEventBatch? = null,
 )
 
 @Serializable
@@ -641,6 +642,7 @@ class MatchDiagnostics(
         windowEvent: MatchWindowEvent? = null,
         actionTarget: MatchActionTarget? = null,
         taskObservation: MatchTaskObservation? = null,
+        eventBatch: MatchEventBatch? = null,
     ) {
         if (!enabled) return
         synchronized(lock) {
@@ -679,6 +681,7 @@ class MatchDiagnostics(
                     windowEvent,
                     actionTarget,
                     taskObservation,
+                    eventBatch,
                 )
             retainKeyEvent(event)
             val dropped =

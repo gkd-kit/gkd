@@ -62,7 +62,28 @@ data class MatchNodeProvenance(
     val acquiredAtMillis: Long,
     val ageMillis: Long = 0,
     val parentReadId: Long? = null,
+    val eventId: Long? = null,
+    val summary: MatchNodeSummary? = null,
 )
+
+/** Local node fields only; no refresh, parent lookup, or tree traversal. */
+@Serializable
+data class MatchNodeSummary(
+    val className: String?,
+    val viewId: String?,
+    val text: String?,
+    val contentDescription: String?,
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+    val childCount: Int,
+)
+
+@Serializable data class MatchEventBatch(val eventIds: List<Long>, val selectedEventId: Long?)
+
+/** Bound diagnostic text without retaining platform CharSequences. */
+fun CharSequence?.diagnosticText(): String? = this?.take(256)?.toString()
 
 @Serializable
 data class MatchFastQueryResult(
@@ -98,6 +119,9 @@ data class MatchWindowEvent(
     val sourceTimeMillis: Long,
     val appId: String?,
     val className: String?,
+    val eventId: Long? = null,
+    val text: List<String> = emptyList(),
+    val contentDescription: String? = null,
 )
 
 @Serializable
@@ -110,6 +134,8 @@ data class MatchActionTarget(
     val right: Int,
     val bottom: Int,
     val visibleToUser: Boolean,
+    // Cached node text at execution, not a refreshed screen observation.
+    val text: String? = null,
 )
 
 @Serializable
@@ -124,6 +150,7 @@ data class MatchTaskObservation(
 fun MatchTrace.isKeyTrace(): Boolean =
     condition == null &&
         (windowEvent != null ||
+            eventBatch != null ||
             actionTarget != null ||
             taskObservation != null ||
             node != null ||
