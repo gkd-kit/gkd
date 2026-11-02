@@ -3,7 +3,6 @@ package li.gkd.app.ui.navigation
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import li.gkd.db.ActionLog
-import li.songe.codeorigin.nameOf
 
 enum class RouteTransition {
     Standard,
@@ -21,47 +20,6 @@ sealed interface AppRoute : NavKey {
     val transition: RouteTransition
         get() = RouteTransition.Standard
 }
-
-val AppRoute.logName: String
-    get() =
-        when (this) {
-            A11YScopeAppListRoute -> nameOf<A11YScopeAppListRoute>()
-            AutomationScopeAppListRoute -> nameOf<AutomationScopeAppListRoute>()
-            is AppConfigRoute -> nameOf<AppConfigRoute>()
-            BlockA11yAppListRoute -> nameOf<BlockA11yAppListRoute>()
-            CrashReportRoute -> nameOf<CrashReportRoute>()
-            EditBlockAppListRoute -> nameOf<EditBlockAppListRoute>()
-            is ImagePreviewRoute -> nameOf<ImagePreviewRoute>()
-            PrivilegeServiceRoute -> nameOf<PrivilegeServiceRoute>()
-            is WebViewRoute -> nameOf<WebViewRoute>()
-            ActionToastRoute -> nameOf<ActionToastRoute>()
-            BlockA11ySetupRoute -> nameOf<BlockA11ySetupRoute>()
-            HomeRoute -> nameOf<HomeRoute>()
-            NotificationTextRoute -> nameOf<NotificationTextRoute>()
-            A11yEventLogRoute -> nameOf<A11yEventLogRoute>()
-            is ActionLogRoute -> nameOf<ActionLogRoute>()
-            ActivityLogRoute -> nameOf<ActivityLogRoute>()
-            AboutRoute -> nameOf<AboutRoute>()
-            AdvancedPageRoute -> nameOf<AdvancedPageRoute>()
-            DebugSettingsRoute -> nameOf<DebugSettingsRoute>()
-            KeepAliveRoute -> nameOf<KeepAliveRoute>()
-            MatchDebugRoute -> nameOf<MatchDebugRoute>()
-            ExternalCallsRoute -> nameOf<ExternalCallsRoute>()
-            QuickSettingsTilesRoute -> nameOf<QuickSettingsTilesRoute>()
-            WorkModeRoute -> nameOf<WorkModeRoute>()
-            SnapshotPageRoute -> nameOf<SnapshotPageRoute>()
-            is SnapshotPreviewRoute -> nameOf<SnapshotPreviewRoute>()
-            SnapshotSettingsRoute -> nameOf<SnapshotSettingsRoute>()
-            is CategoryEditorRoute -> nameOf<CategoryEditorRoute>()
-            is RuleExcludeEditorRoute -> nameOf<RuleExcludeEditorRoute>()
-            is SubsAppGroupListRoute -> nameOf<SubsAppGroupListRoute>()
-            is SubsAppListRoute -> nameOf<SubsAppListRoute>()
-            is SubsCategoryGroupRoute -> nameOf<SubsCategoryGroupRoute>()
-            is SubsCategoryRoute -> nameOf<SubsCategoryRoute>()
-            is SubsGlobalGroupExcludeRoute -> nameOf<SubsGlobalGroupExcludeRoute>()
-            is SubsGlobalGroupListRoute -> nameOf<SubsGlobalGroupListRoute>()
-            is UpsertRuleGroupRoute -> nameOf<UpsertRuleGroupRoute>()
-        }
 
 @Serializable data object A11YScopeAppListRoute : AppRoute
 
