@@ -188,6 +188,7 @@
     <string name="autostart_allow">允许自启动</string>
     <string name="autostart_manual_description">无法检测设备是否支持及当前设置状态。若系统提供自启动管理，请手动允许本应用自启动；没有此选项可跳过。</string>
     <string name="background_running">持续后台运行</string>
+    <string name="backup_action">备份</string>
     <string name="backup_archive_too_large">备份压缩包超过大小限制</string>
     <string name="backup_duplicate_subscription_id">备份中存在重复订阅id</string>
     <string name="backup_export">导出备份</string>

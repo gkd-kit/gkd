@@ -128,7 +128,7 @@ fun GkModalBottomSheet(
 @Composable
 fun GkAlertDialog(
     onDismissRequest: () -> Unit,
-    confirmButton: @Composable () -> Unit,
+    confirmButton: @Composable () -> Unit = {},
     modifier: Modifier = Modifier,
     dismissButton: @Composable (() -> Unit)? = null,
     icon: @Composable (() -> Unit)? = null,
@@ -142,22 +142,28 @@ fun GkAlertDialog(
     tonalElevation: Dp = AlertDialogDefaults.TonalElevation,
     properties: DialogProperties = DialogProperties(),
     textToButtonsSpacing: Dp? = null,
+    buttons: @Composable (() -> Unit)? = null,
 ) {
     DialogLayer {
         if (properties.dismissOnBackPress) LocalOverlayBackHandler.current(onDismissRequest)
-        if (textToButtonsSpacing != null) {
+        if (textToButtonsSpacing != null || buttons != null) {
             BasicAlertDialog(
                 onDismissRequest = onDismissRequest,
                 modifier = modifier,
                 properties = properties,
             ) {
                 SpacedAlertDialogContent(
-                    buttons = {
-                        AlertDialogButtons(mainAxisSpacing = 8.dp, crossAxisSpacing = 12.dp) {
-                            dismissButton?.invoke()
-                            confirmButton()
-                        }
-                    },
+                    buttons =
+                        buttons
+                            ?: {
+                                AlertDialogButtons(
+                                    mainAxisSpacing = 8.dp,
+                                    crossAxisSpacing = 12.dp,
+                                ) {
+                                    dismissButton?.invoke()
+                                    confirmButton()
+                                }
+                            },
                     icon = icon,
                     title = title,
                     text = text,
@@ -168,7 +174,7 @@ fun GkAlertDialog(
                     iconContentColor = iconContentColor,
                     titleContentColor = titleContentColor,
                     textContentColor = textContentColor,
-                    textToButtonsSpacing = textToButtonsSpacing,
+                    textToButtonsSpacing = textToButtonsSpacing ?: 24.dp,
                 )
             }
             return@DialogLayer
@@ -194,7 +200,7 @@ fun GkAlertDialog(
 
 // Adapted from AndroidX Material3 AlertDialog.kt (Copyright 2021 The Android Open Source
 // Project, Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0).
-// Keep Material's content styling and wrapping action order; only text padding is configurable.
+// Keep Material's content styling, with configurable text padding and custom actions.
 @Composable
 private fun SpacedAlertDialogContent(
     buttons: @Composable () -> Unit,

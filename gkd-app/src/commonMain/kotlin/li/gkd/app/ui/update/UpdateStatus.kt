@@ -2,6 +2,9 @@ package li.gkd.app.ui.update
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
 import java.net.URI
@@ -40,6 +43,11 @@ import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.component.GkUpgradeDialogs
 import li.gkd.app.ui.component.UpdateDownloadState
 import li.gkd.app.ui.component.UpdateInstallState
+import li.gkd.app.ui.home.importAppBackup
+import li.gkd.app.ui.home.saveAppBackup
+import li.gkd.app.ui.home.shareAppBackup
+import li.gkd.app.ui.page.BackupDialog
+import li.gkd.app.ui.page.GkBackupDialogs
 import li.gkd.app.ui.platform.LocalUiHost
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.util.ToastUtils
@@ -199,6 +207,7 @@ class UpdateStatus(
     fun UpgradeDialog() {
         val host = LocalUiHost.current
         val version by newVersion.collectAsStateWithLifecycle()
+        var backupDialog by remember(version) { mutableStateOf<BackupDialog?>(null) }
         val status by downloadStatus.collectAsStateWithLifecycle()
         val installation by installState.collectAsStateWithLifecycle()
         val capability by
@@ -220,6 +229,7 @@ class UpdateStatus(
             onDownload = { version?.let(::startDownload) },
             onDismissVersion = { newVersion.value = null },
             onIgnore = ::ignoreVersion,
+            onBackup = { backupDialog = BackupDialog.Export },
             onCancelDownload = {
                 downloadJob?.cancel()
                 downloadStatus.value =
@@ -240,6 +250,14 @@ class UpdateStatus(
                     }
                 }
             },
+        )
+        GkBackupDialogs(
+            dialog = backupDialog,
+            onDismiss = { backupDialog = null },
+            onExport = { backupDialog = BackupDialog.Export },
+            onImport = host::importAppBackup,
+            onShare = host::shareAppBackup,
+            onSaveDownloads = host::saveAppBackup,
         )
     }
 }
