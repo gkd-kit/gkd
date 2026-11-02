@@ -95,16 +95,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
 
 fun initPrivilege() {
     PrivilegeConfig.crashLogDirectory = AndroidStorage.privilegeCrashDirectory
-    var configuredEnableAutomator = SettingsRepository.settings.value.enableAutomator
-    PrivilegeOwnerLifecycle.configure(configuredEnableAutomator)
-    appScope.launchLogged(Dispatchers.IO) {
-        SettingsRepository.settings.collect { settings ->
-            if (settings.enableAutomator != configuredEnableAutomator) {
-                configuredEnableAutomator = settings.enableAutomator
-                PrivilegeOwnerLifecycle.configure(configuredEnableAutomator)
-            }
-        }
-    }
+    PrivilegeOwnerLifecycle.initialize()
 
     appScope.launchLogged {
         Privilege.serverState.collect { serverInfo ->
