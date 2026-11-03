@@ -196,7 +196,7 @@ object AndroidForegroundState {
                     if (decision.reason != ForegroundDecisionReason.TaskBelowSystemSurface) {
                         recordVisit(appId, System.currentTimeMillis())
                     }
-                    onTopTaskAppChanged(appId)
+                    onTopTaskAppChanged(identity)
                 }
                 if (foregroundPending) {
                     if (inputDecision.cancelWork) {

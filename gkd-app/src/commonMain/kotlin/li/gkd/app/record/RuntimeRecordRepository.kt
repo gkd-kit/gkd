@@ -57,11 +57,12 @@ object RuntimeRecordRepository {
                 else -> time
             }
 
-        val records =
-            listOf(
-                AppLastVisit(input.oldAppId, weighted(input.oldAppId, input.time - 1)),
-                AppLastVisit(input.newAppId, weighted(input.newAppId, input.time)),
-            )
+        val records = buildList {
+            if (input.oldAppId != input.newAppId) {
+                add(AppLastVisit(input.oldAppId, weighted(input.oldAppId, input.time - 1)))
+            }
+            add(AppLastVisit(input.newAppId, weighted(input.newAppId, input.time)))
+        }
         writer.withLock {
             withContext(NonCancellable) {
                 RuntimeRecordStore.writeVisits(records, visitCount % TRIM_INTERVAL == 0L)

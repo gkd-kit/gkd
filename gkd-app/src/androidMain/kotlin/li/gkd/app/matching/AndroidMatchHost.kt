@@ -48,6 +48,7 @@ import li.gkd.app.matching.input.isUseful
 import li.gkd.app.matching.input.lastTriggerTime
 import li.gkd.app.matching.input.launcherAppId
 import li.gkd.app.matching.input.toA11yEvent
+import li.gkd.app.matching.input.topTaskAppId
 import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.matching.query.A11yQueryContext
 import li.gkd.app.matching.query.MatchNodeReadUnavailable
@@ -63,7 +64,6 @@ import li.gkd.app.record.addActionLog
 import li.gkd.app.rule.*
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.service.EventService
-import li.gkd.app.service.serviceScopeAppId
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.snapshot.captureScreenshotOnEvent
 import li.gkd.app.subscription.refreshSubscriptionsOnLauncher
@@ -159,7 +159,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         if (
             SettingsRepository.settings.value.enableBlockA11yAppList &&
                 !SettingsRepository.actualBlockA11yAppList.contains(
-                    serviceScopeAppId,
+                    topTaskAppId,
                 )
         ) {
             startQueryJob(byForced = true)

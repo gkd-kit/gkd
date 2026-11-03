@@ -10,16 +10,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.error.BusinessError
 import li.gkd.app.error.ErrorMessage
-import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.ForegroundIdentity
 import li.gkd.app.matching.input.systemRecentCn
 import li.gkd.app.matching.input.topTaskAppId
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.priv.AutomationService
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.recoverPrivilegeContext
@@ -192,60 +190,40 @@ fun switchA11yServiceForPrivilegeChange(@CallSite loc: String = "") =
         CompanionServiceController.update()
     }
 
-val serviceScopeAppId: String
-    get() =
-        if (MainActivityVisibility.isVisible) META.appId
-        else topTaskAppId.ifEmpty { currentTopActivity.appId }
-
 val currentAppBlocked
     get() =
         settings.value.enableBlockA11yAppList &&
-            serviceScopeAppId in SettingsRepository.actualBlockA11yAppList
-
-private suspend fun applyScopedService(disabled: Boolean) {
-    if (!settings.value.enableAutomator || disabled != currentAppBlocked) {
-        return
-    }
-    if (disabled) {
-        A11yService.instance?.shutdown(true)
-        uiAutomationFlow.value?.shutdown(true)
-        return
-    }
-    if (settings.value.useA11y) {
-        if (!PermissionStates.writeSecureSettings.stateFlow.value) {
-            return
-        }
-        val component = A11yService.preferredComponent
-        if (!isA11yBound(component)) enableA11yService(component, restartIfEnabled = false)
-    } else {
-        AutomationService.tryConnect(true)
-    }
-}
+            topTaskAppId in SettingsRepository.actualBlockA11yAppList
 
 private fun updateScopedService(
     disabled: Boolean,
     @CallSite loc: String = "",
 ) =
     launchServiceControl(loc = loc) {
-        applyScopedService(disabled)
+        if (!settings.value.enableAutomator || disabled != currentAppBlocked) {
+            return@launchServiceControl
+        }
+        if (disabled) {
+            A11yService.instance?.shutdown(true)
+            uiAutomationFlow.value?.shutdown(true)
+            return@launchServiceControl
+        }
+        if (settings.value.useA11y) {
+            if (!PermissionStates.writeSecureSettings.stateFlow.value) {
+                return@launchServiceControl
+            }
+            val component = A11yService.preferredComponent
+            if (!isA11yBound(component)) enableA11yService(component, restartIfEnabled = false)
+        } else {
+            AutomationService.tryConnect(true)
+        }
     }
 
 private const val SERVICE_SCOPE_AWAIT_TIME = 3000L
 
 private var pendingScopeChange: Job? = null
 
-fun resumeScopedServiceForMainActivity() {
-    if (
-        settings.value.enableBlockA11yAppList &&
-            META.appId !in SettingsRepository.actualBlockA11yAppList
-    ) {
-        pendingScopeChange?.cancel()
-        updateScopedService(false)
-        CompanionServiceController.update()
-    }
-}
-
-fun onTopTaskAppChanged(appId: String) {
+fun onTopTaskAppChanged(task: ForegroundIdentity) {
     appScope.launch(Dispatchers.Main) {
         pendingScopeChange?.cancel()
         CompanionServiceController.update()
@@ -254,8 +232,8 @@ fun onTopTaskAppChanged(appId: String) {
             // 只在最近任务界面延迟恢复带手势能力的无障碍。
             val delayResume =
                 !blocked &&
-                    appId == systemRecentCn.packageName &&
-                    currentTopActivity.sameAs(appId, systemRecentCn.className) &&
+                    task.appId == systemRecentCn.packageName &&
+                    task.activityId == systemRecentCn.className &&
                     settings.value.useA11y &&
                     withContext(Dispatchers.IO) {
                         A11yService.preferredComponent == A11yService.standardComponent

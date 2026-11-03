@@ -34,6 +34,7 @@
     <string name="a11y_start_unreliable_warning">某些场景下服务刚启动时概率不工作，如多次遇到此情况则不建议使用此功能</string>
     <string name="a11y_started">无障碍已启动</string>
     <string name="a11y_stopped">无障碍已关闭</string>
+    <string name="a11y_not_running">无障碍未运行</string>
     <string name="a11y_touch_stutter">短暂触摸卡顿</string>
     <string name="a11y_unauthorized">无障碍未授权</string>
     <string name="a11y_usage_description">GKD 请求使用系统「无障碍 API」获取屏幕信息, 以此基于用户自定义订阅规则执行自动化操作</string>
@@ -182,6 +183,7 @@
     <string name="automation_started">自动化已启动</string>
     <string name="automation_state_check_failed">自动化状态检测失败：%1$s</string>
     <string name="automation_stopped">自动化已关闭</string>
+    <string name="automation_not_running">自动化未运行</string>
     <string name="automation_unauthorized">自动化未授权</string>
     <string name="automation_undetectable_a11y">不会被应用检测为无障碍</string>
     <string name="autostart_allow">允许自启动</string>

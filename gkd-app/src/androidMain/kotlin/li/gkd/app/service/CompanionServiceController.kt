@@ -5,6 +5,7 @@ import android.provider.Settings
 import com.google.android.accessibility.selecttospeak.SelectToSpeakServiceCompanion
 import com.hjq.device.compat.DeviceBrand
 import li.gkd.app.app
+import li.gkd.app.matching.input.topTaskAppId
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.settings.AppScopePolicy
@@ -54,7 +55,7 @@ object CompanionServiceController {
                 !AppScopePolicy.blocksCompanion(
                     settings,
                     SettingsRepository.companionScopeAppList.value,
-                    serviceScopeAppId,
+                    topTaskAppId,
                 )
         if (!shouldRun) {
             requested = false

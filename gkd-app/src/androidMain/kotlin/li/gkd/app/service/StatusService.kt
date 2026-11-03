@@ -70,6 +70,11 @@ class StatusService : LifecycleHookService() {
                         val name = AppInfoRepository.snapshot?.apps?.get(appId)?.name ?: appId
                         getString(Res.string.service_partially_disabled_detail, name)
                     }
+                    store.enableAutomator ->
+                        getString(
+                            if (store.useA11y) Res.string.a11y_not_running
+                            else Res.string.automation_not_running,
+                        )
                     store.useA11y -> getString(Res.string.a11y_stopped)
                     else -> getString(Res.string.automation_stopped)
                 }
