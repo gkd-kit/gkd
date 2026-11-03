@@ -1,6 +1,7 @@
 package li.gkd.app
 
 import kotlinx.serialization.Serializable
+import li.gkd.app.a11y.GestureService
 import li.gkd.app.resources.*
 import org.jetbrains.compose.resources.StringResource
 
@@ -17,6 +18,7 @@ enum class SimulatedService(
     Screenshot(Res.string.screenshot_service),
     Debug(Res.string.debug_service_label, Res.string.debug_service_compact_label),
     Accessibility(Res.string.a11y_label),
+    Companion(Res.string.companion_a11y_label),
     Automation(Res.string.automation_label);
 
     fun lifecycleToast(running: Boolean): String =
@@ -91,6 +93,7 @@ data class SimulatedServices(
     val runtime: Map<SimulatedService, SimulatedServiceState> =
         SimulatedService.entries.associateWith { SimulatedServiceState() },
     val a11yEnabled: Boolean = false,
+    val gestureServices: List<GestureService> = emptyList(),
     val partiallyDisabled: Boolean = false,
     val logs: List<String> = emptyList(),
 ) {

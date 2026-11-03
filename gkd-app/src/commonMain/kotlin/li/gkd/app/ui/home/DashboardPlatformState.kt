@@ -3,7 +3,6 @@ package li.gkd.app.ui.home
 import li.gkd.app.permission.AppPermissionRestriction
 import li.gkd.app.priv.PrivilegeCapabilities
 import li.gkd.app.resources.*
-import li.gkd.app.settings.AppScopePolicy
 import li.gkd.app.settings.SettingsStore
 import li.gkd.app.ui.navigation.AppRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
@@ -26,25 +25,17 @@ data class DashboardPlatformState(
     val privilegeCapabilities: PrivilegeCapabilities? = null,
     val appRestrictions: Set<AppPermissionRestriction> = emptySet(),
 ) {
-    fun usesA11y(
-        store: SettingsStore,
-        scope: Set<String>,
-        automationScope: Set<String> = emptySet(),
-    ) = AppScopePolicy.usesA11y(store, scope, automationScope, topAppId)
-
     val serviceEnabled: Boolean
         get() = a11yRunning || automationRunning
 
     fun subtitle(
         store: SettingsStore,
-        scope: Set<String>,
-        automationScope: Set<String> = emptySet(),
     ): StringResource =
         if (automationRunning) {
             Res.string.automation_running
         } else if (a11yRunning) {
             Res.string.a11y_running
-        } else if (usesA11y(store, scope, automationScope)) {
+        } else if (store.useA11y) {
             when {
                 a11yEnabled -> Res.string.a11y_fault
                 !writeSecureSettings -> Res.string.a11y_unauthorized
@@ -63,14 +54,11 @@ data class DashboardPlatformState(
     fun authorizationRoute(
         enable: Boolean,
         store: SettingsStore,
-        scope: Set<String>,
-        automationScope: Set<String> = emptySet(),
     ): AppRoute? =
         when {
-            enable && usesA11y(store, scope, automationScope) && !writeSecureSettings ->
-                WorkModeRoute
+            enable && store.useA11y && !writeSecureSettings -> WorkModeRoute
             enable &&
-                !usesA11y(store, scope, automationScope) &&
+                !store.useA11y &&
                 (!privilegeAvailable || privilegeCapabilities?.restricted == true) ->
                 PrivilegeServiceRoute
             else -> null

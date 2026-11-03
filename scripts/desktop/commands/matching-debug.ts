@@ -11,7 +11,7 @@ import { buildAndroidQueryFixture } from '../lib/android-fixture-build.ts';
 import { installGkdDebug } from '../lib/device-test-apps.ts';
 import { createAdb } from '../lib/device-adb.ts';
 import { withInstallConfirmation } from '../lib/device-install.ts';
-import { withExistingDebugConnection } from '../lib/device-debug-connection.ts';
+import { readPreferredDebugAccessibility, withExistingDebugConnection } from '../lib/device-debug-connection.ts';
 import type { DebugReadiness } from '../lib/debug-readiness.ts';
 
 type Options = {
@@ -182,7 +182,6 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
         if (options.install) {
           console.log('GKD APK:', await installGkdDebug(adb));
         }
-        if (benchmark || querySafety) await enableDebugAccessibility(adb);
         // force-stop does not call onDestroy; discard the previous transport's credentials
         // before waiting for this startup to publish its own ready file.
         await adb('shell', 'run-as', 'li.songe.gkd.debug', 'rm', '-f', 'files/private-store/app-debug.json');
@@ -205,6 +204,7 @@ export async function deviceMatchingDebug(serial: string, options: Options) {
         const unauthenticated = await new DesktopClient(localPort).response('health');
         if (unauthenticated.status !== 401) throw new Error('Debug transport must reject unauthenticated requests');
         if (benchmark || querySafety) {
+          await enableDebugAccessibility(adb, await readPreferredDebugAccessibility(localPort, credentials.token));
           // Launching the target before onServiceConnected loses its window event;
           // with matching disabled there may be no later event to confirm the page.
           const until = Date.now() + 15_000;

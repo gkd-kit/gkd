@@ -13,6 +13,8 @@
     <string name="a11y_automation_mode_notice">当前应用使用自动化，无障碍将自动关闭</string>
     <string name="a11y_background_running_warning">必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败</string>
     <string name="a11y_enable">开启无障碍</string>
+    <string name="a11y_enable_guide_title">开启 GKD 无障碍</string>
+    <string name="a11y_enable_guide_description">接下来将打开系统无障碍设置，请按以下步骤操作：\n\n1. 在服务列表中找到「GKD」\n2. 打开开关，并确认系统提示\n3. 返回 GKD</string>
     <string name="a11y_enable_failed">开启无障碍失败</string>
     <string name="a11y_event_logs">无障碍事件日志</string>
     <string name="a11y_events_recording">无障碍事件记录中</string>
@@ -28,9 +30,6 @@
     <string name="a11y_permission_regrant_description">无障碍关闭后需重新授权</string>
     <string name="a11y_restart_failed">重启无障碍失败</string>
     <string name="a11y_running">无障碍正在运行</string>
-    <string name="a11y_scoped">局部无障碍</string>
-    <string name="automation_scoped">局部自动化</string>
-    <string name="scoped_automation_help">在无障碍模式下，进入所选应用时改用自动化，离开后恢复无障碍\n\n适用于因检测到无障碍而限制使用的应用，但仍可能在切换完成前被检测到\n\n需要启动特权服务。若应用同时配置了“局部关闭”，则关闭服务\n\n切换服务可能造成短暂卡顿</string>
     <string name="a11y_start_timeout">无障碍启动超时，请尝试关闭重启</string>
     <string name="a11y_start_unreliable_warning">某些场景下服务刚启动时概率不工作，如多次遇到此情况则不建议使用此功能</string>
     <string name="a11y_started">无障碍已启动</string>
@@ -49,7 +48,6 @@
     <string name="action_authorize">授权</string>
     <string name="action_edit_only">仅编辑</string>
     <string name="action_switch_only">仅切换</string>
-    <string name="scoped_automation_privilege_notice">局部自动化需要特权服务</string>
     <string name="automation_mode_privilege_notice">自动化需要特权服务</string>
     <string name="action_back">返回</string>
     <string name="action_cancel">取消</string>
@@ -70,6 +68,7 @@
     <string name="action_expand">展开</string>
     <string name="action_export">导出</string>
     <string name="action_got_it">知道了</string>
+    <string name="action_go">前往</string>
     <string name="action_ignore">忽略</string>
     <string name="action_install">安装</string>
     <string name="action_log_activity_unknown">界面未记录</string>
@@ -173,10 +172,10 @@
     <string name="automation_a11y_description">自动化驱动的无障碍</string>
     <string name="automation_label">自动化</string>
     <string name="automation_no_display_issues">不会导致界面显示异常</string>
+    <string name="automation_touch_optimization">自带「触摸优化」</string>
     <string name="automation_partially_disabled">自动化局部关闭</string>
     <string name="automation_privilege_required_description">自动化模式需要连接特权服务才能使用。请前往特权服务页面开启服务，完成后返回此页选择自动化模式</string>
     <string name="automation_running">自动化正在运行</string>
-    <string name="automation_scope_compatibility_hint">若不兼容可配置「局部无障碍」</string>
     <string name="automation_service_occupied">自动化服务被占用</string>
     <string name="automation_service_occupied_description">自动化服务已被其他进程或应用占用，无法启动。此服务同一时间只能由一个使用方运行。\n\n由于 Android 系统限制，GKD 无法获知具体是哪个进程或应用占用了该服务。\n\n请停止其他工具正在运行的自动化任务或测试服务，然后重试。若无法确定占用来源，可尝试重启设备后再启动 GKD 自动化</string>
     <string name="automation_start_failed">自动化启动失败：%1$s</string>
@@ -653,7 +652,6 @@
     <string name="saved_to_downloads">已保存至下载</string>
     <string name="saving">保存中</string>
     <string name="saving_progress">正在保存...</string>
-    <string name="scoped_a11y_help">在自动化模式下，进入所选应用时改用无障碍，离开后恢复自动化\n\n适用于自动化模式下无法正常识别或操作页面的应用\n\n需要启动特权服务。若应用同时配置了“局部关闭”，则关闭服务\n\n切换服务可能造成短暂卡顿</string>
     <string name="screen_nodes_unavailable">界面没有节点信息</string>
     <string name="screenshot_capture_enabled">快照截屏已开启</string>
     <string name="screenshot_capture_notification_description">保存快照时截取屏幕</string>
@@ -993,8 +991,32 @@
     <string name="window_minimize">缩小窗口</string>
     <string name="work_mode_basic">手动开启</string>
     <string name="work_mode_enhanced">自动开启</string>
+    <string name="work_mode_privileged_optimization">触摸优化</string>
+    <string name="work_mode_privileged_a11y_description">由特权服务完成点击和滑动</string>
+    <string name="work_mode_privileged_input_description">减少无障碍引起的触摸卡顿</string>
     <string name="work_mode_open">前往工作模式页面</string>
     <string name="work_mode_title">工作模式</string>
+    <string name="work_mode_ready">已就绪</string>
+    <string name="touch_optimization_title">触摸优化</string>
+    <string name="touch_optimization_description">部分设备开启手势服务后可能出现触摸卡顿。关闭手势服务或切换到无需无障碍手势的服务可减少影响</string>
+    <string name="touch_optimization_remaining">剩余 %1$s 项</string>
+    <string name="touch_optimization_complete">手势服务已全部关闭</string>
+    <string name="touch_optimization_close_all">关闭全部</string>
+    <string name="touch_optimization_close_others">关闭其他服务</string>
+    <string name="touch_optimization_close_service">关闭 %1$s</string>
+    <string name="touch_optimization_no_description">此服务未提供描述</string>
+    <string name="touch_optimization_open_app">打开应用</string>
+    <string name="touch_optimization_app_no_launcher">此应用没有可打开的界面</string>
+    <string name="touch_optimization_confirm_one">关闭「%1$s」？</string>
+    <string name="touch_optimization_service_provider">这项服务由「%1$s」提供</string>
+    <string name="touch_optimization_service_impact">关闭后，依赖这项服务的功能可能受影响</string>
+    <string name="touch_optimization_confirm_multiple">关闭 %1$s 项手势服务？</string>
+    <string name="touch_optimization_close_count">关闭 %1$s 项</string>
+    <string name="touch_optimization_keep_gkd">GKD 的服务将继续运行</string>
+    <string name="touch_optimization_privilege_title">建议使用特权服务</string>
+    <string name="touch_optimization_privilege_description">连接特权服务后，GKD 可切换到无需无障碍手势的服务，减少触摸卡顿，同时继续运行规则。</string>
+    <string name="touch_optimization_system_settings">前往系统设置</string>
+    <string name="touch_optimization_close_failed">未能关闭所选手势服务</string>
     <string name="partial_disable_intro">在白名单应用内自动关闭无障碍服务</string>
     <string name="partial_disable_description">可缓解界面异常、游戏掉帧或无障碍检测问题</string>
     <string name="partial_disable_background_suggestions">后台运行建议</string>
@@ -1156,4 +1178,9 @@
     <string name="match_debug_help_title">诊断说明</string>
     <string name="match_debug_help_description">诊断会记录应用运行时的规则匹配、操作结果和耗时，帮助排查规则未生效、误触或执行缓慢等问题。\n\n使用方法\n1. 开始采集。\n2. 前往出现问题的应用，重现问题。\n3. 返回停止采集，或在通知中停止。\n4. 点击诊断记录的「分享」，导出附带所选记录的日志，发给开发者。也可以通过「关于 → 导出日志」，导出包含所有已保存诊断记录的日志。\n\n反馈时请同时说明预期行为、实际表现和复现步骤，方便定位原因。\n\n日志可能包含应用信息和界面内容，请确认后再分享。</string>
     <string name="feedback_diagnostic_notice">如果问题可以重现，建议先在「设置 → 诊断」中采集并停止，再通过「关于 → 导出日志」导出包含诊断记录的日志。反馈时请附上日志，并说明复现步骤、预期行为和实际表现。</string>
+    <string name="companion_a11y_label">伴生无障碍</string>
+    <string name="companion_scope">伴生无障碍</string>
+    <string name="companion_paused_apps_title">暂停伴生</string>
+    <string name="companion_paused_apps_description">自动化模式下，进入勾选的应用时暂停伴生无障碍，可避免因伴生服务触发的无障碍检测提示</string>
+    <string name="companion_help_description">伴生无障碍帮助自动化在部分应用中正常运行，也有助于 GKD 在后台持续运行。GKD 会自动启停它\n\n它是特殊配置的轻量无障碍服务，日常运行开销可忽略不计\n\n自动化模式下，如果某个应用提示已开启无障碍，可以在「暂停伴生」中勾选它。进入该应用时暂停伴生，离开后恢复</string>
 </resources>

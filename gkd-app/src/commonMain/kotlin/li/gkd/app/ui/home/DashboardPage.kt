@@ -1,7 +1,9 @@
 package li.gkd.app.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -103,9 +105,6 @@ fun dashboardPage(
     val mainVm = MainViewModel.requireCurrent()
     val appName = META.appName
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val scopeApps by SettingsRepository.a11yScopeAppList.collectAsStateWithLifecycle()
-    val automationScopeApps by
-        SettingsRepository.automationScopeAppList.collectAsStateWithLifecycle()
     val platform = dashboardPlatformState()
     val showRestrictionDetails by vm.showRestrictionDetails.collectAsStateWithLifecycle()
     if (showRestrictionDetails) {
@@ -238,7 +237,7 @@ fun dashboardPage(
                     }
                 }
                 ServiceStatusCard(
-                    stringResource(platform.subtitle(store, scopeApps, automationScopeApps)),
+                    stringResource(platform.subtitle(store)),
                     platform.serviceEnabled,
                     { enabled ->
                         when (
@@ -246,8 +245,6 @@ fun dashboardPage(
                                 platform.authorizationRoute(
                                     enabled,
                                     store,
-                                    scopeApps,
-                                    automationScopeApps,
                                 )
                         ) {
                             PrivilegeServiceRoute -> vm.setShowRestrictionDetails(true)
@@ -270,9 +267,13 @@ fun dashboardPage(
             )
             TriggerOverviewCard(
                 {
-                    when (val state = rules) {
-                        is Loadable.Ready -> {
-                            val groups = state.value.groups
+                    val groups = rules.value?.groups
+                    AnimatedVisibility(
+                        visible = groups != null,
+                        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                        exit = ExitTransition.None,
+                    ) {
+                        if (groups != null) {
                             GkRuleStats(
                                 stats =
                                     GkRuleStatsData(
@@ -285,8 +286,9 @@ fun dashboardPage(
                                 textStyle = MaterialTheme.typography.bodySmall,
                             )
                         }
-                        is Loadable.Loading -> Unit
-                        is Loadable.Failure -> Text(stringResource(Res.string.data_load_failed))
+                    }
+                    if (rules is Loadable.Failure) {
+                        Text(stringResource(Res.string.data_load_failed))
                     }
                 },
                 HomeDataText.latest(

@@ -6,7 +6,7 @@ import { createAdb } from '../lib/device-adb.ts';
 import { withAutomationPaused, enableDebugAccessibility, readStore } from '../lib/device-automation.ts';
 import { withInstallConfirmation } from '../lib/device-install.ts';
 import { installGkdDebug } from '../lib/device-test-apps.ts';
-import { withExistingDebugConnection } from '../lib/device-debug-connection.ts';
+import { readPreferredDebugAccessibility, withExistingDebugConnection } from '../lib/device-debug-connection.ts';
 import { DesktopClient, until } from '../lib/desktop-client.ts';
 import { summarizeMatching } from './summarize-matching.ts';
 
@@ -19,10 +19,10 @@ export async function checkDiagnosticPerformance(serial: string, appId: string, 
   await withAutomationPaused(adb, folder, async original => {
     await writeFile(`${folder}/original.json`, JSON.stringify(original));
     await installGkdDebug(adb);
-    await enableDebugAccessibility(adb);
     await adb('shell', 'am', 'start', '-n', `${pkg}/li.gkd.app.MainActivity`);
     await pause(1000);
     await withExistingDebugConnection(adb, AbortSignal.timeout(240_000), async ({ port, token }) => {
+      await enableDebugAccessibility(adb, await readPreferredDebugAccessibility(port, token));
       const client = new DesktopClient(port);
       const request = (path: string, body?: unknown) => client.json<any>(path, body,
         { headers: { Authorization: `Bearer ${token}` }, timeoutMillis: 125_000 });

@@ -39,7 +39,9 @@ class DesktopServiceSimulation(
         if (service == SimulatedService.Status && denied == null) setStatusPreference(true)
         store.update { settings ->
             val needsAuthorization =
-                service == SimulatedService.Screenshot || service == SimulatedService.Accessibility
+                service == SimulatedService.Screenshot ||
+                    service == SimulatedService.Accessibility ||
+                    service == SimulatedService.Companion
             var services =
                 settings.services.transition(
                     service,
@@ -176,7 +178,7 @@ class DesktopServiceSimulation(
             if (settings.prompts.automationOccupied) return "Automation occupied"
             return null
         }
-        if (service == SimulatedService.Accessibility)
+        if (service == SimulatedService.Accessibility || service == SimulatedService.Companion)
             return if (permissions.restricted) "Accessibility settings restricted" else null
         if (!permissions.notificationGranted) return "Notification permission denied"
         if (service != SimulatedService.Screenshot && permissions.restricted)

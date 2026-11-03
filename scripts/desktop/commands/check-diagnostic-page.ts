@@ -7,7 +7,7 @@ import { createAdb } from '../lib/device-adb.ts';
 import { withAutomationPaused, readStore, enableDebugAccessibility } from '../lib/device-automation.ts';
 import { withInstallConfirmation } from '../lib/device-install.ts';
 import { installGkdDebug } from '../lib/device-test-apps.ts';
-import { withExistingDebugConnection } from '../lib/device-debug-connection.ts';
+import { readPreferredDebugAccessibility, withExistingDebugConnection } from '../lib/device-debug-connection.ts';
 import { DesktopClient, until } from '../lib/desktop-client.ts';
 import { debugNotificationTarget } from './check-debug-service-stop.ts';
 
@@ -60,11 +60,11 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
   await withAutomationPaused(adb, folder, async original => {
     await writeFile(`${folder}/original.json`, JSON.stringify({ enableAutomator: original.enableAutomator, automatorMode: original.automatorMode }));
     await installGkdDebug(adb);
-    if (appId) await enableDebugAccessibility(adb);
     await adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'gkd://page/matching-diagnostics', '-n', `${pkg}/li.gkd.app.MainActivity`);
     try {
       await pause(1200);
       await withExistingDebugConnection(adb, signal, async ({ port, token }) => {
+        if (appId) await enableDebugAccessibility(adb, await readPreferredDebugAccessibility(port, token));
         const client = new DesktopClient(port);
         const request = async (path: string, body?: unknown) => {
           const response = await client.response(path, body, { headers: { Authorization: `Bearer ${token}` } });

@@ -20,7 +20,6 @@ import li.gkd.app.resources.*
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.ToastState
 import li.gkd.app.ui.home.BottomNavItem
-import li.gkd.app.ui.navigation.A11YScopeAppListRoute
 import li.gkd.app.ui.navigation.A11yEventLogRoute
 import li.gkd.app.ui.navigation.AboutRoute
 import li.gkd.app.ui.navigation.ActionLogRoute
@@ -29,10 +28,10 @@ import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
 import li.gkd.app.ui.navigation.AppRoute
-import li.gkd.app.ui.navigation.AutomationScopeAppListRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.CategoryEditorRoute
+import li.gkd.app.ui.navigation.CompanionScopeAppListRoute
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.navigation.DebugSettingsRoute
 import li.gkd.app.ui.navigation.EditBlockAppListRoute
@@ -55,6 +54,7 @@ import li.gkd.app.ui.navigation.SubsCategoryGroupRoute
 import li.gkd.app.ui.navigation.SubsCategoryRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupExcludeRoute
 import li.gkd.app.ui.navigation.SubsGlobalGroupListRoute
+import li.gkd.app.ui.navigation.TouchOptimizationRoute
 import li.gkd.app.ui.navigation.UpsertRuleGroupRoute
 import li.gkd.app.ui.navigation.WebViewRoute
 import li.gkd.app.ui.navigation.WorkModeRoute
@@ -290,6 +290,7 @@ private val desktopRoutes by lazy {
         "advanced" to AdvancedPageRoute,
         "debug-settings" to DebugSettingsRoute,
         "keep-alive" to KeepAliveRoute,
+        "touch-optimization" to TouchOptimizationRoute,
         "matching-debug" to MatchDebugRoute,
         "crash-reports" to CrashReportRoute,
         "activity-log" to ActivityLogRoute,
@@ -303,9 +304,8 @@ private val desktopRoutes by lazy {
         "subs-category-groups" to SubsCategoryGroupRoute(SubscriptionIds.LOCAL, 0),
         "subs-global-exclude" to SubsGlobalGroupExcludeRoute(SubscriptionIds.LOCAL, 0),
         "rule-exclude-editor" to RuleExcludeEditorRoute(SubscriptionIds.LOCAL, 0),
-        "a11y-scope-apps" to A11YScopeAppListRoute,
-        "automation-scope-apps" to AutomationScopeAppListRoute,
         "block-a11y-apps" to BlockA11yAppListRoute,
+        "companion-scope-apps" to CompanionScopeAppListRoute,
         "app-config" to AppConfigRoute("li.gkd"),
         "action-log" to ActionLogRoute(),
         "image-preview" to ImagePreviewRoute(),

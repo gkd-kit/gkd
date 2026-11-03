@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import li.gkd.app.permission.PermissionStates
+import li.gkd.app.platform.PlatformResult
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.resources.*
 import li.gkd.app.service.switchAutomatorService
@@ -42,6 +43,13 @@ actual fun RefreshPermissions() {
 
 actual fun openAppDetails() {
     IntentUtils.openAppDetailsSettings()
+}
+
+actual fun UiHost.launchApp(appId: String): PlatformResult<Boolean> {
+    val intent =
+        packageManager.getLaunchIntentForPackage(appId) ?: return PlatformResult.Success(false)
+    startActivity(intent)
+    return PlatformResult.Success(true)
 }
 
 actual suspend fun openRecents() {

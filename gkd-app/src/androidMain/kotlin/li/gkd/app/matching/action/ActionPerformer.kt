@@ -19,10 +19,14 @@ import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.priv.toHidden
 import li.gkd.app.service.A11yService
 import li.gkd.app.service.TrackService
+import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.subscription.PositionCalculationException
 import li.gkd.app.subscription.PositionError
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.util.ScreenUtils
+
+private fun a11yGestureFallback(): A11yService? =
+    if (SettingsRepository.settings.value.useA11y) A11yService.instance else null
 
 sealed class ActionPerformer(val action: String) {
     suspend fun perform(
@@ -101,6 +105,7 @@ sealed class ActionPerformer(val action: String) {
                         observeActionOperation("PrivilegedTap") { privilege.tap(x, y) }
                     }
                         ?: run {
+                            val service = a11yGestureFallback() ?: return@run false
                             val gestureDescription = GestureDescription.Builder()
                             val path = Path()
                             path.moveTo(x, y)
@@ -111,7 +116,7 @@ sealed class ActionPerformer(val action: String) {
                                     ViewConfiguration.getTapTimeout().toLong(),
                                 ),
                             )
-                            A11yService.instance?.awaitGesture(gestureDescription.build()) == true
+                            service.awaitGesture(gestureDescription.build())
                         },
                 position = x to y,
             )
@@ -178,10 +183,7 @@ sealed class ActionPerformer(val action: String) {
                         observeActionOperation("PrivilegedLongPress") {
                             privilege.tap(x, y, LONG_DURATION)
                         }
-                    }
-                        ?: run {
-                            A11yService.instance?.awaitSwipe(x, y, x, y, LONG_DURATION) == true
-                        },
+                    } ?: (a11yGestureFallback()?.awaitSwipe(x, y, x, y, LONG_DURATION) == true),
                 position = x to y,
             )
         }
@@ -273,13 +275,14 @@ sealed class ActionPerformer(val action: String) {
                 ActionResult(
                     action = action,
                     result =
-                        A11yService.instance?.awaitSwipe(
-                            startX,
-                            startY,
-                            endX,
-                            endY,
-                            swipeArg.duration,
-                        ) == true,
+                        a11yGestureFallback()
+                            ?.awaitSwipe(
+                                startX,
+                                startY,
+                                endX,
+                                endY,
+                                swipeArg.duration,
+                            ) == true,
                     position = endX to endY,
                 )
             }

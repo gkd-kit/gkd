@@ -35,13 +35,20 @@ object SettingsRepositoryChecks {
         assertEquals(7, repo.settings.value.serviceScopeAppGroupType)
         assertFalse(repo.settings.value.enableDynamicColor)
         assertEquals(listOf(12, 34), repo.overlayPositions.value["legacy"])
-        assertTrue(repo.automationScopeAppList.value.isEmpty())
         val original = repo.exportBackupEntries()
         fun diskSettings() =
             json.decodeFromString<SettingsStore>(directory.resolve("store.json").readText())
 
         val owner = ViewModelStore()
         try {
+            repo.withBackupRestore(
+                mapOf(
+                    "store.json" to repo.exportBackupEntries().getValue("store.json"),
+                    "a11y_scope_app_list.txt" to "com.tencent.mm",
+                    "automation_scope_app_list.txt" to "test.bank",
+                ),
+            ) {}
+            assertEquals(original, repo.exportBackupEntries())
             checkCorruptSettingsPreservation(directory.resolve("decode-checks").apply { mkdirs() })
             repo.updateSettings {
                 it.copy(
@@ -117,8 +124,7 @@ object SettingsRepositoryChecks {
                 listOf(
                     "block_match_app_list.txt" to repo::saveBlockMatchAppList,
                     "block_a11y_app_list.txt" to repo::saveBlockA11yAppList,
-                    "a11y_scope_app_list.txt" to repo::saveA11yScopeAppList,
-                    "automation_scope_app_list.txt" to repo::saveAutomationScopeAppList,
+                    "companion_scope_app_list.txt" to repo::saveCompanionScopeAppList,
                 )
             for ((filename, save) in platformPackageLists) {
                 save(platformPackageIds)
@@ -286,15 +292,10 @@ object SettingsRepositoryChecks {
                                 { repo.blockA11yAppList.value },
                                 repo::saveBlockA11yAppList,
                             ),
-                        "a11y_scope_app_list.txt" to
+                        "companion_scope_app_list.txt" to
                             AppIdListEditor(
-                                { repo.a11yScopeAppList.value },
-                                repo::saveA11yScopeAppList,
-                            ),
-                        "automation_scope_app_list.txt" to
-                            AppIdListEditor(
-                                { repo.automationScopeAppList.value },
-                                repo::saveAutomationScopeAppList,
+                                { repo.companionScopeAppList.value },
+                                repo::saveCompanionScopeAppList,
                             ),
                     )) {
                     assertTrue(editor.save("test.independent"))
@@ -390,15 +391,10 @@ object SettingsRepositoryChecks {
                             { repo.blockA11yAppList.value },
                             repo::saveBlockA11yAppList,
                         ),
-                    "a11y_scope_app_list.txt" to
+                    "companion_scope_app_list.txt" to
                         AppIdListEditor(
-                            { repo.a11yScopeAppList.value },
-                            repo::saveA11yScopeAppList,
-                        ),
-                    "automation_scope_app_list.txt" to
-                        AppIdListEditor(
-                            { repo.automationScopeAppList.value },
-                            repo::saveAutomationScopeAppList,
+                            { repo.companionScopeAppList.value },
+                            repo::saveCompanionScopeAppList,
                         ),
                 )
             for ((filename, editor) in editors) {
@@ -423,8 +419,11 @@ object SettingsRepositoryChecks {
                     SettingsAppIds.decode(directory.resolve(filename).readText()),
                 )
             }
+            val previousMatchList = repo.blockMatchAppList.value
+            val previousCompanionList = repo.companionScopeAppList.value
             editors.first().second.save("test.changed")
-            assertEquals(setOf("test.alpha", "test.absent"), repo.a11yScopeAppList.value)
+            assertEquals(previousMatchList, repo.blockMatchAppList.value)
+            assertEquals(previousCompanionList, repo.companionScopeAppList.value)
             // A queued replacement followed by concurrent additions must preserve every command.
             coroutineScope {
                 launch(start = CoroutineStart.UNDISPATCHED) {
@@ -457,14 +456,9 @@ object SettingsRepositoryChecks {
                         repo::updateBlockA11yAppList,
                     ),
                     Triple(
-                        "a11y_scope_app_list.txt",
-                        repo.a11yScopeAppList,
-                        repo::updateA11yScopeAppList,
-                    ),
-                    Triple(
-                        "automation_scope_app_list.txt",
-                        repo.automationScopeAppList,
-                        repo::updateAutomationScopeAppList,
+                        "companion_scope_app_list.txt",
+                        repo.companionScopeAppList,
+                        repo::updateCompanionScopeAppList,
                     ),
                 )) {
                 coroutineScope {

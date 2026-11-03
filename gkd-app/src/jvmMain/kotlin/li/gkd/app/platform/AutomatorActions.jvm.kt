@@ -1,15 +1,13 @@
 package li.gkd.app.platform
 
 import li.gkd.app.DesktopRuntime
-import li.gkd.app.selectedSimulatedAutomator
-import li.gkd.app.settings.SettingsRepository
 
 actual fun requestAutomatorRestart(): PlatformResult<Unit> {
-    if (SettingsRepository.settings.value.enableAutomator) {
-        val runtime = DesktopRuntime.requireCurrent()
-        val service = selectedSimulatedAutomator()
-        runtime.services.setEnabled(service, false)
-        runtime.services.setEnabled(service, true)
-    }
+    DesktopRuntime.requireCurrent().applyAutomatorSettings()
+    return PlatformResult.Success(Unit)
+}
+
+actual fun requestCompanionServiceUpdate(): PlatformResult<Unit> {
+    DesktopRuntime.requireCurrent().updateCompanionService()
     return PlatformResult.Success(Unit)
 }

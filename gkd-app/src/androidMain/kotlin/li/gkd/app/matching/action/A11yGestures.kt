@@ -1,6 +1,7 @@
 package li.gkd.app.matching.action
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import kotlinx.coroutines.CompletableDeferred
@@ -24,6 +25,10 @@ suspend fun AccessibilityService.awaitGesture(gesture: GestureDescription): Bool
 private suspend fun AccessibilityService.dispatchAndAwaitGesture(
     gesture: GestureDescription,
 ): GestureSegmentResult {
+    val capabilities = serviceInfo?.capabilities ?: 0
+    if (capabilities and AccessibilityServiceInfo.CAPABILITY_CAN_PERFORM_GESTURES == 0) {
+        return GestureSegmentResult.Rejected
+    }
     val finished = CompletableDeferred<GestureSegmentResult>()
     val submitted =
         observeActionOperation("AccessibilityService.dispatchGesture") {

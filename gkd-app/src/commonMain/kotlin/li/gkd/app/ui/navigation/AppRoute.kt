@@ -21,15 +21,13 @@ sealed interface AppRoute : NavKey {
         get() = RouteTransition.Standard
 }
 
-@Serializable data object A11YScopeAppListRoute : AppRoute
-
-@Serializable data object AutomationScopeAppListRoute : AppRoute
-
 @Serializable
 data class AppConfigRoute(
     val appId: String,
     val focusLog: ActionLog? = null,
 ) : AppRoute
+
+@Serializable data object CompanionScopeAppListRoute : AppRoute
 
 @Serializable data object BlockA11yAppListRoute : AppRoute
 
@@ -88,6 +86,8 @@ data class ActionLogRoute(
 @Serializable data object DebugSettingsRoute : AppRoute
 
 @Serializable data object KeepAliveRoute : AppRoute
+
+@Serializable data object TouchOptimizationRoute : AppRoute
 
 @Serializable data object MatchDebugRoute : AppRoute
 

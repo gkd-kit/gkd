@@ -41,7 +41,8 @@ object AndroidAutomationSessions {
         get() = uiAutomationFlow.value?.takeIf(::isEffective) ?: A11yService.instance
 
     fun isEffective(service: AndroidAutomationSession): Boolean =
-        latestServiceMode.value == service.mode.value
+        latestServiceMode.value == service.mode.value &&
+            (service.mode != AutomatorMode.A11y || A11yService.instance === service)
 
     fun onA11yConnected(service: AndroidAutomationSession) {
         val engine = service.matchHost

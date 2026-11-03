@@ -13,7 +13,7 @@ fun createUiAutomationServiceInfo(): AccessibilityServiceInfo {
         ResolveInfo().apply {
             serviceInfo =
                 app.packageManager.getServiceInfo(
-                    A11yService.a11yCn,
+                    A11yService.privilegedComponent,
                     PackageManager.GET_META_DATA,
                 )
         }

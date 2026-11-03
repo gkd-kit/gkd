@@ -1,12 +1,11 @@
 package li.gkd.app.settings
 
 object AppScopePolicy {
-    fun usesA11y(
+    fun blocksCompanion(
         settings: SettingsStore,
-        a11yScope: Set<String>,
-        automationScope: Set<String>,
+        companionScope: Set<String>,
         appId: String,
-    ): Boolean = if (settings.useA11y) appId !in automationScope else appId in a11yScope
+    ): Boolean = settings.useAutomation && appId in companionScope
 
     fun blockedA11y(
         settings: SettingsStore,

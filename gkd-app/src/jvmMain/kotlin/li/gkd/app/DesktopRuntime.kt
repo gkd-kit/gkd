@@ -22,6 +22,7 @@ import li.gkd.app.logging.LogUtils
 import li.gkd.app.network.NetworkClients
 import li.gkd.app.network.inspection.DesktopDebugService
 import li.gkd.app.record.RuntimeRecordRepository
+import li.gkd.app.settings.AppScopePolicy
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
@@ -115,27 +116,51 @@ class DesktopRuntime(
         }
         AppInfoRepository.initialize()
         simulator.onServiceRunningChanged = { service, running ->
-            toast.show(service.lifecycleToast(running))
+            if (service != SimulatedService.Companion) toast.show(service.lifecycleToast(running))
+            if (service == SimulatedService.Accessibility || service == SimulatedService.Automation)
+                updateCompanionService()
         }
         simulator.onAppCatalogChanged = { AppInfoRepository.requestRefresh() }
-        simulator.onTopAppChanged = { appId ->
-            if (SettingsRepository.settings.value.enableAutomator) {
-                val blocked =
-                    SettingsRepository.settings.value.enableBlockA11yAppList &&
-                        appId in SettingsRepository.actualBlockA11yAppList
-                if (blocked) {
-                    services.setEnabled(SimulatedService.Accessibility, false)
-                    services.setEnabled(SimulatedService.Automation, false)
-                } else if (SettingsRepository.appUsesA11y(appId)) {
-                    if (simulator.settings.value.permissions.writeSecureSettings)
-                        services.setEnabled(SimulatedService.Accessibility, true)
-                } else {
-                    services.setEnabled(SimulatedService.Automation, true)
-                }
-            }
-        }
+        simulator.onTopAppChanged = { applyAutomatorSettings() }
         AppInfoRepository.requestRefresh()
         Thread.setDefaultUncaughtExceptionHandler(crashHandler)
+    }
+
+    fun applyAutomatorSettings() {
+        val settings = SettingsRepository.settings.value
+        val blocked =
+            settings.enableBlockA11yAppList &&
+                simulator.settings.value.device.topAppId in
+                    SettingsRepository.actualBlockA11yAppList
+        if (!settings.enableAutomator || blocked) {
+            services.setEnabled(SimulatedService.Accessibility, false)
+            services.setEnabled(SimulatedService.Automation, false)
+        } else if (settings.useA11y) {
+            if (simulator.settings.value.permissions.writeSecureSettings)
+                services.setEnabled(SimulatedService.Accessibility, true)
+        } else {
+            services.setEnabled(SimulatedService.Automation, true)
+        }
+        updateCompanionService()
+    }
+
+    fun updateCompanionService() {
+        val settings = SettingsRepository.settings.value
+        val current = simulator.settings.value
+        val enabled =
+            settings.enableAutomator &&
+                (current.services.serviceEnabled || current.services.automationRunning) &&
+                !AppScopePolicy.blocksCompanion(
+                    settings,
+                    SettingsRepository.companionScopeAppList.value,
+                    current.device.topAppId,
+                )
+        val active = current.services.state(SimulatedService.Companion).active
+        if (
+            (!enabled && active) || (enabled && !active && current.permissions.writeSecureSettings)
+        ) {
+            services.setEnabled(SimulatedService.Companion, enabled)
+        }
     }
 
     init {

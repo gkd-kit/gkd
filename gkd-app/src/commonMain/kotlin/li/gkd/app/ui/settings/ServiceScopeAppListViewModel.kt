@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import li.gkd.app.app.AppSort
 import li.gkd.app.platform.requestAutomatorRestart
+import li.gkd.app.platform.requestCompanionServiceUpdate
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
@@ -13,17 +14,15 @@ import li.gkd.app.util.ToastUtils
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
-enum class ServiceScopeKind(val title: StringResource, val help: StringResource?) {
-    Accessibility(Res.string.a11y_scoped, Res.string.scoped_a11y_help),
-    Automation(Res.string.automation_scoped, Res.string.scoped_automation_help),
-    Disabled(Res.string.a11y_whitelist, null),
+enum class ServiceScopeKind(val title: StringResource) {
+    Companion(Res.string.companion_paused_apps_title),
+    Disabled(Res.string.a11y_whitelist),
 }
 
 class ServiceScopeAppListViewModel(private val kind: ServiceScopeKind) : BaseViewModel() {
     val appList =
         when (kind) {
-            ServiceScopeKind.Accessibility -> SettingsRepository.a11yScopeAppList
-            ServiceScopeKind.Automation -> SettingsRepository.automationScopeAppList
+            ServiceScopeKind.Companion -> SettingsRepository.companionScopeAppList
             ServiceScopeKind.Disabled -> SettingsRepository.blockA11yAppList
         }
 
@@ -42,19 +41,18 @@ class ServiceScopeAppListViewModel(private val kind: ServiceScopeKind) : BaseVie
             { appList.value },
             {
                 when (kind) {
-                    ServiceScopeKind.Accessibility -> SettingsRepository.saveA11yScopeAppList(it)
-                    ServiceScopeKind.Automation -> SettingsRepository.saveAutomationScopeAppList(it)
+                    ServiceScopeKind.Companion -> saveCompanionScope { _ -> it }
                     ServiceScopeKind.Disabled -> SettingsRepository.saveBlockA11yAppList(it)
                 }
             },
         )
 
-    suspend fun showHelp() {
+    suspend fun showCompanionHelp() {
         MainViewModel.requireCurrent()
             .dialogRequests
             .showMessage(
-                title = getString(kind.title),
-                text = getString(requireNotNull(kind.help)),
+                title = getString(Res.string.companion_scope),
+                text = getString(Res.string.companion_help_description),
             )
     }
 
@@ -98,10 +96,15 @@ class ServiceScopeAppListViewModel(private val kind: ServiceScopeKind) : BaseVie
     suspend fun toggleApp(appId: String) {
         val toggle: (Set<String>) -> Set<String> = { if (appId in it) it - appId else it + appId }
         when (kind) {
-            ServiceScopeKind.Accessibility -> SettingsRepository.updateA11yScopeAppList(toggle)
-            ServiceScopeKind.Automation -> SettingsRepository.updateAutomationScopeAppList(toggle)
+            ServiceScopeKind.Companion -> saveCompanionScope(toggle)
             ServiceScopeKind.Disabled -> SettingsRepository.updateBlockA11yAppList(toggle)
         }
+    }
+
+    private suspend fun saveCompanionScope(transform: (Set<String>) -> Set<String>) {
+        val previous = appList.value
+        SettingsRepository.updateCompanionScopeAppList(transform)
+        if (appList.value != previous) requestCompanionServiceUpdate()
     }
 
     fun toggleFollowMatchList() {

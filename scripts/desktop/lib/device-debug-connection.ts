@@ -4,6 +4,14 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const packageName = 'li.songe.gkd.debug';
 
+export async function readPreferredDebugAccessibility(port: number, token: string) {
+  const client = new DesktopClient(port);
+  const result = await client.json<{ component: string }>('debug/android/preferred-a11y', undefined, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return result.component;
+}
+
 /** Attach preserves the running app, its settings and other clients' diagnostic sessions. */
 export async function withExistingDebugConnection<T>(adb: Adb, signal: AbortSignal,
   work: (connection: { port: number; token: string; pid: number }) => Promise<T>): Promise<T> {

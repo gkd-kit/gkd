@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.gkd.app.META
+import li.gkd.app.a11y.observeEnabledGestureServices
 import li.gkd.app.crash.CrashData
 import li.gkd.app.permission.PermissionRequester
 import li.gkd.app.rule.RuleGroupTarget
@@ -120,6 +121,8 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
     val ruleControlDialog = RuleControlDialogState()
 
     val homeNavigation = HomeNavigation()
+
+    val gestureServices = observeEnabledGestureServices().stateLoadable()
 
     private var pendingCrashes = emptyList<CrashData>()
 

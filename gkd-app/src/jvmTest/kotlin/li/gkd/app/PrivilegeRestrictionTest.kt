@@ -41,40 +41,21 @@ class PrivilegeRestrictionTest {
     fun pendingModeChangeShowsTheRunningServiceAndAllowsStoppingIt() {
         val oldAccessibility = dashboard(allowed, secure = false).copy(a11yRunning = true)
         assertTrue(oldAccessibility.serviceEnabled)
-        assertEquals(Res.string.a11y_running, oldAccessibility.subtitle(automation, emptySet()))
-        assertNull(oldAccessibility.authorizationRoute(false, automation, emptySet()))
+        assertEquals(Res.string.a11y_running, oldAccessibility.subtitle(automation))
+        assertNull(oldAccessibility.authorizationRoute(false, automation))
         val oldAutomation = dashboard(allowed, secure = false).copy(automationRunning = true)
         assertEquals(
             Res.string.automation_running,
-            oldAutomation.subtitle(SettingsStore(), emptySet()),
+            oldAutomation.subtitle(SettingsStore()),
         )
-        assertNull(oldAutomation.authorizationRoute(false, SettingsStore(), emptySet()))
-    }
-
-    @Test
-    fun scopedAutomationUsesAutomationStatusAndAuthorization() {
-        val settings = SettingsStore()
-        val selected = setOf("example.app")
-        val state = dashboard(allowed).copy(privilegeAvailable = false)
-        assertEquals(
-            PrivilegeServiceRoute,
-            state.authorizationRoute(true, settings, emptySet(), selected),
-        )
-        assertNull(state.authorizationRoute(false, settings, emptySet(), selected))
-        assertTrue(
-            state.copy(automationRunning = true).serviceEnabled,
-        )
-        assertTrue(state.copy(a11yRunning = true).serviceEnabled)
-        assertTrue(
-            state.copy(topAppId = "other.app", a11yRunning = true).serviceEnabled,
-        )
+        assertNull(oldAutomation.authorizationRoute(false, SettingsStore()))
     }
 
     @Test
     fun unknownAndAllowedPermissionsDoNotBlockAutomationStart() {
         // Only a confirmed denial blocks the UI; starting performs the actual permission check.
-        assertNull(dashboard(null).authorizationRoute(true, automation, emptySet()))
-        assertNull(dashboard(allowed).authorizationRoute(true, automation, emptySet()))
+        assertNull(dashboard(null).authorizationRoute(true, automation))
+        assertNull(dashboard(allowed).authorizationRoute(true, automation))
     }
 
     @Test
@@ -91,21 +72,16 @@ class PrivilegeRestrictionTest {
             val state = dashboard(capabilities)
             assertEquals(
                 PrivilegeServiceRoute,
-                state.authorizationRoute(true, automation, emptySet()),
+                state.authorizationRoute(true, automation),
             )
-            assertNull(state.authorizationRoute(false, automation, emptySet()))
+            assertNull(state.authorizationRoute(false, automation))
             assertNull(
-                state
-                    .copy(automationRunning = true)
-                    .authorizationRoute(false, automation, emptySet()),
+                state.copy(automationRunning = true).authorizationRoute(false, automation),
             )
-            assertNull(state.authorizationRoute(true, automation, setOf("example.app")))
-            assertNull(state.authorizationRoute(true, SettingsStore(), emptySet()))
+            assertNull(state.authorizationRoute(true, SettingsStore()))
             assertEquals(
                 WorkModeRoute,
-                state
-                    .copy(writeSecureSettings = false)
-                    .authorizationRoute(true, SettingsStore(), emptySet()),
+                state.copy(writeSecureSettings = false).authorizationRoute(true, SettingsStore()),
             )
         }
     }
@@ -124,7 +100,7 @@ class PrivilegeRestrictionTest {
         val capabilities = settings.privilegeCapabilities()!!
         assertTrue(capabilities.updateAppOps)
         assertFalse(capabilities.restricted)
-        assertNull(dashboard(capabilities).authorizationRoute(true, automation, emptySet()))
+        assertNull(dashboard(capabilities).authorizationRoute(true, automation))
     }
 
     @Test
@@ -158,7 +134,7 @@ class PrivilegeRestrictionTest {
             assertTrue(capabilities.restricted)
             assertEquals(
                 PrivilegeServiceRoute,
-                dashboard(capabilities).authorizationRoute(true, automation, emptySet()),
+                dashboard(capabilities).authorizationRoute(true, automation),
             )
             assertTrue(store.settings.value.services.automationRunning)
             assertTrue(store.settings.value.privilege.available)

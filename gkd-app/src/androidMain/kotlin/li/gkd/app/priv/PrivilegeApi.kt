@@ -16,7 +16,7 @@ import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.service.StatusService
 import li.gkd.app.service.currentAppBlocked
-import li.gkd.app.service.currentAppUseA11y
+import li.gkd.app.service.switchA11yServiceForPrivilegeChange
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.ToastUtils
@@ -72,14 +72,16 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
                 privilegeContext.topCpn()?.let { cpn ->
                     updateTopActivity(cpn.packageName, cpn.className, ActivityScene.TaskStack)
                 } ?: false
+            val settings = SettingsRepository.settings.value
             if (
                 !taskAppChanged &&
-                    SettingsRepository.settings.value.enableAutomator &&
-                    !currentAppUseA11y &&
+                    settings.enableAutomator &&
+                    !settings.useA11y &&
                     !currentAppBlocked
             ) {
                 AutomationService.tryConnect(true)
             }
+            switchA11yServiceForPrivilegeChange()
             PermissionStates.refreshAll()
             if (StatusService.needRestart) {
                 privilegeContext.startForegroundService(
@@ -91,6 +93,7 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             }
         } else if (oldContext != null) {
             clearPrivilegeContext(oldContext)
+            switchA11yServiceForPrivilegeChange()
             PermissionStates.refreshAll()
             ToastUtils.show(Res.string.privilege_service_disconnected.getSync())
         }

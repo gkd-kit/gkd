@@ -13,30 +13,34 @@ import li.gkd.app.app
 import li.gkd.app.service.A11yService
 import li.gkd.app.util.mapState
 
-fun useEnabledA11yServicesFlow(scope: CoroutineScope): StateFlow<Set<ComponentName>> {
-    val initialValue = app.getSecureA11yServices()
-    return callbackFlow {
-            val contextObserver =
-                object : ContentObserver(null) {
-                    override fun onChange(selfChange: Boolean) {
-                        trySend(app.getSecureA11yServices())
-                    }
-                }
-            app.registerObserver(
-                Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
-                contextObserver,
-            )
-            trySend(initialValue)
-            awaitClose { app.unregisterObserver(contextObserver) }
+fun observeEnabledA11yServices() = callbackFlow {
+    val contextObserver =
+        object : ContentObserver(null) {
+            override fun onChange(selfChange: Boolean) {
+                trySend(app.getSecureA11yServices())
+            }
         }
-        .stateIn(scope, SharingStarted.Eagerly, initialValue)
+    app.registerObserver(
+        Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+        contextObserver,
+    )
+    trySend(app.getSecureA11yServices())
+    awaitClose { app.unregisterObserver(contextObserver) }
 }
+
+fun useEnabledA11yServicesFlow(scope: CoroutineScope): StateFlow<Set<ComponentName>> =
+    observeEnabledA11yServices()
+        .stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            app.getSecureA11yServices(),
+        )
 
 fun useA11yServiceEnabledFlow(
     scope: CoroutineScope,
     servicesFlow: StateFlow<Set<ComponentName>> = useEnabledA11yServicesFlow(scope),
 ): StateFlow<Boolean> {
     return servicesFlow.mapState(scope) {
-        it.contains(A11yService.a11yCn)
+        A11yService.standardComponent in it || A11yService.privilegedComponent in it
     }
 }

@@ -6,17 +6,27 @@ import kotlin.test.assertTrue
 
 class AppScopePolicyTest {
     @Test
-    fun modeExceptionsAreIndependentAndNewAppsKeepTheDefaultMode() {
-        val a11y = setOf("app.a11y", "app.both")
-        val automation = setOf("app.automation", "app.both")
-        val defaults = SettingsStore()
-        assertFalse(AppScopePolicy.usesA11y(defaults, a11y, automation, "app.automation"))
-        assertFalse(AppScopePolicy.usesA11y(defaults, a11y, automation, "app.both"))
-        assertTrue(AppScopePolicy.usesA11y(defaults, a11y, automation, "app.new"))
-        val switched = defaults.copy(automatorMode = AutomatorMode.Automation.value)
-        assertTrue(AppScopePolicy.usesA11y(switched, a11y, automation, "app.a11y"))
-        assertTrue(AppScopePolicy.usesA11y(switched, a11y, automation, "app.both"))
-        assertFalse(AppScopePolicy.usesA11y(switched, a11y, automation, "app.new"))
+    fun partialCloseStillBlocksMatchingInBothEngineModes() {
+        for (mode in AutomatorMode.entries) {
+            val settings =
+                SettingsStore(
+                    automatorMode = mode.value,
+                    enableBlockA11yAppList = true,
+                    blockA11yAppListFollowMatch = false,
+                )
+            val match = setOf("blocked.match")
+            val a11y = setOf("blocked.partial")
+            assertTrue(AppScopePolicy.blocksMatch(settings, match, a11y, "blocked.partial"))
+            assertFalse(
+                AppScopePolicy.blocksMatch(
+                    settings.copy(enableBlockA11yAppList = false),
+                    match,
+                    a11y,
+                    "blocked.partial",
+                ),
+            )
+            assertTrue(AppScopePolicy.blocksMatch(settings, match, a11y, "blocked.match"))
+        }
     }
 
     @Test

@@ -21,7 +21,7 @@ export interface Environment {
   android: Record<string, number | boolean | string>;
 }
 export type SimulatorSettings = Record<string, Record<string, unknown>>;
-export type SimulatedService = 'Status' | 'Button' | 'Activity' | 'Event' | 'Track' | 'Screenshot' | 'Debug' | 'Accessibility' | 'Automation';
+export type SimulatedService = 'Status' | 'Button' | 'Activity' | 'Event' | 'Track' | 'Screenshot' | 'Debug' | 'Accessibility' | 'Companion' | 'Automation';
 export type ServiceEventType = 'Authorized' | 'Cancelled' | 'Connected' | 'Failed';
 export interface ServiceSnapshot {
   runtime: Record<SimulatedService, { phase: 'Stopped' | 'AwaitingAuthorization' | 'Starting' | 'Running' | 'Failed'; attempt: number; failure: string | null }>;

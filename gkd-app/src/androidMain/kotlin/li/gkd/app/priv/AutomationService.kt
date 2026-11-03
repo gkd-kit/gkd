@@ -24,6 +24,7 @@ import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
+import li.gkd.app.service.CompanionServiceController
 import li.gkd.app.settings.AutomatorMode
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
@@ -123,6 +124,7 @@ private constructor(
             disconnect()
         } finally {
             uiAutomationFlow.compareAndSet(this, null)
+            CompanionServiceController.update()
             appScope.launchLogged {
                 scope.coroutineContext[Job]?.join()
                 RuntimeRecordRepository.flush()
@@ -179,6 +181,7 @@ private constructor(
                         instance.shutdown(true)
                         return@synchronized
                     }
+                    CompanionServiceController.update()
                     if (
                         privilegeContextFlow.value !== privilegeContext ||
                             !privilegeContext.serverLifecycleBinder.pingBinder()

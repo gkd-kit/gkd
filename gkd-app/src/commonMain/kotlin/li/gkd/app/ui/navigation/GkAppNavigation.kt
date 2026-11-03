@@ -23,6 +23,7 @@ import li.gkd.app.ui.settings.KeepAlivePage
 import li.gkd.app.ui.settings.QuickSettingsTilesPage
 import li.gkd.app.ui.settings.ServiceScopeAppListPage
 import li.gkd.app.ui.settings.ServiceScopeKind
+import li.gkd.app.ui.settings.TouchOptimizationPage
 import li.gkd.app.ui.settings.WorkModePage
 import li.gkd.app.ui.snapshot.SnapshotPage
 import li.gkd.app.ui.snapshot.SnapshotPreviewPage
@@ -68,9 +69,8 @@ fun GkAppNavigation() {
 
                 ActivityLogRoute -> ActivityLogPage()
                 A11yEventLogRoute -> A11yEventLogPage()
-                A11YScopeAppListRoute -> ServiceScopeAppListPage(ServiceScopeKind.Accessibility)
-                AutomationScopeAppListRoute -> ServiceScopeAppListPage(ServiceScopeKind.Automation)
                 BlockA11yAppListRoute -> ServiceScopeAppListPage(ServiceScopeKind.Disabled)
+                CompanionScopeAppListRoute -> ServiceScopeAppListPage(ServiceScopeKind.Companion)
                 EditBlockAppListRoute -> AppWhitelistPage()
                 SnapshotPageRoute -> SnapshotPage()
                 HomeRoute -> HomePage()
@@ -82,6 +82,7 @@ fun GkAppNavigation() {
                 AdvancedPageRoute -> AdvancedPage(entry)
                 DebugSettingsRoute -> DebugSettingsPage()
                 KeepAliveRoute -> KeepAlivePage()
+                TouchOptimizationRoute -> TouchOptimizationPage()
                 MatchDebugRoute -> MatchDebugPage()
                 ExternalCallsRoute -> ExternalCallsPage()
                 QuickSettingsTilesRoute -> QuickSettingsTilesPage()

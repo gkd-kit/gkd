@@ -231,7 +231,7 @@ private constructor(
     // null means no input was attempted; false means an attempted input failed and must not be
     // replayed.
     private inline fun injectInputIfPermitted(block: () -> Unit): Boolean? {
-        if (!hasPermission(AndroidPermissions.INJECT_EVENTS)) return null
+        if (!hasInputInjectionPermission()) return null
         return try {
             block()
             true

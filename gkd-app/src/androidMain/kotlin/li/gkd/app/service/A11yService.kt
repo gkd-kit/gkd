@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
+import com.google.android.accessibility.selecttospeak.SelectToSpeakServicePrivileged
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -34,10 +35,12 @@ import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.platform.lifecycle.LifecycleHooks
 import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
+import li.gkd.app.priv.hasInputInjectionPermission
 import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.record.RuntimeRecordRepository
 import li.gkd.app.resources.*
 import li.gkd.app.settings.AutomatorMode
+import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.store.AppStore.updateEnableAutomator
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.ToastUtils
@@ -95,9 +98,30 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
 
     override fun onInterrupt() {}
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) = matchHost.onA11yEvent(event)
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (connected) matchHost.onA11yEvent(event)
+    }
 
     private var tempShutdownFlag = false
+    @Volatile private var replacementRequested = false
+
+    fun shutdownForReplacement() {
+        if (replacementRequested) return
+        replacementRequested = true
+        shutdown(true)
+    }
+
+    fun writeReplacement(write: () -> Boolean): Boolean {
+        val previous = replacementRequested
+        replacementRequested = true
+        var written = false
+        try {
+            written = write()
+            return written
+        } finally {
+            if (!written) replacementRequested = previous
+        }
+    }
 
     override fun shutdown(temp: Boolean) {
         keepAliveOverlayJob?.cancel()
@@ -115,17 +139,6 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     init {
         lifecycleHooks.useLogLifecycle(this)
         lifecycleHooks.onCreated {
-            isRunning.value = true
-            if (currentAppUseA11y) {
-                updateEnableAutomator(true)
-            } else {
-                ToastUtils.show(Res.string.a11y_automation_mode_notice.getSync(), forced = true)
-                scope.launch {
-                    delay(1)
-                    shutdown(true)
-                }
-            }
-            StatusService.autoStart()
             scope.launch {
                 delay(3000)
                 if (!(destroyed || connected)) {
@@ -134,18 +147,24 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
             }
         }
         lifecycleHooks.onDestroyed {
-            MatchingRuntime.coordinator.detach(this)
+            destroyed = true
             scope.cancel()
-            if (instance === this) {
-                instance = null
+            if (!connected) return@onDestroyed
+            MatchingRuntime.coordinator.detach(this)
+            val ownsState = instance === this
+            if (ownsState) {
+                instanceFlow.value = null
+                isRunning.value = false
             }
-            isRunning.value = false
+            CompanionServiceController.update()
             releaseKeepAliveOverlayAfterHandoff()
-            if (tempShutdownFlag) {
-                ToastUtils.show(Res.string.a11y_partially_disabled.getSync())
-            } else {
-                ToastUtils.show(Res.string.a11y_stopped.getSync())
-                updateEnableAutomator(false)
+            if (!replacementRequested) {
+                if (tempShutdownFlag) {
+                    ToastUtils.show(Res.string.a11y_partially_disabled.getSync())
+                } else {
+                    ToastUtils.show(Res.string.a11y_stopped.getSync())
+                    if (ownsState) updateEnableAutomator(false)
+                }
             }
             val context = privilegeContextFlow.value
             val page = AndroidForegroundState.currentPage
@@ -160,7 +179,6 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
                     updateTopActivity(cpn.packageName, cpn.className)
                 }
             }
-            destroyed = true
             appScope.launch {
                 try {
                     scope.coroutineContext[Job]?.join()
@@ -232,19 +250,33 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     override fun onServiceConnected() {
         super.onServiceConnected()
         LogUtils.i("onA11yConnected -> ${this::class.simpleName}")
-        instance = this
-        attachKeepAliveOverlay()
-        connected = true
-        ToastUtils.show(Res.string.a11y_started.getSync())
-        if (currentAppUseA11y) {
-            AndroidAutomationSessions.onA11yConnected(this)
+        val useA11y = SettingsRepository.settings.value.useA11y
+        if (!useA11y || this::class.componentName != preferredComponent) {
+            if (!useA11y) {
+                ToastUtils.show(Res.string.a11y_automation_mode_notice.getSync(), forced = true)
+            }
+            shutdownForReplacement()
+            scope.cancel()
+            return
         }
+        instance?.takeIf { it !== this }?.shutdownForReplacement()
+        connected = true
+        instanceFlow.value = this
+        isRunning.value = true
+        updateEnableAutomator(true)
+        StatusService.autoStart()
+        attachKeepAliveOverlay()
+        ToastUtils.show(Res.string.a11y_started.getSync())
+        AndroidAutomationSessions.onA11yConnected(this)
+        CompanionServiceController.update()
     }
 
     override fun onDestroy() {
         lifecycleHooks.dispatchDestroyed()
         super.onDestroy()
-        AndroidAutomationSessions.recordServiceEvent(this, MatchServiceEvent.Disconnected)
+        if (connected) {
+            AndroidAutomationSessions.recordServiceEvent(this, MatchServiceEvent.Disconnected)
+        }
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
@@ -253,12 +285,21 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
     }
 
     companion object {
-        val a11yCn by lazy { SelectToSpeakService::class.componentName }
+        val standardComponent by lazy { SelectToSpeakService::class.componentName }
+        val privilegedComponent by lazy { SelectToSpeakServicePrivileged::class.componentName }
+        val preferredComponent
+            get() =
+                if (privilegeContextFlow.value != null && hasInputInjectionPermission())
+                    privilegedComponent
+                else standardComponent
+
         val isRunning: StateFlow<Boolean>
             field = MutableStateFlow(false)
 
-        @Volatile
-        var instance: A11yService? = null
-            private set
+        val instanceFlow: StateFlow<A11yService?>
+            field = MutableStateFlow(null)
+
+        val instance: A11yService?
+            get() = instanceFlow.value
     }
 }

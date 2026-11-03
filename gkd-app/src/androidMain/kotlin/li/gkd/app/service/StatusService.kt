@@ -60,17 +60,17 @@ class StatusService : LifecycleHookService() {
         } else if (privilegeServiceStatus == PrivilegeServiceStatus.DisconnectedDesired) {
             Triple(title, getString(Res.string.privilege_service_connection_lost), "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
-            val useA11y = currentAppUseA11y
             val text =
                 when {
-                    useA11y && a11yServiceEnabledFlow.value -> getString(Res.string.a11y_fault)
-                    useA11y && !PermissionStates.writeSecureSettings.updateAndGet() ->
+                    store.useA11y && a11yServiceEnabledFlow.value ->
+                        getString(Res.string.a11y_fault)
+                    store.useA11y && !PermissionStates.writeSecureSettings.updateAndGet() ->
                         getString(Res.string.a11y_unauthorized)
                     partiallyDisabled -> {
                         val name = AppInfoRepository.snapshot?.apps?.get(appId)?.name ?: appId
                         getString(Res.string.service_partially_disabled_detail, name)
                     }
-                    useA11y -> getString(Res.string.a11y_stopped)
+                    store.useA11y -> getString(Res.string.a11y_stopped)
                     else -> getString(Res.string.automation_stopped)
                 }
             Triple(title, text, defaultStatusNotification.uri)

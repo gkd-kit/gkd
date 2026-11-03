@@ -145,14 +145,13 @@ class App : Application() {
             .toHashSet()
     }
 
-    fun putSecureA11yServices(services: Set<ComponentName>) {
+    fun putSecureA11yServices(services: Set<ComponentName>): Boolean =
         putSecureString(
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
             services.joinToString(ENABLED_ACCESSIBILITY_SERVICES_SEPARATOR.toString()) {
                 it.flattenToShortString()
             },
         )
-    }
 
     fun resolveAppId(intent: Intent): String? {
         return intent.resolveActivity(packageManager)?.packageName

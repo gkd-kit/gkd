@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
+  android:accessibilityFeedbackType="feedbackAllMask"
+  android:accessibilityFlags="flagReportViewIds|flagIncludeNotImportantViews|flagDefault|flagRetrieveInteractiveWindows"
+  android:canRetrieveWindowContent="true"
+  android:canTakeScreenshot="true"
+  android:isAccessibilityTool="@bool/is_accessibility_tool"
+  android:description="@string/privileged_a11y_desc"
+  android:notificationTimeout="0"
+  android:settingsActivity="li.gkd.app.MainActivity"
+  tools:ignore="UnusedAttribute"
+/>

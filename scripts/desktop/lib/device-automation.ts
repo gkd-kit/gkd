@@ -10,37 +10,40 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
   const storePath = `${remote}/store/store.json`;
   const keys = ['enableAutomator', 'automatorMode'] as const;
   const accessibilityKeys = [...keys, 'enableMatch', 'enableBlockA11yAppList'] as const;
-  const accessibilityComponent = `${packageName}/com.google.android.accessibility.selecttospeak.SelectToSpeakService`;
+  const standard = `${packageName}/com.google.android.accessibility.selecttospeak.SelectToSpeakService`;
+  const privileged = standard + 'Privileged';
+  const companion = standard + 'Companion';
+  const ownedComponents = new Set([standard, privileged, companion]);
   const recoveryRoot = packageName === 'li.songe.gkd.debug' ? join(localRoot, 'device-recovery') : join(localRoot, 'device-recovery', 'release');
   const transferRoot = join(repositoryRoot, '.temp', 'device-automation');
   type Recovery = { serial: string; packageName: string; captureDirectory?: string; saved: Store;
-    accessibility?: { services: string; enabled: string }; restoreTestAppA11yScope?: true };
-  const a11yScopePath = `${remote}/store/a11y_scope_app_list.txt`;
-  const readA11yScope = async (adb: Adb) => (await adb('shell', `if [ -f '${a11yScopePath}' ]; then cat '${a11yScopePath}'; fi`)).toString().split('\n').filter(Boolean);
-
-  async function writeA11yScope(adb: Adb, ids: string[]) {
-    await mkdir(transferRoot, { recursive: true });
-    const temporary = await mkdtemp(join(transferRoot, 'scope-'));
-    try {
-      const path = join(temporary, 'scope.txt');
-      await writeFile(path, ids.join('\n'));
-      await adb('push', path, `${a11yScopePath}.automation-pending`);
-      await adb('shell', 'mv', '-f', `${a11yScopePath}.automation-pending`, a11yScopePath);
-    } finally { await rm(temporary, { recursive: true, force: true }); }
-  }
-
+    diagnostics?: boolean; accessibility?: { services: string; enabled: string } };
   const serviceList = (value: string) => value === 'null' || value === '' ? [] : value.split(':');
   const readSecure = async (adb: Adb, key: string) => (await adb('shell', 'settings', 'get', 'secure', key)).toString().trim();
   const writeSecure = async (adb: Adb, key: string, value: string) => value === 'null'
     ? adb('shell', 'settings', 'delete', 'secure', key) : adb('shell', 'settings', 'put', 'secure', key, value);
+  const normalize = (component: string) => {
+    const [pkg, name] = component.split('/');
+    return name?.startsWith('.') ? `${pkg}/${pkg}${name}` : component;
+  };
+  const owned = (component: string) => ownedComponents.has(normalize(component));
+  const componentKey = (list: string[]) => list.map(normalize).sort().join(':');
 
   /** Explicit device diagnostic preparation; create the recovery record before enabling the service. */
-  async function enableDebugAccessibility(adb: Adb) {
+  async function enableDebugAccessibility(adb: Adb, component: string) {
     if ((await readStore(adb)).enableMatch !== false) throw new Error('Disable rule matching before enabling accessibility');
+    if (component !== standard && component !== privileged) throw new Error('Unexpected diagnostic accessibility component');
     const current = serviceList(await readSecure(adb, 'enabled_accessibility_services'));
-    if (!current.includes(accessibilityComponent)) await writeSecure(adb, 'enabled_accessibility_services', [...current, accessibilityComponent].join(':'));
+    const selected = current.filter(item => {
+      const name = normalize(item);
+      return name !== standard && name !== privileged;
+    });
+    selected.push(component);
+    if (componentKey(current) !== componentKey(selected)) {
+      await writeSecure(adb, 'enabled_accessibility_services', selected.join(':'));
+    }
     await writeSecure(adb, 'accessibility_enabled', '1');
-    if (!serviceList(await readSecure(adb, 'enabled_accessibility_services')).includes(accessibilityComponent)) {
+    if (!serviceList(await readSecure(adb, 'enabled_accessibility_services')).map(normalize).includes(component)) {
       throw new Error('Diagnostic accessibility service was not enabled');
     }
   }
@@ -48,22 +51,20 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
   async function restoreAccessibility(adb: Adb, saved: NonNullable<Recovery['accessibility']>) {
     const original = serviceList(saved.services);
     const current = serviceList(await readSecure(adb, 'enabled_accessibility_services'));
-    const restored = current.filter(item => item !== accessibilityComponent);
-    if (original.includes(accessibilityComponent)) restored.push(accessibilityComponent);
-    if (current.includes(accessibilityComponent) !== original.includes(accessibilityComponent)) {
+    const originalOwn = original.filter(owned);
+    const currentOthers = current.filter(item => !owned(item));
+    if (componentKey(current.filter(owned)) !== componentKey(originalOwn)) {
+      const restored = [...currentOthers, ...originalOwn];
       await writeSecure(adb, 'enabled_accessibility_services', restored.length ? restored.join(':') : saved.services === 'null' ? 'null' : '');
     }
-    const others = (items: string[]) => items.filter(item => item !== accessibilityComponent).map(item => {
-      // Android may rewrite package/package.Service as package/.Service during activation.
-      const [pkg, name] = item.split('/');
-      return name?.startsWith('.') ? `${pkg}/${pkg}${name}` : item;
-    }).sort().join(':');
     // Do not disable another service added by the user during capture.
-    if (others(original) === others(restored)) await writeSecure(adb, 'accessibility_enabled', saved.enabled);
-    if (serviceList(await readSecure(adb, 'enabled_accessibility_services')).includes(accessibilityComponent) !== original.includes(accessibilityComponent)) {
+    const restoreGlobalFlag = componentKey(original.filter(item => !owned(item))) === componentKey(currentOthers);
+    if (restoreGlobalFlag) await writeSecure(adb, 'accessibility_enabled', saved.enabled);
+    const actual = serviceList(await readSecure(adb, 'enabled_accessibility_services'));
+    if (componentKey(actual.filter(owned)) !== componentKey(originalOwn)) {
       throw new Error('Accessibility restoration mismatch');
     }
-    if (others(original) === others(restored) && await readSecure(adb, 'accessibility_enabled') !== saved.enabled) {
+    if (restoreGlobalFlag && await readSecure(adb, 'accessibility_enabled') !== saved.enabled) {
       throw new Error('Accessibility enabled setting restoration mismatch');
     }
   }
@@ -98,10 +99,10 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
     if (!value || value.serial !== serial || value.packageName !== packageName ||
         !value.saved || typeof value.saved !== 'object' || Array.isArray(value.saved) ||
         Object.keys(value.saved).some(key => !accessibilityKeys.includes(key as typeof accessibilityKeys[number])) ||
+        (value.diagnostics !== undefined && typeof value.diagnostics !== 'boolean') ||
         (Object.hasOwn(value.saved, 'enableAutomator') && typeof value.saved.enableAutomator !== 'boolean') ||
         (Object.hasOwn(value.saved, 'enableMatch') && typeof value.saved.enableMatch !== 'boolean') ||
         (Object.hasOwn(value.saved, 'enableBlockA11yAppList') && typeof value.saved.enableBlockA11yAppList !== 'boolean') ||
-        (value.restoreTestAppA11yScope !== undefined && value.restoreTestAppA11yScope !== true) ||
         (value.accessibility !== undefined && (!value.accessibility || typeof value.accessibility.services !== 'string' ||
           !['null', '0', '1'].includes(value.accessibility.enabled))) ||
         (Object.hasOwn(value.saved, 'automatorMode') && ![1, 2].includes(value.saved.automatorMode as number))) {
@@ -125,15 +126,9 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
   async function restoreAutomation(adb: Adb, directory = recoveryRoot, reopenApp = true) {
     const { path, record } = await automationRecoveryStatus(adb, directory);
     if (!record) return { restored: false, path };
-    if (record.accessibility) await restoreAccessibility(adb, record.accessibility);
     await adb('shell', 'am', 'force-stop', packageName);
-    if (record.restoreTestAppA11yScope) {
-      const scope = await readA11yScope(adb);
-      if (!scope.includes(packageName)) await writeA11yScope(adb, [...scope, packageName]);
-      if (!(await readA11yScope(adb)).includes(packageName)) throw new Error('Test app accessibility scope restoration mismatch');
-    }
     const latest = await readStore(adb);
-    const restoredKeys = record.accessibility ? accessibilityKeys : keys;
+    const restoredKeys = (record.diagnostics ?? Boolean(record.accessibility)) ? accessibilityKeys : keys;
     for (const key of restoredKeys) {
       if (Object.hasOwn(record.saved, key)) latest[key] = record.saved[key]; else delete latest[key];
     }
@@ -144,6 +139,7 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
         throw new Error(`Restore mismatch: ${key}; recovery retained at ${path}`);
       }
     }
+    if (record.accessibility) await restoreAccessibility(adb, record.accessibility);
     if (reopenApp) await adb('shell', 'am', 'start', '-n', `${packageName}/li.gkd.app.MainActivity`);
     await unlink(path);
     return { restored: true, path };
@@ -156,14 +152,13 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
     const original = await readStore(adb);
     const changedKeys = options.accessibilityForDiagnostics ? accessibilityKeys : keys;
     const saved = Object.fromEntries(changedKeys.filter(key => Object.hasOwn(original, key)).map(key => [key, original[key]]));
-    const recovery: Recovery = { serial, packageName, captureDirectory: resolve(output), saved };
-    if (options.accessibilityForDiagnostics) recovery.accessibility = {
-      services: await readSecure(adb, 'enabled_accessibility_services'), enabled: await readSecure(adb, 'accessibility_enabled'),
+    const recovery: Recovery = {
+      serial, packageName, captureDirectory: resolve(output), saved, diagnostics: options.accessibilityForDiagnostics === true,
+      accessibility: {
+        services: await readSecure(adb, 'enabled_accessibility_services'), enabled: await readSecure(adb, 'accessibility_enabled'),
+      },
     };
-    if (options.automationForDiagnostics) {
-      if (!options.accessibilityForDiagnostics) throw new Error('Automation testing requires diagnostic recovery');
-      if ((await readA11yScope(adb)).includes(packageName)) recovery.restoreTestAppA11yScope = true;
-    }
+    if (options.automationForDiagnostics && !options.accessibilityForDiagnostics) throw new Error('Automation testing requires diagnostic recovery');
     validateRecovery(recovery, serial);
     await mkdir(directory, { recursive: true });
     // One record per device prevents another capture directory overwriting the original settings.
@@ -173,9 +168,6 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
       await adb('shell', 'am', 'force-stop', packageName);
       await writeStore(adb, { ...await readStore(adb), enableAutomator: false, automatorMode: 1,
         ...(options.accessibilityForDiagnostics ? { enableMatch: false, enableBlockA11yAppList: false } : {}) });
-      if (recovery.restoreTestAppA11yScope) {
-        await writeA11yScope(adb, (await readA11yScope(adb)).filter(id => id !== packageName));
-      }
       const paused = await readStore(adb);
       if (paused.enableAutomator !== false || paused.automatorMode !== 1) throw new Error('Automation preflight did not take effect');
       if (options.accessibilityForDiagnostics && paused.enableMatch !== false) throw new Error('Matching preflight did not take effect');
@@ -186,7 +178,7 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
         await restoreAutomation(adb, directory, options.reopenApp);
         console.log(options.accessibilityForDiagnostics
           ? 'Restored and verified automation, rule matching and accessibility settings.'
-          : 'Restored and verified original automation switch and mode.');
+          : 'Restored and verified original automation switch, mode and accessibility settings.');
       } catch (error) {
         throw new AggregateError([...(workError === undefined ? [] : [workError]), error], `Automation recovery required: ${path}`);
       }

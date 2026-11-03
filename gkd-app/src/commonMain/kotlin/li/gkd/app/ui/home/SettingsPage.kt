@@ -1,6 +1,8 @@
 package li.gkd.app.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +44,7 @@ import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
+import li.gkd.app.ui.navigation.TouchOptimizationRoute
 import li.gkd.app.ui.option.DarkThemeOption
 import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.page.GkBackupDialogs
@@ -182,6 +186,21 @@ fun settingsPage(
                     title = stringResource(Res.string.keep_alive_strategy),
                     onClick = { mainVm.navigator.navigate(KeepAliveRoute) },
                 )
+
+                val gestureServices by mainVm.gestureServices.collectAsStateWithLifecycle()
+                val gestureServiceState = gestureServices
+                if (gestureServiceState is Loadable.Ready) {
+                    AnimatedVisibility(
+                        visible = gestureServiceState.value.isNotEmpty(),
+                        enter = expandVertically(expandFrom = Alignment.Top),
+                        exit = shrinkVertically(shrinkTowards = Alignment.Top),
+                    ) {
+                        GkSettingItem(
+                            title = stringResource(Res.string.touch_optimization_title),
+                            onClick = { mainVm.navigator.navigate(TouchOptimizationRoute) },
+                        )
+                    }
+                }
 
                 AnimatedVisibility(visible = store.enableBlockA11yAppList) {
                     Text(

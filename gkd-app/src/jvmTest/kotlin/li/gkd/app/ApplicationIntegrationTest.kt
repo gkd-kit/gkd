@@ -122,8 +122,12 @@ class ApplicationIntegrationTest {
             val store = DesktopStorage.data.resolve("files/store").apply { mkdirs() }
             store
                 .resolve("store.json")
-                .writeText("""{"appGroupType":7,"enableDynamicColor":false,"futureOption":123}""")
+                .writeText(
+                    """{"appGroupType":7,"enableDynamicColor":false,"futureOption":123,"enableCompanionService":false}""",
+                )
             store.resolve("overlay_position.json").writeText("""{"legacy":[12,34]}""")
+            store.resolve("a11y_scope_app_list.txt").writeText("com.tencent.mm")
+            store.resolve("automation_scope_app_list.txt").writeText("test.bank")
             // Desktop must remain accepted even when an existing Android file says otherwise.
             store.resolve("terms_accepted.txt").writeText("false")
             // An Android recovery file without a database row must keep its user-supplied name.
@@ -149,6 +153,7 @@ class ApplicationIntegrationTest {
                 )
                 .use { runtime ->
                     assertDeferredModeHandoff(runtime)
+                    assertCompanionWhitelist(runtime)
                     assertLogCallerValues()
                     withTimeout(20_000) { runtime.subscriptionInitialization.join() }
                     withTimeout(5_000) { runtime.crashInitialization.join() }
@@ -738,6 +743,110 @@ class ApplicationIntegrationTest {
         )
         assertTrue(layout.tempCache.listFiles().orEmpty().isEmpty())
         assertInspectionProtocol(layout, repository)
+    }
+}
+
+private suspend fun assertCompanionWhitelist(runtime: DesktopRuntime) {
+    val original = SettingsRepository.settings.value
+    val simulator = runtime.simulator.settings.value
+    val blockedA11y = SettingsRepository.blockA11yAppList.value
+    val blockedMatch = SettingsRepository.blockMatchAppList.value
+    val companionScope = SettingsRepository.companionScopeAppList.value
+    try {
+        SettingsRepository.saveBlockA11yAppList(setOf("partial.white"))
+        SettingsRepository.saveBlockMatchAppList(setOf("match.blocked"))
+        SettingsRepository.saveCompanionScopeAppList(setOf("companion.white"))
+        SettingsRepository.updateSettings {
+            it.copy(
+                enableAutomator = true,
+                enableBlockA11yAppList = false,
+                blockA11yAppListFollowMatch = false,
+                automatorMode = AutomatorMode.Automation.value,
+            )
+        }
+        runtime.simulator.setPrivilegeAvailable(true)
+        runtime.simulator.update {
+            it.copy(
+                permissions = it.permissions.copy(writeSecureSettings = true),
+                device = it.device.copy(topAppId = "companion.normal"),
+            )
+        }
+        runtime.applyAutomatorSettings()
+        fun services() = runtime.simulator.settings.value.services
+        fun top(appId: String) =
+            runtime.simulator.update { it.copy(device = it.device.copy(topAppId = appId)) }
+        assertTrue(services().automationRunning)
+        assertTrue(services().running(SimulatedService.Companion))
+        runtime.services.setEnabled(SimulatedService.Automation, false)
+        val stoppedAttempt = services().state(SimulatedService.Automation).attempt
+        li.gkd.app.platform.requestCompanionServiceUpdate()
+        assertFalse(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
+        assertEquals(stoppedAttempt, services().state(SimulatedService.Automation).attempt)
+        runtime.applyAutomatorSettings()
+        val automationAttempt = services().state(SimulatedService.Automation).attempt
+        // The companion list works with partial close disabled and does not reconnect automation.
+        top("companion.white")
+        assertTrue(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
+        assertFalse(SettingsRepository.checkAppBlockMatch("companion.white"))
+        assertTrue(SettingsRepository.settings.value.enableAutomator)
+        top("companion.normal")
+        assertTrue(services().running(SimulatedService.Companion))
+        assertEquals(automationAttempt, services().state(SimulatedService.Automation).attempt)
+        SettingsRepository.updateSettings { it.copy(enableBlockA11yAppList = true) }
+        top("companion.white")
+        assertTrue(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
+        assertFalse(SettingsRepository.checkAppBlockMatch("companion.white"))
+        // The existing partial-close list still stops automation and suppresses matching.
+        top("partial.white")
+        assertFalse(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
+        assertTrue(SettingsRepository.checkAppBlockMatch("partial.white"))
+        assertTrue(SettingsRepository.settings.value.enableAutomator)
+        top("companion.normal")
+        assertTrue(services().automationRunning)
+        assertTrue(services().running(SimulatedService.Companion))
+        SettingsRepository.updateSettings { it.copy(enableBlockA11yAppList = false) }
+        top("partial.white")
+        assertTrue(services().automationRunning)
+        assertTrue(services().running(SimulatedService.Companion))
+        assertFalse(SettingsRepository.checkAppBlockMatch("partial.white"))
+        // The companion list does not disable either service in accessibility mode.
+        SettingsRepository.updateAutomatorMode(AutomatorMode.A11y.value)
+        runtime.applyAutomatorSettings()
+        top("companion.white")
+        assertTrue(services().serviceEnabled)
+        assertTrue(services().running(SimulatedService.Companion))
+        assertFalse(SettingsRepository.checkAppBlockMatch("companion.white"))
+        SettingsRepository.updateSettings { it.copy(enableBlockA11yAppList = true) }
+        top("partial.white")
+        assertFalse(services().serviceEnabled)
+        assertFalse(services().running(SimulatedService.Companion))
+        assertTrue(SettingsRepository.checkAppBlockMatch("partial.white"))
+        SettingsRepository.updateAutomatorMode(AutomatorMode.Automation.value)
+        runtime.applyAutomatorSettings()
+        assertFalse(services().automationRunning)
+        top("companion.normal")
+        assertTrue(services().automationRunning)
+        assertTrue(services().running(SimulatedService.Companion))
+        SettingsRepository.updateSettings { it.copy(blockA11yAppListFollowMatch = true) }
+        top("match.blocked")
+        assertFalse(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
+        assertTrue(SettingsRepository.checkAppBlockMatch("match.blocked"))
+        SettingsRepository.updateSettings { it.copy(enableAutomator = false) }
+        runtime.applyAutomatorSettings()
+        assertFalse(services().serviceEnabled)
+        assertFalse(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
+    } finally {
+        SettingsRepository.saveBlockA11yAppList(blockedA11y)
+        SettingsRepository.saveBlockMatchAppList(blockedMatch)
+        SettingsRepository.saveCompanionScopeAppList(companionScope)
+        SettingsRepository.updateSettings { original }
+        runtime.simulator.update { simulator }
     }
 }
 

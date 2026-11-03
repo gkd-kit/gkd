@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.DesktopRuntime
 import li.gkd.app.SimulatedService
+import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.selectedSimulatedAutomator
 import li.gkd.app.settings.SettingsRepository
@@ -35,6 +36,8 @@ actual fun ignoresBatteryOptimizations() =
 actual fun openAppDetails() {
     ToastUtils.show(Res.string.platform_action_unsupported.getSync())
 }
+
+actual fun UiHost.launchApp(appId: String): PlatformResult<Boolean> = PlatformResult.Unsupported
 
 actual suspend fun openRecents() {
     ToastUtils.show(Res.string.platform_action_unsupported.getSync())

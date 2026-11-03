@@ -401,17 +401,24 @@ test('capture waits for owned cleanup before export and forwards the SSE resume 
 });
 
 test('benchmark recovery survives disconnect and preserves other accessibility services and settings', async () => {
+  const standard = 'li.songe.gkd.debug/com.google.android.accessibility.selecttospeak.SelectToSpeakService';
+  const privileged = standard + 'Privileged';
+  const companion = standard + 'Companion';
   await mkdir(desktopTests, { recursive: true });
   const dir = await mkdtemp(join(desktopTests, 'gkd-benchmark-test-'));
   let store: Record<string, unknown> = { enableAutomator: false, automatorMode: 2, enableMatch: true };
   let staged: Record<string, unknown> | undefined;
   const secure: Record<string, string> = { enabled_accessibility_services: 'null', accessibility_enabled: '0' };
   let disconnected = false;
+  let removeServicesOnForceStop = false;
   const adb: Adb = async (...args) => {
     if (disconnected) throw new Error('offline');
     if (args[0] === 'get-serialno') return Buffer.from('benchmark-device');
     if (args[0] === 'push') staged = JSON.parse(await readFile(args[1]!, 'utf8'));
     if (args[1] === 'mv') store = staged!;
+    if (removeServicesOnForceStop && args[1] === 'am' && args[2] === 'force-stop') {
+      secure.enabled_accessibility_services = 'other.app/.Service';
+    }
     if (args[1] === 'settings') {
       if (args[2] === 'get') return Buffer.from(secure[args[4]!] ?? 'null');
       secure[args[4]!] = args[2] === 'delete' ? 'null' : args[5]!;
@@ -419,12 +426,12 @@ test('benchmark recovery survives disconnect and preserves other accessibility s
     return Buffer.from(args[1]?.startsWith('if [ -f') ? JSON.stringify(store) : '');
   };
   try {
-    await assert.rejects(enableDebugAccessibility(adb), /Disable rule matching/);
+    await assert.rejects(enableDebugAccessibility(adb, standard), /Disable rule matching/);
     await assert.rejects(withAutomationPaused(adb, dir, async () => {
       assert.equal(store.enableAutomator, false);
       assert.equal(store.automatorMode, 1);
       assert.equal(store.enableMatch, false);
-      await enableDebugAccessibility(adb);
+      await enableDebugAccessibility(adb, standard);
       assert.match(secure.enabled_accessibility_services!, /SelectToSpeakService/);
       // Simulate service connection and independent user edits before losing ADB.
       store.enableAutomator = true;
@@ -441,7 +448,7 @@ test('benchmark recovery survives disconnect and preserves other accessibility s
     // When no unrelated service changes, restore the original global flag and absent setting.
     secure.enabled_accessibility_services = 'null'; secure.accessibility_enabled = '0';
     delete store.enableMatch;
-    await withAutomationPaused(adb, dir, async () => { await enableDebugAccessibility(adb); }, dir,
+    await withAutomationPaused(adb, dir, async () => { await enableDebugAccessibility(adb, standard); }, dir,
       { accessibilityForDiagnostics: true });
     assert.deepEqual(secure, { enabled_accessibility_services: 'null', accessibility_enabled: '0' });
     assert.equal(Object.hasOwn(store, 'enableMatch'), false);
@@ -449,56 +456,54 @@ test('benchmark recovery survives disconnect and preserves other accessibility s
     secure.enabled_accessibility_services = 'other.app/other.app.Service';
     secure.accessibility_enabled = '0';
     await withAutomationPaused(adb, dir, async () => {
-      await enableDebugAccessibility(adb);
+      await enableDebugAccessibility(adb, standard);
       secure.enabled_accessibility_services = secure.enabled_accessibility_services!.replace('other.app/other.app.Service', 'other.app/.Service');
     }, dir, { accessibilityForDiagnostics: true });
     assert.deepEqual(secure, { enabled_accessibility_services: 'other.app/.Service', accessibility_enabled: '0' });
+    secure.enabled_accessibility_services = [privileged, companion, 'other.app/.Service'].join(':');
+    secure.accessibility_enabled = '1';
+    removeServicesOnForceStop = true;
+    await withAutomationPaused(adb, dir, async () => {
+      secure.enabled_accessibility_services = [standard, 'other.app/.Service'].join(':');
+      await enableDebugAccessibility(adb, privileged);
+      assert.equal(secure.enabled_accessibility_services, ['other.app/.Service', privileged].join(':'));
+    }, dir, { accessibilityForDiagnostics: true });
+    assert.deepEqual(secure.enabled_accessibility_services!.split(':').sort(), [privileged, companion, 'other.app/.Service'].sort());
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('automation diagnostics restores test app scope after disconnect without overwriting other scope edits', async () => {
+test('automation diagnostics restores whitelist preference after disconnect and preserves other settings', async () => {
   await mkdir(desktopTests, { recursive: true });
-  const dir = await mkdtemp(join(desktopTests, 'gkd-scope-test-'));
-  const app = 'li.songe.gkd.debug';
+  const dir = await mkdtemp(join(desktopTests, 'gkd-companion-test-'));
   let store: Record<string, unknown> = { enableAutomator: true, automatorMode: 2, enableMatch: true, enableBlockA11yAppList: true };
-  let scope = ['other.app', app];
-  let staged = '', disconnected = false;
+  let pending: Record<string, unknown> | undefined;
+  let connected = true;
   const adb: Adb = async (...args) => {
-    if (disconnected) throw new Error('offline');
-    if (args[0] === 'get-serialno') return Buffer.from('scope-device');
-    if (args[0] === 'push') staged = await readFile(args[1]!, 'utf8');
-    if (args[1] === 'mv') {
-      if (args.at(-1)!.endsWith('.txt')) scope = staged.split('\n').filter(Boolean);
-      else store = JSON.parse(staged);
-    }
-    if (args[1] === 'settings' && args[2] === 'get') return Buffer.from(args[4] === 'accessibility_enabled' ? '0' : 'null');
-    if (args[1]?.startsWith('if [ -f')) return Buffer.from(args[1].includes('a11y_scope_app_list') ? scope.join('\n') : JSON.stringify(store));
-    return Buffer.from('');
+    if (!connected) throw new Error('disconnected');
+    if (args[0] === 'get-serialno') return Buffer.from('companion-device');
+    if (args[0] === 'push') pending = JSON.parse(await readFile(args[1]!, 'utf8'));
+    if (args[1] === 'mv') store = pending!;
+    if (args[1]?.startsWith('if [ -f')) return Buffer.from(JSON.stringify(store));
+    if (args[1] === 'settings' && args[2] === 'get') return Buffer.from(args.at(-1) === 'accessibility_enabled' ? '0' : 'null');
+    return Buffer.alloc(0);
   };
   const options = { accessibilityForDiagnostics: true, automationForDiagnostics: true };
   try {
     await assert.rejects(withAutomationPaused(adb, dir, async () => {
-      assert.deepEqual(scope, ['other.app']);
       assert.equal(store.enableMatch, false);
       assert.equal(store.enableBlockA11yAppList, false);
-      scope.push('new.app');
       store.theme = 'dark';
-      disconnected = true;
-    }, dir, options), /recovery required/);
-    disconnected = false;
-    assert.equal((await automationRecoveryStatus(adb, dir)).record?.restoreTestAppA11yScope, true);
+      connected = false;
+    }, dir, options), /Automation recovery required/);
+    connected = true;
+    assert.equal((await automationRecoveryStatus(adb, dir)).record?.saved.enableBlockA11yAppList, true);
     await restoreAutomation(adb, dir);
-    assert.deepEqual(scope, ['other.app', 'new.app', app]);
     assert.deepEqual(store, { enableAutomator: true, automatorMode: 2, enableMatch: true, enableBlockA11yAppList: true, theme: 'dark' });
-    assert.equal((await automationRecoveryStatus(adb, dir)).record, null);
-    // Absent scope membership and absent settings must remain absent after diagnostics.
-    scope = ['other.app'];
+    // An absent preference keeps its production default after diagnostics.
     Reflect.deleteProperty(store, 'enableBlockA11yAppList');
     await withAutomationPaused(adb, dir, async () => {
-      assert.equal((await automationRecoveryStatus(adb, dir)).record?.restoreTestAppA11yScope, undefined);
       assert.equal(store.enableBlockA11yAppList, false);
     }, dir, options);
-    assert.deepEqual(scope, ['other.app']);
     assert.equal(Object.hasOwn(store, 'enableBlockA11yAppList'), false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
@@ -510,6 +515,7 @@ test('capture restores only automation fields on failure, preserving intervening
   let pending: Record<string, unknown> | undefined;
   const adb: Adb = async (...args) => {
     if (args[0] === 'get-serialno') return Buffer.from('test-device');
+    if (args[1] === 'settings' && args[2] === 'get') return Buffer.from('null');
     if (args[0] === 'push') pending = JSON.parse(await readFile(args[1]!, 'utf8'));
     if (args[1] === 'mv') store = pending!;
     return Buffer.from(args[1]?.startsWith('if [ -f') ? JSON.stringify(store) : '');
@@ -532,6 +538,7 @@ test('capture retains recovery record when restoration fails and refuses another
   let failRestore = false;
   const adb: Adb = async (...args) => {
     if (args[0] === 'get-serialno') return Buffer.from('test-device');
+    if (args[1] === 'settings' && args[2] === 'get') return Buffer.from('null');
     if (args[0] === 'push') {
       if (failRestore) throw new Error('device disconnected');
       staged = JSON.parse(await readFile(args[1]!, 'utf8'));
@@ -571,6 +578,7 @@ test('recovery validates device identity before writes and retains record until 
   const adb: Adb = async (...args) => {
     if (disconnected) throw new Error('offline');
     if (args[0] === 'get-serialno') return Buffer.from('device-a');
+    if (args[1] === 'settings' && args[2] === 'get') return Buffer.from('null');
     if (args[0] === 'push') {
       writes++;
       if (!ignoreWrites) staged = JSON.parse(await readFile(args[1]!, 'utf8'));

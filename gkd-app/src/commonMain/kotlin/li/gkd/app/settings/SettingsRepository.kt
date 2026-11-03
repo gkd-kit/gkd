@@ -234,9 +234,7 @@ object SettingsRepository {
 
     fun setBlockA11yAppListEnabled(enabled: Boolean) {
         updateSettings { it.copy(enableBlockA11yAppList = enabled) }
-        if (!enabled) {
-            requestAutomatorRestart()
-        }
+        if (!enabled) requestAutomatorRestart()
     }
 
     private val storage by lazy { FileSettingsStorage(appStorage().store) }
@@ -316,20 +314,9 @@ object SettingsRepository {
             decodeBackup = SettingsAppIds::decodeBackup,
         )
     }
-    private val a11yScopeAppListValue by lazy {
+    private val companionScopeAppListValue by lazy {
         PersistedValue(
-            filename = "a11y_scope_app_list.txt",
-            storage = storage,
-            decode = { it?.let(SettingsAppIds::decode) ?: setOf("com.tencent.mm") },
-            encode = SettingsAppIds::encode,
-            scope = scope,
-            decodeBackup = SettingsAppIds::decodeBackup,
-        )
-    }
-
-    private val automationScopeAppListValue by lazy {
-        PersistedValue(
-            filename = "automation_scope_app_list.txt",
+            filename = "companion_scope_app_list.txt",
             storage = storage,
             decode = { it?.let(SettingsAppIds::decode) ?: emptySet() },
             encode = SettingsAppIds::encode,
@@ -384,19 +371,8 @@ object SettingsRepository {
     val blockA11yAppList: StateFlow<Set<String>>
         get() = blockA11yAppListValue.state
 
-    val a11yScopeAppList: StateFlow<Set<String>>
-        get() = a11yScopeAppListValue.state
-
-    val automationScopeAppList: StateFlow<Set<String>>
-        get() = automationScopeAppListValue.state
-
-    fun appUsesA11y(appId: String): Boolean =
-        AppScopePolicy.usesA11y(
-            settings.value,
-            a11yScopeAppList.value,
-            automationScopeAppList.value,
-            appId,
-        )
+    val companionScopeAppList: StateFlow<Set<String>>
+        get() = companionScopeAppListValue.state
 
     val backupFilenames: Set<String> by lazy {
         setOf(
@@ -404,8 +380,7 @@ object SettingsRepository {
             actionCountValue.filename,
             blockMatchAppListValue.filename,
             blockA11yAppListValue.filename,
-            a11yScopeAppListValue.filename,
-            automationScopeAppListValue.filename,
+            companionScopeAppListValue.filename,
         )
     }
 
@@ -438,8 +413,7 @@ object SettingsRepository {
         actionCountValue.awaitPersistence()
         blockMatchAppListValue.awaitPersistence()
         blockA11yAppListValue.awaitPersistence()
-        a11yScopeAppListValue.awaitPersistence()
-        automationScopeAppListValue.awaitPersistence()
+        companionScopeAppListValue.awaitPersistence()
         overlayPositionsValue.awaitPersistence()
     }
 
@@ -455,15 +429,10 @@ object SettingsRepository {
 
     suspend fun saveBlockA11yAppList(value: Set<String>) = blockA11yAppListValue.save { value }
 
-    suspend fun updateA11yScopeAppList(transform: (Set<String>) -> Set<String>) =
-        a11yScopeAppListValue.save(transform)
+    suspend fun updateCompanionScopeAppList(transform: (Set<String>) -> Set<String>) =
+        companionScopeAppListValue.save(transform)
 
-    suspend fun saveA11yScopeAppList(value: Set<String>) = a11yScopeAppListValue.save { value }
-
-    suspend fun updateAutomationScopeAppList(transform: (Set<String>) -> Set<String>) =
-        automationScopeAppListValue.save(transform)
-
-    suspend fun saveAutomationScopeAppList(value: Set<String>) = automationScopeAppListValue.save {
+    suspend fun saveCompanionScopeAppList(value: Set<String>) = companionScopeAppListValue.save {
         value
     }
 
@@ -473,8 +442,7 @@ object SettingsRepository {
             actionCountValue.filename to actionCountValue.encodeCurrent(),
             blockMatchAppListValue.filename to blockMatchAppListValue.encodeCurrent(),
             blockA11yAppListValue.filename to blockA11yAppListValue.encodeCurrent(),
-            a11yScopeAppListValue.filename to a11yScopeAppListValue.encodeCurrent(),
-            automationScopeAppListValue.filename to automationScopeAppListValue.encodeCurrent(),
+            companionScopeAppListValue.filename to companionScopeAppListValue.encodeCurrent(),
         )
 
     /**
@@ -490,8 +458,7 @@ object SettingsRepository {
                         actionCountValue,
                         blockMatchAppListValue,
                         blockA11yAppListValue,
-                        a11yScopeAppListValue,
-                        automationScopeAppListValue,
+                        companionScopeAppListValue,
                     )
                     .mapNotNull { value ->
                         entries[value.filename]?.let(value::prepareRestore)

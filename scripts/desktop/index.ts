@@ -59,7 +59,7 @@ pnpm app-tools device-service-stop-check --serial SERIAL [--install] [--output F
 pnpm app-tools device-query-safety --serial SERIAL [--install] [--output FILE]
 pnpm app-tools device-test-apps --serial SERIAL --operation status|cleanup
 
-Service commands require an isolated Desktop (--test). Services: Status, Button, Activity, Event, Track, Screenshot, Debug, Accessibility, Automation.
+Service commands require an isolated Desktop (--test). Services: Status, Button, Activity, Event, Track, Screenshot, Debug, Accessibility, Companion, Automation.
 Events: Authorized, Cancelled, Connected, Failed. Use the attempt returned by services.
 
 Device commands require adb and an installed gkdDebug app; --install also needs a built APK and skips identical installed content. Controlled capture restores automation settings in finally.

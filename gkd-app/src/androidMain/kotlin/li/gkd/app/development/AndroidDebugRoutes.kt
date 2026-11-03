@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import li.gkd.app.development.matching.benchmarkAndroidMatching
 import li.gkd.app.matching.diagnostics.matchForegroundSnapshot
+import li.gkd.app.service.A11yService
 
 /** Cached engine observations, not a new Binder query or a claim of an atomic OS snapshot. */
 fun Route.androidDebugRoutes() {
@@ -40,6 +41,9 @@ fun Route.androidDebugRoutes() {
     get("/debug/android/foreground") {
         call.respond(requireNotNull(matchForegroundSnapshot()))
     }
+    get("/debug/android/preferred-a11y") {
+        call.respond(mapOf("component" to A11yService.preferredComponent.flattenToString()))
+    }
     get("/debug/capabilities") {
         call.respond(
             listOf(
@@ -47,6 +51,7 @@ fun Route.androidDebugRoutes() {
                 "/debug/app/catalog",
                 "/debug/readiness",
                 "/debug/android/foreground",
+                "/debug/android/preferred-a11y",
                 "/debug/sessions",
                 "/debug/policy",
                 "/debug/engine",
