@@ -1,8 +1,11 @@
 package li.gkd.app.data
 
 import java.util.TimeZone
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -10,8 +13,11 @@ import li.gkd.app.META
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.privilegeContextFlow
 import li.gkd.app.storage.storageExportMetadata
 import li.gkd.app.util.JsonUtils
+import priv.kit.core.Privilege
+import priv.kit.ui.PrivilegeUi
 
 /** Host facts only; shared LogArchive owns material creation, archiving and cleanup. */
 object LogMetadataSources {
@@ -64,6 +70,39 @@ object LogMetadataSources {
                                 },
                             )
                         }
+                    },
+                )
+                put(
+                    "privilegeService",
+                    buildJsonObject {
+                        val server = Privilege.serverState.value
+                        val contextReady =
+                            server != null && privilegeContextFlow.value?.serverInfo == server
+                        put("desiredEnabled", PrivilegeUi.desiredEnabled.value)
+                        put("serverConnected", server != null)
+                        put("contextReady", contextReady)
+                        put(
+                            "cachedRestricted",
+                            PermissionStates.privilegeCapabilities.value?.restricted,
+                        )
+                        val deniedPermissions =
+                            if (server == null) null
+                            else {
+                                try {
+                                    Privilege.getDeniedServerPermissions()
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    put("deniedServerPermissionsError", e.toString())
+                                    null
+                                }
+                            }
+                        put(
+                            "deniedServerPermissions",
+                            deniedPermissions?.let { permissions ->
+                                buildJsonArray { permissions.forEach { add(it) } }
+                            } ?: JsonNull,
+                        )
                     },
                 )
                 put(

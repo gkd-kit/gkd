@@ -8,6 +8,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.days
+import kotlinx.serialization.Serializable
 
 data class LogMetadata(
     val systemName: String,
@@ -30,6 +31,7 @@ data class LogLimits(
     }
 }
 
+@Serializable
 data class LogWriterStatus(
     val queuedEntries: Int,
     val queuedBytes: Int,
