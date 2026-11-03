@@ -30,7 +30,7 @@ import li.gkd.app.platform.lifecycle.useLogLifecycle
 import li.gkd.app.platform.lifecycle.useMainActivityLifecycle
 import li.gkd.app.resources.*
 import li.gkd.app.service.StatusService
-import li.gkd.app.service.updateTopTaskAppId
+import li.gkd.app.service.resumeScopedServiceForMainActivity
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.storage.saveToDownloads
 import li.gkd.app.ui.MainViewModel
@@ -126,9 +126,7 @@ class MainActivity : ComponentActivity() {
             MainActivityIntents.consume(this)
         }
         StatusService.autoStart()
-        if (settings.value.enableBlockA11yAppList) {
-            updateTopTaskAppId(META.appId)
-        }
+        resumeScopedServiceForMainActivity()
         setContent {
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current

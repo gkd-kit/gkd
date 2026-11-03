@@ -24,17 +24,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.matching.input.foregroundRulesFlow
-import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.privilegeContextFlow
@@ -53,13 +52,6 @@ class ActivityService :
     OverlayWindowService(
         positionKey = "activity",
     ) {
-    private val activityOkFlow by lazy {
-        combine(A11yService.isRunning, privilegeContextFlow) { a, b ->
-                a || b != null
-            }
-            .stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
-    }
-
     private val recordedActivityFlow by lazy {
         combine(
                 AndroidForegroundState.observedForegroundFlow,
@@ -70,19 +62,26 @@ class ActivityService :
             ) { observation, rules, automation, accessibility, privilege ->
                 val nodesAvailable = automation != null || accessibility
                 val identity =
-                    if (nodesAvailable || privilege != null)
-                        observation.recordedActivity(nodesAvailable)
-                    else null
+                    if (nodesAvailable) observation.confirmed
+                    else observation.task.takeIf { privilege != null }
                 val activity = identity?.let {
                     rules.topActivity.takeIf { it.sameAs(identity.appId, identity.activityId) }
                         ?: TopActivity(identity.appId, identity.activityId)
                 }
-                RecordedActivity(activity, !nodesAvailable && privilege != null)
+                RecordedActivity(
+                    activity = activity,
+                    taskStack = !nodesAvailable && privilege != null,
+                    hasAuth = accessibility || privilege != null,
+                )
             }
-            .stateIn(lifecycleScope, SharingStarted.Eagerly, RecordedActivity(null, false))
+            .stateIn(lifecycleScope, SharingStarted.Eagerly, RecordedActivity())
     }
 
-    private data class RecordedActivity(val activity: TopActivity?, val taskStack: Boolean)
+    private data class RecordedActivity(
+        val activity: TopActivity? = null,
+        val taskStack: Boolean = false,
+        val hasAuth: Boolean = false,
+    )
 
     @Composable
     override fun ComposeContent() {
@@ -97,19 +96,18 @@ class ActivityService :
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
                 val recorded by recordedActivityFlow.collectAsStateWithLifecycle()
                 val topActivity = recorded.activity
-                val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
                     title =
                         stringResource(
-                            if (hasAuth) Res.string.activity_record_service
+                            if (recorded.hasAuth) Res.string.activity_record_service
                             else Res.string.activity_record_service_no_permission,
                         ),
                     label =
-                        if (hasAuth && recorded.taskStack)
+                        if (recorded.taskStack)
                             stringResource(Res.string.activity_record_task_stack)
                         else null,
                 )
-                if (hasAuth) {
+                if (recorded.hasAuth) {
                     Box {
                         Column(
                             modifier = Modifier.padding(start = 4.dp),
@@ -147,25 +145,15 @@ class ActivityService :
         onCreated {
             NotificationCatalog.activity().startForeground()
             lifecycleScope.launch {
-                recordedActivityFlow.collect {
-                    NotificationCatalog.activity(
-                            text = it.activity?.format() ?: getString(Res.string.unknown),
-                        )
-                        .startForeground()
-                }
-            }
-            lifecycleScope.launch(Dispatchers.IO) {
-                val context = privilegeContextFlow.value ?: return@launch
-                val cpn = context.topCpn() ?: return@launch
-                AndroidForegroundState.withTopActivityLock {
-                    if (privilegeContextFlow.value === context) {
-                        updateTopActivity(
-                            appId = cpn.packageName,
-                            activityId = cpn.className,
-                            scene = ActivityScene.TaskStack,
-                        )
+                recordedActivityFlow
+                    .map { it.activity?.format() }
+                    .distinctUntilChanged()
+                    .collect { text ->
+                        NotificationCatalog.activity(
+                                text = text ?: getString(Res.string.unknown),
+                            )
+                            .startForeground()
                     }
-                }
             }
         }
     }

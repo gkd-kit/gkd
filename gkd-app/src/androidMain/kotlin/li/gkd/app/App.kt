@@ -48,7 +48,6 @@ import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
 import li.gkd.app.service.clearDebugSubscription
-import li.gkd.app.service.initServiceScope
 import li.gkd.app.snapshot.initVolumeSnapshotTrigger
 import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionRepository
@@ -284,7 +283,6 @@ class App : Application() {
             SubscriptionRepository.initialize(SubscriptionDefaults.fromResources())
             clearDebugSubscription()
         }
-        initServiceScope()
         RuntimeStateSynchronizer.requestSync()
     }
 }

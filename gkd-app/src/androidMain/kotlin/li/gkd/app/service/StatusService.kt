@@ -16,6 +16,8 @@ import li.gkd.app.a11y.useA11yServiceEnabledFlow
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.data.subscription.SubscriptionState
+import li.gkd.app.matching.input.topTaskAppId
+import li.gkd.app.matching.input.topTaskAppIdFlow
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.notif.replaceNotificationTemplate
 import li.gkd.app.permission.PermissionStates
@@ -25,6 +27,7 @@ import li.gkd.app.priv.privilegeServiceStatusFlow
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleSummary
+import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.actionCount
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.util.IntentUtils
@@ -38,6 +41,11 @@ class StatusService : LifecycleHookService() {
         val abRunning = A11yService.isRunning.value
         val automationRunning = uiAutomationFlow.value != null
         val store = settings.value
+        val appId = topTaskAppId
+        val partiallyDisabled =
+            store.enableAutomator &&
+                store.enableBlockA11yAppList &&
+                appId in SettingsRepository.actualBlockA11yAppList
         val ruleSummary = SubscriptionState.ruleSummaryFlow.value
         val count = actionCount.value
         val privilegeServiceStatus = privilegeServiceStatusFlow.value
@@ -52,43 +60,20 @@ class StatusService : LifecycleHookService() {
         } else if (privilegeServiceStatus == PrivilegeServiceStatus.DisconnectedDesired) {
             Triple(title, getString(Res.string.privilege_service_connection_lost), "gkd://page/4")
         } else if (!automationRunning && !abRunning) {
-            if (currentAppUseA11y) {
-                val text =
-                    if (a11yServiceEnabledFlow.value) {
-                        getString(Res.string.a11y_fault)
-                    } else if (PermissionStates.writeSecureSettings.updateAndGet()) {
-                        if (
-                            store.enableAutomator &&
-                                store.enableBlockA11yAppList &&
-                                a11yPartDisabledFlow.value
-                        ) {
-                            val name =
-                                AppInfoRepository.snapshot?.apps?.get(topAppIdFlow.value)?.name
-                                    ?: topAppIdFlow.value
-                            getString(Res.string.service_partially_disabled_detail, name)
-                        } else {
-                            getString(Res.string.a11y_stopped)
-                        }
-                    } else {
+            val useA11y = currentAppUseA11y
+            val text =
+                when {
+                    useA11y && a11yServiceEnabledFlow.value -> getString(Res.string.a11y_fault)
+                    useA11y && !PermissionStates.writeSecureSettings.updateAndGet() ->
                         getString(Res.string.a11y_unauthorized)
-                    }
-                Triple(title, text, defaultStatusNotification.uri)
-            } else {
-                val text =
-                    if (
-                        store.enableAutomator &&
-                            store.enableBlockA11yAppList &&
-                            a11yPartDisabledFlow.value
-                    ) {
-                        val name =
-                            AppInfoRepository.snapshot?.apps?.get(topAppIdFlow.value)?.name
-                                ?: topAppIdFlow.value
+                    partiallyDisabled -> {
+                        val name = AppInfoRepository.snapshot?.apps?.get(appId)?.name ?: appId
                         getString(Res.string.service_partially_disabled_detail, name)
-                    } else {
-                        getString(Res.string.automation_stopped)
                     }
-                Triple(title, text, defaultStatusNotification.uri)
-            }
+                    useA11y -> getString(Res.string.a11y_stopped)
+                    else -> getString(Res.string.automation_stopped)
+                }
+            Triple(title, text, defaultStatusNotification.uri)
         } else if (!store.enableMatch) {
             Triple(title, getString(Res.string.rule_matching_pause), "gkd://page?tab=1")
         } else if (store.useCustomNotifText) {
@@ -151,7 +136,7 @@ class StatusService : LifecycleHookService() {
                         a11yServiceEnabledFlow,
                         PermissionStates.writeSecureSettings.stateFlow,
                         PermissionStates.appOpsRestrictedFlow,
-                        topAppIdFlow,
+                        topTaskAppIdFlow,
                         actionCount.debounce(1000L.milliseconds),
                     ) {
                         statusTriple()

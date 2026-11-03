@@ -63,7 +63,7 @@ import li.gkd.app.record.addActionLog
 import li.gkd.app.rule.*
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.app.service.EventService
-import li.gkd.app.service.topAppIdFlow
+import li.gkd.app.service.serviceScopeAppId
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.snapshot.captureScreenshotOnEvent
 import li.gkd.app.subscription.refreshSubscriptionsOnLauncher
@@ -159,7 +159,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         if (
             SettingsRepository.settings.value.enableBlockA11yAppList &&
                 !SettingsRepository.actualBlockA11yAppList.contains(
-                    topAppIdFlow.value,
+                    serviceScopeAppId,
                 )
         ) {
             startQueryJob(byForced = true)

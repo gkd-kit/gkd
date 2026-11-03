@@ -10,12 +10,13 @@ import kotlinx.coroutines.withContext
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.logging.LogUtils
+import li.gkd.app.matching.input.ActivityScene
+import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.service.StatusService
 import li.gkd.app.service.currentAppBlocked
 import li.gkd.app.service.currentAppUseA11y
-import li.gkd.app.service.updateTopTaskAppId
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.ToastUtils
@@ -67,13 +68,15 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
             val privilegeContext = PrivilegeContext.create(serverInfo, userServiceConnection)
             privilegeContextFlow.value = privilegeContext
             privilegeContext.observeSystemSurface()
-            privilegeContext.topCpn()?.let { cpn ->
-                updateTopTaskAppId(cpn.packageName)
-            }
+            val taskAppChanged =
+                privilegeContext.topCpn()?.let { cpn ->
+                    updateTopActivity(cpn.packageName, cpn.className, ActivityScene.TaskStack)
+                } ?: false
             if (
-                SettingsRepository.settings.value.enableAutomator &&
-                    !currentAppBlocked &&
-                    !currentAppUseA11y
+                !taskAppChanged &&
+                    SettingsRepository.settings.value.enableAutomator &&
+                    !currentAppUseA11y &&
+                    !currentAppBlocked
             ) {
                 AutomationService.tryConnect(true)
             }

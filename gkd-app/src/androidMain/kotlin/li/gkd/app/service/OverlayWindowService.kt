@@ -43,13 +43,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.app
-import li.gkd.app.matching.input.topActivityFlow
+import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -91,23 +88,18 @@ private class ShareContext {
     init {
         scope.launch {
             var canDrawOverlays = PermissionStates.drawOverlays.updateAndGet()
-            topActivityFlow
-                .map { it.appId to it.activityId }
-                .distinctUntilChanged()
-                .collectLatest {
-                    var i = 0
-                    while (i < 6 && isActive) {
-                        val oldV = canDrawOverlays
-                        val newV = PermissionStates.drawOverlays.updateAndGet()
-                        canDrawOverlays = newV
-                        if (!newV && oldV) {
-                            ToastUtils.show(Res.string.overlay_screen_denied.getSync())
-                            break
-                        }
-                        delay(500.milliseconds)
-                        i++
+            AndroidForegroundState.observedForegroundFlow.collectLatest {
+                repeat(6) { attempt ->
+                    if (attempt > 0) delay(500.milliseconds)
+                    val oldV = canDrawOverlays
+                    val newV = PermissionStates.drawOverlays.updateAndGet()
+                    canDrawOverlays = newV
+                    if (!newV && oldV) {
+                        ToastUtils.show(Res.string.overlay_screen_denied.getSync())
+                        return@collectLatest
                     }
                 }
+            }
         }
     }
 }

@@ -6,6 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import li.gkd.app.a11y.useA11yServiceEnabledFlow
+import li.gkd.app.matching.input.topTaskAppId
+import li.gkd.app.matching.input.topTaskAppIdFlow
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.priv.PrivilegeServiceStatus
 import li.gkd.app.priv.privilegeContextFlow
@@ -14,8 +16,8 @@ import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.service.A11yService
 import li.gkd.app.service.ActivityService
 import li.gkd.app.service.StatusService
-import li.gkd.app.service.a11yPartDisabledFlow
-import li.gkd.app.service.topAppIdFlow
+import li.gkd.app.settings.AppScopePolicy
+import li.gkd.app.settings.SettingsRepository
 
 @Composable
 actual fun dashboardPlatformState(): DashboardPlatformState {
@@ -29,8 +31,11 @@ actual fun dashboardPlatformState(): DashboardPlatformState {
     val scope = rememberCoroutineScope()
     val enabled = remember { useA11yServiceEnabledFlow(scope) }
     val a11yEnabled by enabled.collectAsStateWithLifecycle()
-    val partial by a11yPartDisabledFlow.collectAsStateWithLifecycle()
-    val topApp by topAppIdFlow.collectAsStateWithLifecycle()
+    val topApp by topTaskAppIdFlow.collectAsStateWithLifecycle(initialValue = topTaskAppId)
+    val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val blockMatchApps by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
+    val blockA11yApps by SettingsRepository.blockA11yAppList.collectAsStateWithLifecycle()
+    val partial = topApp in AppScopePolicy.blockedA11y(settings, blockMatchApps, blockA11yApps)
     val restrictions by PermissionStates.appRestrictionsFlow.collectAsStateWithLifecycle()
     val activity by ActivityService.isRunning.collectAsStateWithLifecycle()
     return DashboardPlatformState(

@@ -3,11 +3,8 @@ package li.gkd.app.service
 import android.provider.Settings
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import li.gkd.app.META
@@ -15,6 +12,7 @@ import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.systemRecentCn
+import li.gkd.app.matching.input.topTaskAppId
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.priv.AutomationService
@@ -25,9 +23,7 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.settings
 import li.gkd.app.ui.app.showAccessRestrictedSettingsDialog
 import li.gkd.app.ui.share.launchUi
-import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
-import li.gkd.app.util.mapState
 import li.songe.codeorigin.CallSite
 
 private val serviceSwitchMutex = Mutex()
@@ -139,13 +135,16 @@ fun fixRestartAutomatorService(@CallSite loc: String = "") =
         }
     }
 
+val serviceScopeAppId: String
+    get() = if (MainActivityVisibility.isVisible) META.appId else topTaskAppId
+
 val currentAppUseA11y
-    get() = SettingsRepository.appUsesA11y(topAppIdFlow.value)
+    get() = SettingsRepository.appUsesA11y(serviceScopeAppId)
 
 val currentAppBlocked
     get() =
         settings.value.enableBlockA11yAppList &&
-            topAppIdFlow.value in SettingsRepository.actualBlockA11yAppList
+            serviceScopeAppId in SettingsRepository.actualBlockA11yAppList
 
 private suspend fun applyScopedService(disabled: Boolean) {
     if (!settings.value.enableAutomator) {
@@ -179,51 +178,37 @@ private fun updateScopedService(
 
 private const val SERVICE_SCOPE_AWAIT_TIME = 3000L
 
-@Volatile private var lastAppIdChangeTime = 0L
-val topAppIdFlow: StateFlow<String>
-    field = MutableStateFlow("")
-val a11yPartDisabledFlow by lazy {
-    topAppIdFlow.mapState(appScope) {
-        SettingsRepository.actualBlockA11yAppList.contains(it)
+private var pendingScopeChange: Job? = null
+
+fun resumeScopedServiceForMainActivity() {
+    if (
+        settings.value.enableBlockA11yAppList &&
+            META.appId !in SettingsRepository.actualBlockA11yAppList
+    ) {
+        pendingScopeChange?.cancel()
+        updateScopedService(false)
     }
 }
 
-fun updateTopTaskAppId(value: String) {
-    topAppIdFlow.value = value
-}
-
-fun initServiceScope() {
-    val actualFlow = topAppIdFlow.drop(1)
+fun onTopTaskAppChanged(appId: String) {
     appScope.launch(Dispatchers.Main) {
-        actualFlow.collect { appId ->
-            lastAppIdChangeTime = System.currentTimeMillis()
-            if (!currentAppBlocked) {
-                if (
-                    appId == systemRecentCn.packageName &&
-                        currentTopActivity.sameAs(
-                            systemRecentCn.packageName,
-                            systemRecentCn.className,
-                        ) &&
-                        currentAppUseA11y
-                ) {
-                    // 切换无障碍会造成卡顿，在最近任务界面时，延迟这个卡顿
-                    val tempTime = lastAppIdChangeTime
-                    ThreadUtils.runMainOrPost(SERVICE_SCOPE_AWAIT_TIME) {
-                        if (tempTime == lastAppIdChangeTime) {
-                            updateScopedService(false)
-                        }
-                    }
-                } else {
-                    // 切换自动化不会卡顿，直接启动
-                    updateScopedService(false)
-                }
-            }
+        pendingScopeChange?.cancel()
+        val blocked = currentAppBlocked
+        // 切换无障碍会造成卡顿，在最近任务界面时延迟恢复。
+        val delayResume =
+            !blocked &&
+                appId == systemRecentCn.packageName &&
+                currentTopActivity.sameAs(appId, systemRecentCn.className) &&
+                currentAppUseA11y
+        if (!blocked && !delayResume) {
+            updateScopedService(false)
         }
-    }
-    appScope.launch(Dispatchers.Main) {
-        actualFlow.debounce(SERVICE_SCOPE_AWAIT_TIME.milliseconds).collect {
+        pendingScopeChange = launch {
+            delay(SERVICE_SCOPE_AWAIT_TIME.milliseconds)
             if (currentAppBlocked) {
                 updateScopedService(true)
+            } else if (delayResume) {
+                updateScopedService(false)
             }
         }
     }

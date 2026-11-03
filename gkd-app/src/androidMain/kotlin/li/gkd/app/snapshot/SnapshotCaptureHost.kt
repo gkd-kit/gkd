@@ -9,12 +9,10 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.graphics.set
 import kotlin.math.min
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import li.gkd.app.app.ActivityNames.getShowActivityId
 import li.gkd.app.app.AppInfoRepository
@@ -26,7 +24,7 @@ import li.gkd.app.inspection.InspectionException
 import li.gkd.app.inspection.InspectionFailure
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.AndroidAutomationSessions
-import li.gkd.app.matching.input.currentTopActivity
+import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.platform.PlatformResult
@@ -171,24 +169,6 @@ object SnapshotCaptureHost {
         return variance < 15.0 && blackRatio > 0.85 && mean < 15.0
     }
 
-    private suspend fun resolveActivityId(appId: String): String? {
-        privilegeContextFlow.value
-            ?.run {
-                topCpn()?.className
-            }
-            ?.let {
-                return it
-            }
-        var topActivity = currentTopActivity
-        var waited = 0L
-        while (topActivity.appId != appId && waited < 2000) {
-            delay(100.milliseconds)
-            topActivity = currentTopActivity
-            waited += 100
-        }
-        return topActivity.activityId.takeIf { topActivity.appId == appId }
-    }
-
     private suspend fun queryFocusedWindowSecure(appId: String): Boolean? =
         withContext(Dispatchers.IO) {
             try {
@@ -295,11 +275,16 @@ object SnapshotCaptureHost {
                     AndroidAutomationSessions.getRoot(service)
                         ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
                 val appId = rootNode.packageName.toString()
+                val foreground = AndroidForegroundState.observedForegroundFlow.value
+                val activityId =
+                    foreground.task
+                        ?.takeIf { privilegeContextFlow.value != null && it.appId == appId }
+                        ?.activityId
+                        ?: foreground.confirmed.takeIf { it.appId == appId }?.activityId
                 val screenSize = ScreenUtils.getSize()
                 val isLandscape = ScreenUtils.isLandscape()
                 coroutineScope {
                     val nodes = async(Dispatchers.IO) { captureNodeInfoList(rootNode) }
-                    val activityId = async(Dispatchers.IO) { resolveActivityId(appId) }
                     val screenshot =
                         async(Dispatchers.Default) {
                             captureScreen(
@@ -312,7 +297,7 @@ object SnapshotCaptureHost {
                     val screen = screenshot.await()
                     SnapshotCaptureInput(
                         appId = appId,
-                        activityId = activityId.await(),
+                        activityId = activityId,
                         screenSize = screenSize,
                         isLandscape = isLandscape,
                         nodes = nodes.await(),

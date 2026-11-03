@@ -21,11 +21,7 @@ data class ForegroundDecision(
     val task: ForegroundIdentity? = null,
     val nodeAppId: String? = null,
     val appReentered: Boolean = false,
-) {
-    /** Recording can follow system observations without authorizing node actions. */
-    fun recordedActivity(nodesAvailable: Boolean): ForegroundIdentity? =
-        if (nodesAvailable) confirmed else task
-}
+)
 
 @Serializable
 data class ForegroundCheckpoint(

@@ -18,19 +18,19 @@ class ActivityRecordingTest {
         val tracker = ForegroundTracker(systemUi)
         tracker.observeSurface(true, 0)
         val belowShade = tracker.observe(ForegroundSource.TaskStack, launcher, policy, 1)
-        assertEquals(launcher, belowShade.recordedActivity(nodesAvailable = false))
-        assertEquals(launcher, tracker.observeSurface(false, 2).recordedActivity(false))
+        assertEquals(launcher, belowShade.task)
+        assertEquals(launcher, tracker.observeSurface(false, 2).task)
         val opened = tracker.observe(ForegroundSource.TaskStack, app, policy, 3)
-        assertEquals(app, opened.recordedActivity(false))
+        assertEquals(app, opened.task)
         assertEquals(systemUi, opened.confirmed)
         assertNotNull(opened.pending)
-        assertEquals(app, tracker.observeSurface(true, 4).recordedActivity(false))
-        assertEquals(app, tracker.observeSurface(false, 5).recordedActivity(false))
-        assertEquals(app, tracker.snapshot().recordedActivity(false))
+        assertEquals(app, tracker.observeSurface(true, 4).task)
+        assertEquals(app, tracker.observeSurface(false, 5).task)
+        assertEquals(app, tracker.snapshot().task)
         tracker.observeSurface(true, 6)
         val switchedBelowShade = tracker.observe(ForegroundSource.TaskStack, launcher, policy, 7)
-        assertEquals(launcher, switchedBelowShade.recordedActivity(false))
-        assertEquals(launcher, tracker.observeSurface(false, 8).recordedActivity(false))
+        assertEquals(launcher, switchedBelowShade.task)
+        assertEquals(launcher, tracker.observeSurface(false, 8).task)
     }
 
     @Test
@@ -38,21 +38,21 @@ class ActivityRecordingTest {
         val tracker = ForegroundTracker(systemUi)
         tracker.observeSurface(false, 0)
         val pending = tracker.observe(ForegroundSource.TaskStack, launcher, policy, 1)
-        assertEquals(launcher, pending.recordedActivity(false))
-        assertEquals(systemUi, pending.recordedActivity(true))
+        assertEquals(launcher, pending.task)
+        assertEquals(systemUi, pending.confirmed)
         val confirmed = tracker.observe(ForegroundSource.Nodes, launcher, policy, 2)
-        assertEquals(launcher, confirmed.recordedActivity(true))
+        assertEquals(launcher, confirmed.confirmed)
         assertNull(confirmed.pending)
     }
 
     @Test
     fun absentSurfaceListenerStillRecordsTasksButNeverInventsOneFromOldNodes() {
         val tracker = ForegroundTracker(launcher)
-        assertNull(tracker.snapshot().recordedActivity(false))
+        assertNull(tracker.snapshot().task)
         tracker.observe(ForegroundSource.TaskStack, launcher, policy, 0)
         tracker.observeSurface(true, 1)
         val unavailable = tracker.observeSurface(null, 2)
-        assertEquals(launcher, unavailable.recordedActivity(false))
-        assertEquals(launcher, unavailable.recordedActivity(true))
+        assertEquals(launcher, unavailable.task)
+        assertEquals(launcher, unavailable.confirmed)
     }
 }
