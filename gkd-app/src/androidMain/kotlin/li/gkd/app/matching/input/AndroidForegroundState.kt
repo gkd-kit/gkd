@@ -150,7 +150,15 @@ object AndroidForegroundState {
                 AndroidAutomationSessions.service?.matchHost?.confirmForeground()
         }
 
-    private var lastAppId = Constants.systemUiAppId
+    private var lastVisitedAppId = Constants.systemUiAppId
+
+    private fun recordVisit(appId: String, time: Long, refresh: Boolean = false) {
+        val previousAppId = lastVisitedAppId
+        if (!refresh && previousAppId == appId) return
+        lastVisitedAppId = appId
+        val visit = AppVisitInput(previousAppId, appId, time)
+        appScope.launchLogged { RuntimeRecordRepository.recordVisit(visit) }
+    }
 
     /** Returns whether this observation dispatched a top-task package change. */
     fun updateTopActivity(
@@ -184,6 +192,10 @@ object AndroidForegroundState {
                 observedForegroundFlow.value =
                     AndroidForegroundObservation(task = task, confirmed = decision.confirmed)
                 if (taskAppChanged) {
+                    // A short task visit can end before the matcher confirms its nodes.
+                    if (decision.reason != ForegroundDecisionReason.TaskBelowSystemSurface) {
+                        recordVisit(appId, System.currentTimeMillis())
+                    }
                     onTopTaskAppChanged(appId)
                 }
                 if (foregroundPending) {
@@ -285,10 +297,11 @@ object AndroidForegroundState {
                     blockMatch = SettingsRepository.checkAppBlockMatch(topActivity.appId),
                 )
             if (idChanged) {
-                val oldAppId = lastAppId
-                lastAppId = appId
-                val visit = AppVisitInput(oldAppId, appId, wallTime)
-                appScope.launchLogged { RuntimeRecordRepository.recordVisit(visit) }
+                recordVisit(
+                    appId,
+                    wallTime,
+                    refresh = appReentered || scene == ActivityScene.ScreenOn,
+                )
                 RuleExecutionHost.runtime.onAppChanged(t)
                 ruleSummary.globalRules.forEach { it.resetState(t) }
                 ruleSummary.appIdToRules[oldActivityRule.topActivity.appId]?.forEach {
