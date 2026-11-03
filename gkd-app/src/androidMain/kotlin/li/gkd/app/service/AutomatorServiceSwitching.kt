@@ -22,6 +22,8 @@ import li.gkd.app.permission.PermissionStates
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.priv.AutomationService
 import li.gkd.app.priv.privilegeContextFlow
+import li.gkd.app.priv.recoverPrivilegeContext
+import li.gkd.app.priv.requestPrivilegeRecovery
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
@@ -31,6 +33,7 @@ import li.gkd.app.ui.app.showAccessRestrictedSettingsDialog
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.componentName
+import li.gkd.app.util.launchLogged
 import li.songe.codeorigin.CallSite
 
 private const val A11Y_AWAIT_START_TIME = 2000L
@@ -127,7 +130,15 @@ fun switchAutomatorService(@CallSite loc: String = "") =
             A11yService.instance?.shutdown()
             uiAutomationFlow.value?.shutdown()
         } else if (settings.value.useA11y) {
+            requestPrivilegeRecovery()
             startA11yService()
+        } else if (privilegeContextFlow.value == null) {
+            appScope.launchLogged(Dispatchers.IO) {
+                recoverPrivilegeContext()
+                withServiceControl {
+                    if (!settings.value.useA11y) AutomationService.tryConnect()
+                }
+            }
         } else {
             AutomationService.tryConnect()
         }
@@ -158,6 +169,7 @@ private fun fixAutomationService() {
 fun fixRestartAutomatorService(@CallSite loc: String = "") =
     launchServiceControl(loc = loc) {
         if (settings.value.enableAutomator && !currentAppBlocked) {
+            requestPrivilegeRecovery()
             if (settings.value.useA11y) {
                 fixA11yService()
             } else {

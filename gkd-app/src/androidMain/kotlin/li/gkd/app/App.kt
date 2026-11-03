@@ -47,6 +47,7 @@ import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
 import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
+import li.gkd.app.priv.requestPrivilegeRecovery
 import li.gkd.app.service.clearDebugSubscription
 import li.gkd.app.snapshot.initVolumeSnapshotTrigger
 import li.gkd.app.subscription.SubscriptionDefaults
@@ -275,9 +276,7 @@ class App : Application() {
         appScope.launchLogged(Dispatchers.IO) {
             PrivilegeUi.prepareExternalShellScript(gkdPrivilegeUiConfig.manualShellScriptPath)
         }
-        appScope.launchLogged(Dispatchers.IO) {
-            PrivilegeUi.startSilently(gkdPrivilegeUiConfig)
-        }
+        requestPrivilegeRecovery()
         appScope.launchLogged(Dispatchers.IO) {
             SubscriptionRepository.initialize(SubscriptionDefaults.fromResources())
             clearDebugSubscription()

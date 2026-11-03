@@ -9,6 +9,7 @@ import li.gkd.app.META
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.currentTopActivity
 import li.gkd.app.matching.input.updateTopActivity
+import li.gkd.app.priv.requestPrivilegeRecovery
 import li.songe.codeorigin.CallSite
 
 private val visibleActivityCount = atomic(0)
@@ -40,6 +41,7 @@ private class MainActivityLifecycleObserver(
 
     override fun onResume(owner: LifecycleOwner) {
         LogUtils.i("MainActivity::onResume", loc = logLoc)
+        requestPrivilegeRecovery()
         RuntimeStateSynchronizer.requestSync(loc = logLoc)
     }
 

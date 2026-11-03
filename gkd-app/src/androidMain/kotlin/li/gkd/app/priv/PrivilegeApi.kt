@@ -6,7 +6,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import li.gkd.app.app
 import li.gkd.app.appScope
 import li.gkd.app.logging.LogUtils
@@ -31,6 +32,8 @@ val currentUserId by lazy { Process.myUserHandle().hashCode() }
 val privilegeContextFlow: StateFlow<PrivilegeContext?>
     field = MutableStateFlow(null)
 
+private val privilegeContextMutex = Mutex()
+
 private val userServiceSpec =
     PrivilegeUserServiceSpec(
         serviceClassName = UserService::class.java.name,
@@ -51,9 +54,10 @@ private suspend fun clearPrivilegeContext(context: PrivilegeContext) {
 }
 
 private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
-    withContext(Dispatchers.IO) {
+    privilegeContextMutex.withLock {
+        if (Privilege.serverState.value != serverInfo) return@withLock
         val oldContext = privilegeContextFlow.value
-        if (oldContext?.serverInfo == serverInfo) return@withContext
+        if (oldContext?.serverInfo == serverInfo) return@withLock
 
         if (serverInfo != null) {
             val showToast = !app.justStarted
@@ -99,13 +103,22 @@ private suspend fun updatePrivilegeContext(serverInfo: PrivilegeServerInfo?) =
         }
     }
 
+suspend fun recoverPrivilegeContext() {
+    val serverInfo = recoverPrivilege() ?: return
+    updatePrivilegeContext(serverInfo)
+}
+
 fun initPrivilege() {
     PrivilegeConfig.crashLogDirectory = AndroidStorage.privilegeCrashDirectory
     PrivilegeOwnerLifecycle.initialize()
 
-    appScope.launchLogged {
+    appScope.launchLogged(Dispatchers.IO) {
+        var wasConnected = false
         Privilege.serverState.collect { serverInfo ->
+            val disconnected = wasConnected && serverInfo == null
+            wasConnected = serverInfo != null
             LogUtils.i("Privilege.serverState", serverInfo)
+            if (serverInfo != null) clearPrivilegeRecoveryCooldown()
             try {
                 updatePrivilegeContext(serverInfo)
             } catch (e: CancellationException) {
@@ -114,6 +127,7 @@ fun initPrivilege() {
                 LogUtils.e("update PrivilegeContext failed", e)
                 ToastUtils.show(Res.string.privilege_service_state_update_failed.getSync(e.message))
             }
+            if (disconnected) requestPrivilegeRecovery()
         }
     }
 }
