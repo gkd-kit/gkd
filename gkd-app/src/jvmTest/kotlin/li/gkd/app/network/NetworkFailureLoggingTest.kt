@@ -1,5 +1,6 @@
 package li.gkd.app.network
 
+import io.ktor.utils.io.ClosedByteChannelException
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -9,6 +10,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class NetworkFailureLoggingTest {
+    @Test
+    fun channelCloseUsesTheTransportCauseWhenRecognized() {
+        assertEquals(
+            "network timeout",
+            networkFailureSummary(
+                ClosedByteChannelException(SocketTimeoutException("private URL")),
+            ),
+        )
+        assertNull(networkFailureSummary(ClosedByteChannelException(IOException("unknown I/O"))))
+    }
+
     @Test
     fun transportFailuresOmitSensitiveMessagesWhileDiskAndUnknownFailuresKeepDiagnostics() {
         assertEquals("network timeout", networkFailureSummary(SocketTimeoutException("secret URL")))

@@ -2,6 +2,7 @@ package li.gkd.app.network
 
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
+import io.ktor.utils.io.ClosedByteChannelException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
 import java.net.SocketException
@@ -22,6 +23,7 @@ fun networkFailureSummary(error: Throwable): String? =
         is NoRouteToHostException -> "connection unavailable"
         is SocketException -> "socket connection failed"
         is SSLException -> "TLS ${error.javaClass.simpleName}"
+        is ClosedByteChannelException -> error.cause?.let(::networkFailureSummary)
         else -> null
     }
 

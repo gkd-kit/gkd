@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.logging.logText
 import li.gkd.app.network.NetworkClients
@@ -26,6 +27,7 @@ import li.gkd.db.SubsItem
 import li.gkd.db.SubscriptionConfigStore
 import li.gkd.db.SubscriptionIds
 import li.songe.codeorigin.CallSite
+import li.songe.json5.Json5ParseException
 import li.songe.json5.decodeFromJson5String
 
 object SubscriptionRepository {
@@ -419,31 +421,25 @@ object SubscriptionRepository {
                     return@tryWithStateLock
                 }
                 onStage(SubscriptionAddStage.Downloading)
-                val text =
-                    try {
-                        NetworkClients.client.get(url) { expectSuccess = true }.bodyAsText()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        logNetworkFailure("Subscription download failed", e)
-                        result =
-                            SubscriptionResult.Failure(
-                                reason = SubscriptionResult.FailureReason.Download,
-                                cause = e,
-                            )
-                        return@tryWithStateLock
-                    }
-                onStage(SubscriptionAddStage.Parsing)
                 val subscription =
                     try {
-                        RawSubscriptionParser.parse(text)
-                    } catch (e: SubscriptionParseException) {
-                        logSubscriptionParseFailure("Subscription parsing failed", e)
-                        result =
-                            SubscriptionResult.Failure(
-                                reason = SubscriptionResult.FailureReason.Parse,
-                                cause = e,
-                            )
+                        fetchRemoteSubscription(
+                            url,
+                            "Subscription add failed",
+                            onParsing = { onStage(SubscriptionAddStage.Parsing) },
+                        ) {
+                            RawSubscriptionParser.parse(it)
+                        }
+                    } catch (e: SubscriptionException) {
+                        val reason =
+                            when (e.reason) {
+                                SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed ->
+                                    SubscriptionResult.FailureReason.Download
+                                SubscriptionFailureReason.TextParseFailed ->
+                                    SubscriptionResult.FailureReason.Parse
+                                else -> throw e
+                            }
+                        result = SubscriptionResult.Failure(reason = reason, cause = e.cause)
                         return@tryWithStateLock
                     }
                 onStage(SubscriptionAddStage.Checking)
@@ -549,23 +545,14 @@ object SubscriptionRepository {
                                 setUpdateError(entry.subsItem.id, e)
                                 val operation =
                                     "Subscription update failed subsId=${entry.subsItem.id}"
-                                when {
-                                    e is SubscriptionException &&
-                                        e.reason ==
-                                            SubscriptionFailureReason
-                                                .SubscriptionUpdateUrlRequestFailed ->
-                                        logNetworkFailure(operation, e.cause as Exception)
-                                    e is SubscriptionException &&
-                                        e.reason == SubscriptionFailureReason.TextParseFailed ->
-                                        logSubscriptionParseFailure(
-                                            operation,
-                                            e.cause as SubscriptionParseException,
+                                val failure = e as? SubscriptionException
+                                when (failure?.reason) {
+                                    SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed,
+                                    SubscriptionFailureReason.TextParseFailed -> Unit
+                                    SubscriptionFailureReason.SubscriptionUpdatedIdMismatch ->
+                                        LogUtils.w(
+                                            "$operation: ${failure.reason} ${failure.arguments}",
                                         )
-                                    e is SubscriptionException &&
-                                        e.reason ==
-                                            SubscriptionFailureReason
-                                                .SubscriptionUpdatedIdMismatch ->
-                                        LogUtils.w("$operation: ${e.reason} ${e.arguments}")
                                     else -> LogUtils.e(operation, e)
                                 }
                             }
@@ -732,41 +719,24 @@ object SubscriptionRepository {
                 runCatching { URI(itemUpdateUrl).resolve(check).toString() }.getOrNull()
             }
         if (checkUrl != null) {
+            val operation = "Subscription version check failed subsId=${item.id}"
             try {
                 val version =
-                    SubscriptionJson.json.decodeFromJson5String<SubsVersion>(
-                        NetworkClients.client.get(checkUrl) { expectSuccess = true }.bodyAsText(),
-                    )
+                    fetchRemoteSubscription(checkUrl, operation) {
+                        SubscriptionJson.json.decodeFromJson5String<SubsVersion>(it)
+                    }
                 if (version.id == current.id && version.version <= current.version) return null
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: SubscriptionException) {
+                // A failed version check falls back to fetching the full subscription.
             } catch (e: Exception) {
-                if (
-                    e is kotlinx.serialization.SerializationException ||
-                        e is li.songe.json5.Json5ParseException
-                ) {
-                    LogUtils.w(
-                        "Subscription version check failed subsId=${item.id}: invalid response",
-                    )
-                } else logNetworkFailure("Subscription version check failed subsId=${item.id}", e)
+                LogUtils.e(operation, e)
             }
         }
-        val text =
-            try {
-                NetworkClients.client.get(itemUpdateUrl) { expectSuccess = true }.bodyAsText()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                throw SubscriptionException(
-                    SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed,
-                    cause = e,
-                )
-            }
         val subscription =
-            try {
-                RawSubscriptionParser.parse(text)
-            } catch (e: SubscriptionParseException) {
-                throw SubscriptionException(SubscriptionFailureReason.TextParseFailed, cause = e)
+            fetchRemoteSubscription(itemUpdateUrl, "Subscription update failed subsId=${item.id}") {
+                RawSubscriptionParser.parse(it)
             }
         if (subscription.id != item.id) {
             throw SubscriptionException(
@@ -787,12 +757,39 @@ object SubscriptionRepository {
 
 private data class UpdateEntry(val subsItem: SubsItem, val subscription: RawSubscription?)
 
-private fun logSubscriptionParseFailure(
+private suspend fun <T> fetchRemoteSubscription(
+    url: String,
     operation: String,
-    error: SubscriptionParseException,
+    onParsing: suspend () -> Unit = {},
     @CallSite loc: String = "",
-) {
-    LogUtils.w("$operation: path=${error.path} ${logText(error.detail)}", loc = loc)
+    parse: (String) -> T,
+): T {
+    val text =
+        try {
+            NetworkClients.client.get(url) { expectSuccess = true }.bodyAsText()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logNetworkFailure(operation, e, loc = loc)
+            throw SubscriptionException(
+                SubscriptionFailureReason.SubscriptionUpdateUrlRequestFailed,
+                cause = e,
+            )
+        }
+    onParsing()
+    return try {
+        parse(text)
+    } catch (e: Exception) {
+        val detail =
+            when (e) {
+                is SubscriptionParseException -> "path=${e.path} ${logText(e.detail)}"
+                is Json5ParseException,
+                is SerializationException -> "invalid response"
+                else -> throw e
+            }
+        LogUtils.w("$operation: $detail", loc = loc)
+        throw SubscriptionException(SubscriptionFailureReason.TextParseFailed, cause = e)
+    }
 }
 
 @Serializable private data class SubsVersion(val id: Long, val version: Int)
