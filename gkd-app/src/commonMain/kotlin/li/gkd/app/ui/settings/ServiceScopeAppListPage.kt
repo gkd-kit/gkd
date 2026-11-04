@@ -264,16 +264,17 @@ fun ServiceScopeAppListPage(kind: ServiceScopeKind) {
                                         },
                                     )
                                 }
+                                if (kind == ServiceScopeKind.Companion) {
+                                    GkIconButton(
+                                        imageVector = GkIcons.HelpOutline,
+                                        contentDescription = stringResource(Res.string.help_view),
+                                        onClick =
+                                            vm.scope.launchUiAction { vm.showCompanionHelp() },
+                                    )
+                                }
                             }
                         },
                     )
-                    if (kind == ServiceScopeKind.Companion) {
-                        GkIconButton(
-                            imageVector = GkIcons.HelpOutline,
-                            contentDescription = stringResource(Res.string.help_view),
-                            onClick = vm.scope.launchUiAction { vm.showCompanionHelp() },
-                        )
-                    }
                 },
             )
         },
