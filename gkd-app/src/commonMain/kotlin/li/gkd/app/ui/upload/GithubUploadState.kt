@@ -20,6 +20,7 @@ import li.gkd.app.network.AppLinks
 import li.gkd.app.network.GithubCookieException
 import li.gkd.app.network.GithubPoliciesAsset
 import li.gkd.app.network.GithubUploader
+import li.gkd.app.network.networkFailureSummary
 import li.gkd.app.resources.*
 import li.gkd.app.settings.GithubCookieStore
 import li.gkd.app.ui.component.GithubUploadStatus
@@ -146,7 +147,11 @@ class GithubUploadState(
                         pendingFromCookie = items.drop(index)
                         break
                     } catch (e: Exception) {
-                        LogUtils.e(e)
+                        if (networkFailureSummary(e) != null) {
+                            LogUtils.e(e.javaClass.simpleName)
+                        } else {
+                            LogUtils.e(e)
+                        }
                         request.failures.add(item.label to (e.displayMessage()))
                     }
                 }
