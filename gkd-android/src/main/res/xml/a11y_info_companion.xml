@@ -2,5 +2,7 @@
 <accessibility-service
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:accessibilityFeedbackType="feedbackGeneric"
+  android:isAccessibilityTool="@bool/is_accessibility_tool"
   android:description="@string/companion_a11y_desc"
+  android:settingsActivity="li.gkd.app.MainActivity"
 />
