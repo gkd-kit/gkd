@@ -72,7 +72,7 @@ object AndroidAutomationSessions {
 
     // Keep each read bound to its selected service and update that engine's root cache.
     fun getRoot(service: AndroidAutomationSession? = this.service): AccessibilityNodeInfo? =
-        service?.matchHost?.safeActiveWindow
+        service?.matchHost?.readActiveWindow()
 
     fun compatWindows(): List<AccessibilityWindowInfo> {
         return readA11yWindow(MatchingRuntime.coordinator.diagnostics, "Windows") {
