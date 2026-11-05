@@ -205,7 +205,8 @@ class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoC
             threads =
                 threads.map { thread ->
                     MatchNodeThreadSnapshot(
-                        id = thread.id,
+                        // Keep getId() for Android versions without Thread.threadId().
+                        id = @Suppress("DEPRECATION") thread.id,
                         name = thread.name,
                         state = thread.state.name,
                         alive = thread.isAlive,
