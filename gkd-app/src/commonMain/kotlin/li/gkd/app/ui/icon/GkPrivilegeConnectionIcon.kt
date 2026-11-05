@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -61,42 +63,63 @@ private val rocketParts: List<ImageVector>
 private var _rocketParts: List<ImageVector>? = null
 
 @Composable
-fun GkAnimatedRocketIcon(
-    active: Boolean,
+fun GkPrivilegeConnectionIcon(
+    connected: Boolean,
     contentDescription: String,
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
 ) {
-    Box(modifier.size(24.dp).semantics { this.contentDescription = contentDescription }) {
-        if (active) {
-            val transition = rememberInfiniteTransition(label = "Rocket")
-            val progress =
-                transition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 1f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            tween(1000, easing = Easing { ((1.0 - cos(PI * it)) / 2.0).toFloat() }),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "Rocket drift",
-                )
-            rocketParts.forEachIndexed { index, vector ->
-                Icon(
-                    vector,
-                    contentDescription = null,
-                    tint = tint,
-                    modifier =
-                        Modifier.size(24.dp).graphicsLayer {
-                            val distance =
-                                (if (index == 0) -0.6.dp else 0.4.dp).toPx() * progress.value
-                            translationX = distance
-                            translationY = -distance
-                        },
-                )
-            }
+    val transition = updateTransition(connected, label = "Privilege connection")
+    val launchProgress =
+        transition.animateFloat(
+            transitionSpec = { tween(250) },
+            label = "Rocket launch",
+        ) {
+            if (it) 1f else 0f
+        }
+    val drift =
+        if (connected || launchProgress.value > 0f) {
+            val flight = rememberInfiniteTransition(label = "Rocket flight")
+            flight.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec =
+                    infiniteRepeatable(
+                        tween(1000, easing = Easing { ((1.0 - cos(PI * it)) / 2.0).toFloat() }),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "Rocket drift",
+            )
         } else {
-            Icon(Icons.Outlined.RocketLaunch, contentDescription = null, tint = tint)
+            rememberUpdatedState(0f)
+        }
+    Box(
+        modifier
+            .size(24.dp)
+            .semantics { this.contentDescription = contentDescription }
+            .graphicsLayer {
+                // RocketLaunch already points diagonally; rotate it upright while idle.
+                val idle = 1f - launchProgress.value
+                rotationZ = -45f * idle
+                // The upright body bounds are approximately -1.66..18.14 in the 24dp viewport.
+                translationY = 3.75.dp.toPx() * idle
+            },
+    ) {
+        rocketParts.forEachIndexed { index, vector ->
+            Icon(
+                vector,
+                contentDescription = null,
+                tint = tint,
+                modifier =
+                    Modifier.size(24.dp).graphicsLayer {
+                        val launch = launchProgress.value
+                        alpha = if (index == 0) launch else 1f
+                        val distance =
+                            (if (index == 0) -0.6.dp else 0.4.dp).toPx() * drift.value * launch
+                        translationX = distance
+                        translationY = -distance
+                    },
+            )
         }
     }
 }

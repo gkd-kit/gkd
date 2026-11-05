@@ -62,7 +62,7 @@ import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkTopAppBarScroll
 import li.gkd.app.ui.component.rememberColumnScrollState
 import li.gkd.app.ui.component.textSize
-import li.gkd.app.ui.icon.GkAnimatedRocketIcon
+import li.gkd.app.ui.icon.GkPrivilegeConnectionIcon
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
@@ -157,9 +157,8 @@ fun dashboardPage(
                                     )
                                 },
                         ) {
-                            GkAnimatedRocketIcon(
-                                active =
-                                    platform.privilegeStatus == DashboardPrivilegeStatus.Connected,
+                            GkPrivilegeConnectionIcon(
+                                connected = connected,
                                 contentDescription = privilegeLabel,
                                 tint =
                                     if (
