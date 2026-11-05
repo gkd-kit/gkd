@@ -8,13 +8,66 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import li.gkd.app.matching.diagnostics.MatchDiagnosticCapture
 import li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.input.MatchTimingPolicy
 import li.gkd.db.Db
 
 class LogArchiveChecks {
+    fun diagnosticQueueKeepsLatestEvidenceAcrossQueuedAndInFlightWrites() = runBlocking {
+        val files = MatchDiagnosticFiles
+        var wall = 50_000L
+        val diagnostics = MatchDiagnostics(wallTime = { wall }, onStoppedCapture = files::enqueue)
+        val first = diagnostics.start(MatchTimingPolicy())
+        val read = diagnostics.beginOperation("NodeRead:Root")!!
+        diagnostics.stop(first.id)
+        val initial = diagnostics.export(first.id)
+        val file = appStorage().matchingDiagnostics.resolve("${first.startedAt}/diagnostic.json")
+        // Keep the real database write pending after the first file has been written. Replacing
+        // that session must survive acknowledgement of the older capture.
+        Db.withTransaction {
+            files.enqueue(initial)
+            withTimeout(5_000) { while (!file.isFile) delay(10) }
+            assertEquals(initial, Json.decodeFromString<MatchDiagnosticCapture>(file.readText()))
+            diagnostics.endOperation(read, "returned")
+        }
+        files.flush()
+        val completed = diagnostics.export(first.id)
+        assertEquals(completed, Json.decodeFromString<MatchDiagnosticCapture>(file.readText()))
+        assertTrue(files.state.value.getValue(first.id).saved)
+
+        wall++
+        val second = diagnostics.start(MatchTimingPolicy())
+        val operations = List(3) { diagnostics.beginOperation("NodeRead:Child")!! }
+        diagnostics.stop(second.id)
+        // The existing archive lock also lets us enqueue a burst before any write starts.
+        files.withSavedFiles {
+            files.enqueue(diagnostics.export(second.id))
+            operations.forEach { diagnostics.endOperation(it, "returned") }
+            files.enqueue(completed)
+        }
+        files.flush()
+        val secondFile =
+            appStorage().matchingDiagnostics.resolve("${second.startedAt}/diagnostic.json")
+        assertEquals(
+            diagnostics.export(second.id),
+            Json.decodeFromString<MatchDiagnosticCapture>(secondFile.readText()),
+        )
+        assertTrue(files.state.value.getValue(second.id).saved)
+        val records =
+            Db.matchDiagnosticRecordDao.observeAll().first().filter {
+                it.id == first.startedAt || it.id == second.startedAt
+            }
+        assertEquals(2, records.size)
+        files.delete(records)
+    }
+
     fun archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance() {
         try {
             val layout = appStorage()

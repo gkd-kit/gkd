@@ -569,7 +569,16 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                         coordinator.diagnostics.entry("root_read", "root_read_started")
                         val node =
                             try {
-                                readNode("Root", page) { readActiveWindow() }
+                                if (!coordinator.diagnostics.enabled) {
+                                    readNode("Root", page) { readActiveWindow() }
+                                } else {
+                                    // Keep nested diagnostic publication outside the timed worker.
+                                    readA11yWindow(coordinator.diagnostics, "ActiveWindow") {
+                                        readNode("Root", page) {
+                                            service.windowNodeInfo?.setGeneratedTime()
+                                        }
+                                    }
+                                }
                             } catch (error: MatchNodeReadUnavailable) {
                                 coordinator.diagnostics.entry("Root", checkNotNull(error.message))
                                 return@launch

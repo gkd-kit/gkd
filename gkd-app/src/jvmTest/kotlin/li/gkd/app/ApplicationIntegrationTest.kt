@@ -188,6 +188,7 @@ class ApplicationIntegrationTest {
                         )
                     assertRuntimeRecords(appStorage().database)
                     LogArchiveChecks().apply {
+                        diagnosticQueueKeepsLatestEvidenceAcrossQueuedAndInFlightWrites()
                         archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance()
                         materialFailurePreservesCauseAndLeavesFilesForCacheMaintenance()
                     }

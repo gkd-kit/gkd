@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
@@ -16,10 +17,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import li.gkd.app.matching.MatchCoordinator
 import li.gkd.app.matching.MatchInvalidationReason
 import li.gkd.app.matching.diagnostics.MatchDiagnostics
 import li.gkd.app.matching.diagnostics.MatchNodeObservation
+import li.gkd.app.matching.diagnostics.MatchNodePressure
 import li.gkd.app.matching.diagnostics.MatchRecordedValue
 import li.gkd.app.matching.diagnostics.MatchRecordedValueType
 import li.gkd.app.matching.input.MatchTimingPolicy
@@ -27,6 +32,63 @@ import li.gkd.app.model.ActionResult
 import li.gkd.app.model.GkdAction
 
 class MatchNodeReaderTest {
+    /**
+     * Slow diagnostic finalization must hold neither the returned result nor a reader pool slot.
+     */
+    @Test
+    fun stoppedCaptureCannotDelayResultOrOccupyReaderWorkers() = runBlocking {
+        val publishing = CountDownLatch(1)
+        val releasePublication = CountDownLatch(1)
+        val diagnostics =
+            MatchDiagnostics(
+                onStoppedCapture = {
+                    publishing.countDown()
+                    releasePublication.await()
+                },
+            )
+        val session = diagnostics.start(MatchTimingPolicy())
+        val reader = MatchNodeReader(diagnostics)
+        val entered = CompletableDeferred<Unit>()
+        val releaseRead = CountDownLatch(1)
+        val releaseOthers = CountDownLatch(1)
+        val otherReadsEntered = CountDownLatch(4)
+        try {
+            val result = async {
+                reader.query {
+                    reader.read(5000) {
+                        entered.complete(Unit)
+                        releaseRead.await()
+                        42
+                    }
+                }
+            }
+            withTimeout(5000) { entered.await() }
+            diagnostics.stop(session.id)
+            releaseRead.countDown()
+            assertEquals(42, withTimeout(5000) { result.await() })
+            assertTrue(publishing.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            val reads =
+                List(4) {
+                    async(Dispatchers.Default) {
+                        reader.query {
+                            reader.read(5000) {
+                                otherReadsEntered.countDown()
+                                releaseOthers.await()
+                            }
+                        }
+                    }
+                }
+            assertTrue(otherReadsEntered.await(3, java.util.concurrent.TimeUnit.SECONDS))
+            releaseOthers.countDown()
+            reads.forEach { it.await() }
+        } finally {
+            releaseRead.countDown()
+            releaseOthers.countDown()
+            releasePublication.countDown()
+            reader.close()
+        }
+    }
+
     /** Old-query timeouts and capacity rejection must not become the next session's evidence. */
     @Test
     fun oldQueryPressureDoesNotEnterNewSession() {
@@ -100,6 +162,9 @@ class MatchNodeReaderTest {
             nanos.set(12_000_000)
             release.countDown()
             assertEquals("found", withTimeout(5000) { result.await() })
+            withTimeout(5000) {
+                while (diagnostics.state.value!!.openOperations.isNotEmpty()) delay(1)
+            }
             val completed =
                 diagnostics
                     .export(session.id)
@@ -146,11 +211,36 @@ class MatchNodeReaderTest {
                     }
                     .reason,
             )
+            withTimeout(5000) {
+                while (diagnostics.state.value!!.openOperations.size != 4) delay(1)
+            }
             val capture = diagnostics.export(session.id)
             val pressure = capture.events.single { it.nodePressure != null }.nodePressure!!
             assertEquals(4, pressure.activeReads)
             assertEquals(4, pressure.observedReads)
             assertEquals(700_000_000L, pressure.oldestObservedReadNanos)
+            assertTrue(pressure.failureMessage!!.contains("RejectedExecutionException"))
+            val executor = assertNotNull(pressure.executor)
+            assertEquals(4, executor.poolSize)
+            assertEquals(4, executor.activeCount)
+            assertEquals(4, executor.largestPoolSize)
+            assertEquals(0L, executor.completedTaskCount)
+            assertEquals(0, executor.queueSize)
+            assertFalse(executor.shutdown)
+            assertFalse(executor.terminating)
+            assertFalse(executor.terminated)
+            assertEquals(4, executor.threads.map { it.id }.distinct().size)
+            assertTrue(executor.threads.all { it.alive && !it.interrupted })
+            assertTrue(executor.threads.all { it.state == "WAITING" })
+            assertTrue(
+                executor.threads.all { thread ->
+                    thread.stackTrace.any { it.contains("CountDownLatch.await") }
+                },
+            )
+            assertEquals(
+                pressure,
+                Json.decodeFromString<MatchNodePressure>(Json.encodeToString(pressure)),
+            )
             assertEquals(4, capture.session.openOperations.size)
             release.countDown()
             withTimeout(5000) {
@@ -192,6 +282,56 @@ class MatchNodeReaderTest {
         }
     }
 
+    /** Enabling diagnosis after reads stall must still capture the pre-existing workers. */
+    @Test
+    fun pressureIncludesWorkersStartedBeforeDiagnostics() = runBlocking {
+        val diagnostics = MatchDiagnostics()
+        val reader = MatchNodeReader(diagnostics)
+        val release = CountDownLatch(1)
+        val entered = List(4) { CompletableDeferred<Unit>() }
+        val jobs = entered.map { signal ->
+            launch {
+                reader.query {
+                    reader.read(5000) {
+                        signal.complete(Unit)
+                        release.await()
+                    }
+                }
+            }
+        }
+        try {
+            withTimeout(5000) {
+                entered.forEach { it.await() }
+                jobs.forEach { it.cancelAndJoin() }
+            }
+            val session = diagnostics.start(MatchTimingPolicy())
+            assertEquals(
+                MatchNodeReadFailure.CapacityExceeded,
+                assertFailsWith<MatchNodeReadUnavailable> {
+                        reader.query { reader.read { error("Fifth read must not execute") } }
+                    }
+                    .reason,
+            )
+            val pressure =
+                diagnostics
+                    .export(session.id)
+                    .events
+                    .single { it.nodePressure != null }
+                    .nodePressure!!
+            assertEquals(0, pressure.observedReads)
+            assertEquals(4, pressure.executor!!.threads.size)
+            assertTrue(
+                pressure.executor.threads.all { thread ->
+                    thread.stackTrace.any { it.contains("CountDownLatch.await") }
+                },
+            )
+        } finally {
+            release.countDown()
+            jobs.forEach { it.cancelAndJoin() }
+            reader.close()
+        }
+    }
+
     @Test
     fun timeoutEmitsPressureAndLeavesReadOpenUntilPhysicalCompletion() = runBlocking {
         val diagnostics = MatchDiagnostics()
@@ -217,7 +357,14 @@ class MatchNodeReaderTest {
                     .single { it.reason == "node_read_timeout" }
                     .nodePressure!!
             assertEquals(1, pressure.activeReads)
+            assertTrue(pressure.failureMessage!!.contains("TimeoutException"))
             assertEquals(1, pressure.observedReads)
+            assertEquals(1, pressure.executor!!.poolSize)
+            assertTrue(
+                pressure.executor.threads.single().stackTrace.any {
+                    it.contains("CountDownLatch.await")
+                },
+            )
             assertTrue(pressure.oldestObservedReadNanos!! > 0)
         } finally {
             release.countDown()

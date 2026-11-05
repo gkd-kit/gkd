@@ -276,8 +276,12 @@ object SnapshotCaptureHost {
                         val result =
                             if (error == null) "null"
                             else "${error.javaClass.name}: ${error.message}"
+                        val foreground = AndroidForegroundState.observedForegroundFlow.value
                         LogUtils.w(
-                            "SCREEN_NODES_UNAVAILABLE (mode=${service.mode}): rootInActiveWindow=$result",
+                            "SCREEN_NODES_UNAVAILABLE (mode=${service.mode}, " +
+                                "connectionId=${service.matchHost.connectionId}, " +
+                                "task=${foreground.task}, confirmed=${foreground.confirmed}): " +
+                                "rootInActiveWindow=$result",
                         )
                     } ?: throw InspectionException(InspectionFailure.SnapshotNodesUnavailable)
                 val appId = rootNode.packageName.toString()

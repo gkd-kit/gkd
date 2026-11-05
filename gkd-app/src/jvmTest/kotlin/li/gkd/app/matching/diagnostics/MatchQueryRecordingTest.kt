@@ -236,7 +236,7 @@ class MatchQueryRecordingTest {
     }
 
     @Test
-    fun selectorCallLinksPhysicalReadArgumentsAndRestoresContextAfterFailure() {
+    fun selectorCallLinksPhysicalReadArgumentsAndRestoresContextAfterFailure() = runBlocking {
         val diagnostics = MatchDiagnostics()
         val session = diagnostics.start(MatchTimingPolicy())
         val query = diagnostics.beginOperation("SelectorQuery", 42, "rule")!!
@@ -278,6 +278,11 @@ class MatchQueryRecordingTest {
                 assertFailsWith<IllegalStateException> { recording.getChild(node, 3) },
             )
             assertNull(MatchNodeObservation.current())
+            kotlinx.coroutines.withTimeout(5000) {
+                while (diagnostics.state.value!!.openOperations.any { it.id != query.id }) {
+                    kotlinx.coroutines.delay(1)
+                }
+            }
             val operations =
                 diagnostics
                     .export(session.id)

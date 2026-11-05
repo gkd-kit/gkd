@@ -46,6 +46,8 @@ class RuleSelectorDiagnosticsTest {
         assertEquals(SelectorEvaluationKind.LimitReached, conditions.last().kind)
         assertEquals(256, conditions.first().left?.value?.length)
         assertEquals(true, conditions.first().left?.truncated)
+        assertEquals(conditions.first().kind.key, capture.events.first().reason)
+        assertFalse(capture.events.first().reason.contains("expected"))
         assertTrue(conditions.all { it.selectorPart == "matches[0]" })
         assertFalse(observer.enabled)
         assertEquals(

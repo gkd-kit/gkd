@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -69,31 +70,38 @@ data class MatchDiagnosticSaveState(
 /** Stopped immutable snapshots survive page disposal; failed writes are retried by log sharing. */
 object MatchDiagnosticFiles {
     private val lock = Any()
-    private val pending = ArrayDeque<MatchDiagnosticCapture>()
+    private val pending = linkedMapOf<String, MatchDiagnosticCapture>()
     private val writing = Mutex()
+    private val saveRequests = Channel<Unit>(Channel.CONFLATED)
+    private val writer by lazy {
+        applicationScope().launch(Dispatchers.IO) {
+            for (request in saveRequests) {
+                try {
+                    flush()
+                } catch (error: Exception) {
+                    if (error is kotlinx.coroutines.CancellationException) throw error
+                    LogUtils.e("Saving matching diagnostic failed", error)
+                }
+            }
+        }
+    }
     private val store by lazy { MatchDiagnosticFileStore(appStorage().matchingDiagnostics) }
     val state: StateFlow<Map<String, MatchDiagnosticSaveState>>
         field = MutableStateFlow(emptyMap())
 
     private fun updateState(value: MatchDiagnosticSaveState) {
         val ordered = (state.value - value.id) + (value.id to value)
-        val retained = ordered.keys.toList().takeLast(5).toSet() + pending.map { it.session.id }
+        val retained = ordered.keys.toList().takeLast(5).toSet() + pending.keys
         state.value = ordered.filterKeys { it in retained }
     }
 
     fun enqueue(capture: MatchDiagnosticCapture) {
         synchronized(lock) {
-            pending.addLast(capture)
+            pending[capture.session.id] = capture
             updateState(MatchDiagnosticSaveState(capture.session.id))
         }
-        applicationScope().launch(Dispatchers.IO) {
-            try {
-                flush()
-            } catch (error: Exception) {
-                if (error is kotlinx.coroutines.CancellationException) throw error
-                LogUtils.e("Saving matching diagnostic failed", error)
-            }
-        }
+        writer.start()
+        saveRequests.trySend(Unit)
     }
 
     fun directory(record: MatchDiagnosticRecord): File = store.directory(record.id)
@@ -111,7 +119,7 @@ object MatchDiagnosticFiles {
         withContext(Dispatchers.IO) {
             writing.withLock {
                 while (true) {
-                    val capture = synchronized(lock) { pending.firstOrNull() } ?: break
+                    val capture = synchronized(lock) { pending.values.firstOrNull() } ?: break
                     try {
                         store.save(capture)?.let { Db.matchDiagnosticRecordDao.upsert(it) }
                     } catch (error: Exception) {
@@ -126,11 +134,13 @@ object MatchDiagnosticFiles {
                         throw error
                     }
                     synchronized(lock) {
-                        pending.removeFirst()
+                        // A late completion may replace this session while its file is written.
+                        if (pending[capture.session.id] === capture)
+                            pending.remove(capture.session.id)
                         updateState(
                             MatchDiagnosticSaveState(
                                 capture.session.id,
-                                saved = pending.none { it.session.id == capture.session.id },
+                                saved = capture.session.id !in pending,
                             ),
                         )
                     }

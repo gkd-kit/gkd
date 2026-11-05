@@ -314,54 +314,29 @@ fun <N : Any> recordManualQuery(
     diagnostics: MatchDiagnostics,
     session: MatchDiagnosticState,
     runId: Long,
-): N? {
-    val operation =
-        diagnostics.beginOperation("SelectorQuery", runId, "manual", sessionId = session.id)
-    val recording = RecordingNodeAdapter(adapter, diagnostics, operation)
-    val source = recording.value(node)
-    val plan =
+): N? =
+    recordQuery(
+        node,
+        adapter,
+        diagnostics,
+        session,
+        runId,
+        "manual",
         MatchSelectorPlan(
             listOf(selector.toString()),
             fastQuery = options.fastQuery,
             rootOnlySelectors = true,
+        ),
+    ) { recording ->
+        querySingleSelector(
+            node,
+            selector,
+            { recording.root(root) },
+            recording,
+            options,
+            rootOnlySelectors = true,
         )
-    recording.begin(runId, "manual", plan, source)
-    diagnostics.registerQuery(session.id, recording.evidence)
-    var result: N? = null
-    var failure: String? = null
-    var cancelled = false
-    try {
-        result =
-            MatchNodeObservation.observe(
-                operation,
-                recording::value,
-                {
-                    querySingleSelector(
-                        node,
-                        selector,
-                        { recording.root(root) },
-                        recording,
-                        options,
-                        rootOnlySelectors = true,
-                    )
-                },
-                sessionId = session.id,
-            )
-        return result
-    } catch (error: Exception) {
-        failure = error.javaClass.name
-        cancelled =
-            error is kotlinx.coroutines.CancellationException || error is InterruptedException
-        throw error
-    } finally {
-        diagnostics.endOperation(
-            operation,
-            failure ?: if (result == null) "not_matched" else "matched",
-        )
-        recording.finish(result, failure, cancelled)
-        diagnostics.finishQuery(session.id)
     }
-}
 
 fun <N : Any> recordRuleQuery(
     rule: ResolvedRule,
@@ -373,16 +348,22 @@ fun <N : Any> recordRuleQuery(
     runId: Long,
     rootOnlySelectors: Boolean,
 ): N? {
-    val operation =
-        diagnostics.beginOperation(
-            "SelectorQuery",
+    val identity = rule.matchIdentity()
+    val observer =
+        RuleSelectorDiagnostics<N>(
+            diagnostics,
+            session.id,
             runId,
-            rule.matchIdentity(),
-            sessionId = session.id,
+            identity,
+            captureConditions = session.detailed,
         )
-    val recording = RecordingNodeAdapter(adapter, diagnostics, operation)
-    val source = recording.value(node)
-    val plan =
+    return recordQuery(
+        node,
+        adapter,
+        diagnostics,
+        session,
+        runId,
+        identity,
         MatchSelectorPlan(
             rule.matches.map { it.toString() },
             rule.anyMatches.map { it.toString() },
@@ -391,21 +372,8 @@ fun <N : Any> recordRuleQuery(
             rule.matchRoot,
             rule.matchOptions.fastQuery,
             rootOnlySelectors,
-        )
-    val observer =
-        RuleSelectorDiagnostics<N>(
-            diagnostics,
-            session.id,
-            runId,
-            rule.matchIdentity(),
-            captureConditions = session.detailed,
-        )
-    recording.begin(runId, rule.matchIdentity(), plan, source)
-    diagnostics.registerQuery(session.id, recording.evidence)
-    var result: N? = null
-    var failure: String? = null
-    var cancelled = false
-    try {
+        ),
+    ) { recording ->
         val query: (N, Selector) -> N? = { target, selector ->
             querySingleSelector(
                 target,
@@ -417,19 +385,33 @@ fun <N : Any> recordRuleQuery(
                 observer,
             )
         }
+        matchRuleSelectorsExplained(rule, node, { recording.root(root) }, query, observer)
+    }
+}
+
+private inline fun <N : Any> recordQuery(
+    node: N,
+    adapter: NodeAdapter<N>,
+    diagnostics: MatchDiagnostics,
+    session: MatchDiagnosticState,
+    runId: Long,
+    rule: String,
+    plan: MatchSelectorPlan,
+    crossinline query: (RecordingNodeAdapter<N>) -> N?,
+): N? {
+    val operation = diagnostics.beginOperation("SelectorQuery", runId, rule, sessionId = session.id)
+    val recording = RecordingNodeAdapter(adapter, diagnostics, operation)
+    recording.begin(runId, rule, plan, recording.value(node))
+    diagnostics.registerQuery(session.id, recording.evidence)
+    var result: N? = null
+    var failure: String? = null
+    var cancelled = false
+    try {
         result =
             MatchNodeObservation.observe(
                 operation,
                 recording::value,
-                {
-                    matchRuleSelectorsExplained(
-                        rule,
-                        node,
-                        { recording.root(root) },
-                        query,
-                        observer,
-                    )
-                },
+                { query(recording) },
                 sessionId = session.id,
             )
         return result

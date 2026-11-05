@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
+import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.diagnostics.MatchServiceConnection
 import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.matching.diagnostics.MatchStage
@@ -20,17 +21,21 @@ object AndroidAutomationSessions {
         event: MatchServiceEvent,
         target: AndroidAutomationSession? = null,
     ) {
+        val connection =
+            MatchServiceConnection(
+                event,
+                service.mode,
+                service.matchHost.connectionId,
+                target?.matchHost?.connectionId,
+            )
+        if (event != MatchServiceEvent.QueryStarted) {
+            LogUtils.i(connection)
+        }
         MatchingRuntime.coordinator.diagnostics.record(
             0,
             MatchStage.Idle,
             event.name,
-            serviceConnection =
-                MatchServiceConnection(
-                    event,
-                    service.mode,
-                    service.matchHost.connectionId,
-                    target?.matchHost?.connectionId,
-                ),
+            serviceConnection = connection,
         )
     }
 

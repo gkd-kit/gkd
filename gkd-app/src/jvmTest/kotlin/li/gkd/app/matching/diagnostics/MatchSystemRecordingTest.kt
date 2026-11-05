@@ -531,6 +531,31 @@ class MatchSystemRecordingTest {
         assertEquals("system_recording_limit", limited.export().incomplete)
     }
 
+    /** Large variable payloads must still stop recording without preventing scheduler progress. */
+    @Test
+    fun estimatedPayloadBudgetRetainsPrefixAndFinalState() {
+        val machine = MatchScheduleMachine()
+        val recorder = MatchSystemRecorder(machine.state, 0, maxEstimatedBytes = 4096)
+        val attach = MatchScheduleCommand(MatchScheduleCommandType.Attach, service = 1)
+        recorder.append(attach, 1, machine.apply(attach, 1), machine.state)
+        val oversized =
+            MatchScheduleCommand(
+                MatchScheduleCommandType.Request,
+                service = 1,
+                task = 1,
+                reason = "x".repeat(4096),
+            )
+        recorder.append(oversized, 2, machine.apply(oversized, 2), machine.state)
+        val finish = MatchScheduleCommand(MatchScheduleCommandType.Finish, run = 1)
+        recorder.append(finish, 3, machine.apply(finish, 3), machine.state)
+        recorder.stop(4, machine.state)
+        val capture = recorder.export().roundTrip()
+        assertEquals(listOf(attach), capture.steps.map { it.command })
+        assertEquals("system_recording_limit", capture.incomplete)
+        assertEquals(machine.state, capture.final)
+        assertTrue(capture.sealed)
+    }
+
     @Test
     fun cancelledActionCannotReleaseTheLaneBeforeItsPlatformCompletion() {
         val machine = MatchScheduleMachine()

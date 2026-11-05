@@ -8,7 +8,6 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonPrimitive
 import li.gkd.app.matching.query.matchRuleSelectorsUsing
 import li.gkd.app.rule.ResolvedRule
 import li.gkd.selector.Selector
@@ -140,7 +139,7 @@ class RuleSelectorDiagnostics<N : Any>(
         diagnostics.record(
             runId,
             MatchStage.Selector,
-            describe(detail),
+            detail.kind.key,
             rule,
             condition = detail,
             sessionId = sessionId,
@@ -155,24 +154,6 @@ class RuleSelectorDiagnostics<N : Any>(
             is Boolean -> MatchObservedValue("boolean", value.toString())
             is Number -> MatchObservedValue("number", value.toString())
             else -> MatchObservedValue("reference", null) // Never call arbitrary node.toString().
-        }
-
-    private fun describe(value: MatchConditionTrace): String = buildString {
-        append("${value.selectorPart} node=${value.node}")
-        value.unit?.let { append(" unit=$it") }
-        value.property?.let { append(" property=$it") }
-        append(" ${value.kind.key}: ${value.expression}")
-        value.left?.let {
-            append(" left=${display(it)} right=${display(checkNotNull(value.right))}")
-        }
-        append(" -> ${value.matched?.toString() ?: "not_evaluated"}")
-    }
-
-    private fun display(value: MatchObservedValue): String =
-        when (value.type) {
-            "string" -> JsonPrimitive(value.value).toString() + if (value.truncated) "…" else ""
-            "reference" -> "<reference>"
-            else -> value.value ?: "null"
         }
 }
 

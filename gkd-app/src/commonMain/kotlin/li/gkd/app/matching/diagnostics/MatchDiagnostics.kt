@@ -1,6 +1,8 @@
 package li.gkd.app.matching.diagnostics
 
 import java.util.UUID
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
@@ -37,6 +39,34 @@ data class MatchNodePressure(
     val capacity: Int,
     val observedReads: Int,
     val oldestObservedReadNanos: Long?,
+    val executor: MatchNodeExecutorSnapshot? = null,
+    val failureMessage: String? = null,
+    val executorSnapshotSkipped: Boolean = false,
+)
+
+/** Sequential observations after failure, not an atomic snapshot of the rejection instant. */
+@Serializable
+data class MatchNodeExecutorSnapshot(
+    val poolSize: Int,
+    val activeCount: Int,
+    val largestPoolSize: Int,
+    val taskCount: Long,
+    val completedTaskCount: Long,
+    val queueSize: Int,
+    val shutdown: Boolean,
+    val terminating: Boolean,
+    val terminated: Boolean,
+    val threads: List<MatchNodeThreadSnapshot>,
+)
+
+@Serializable
+data class MatchNodeThreadSnapshot(
+    val id: Long,
+    val name: String,
+    val state: String,
+    val alive: Boolean,
+    val interrupted: Boolean,
+    val stackTrace: List<String>,
 )
 
 @Serializable
@@ -142,6 +172,7 @@ class MatchDiagnostics(
     private var sequence = 0L
     private var operationSequence = 0L
     private var operationStatistics = MatchOperationStatisticsRecorder()
+    private val nodeSnapshotTimes = mutableMapOf<MatchNodeReadFailure, Long>()
     private var origin = 0L
     private var capacity = 2000
     private var snapshotSequence = 0L
@@ -210,6 +241,7 @@ class MatchDiagnostics(
             }
             systemRecorder = null
             operationStatistics = MatchOperationStatisticsRecorder()
+            nodeSnapshotTimes.clear()
             events.clear()
             keyEvents.clear()
             boundaryEvents.clear()
@@ -392,8 +424,25 @@ class MatchDiagnostics(
         activeReads: Int,
         capacity: Int,
         sessionId: String? = null,
+        failureMessage: String? = null,
+        executorSnapshot: (() -> MatchNodeExecutorSnapshot)? = null,
     ) {
         if (!enabled) return
+        val sample =
+            synchronized(lock) {
+                if (!enabled || (sessionId != null && state.value?.id != sessionId)) return
+                if (executorSnapshot == null) false
+                else {
+                    val now = nanoTime()
+                    val previous = nodeSnapshotTimes[reason]
+                    if (previous == null || now - previous >= 1_000_000_000L) {
+                        nodeSnapshotTimes[reason] = now
+                        true
+                    } else false
+                }
+            }
+        // Read stacks outside the diagnostic lock so workers can finish recording operations.
+        val executor = if (sample) executorSnapshot?.invoke() else null
         synchronized(lock) {
             if (!enabled) return
             if (sessionId != null && state.value?.id != sessionId) return
@@ -412,6 +461,9 @@ class MatchDiagnostics(
                         capacity,
                         reads.size,
                         oldest?.let { nanoTime() - origin - it },
+                        executor,
+                        failureMessage,
+                        executorSnapshotSkipped = executorSnapshot != null && !sample,
                     ),
             )
         }
@@ -426,6 +478,7 @@ class MatchDiagnostics(
         arguments: List<MatchRecordedValue> = emptyList(),
         sessionId: String? = null,
         recording: MatchQueryEvidence? = null,
+        threadName: String? = null,
     ): MatchOperation? {
         if (!enabled) return null
         return synchronized(lock) {
@@ -444,7 +497,7 @@ class MatchDiagnostics(
                     runId,
                     rule,
                     page?.let(System::identityHashCode),
-                    Thread.currentThread().name,
+                    threadName ?: Thread.currentThread().name,
                     nanoTime() - origin,
                     parentOperationId = parentOperationId,
                     arguments = arguments,
@@ -464,44 +517,92 @@ class MatchDiagnostics(
         }
     }
 
-    fun endOperation(operation: MatchOperation?, outcome: String) {
+    fun operationTimeNanos(): Long = nanoTime()
+
+    /**
+     * Completion publication must not retain a node-reader slot or delay its caller. Optional times
+     * are absolute monotonic timestamps captured by the worker, before diagnostic dispatch.
+     */
+    fun endOperationAsync(
+        operation: MatchOperation?,
+        outcome: String,
+        startedNanos: Long? = null,
+        finishedNanos: Long? = null,
+    ) {
+        if (operation == null) return
+        val finished = finishedNanos ?: nanoTime()
+        Dispatchers.Default.dispatch(EmptyCoroutineContext) {
+            endOperation(operation, outcome, startedNanos, finished)
+        }
+    }
+
+    fun endOperation(
+        operation: MatchOperation?,
+        outcome: String,
+        startedNanos: Long? = null,
+        finishedNanos: Long? = null,
+    ) {
         if (operation == null) return
         synchronized(lock) {
             val current = state.value ?: return
-            if (current.id != operation.sessionId) {
-                val previous = stoppedSessions[operation.sessionId] ?: return
+            val previous =
+                if (current.id != operation.sessionId) {
+                    stoppedSessions[operation.sessionId] ?: return
+                } else null
+            val session = previous?.capture?.session ?: current
+            if (session.openOperations.none { it.id == operation.id }) return
+            val operationOrigin = previous?.origin ?: origin
+            val elapsed = (finishedNanos ?: nanoTime()) - operationOrigin
+            val started = startedNanos?.minus(operationOrigin) ?: operation.startedNanos
+            val finished =
+                operation.copy(
+                    startedNanos = started,
+                    durationNanos = elapsed - started,
+                    outcome = outcome,
+                )
+            (previous?.operationStatistics ?: operationStatistics).record(finished)
+            recordFinishedOperation(finished)
+            val updated =
+                session.copy(
+                    openOperations = session.openOperations.filterNot { it.id == operation.id },
+                )
+            if (previous == null) state.value = updated
+            if (previous == null && enabled) {
+                if (
+                    operation.recording != null &&
+                        (outcome == "returned" || outcome == "null" || outcome == "false")
+                )
+                    return
+                record(
+                    operation.runId,
+                    MatchStage.Idle,
+                    "operation_finished",
+                    operation.rule,
+                    entrySource = "operation",
+                    operation = finished,
+                )
+                return
+            }
+            val event =
+                MatchTrace(
+                    if (previous != null) ++previous.sequence else ++sequence,
+                    wallTime(),
+                    elapsed,
+                    operation.runId,
+                    MatchStage.Idle,
+                    "operation_finished_after_stop",
+                    operation.rule,
+                    entrySource = "operation",
+                    operation = finished,
+                )
+            if (previous != null) {
                 val capture = previous.capture
-                if (capture.session.openOperations.none { it.id == operation.id }) return
-                val elapsed = nanoTime() - previous.origin
-                val finished =
-                    operation.copy(
-                        durationNanos = elapsed - operation.startedNanos,
-                        outcome = outcome,
-                    )
-                val event =
-                    MatchTrace(
-                        ++previous.sequence,
-                        wallTime(),
-                        elapsed,
-                        operation.runId,
-                        MatchStage.Idle,
-                        "operation_finished_after_stop",
-                        operation.rule,
-                        entrySource = "operation",
-                        operation = finished,
-                    )
-                previous.operationStatistics.record(finished)
-                recordFinishedOperation(finished)
                 val dropped = capture.events.size == previous.capacity
                 previous.capture =
                     capture.copy(
                         session =
-                            capture.session.copy(
-                                openOperations =
-                                    capture.session.openOperations.filterNot {
-                                        it.id == operation.id
-                                    },
-                                dropped = capture.session.dropped + if (dropped) 1 else 0,
+                            updated.copy(
+                                dropped = updated.dropped + if (dropped) 1 else 0,
                             ),
                         events = (if (dropped) capture.events.drop(1) else capture.events) + event,
                         keyEvents =
@@ -517,57 +618,16 @@ class MatchDiagnostics(
                                     1
                                 else 0,
                     )
-                onStoppedCapture(export(operation.sessionId))
-                pruneStoppedSessions(operation.sessionId)
-                return
-            }
-            if (current.openOperations.none { it.id == operation.id }) return
-            state.value =
-                current.copy(
-                    openOperations = current.openOperations.filterNot { it.id == operation.id },
-                )
-            val finished =
-                operation.copy(
-                    durationNanos = nanoTime() - origin - operation.startedNanos,
-                    outcome = outcome,
-                )
-            operationStatistics.record(finished)
-            recordFinishedOperation(finished)
-            if (enabled) {
-                if (
-                    operation.recording != null &&
-                        (outcome == "returned" || outcome == "null" || outcome == "false")
-                )
-                    return
-                record(
-                    operation.runId,
-                    MatchStage.Idle,
-                    "operation_finished",
-                    operation.rule,
-                    entrySource = "operation",
-                    operation = finished,
-                )
             } else {
                 if (events.size == capacity) {
                     events.removeFirst()
-                    state.value = checkNotNull(state.value).copy(dropped = current.dropped + 1)
+                    state.value = updated.copy(dropped = updated.dropped + 1)
                 }
-                val event =
-                    MatchTrace(
-                        ++sequence,
-                        wallTime(),
-                        nanoTime() - origin,
-                        operation.runId,
-                        MatchStage.Idle,
-                        "operation_finished_after_stop",
-                        operation.rule,
-                        entrySource = "operation",
-                        operation = finished,
-                    )
                 events.addLast(event)
                 retainKeyEvent(event)
-                onStoppedCapture(export(current.id))
             }
+            onStoppedCapture(export(operation.sessionId))
+            if (previous != null) pruneStoppedSessions(operation.sessionId)
         }
     }
 
