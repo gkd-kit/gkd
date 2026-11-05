@@ -1,9 +1,7 @@
 package li.gkd.app.service
 
-import android.accessibilityservice.AccessibilityServiceInfo
 import android.provider.Settings
 import com.google.android.accessibility.selecttospeak.SelectToSpeakServiceCompanion
-import com.hjq.device.compat.DeviceBrand
 import li.gkd.app.app
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.topTaskAppId
@@ -25,23 +23,8 @@ object CompanionServiceController {
             service.disableSelf()
             return
         }
-        configureFeedbackForDevice(service)
         instance = service
         LogUtils.i("Companion connected")
-    }
-
-    private fun configureFeedbackForDevice(service: SelectToSpeakServiceCompanion) {
-        val feedbackType =
-            when {
-                DeviceBrand.isXiaoMi() || DeviceBrand.isRedMi() ->
-                    // One feedback bit from HyperOS's cleanup mask is sufficient.
-                    AccessibilityServiceInfo.FEEDBACK_GENERIC or
-                        AccessibilityServiceInfo.FEEDBACK_HAPTIC
-                else -> return
-            }
-        val info = service.serviceInfo ?: return
-        info.feedbackType = feedbackType
-        service.serviceInfo = info
     }
 
     fun onDisconnected(service: SelectToSpeakServiceCompanion) {
