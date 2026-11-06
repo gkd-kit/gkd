@@ -23,6 +23,7 @@ import li.gkd.app.state.Loadable
 import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.subscription.SubscriptionJson.toJson5String
 import li.gkd.app.subscription.SubscriptionRepository
+import li.gkd.app.subscription.prepareAppGroupsForCopy
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.MultiSelectionState
 import li.gkd.app.ui.navigation.AppConfigRoute
@@ -177,17 +178,24 @@ class AppConfigViewModel(
                     Triple(it.subsId, it.groupType, it.groupKey)
                 }
             val subsPairs = uiState.value.value?.subsPairs.orEmpty()
-            val groups = subsPairs.flatMap { (entry, groups) ->
-                groups.filterIsInstance<RawSubscription.RawAppGroup>().filter { group ->
-                    Triple(entry.subsItem.id, RuleGroupType.App, group.key) in selectedKeys
+            val selectedAppGroups = subsPairs.flatMap { (entry, groups) ->
+                val subsId = entry.subsItem.id
+                groups.filterIsInstance<RawSubscription.RawAppGroup>().mapNotNull { group ->
+                    if (Triple(subsId, RuleGroupType.App, group.key) in selectedKeys) {
+                        subsId to group
+                    } else {
+                        null
+                    }
                 }
             }
-            check(groups.isNotEmpty()) { Res.string.selected_app_rules_no_copyable.getSync() }
+            check(selectedAppGroups.isNotEmpty()) {
+                Res.string.selected_app_rules_no_copyable.getSync()
+            }
             toJson5String(
                 RawSubscription.RawApp(
                     id = route.appId,
                     name = AppInfoRepository.snapshot?.apps.orEmpty()[route.appId]?.name,
-                    groups = groups,
+                    groups = prepareAppGroupsForCopy(selectedAppGroups),
                 ),
             )
         }
