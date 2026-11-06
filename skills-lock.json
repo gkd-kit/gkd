@@ -2,11 +2,11 @@
   "version": 1,
   "skills": {
     "android-api-diff": {
-      "source": "android-cs/android-api-diff",
-      "ref": "v0.5.1",
+      "source": "lisonge/android-api-diff",
+      "ref": "v0.6.1",
       "sourceType": "github",
       "skillPath": "skills/android-api-diff/SKILL.md",
-      "computedHash": "6149316f87029670b9052550b6a5467cbeb839e5529fa1bb894d21a13b342ce7"
+      "computedHash": "df562d22c8f305371e111395326717518f8b30621974d5c8eb3a0bfaf52f067b"
     },
     "android-hidden-api-r8": {
       "source": "lisonge/remap",

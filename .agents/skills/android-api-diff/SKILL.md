@@ -1,6 +1,6 @@
 ---
 name: android-api-diff
-description: Inspect Android framework Java and AIDL APIs across versions with the android-api-diff CLI. Use when resolving an Android API to frameworks/base source, fetching the complete content of a tagged source file, comparing signatures or availability by Android version, explaining missing APIs, generating Java hidden-API access code, or explicitly prewarming the local query cache.
+description: Inspect Android framework Java and AIDL APIs across versions with the android-api-diff CLI. Use when finding an Android API across AOSP repositories, fetching the complete content of a tagged source file, comparing signatures or availability by Android version, explaining missing APIs, generating Java hidden-API access code, or explicitly prewarming the local query cache.
 ---
 
 # Android API Diff
@@ -14,21 +14,20 @@ output so results remain machine-readable.
   version query internally, so never call `query` first.
 - Run `query` when the user wants signatures, version ranges, availability,
   missing reasons, or source metadata.
-- Run `resolve` when the user only needs the matching `frameworks/base` file and
-  target kind.
-- Run `source` when the user wants the complete content of a known source path
-  at an exact Android release tag. If only an API name is known, run `resolve`
-  first and use the chosen `result.candidates[].source.path`.
+- Run `search` for fuzzy repository/path discovery or Java reference matching.
+- Run `source` for the complete content of an exact repository, path and tag.
+  If only an API name is known, use `search` and select its candidate `repo` and `path`.
 - Run `preload` only when the user explicitly asks to preload several APIs.
 
 Always quote API names because constructors and member references can contain
 shell-sensitive characters.
 
 ```sh
-android-api-diff resolve "ContentObserver()"
-android-api-diff source android-17.0.0_r1 core/java/android/accessibilityservice/AccessibilityButtonController.java
-android-api-diff query "IActivityManager.getTasks" --min-sdk 28
-android-api-diff generate "ActivityThread.currentApplication" --min-sdk 28
+android-api-diff search "ContentObserver()"
+android-api-diff search "platform/frameworks/base/core/java/android/content/pm/UserInfo.java"
+android-api-diff source --repo platform/frameworks/base --path core/java/android/accessibilityservice/AccessibilityButtonController.java --tag android-17.0.0_r1
+android-api-diff query --name "IActivityManager.getTasks" --min-sdk 28
+android-api-diff generate --name "ActivityThread.currentApplication" --min-sdk 28
 android-api-diff preload "ContentObserver()" "IActivityManager.getTasks" --min-sdk 28
 ```
 
@@ -40,12 +39,49 @@ then uses its built-in default.
 Treat exit code `0` together with top-level `ok: true` as success. Read the
 operation result from the top-level `result` field.
 
-`resolve` returns `result.candidates` in recommended order, or an empty array
-when no source matches. `query` and `generate` include the same candidate list
-and inspect the recommended source by default. When the user specifies another
-matching source, pass `--source-path <path>` to `query` or `generate`; retain the
-original API reference to preserve its member or constructor target. Candidate
-metadata alone does not prove that a member exists in a particular version.
+`search` returns `result.candidates` with repository-relative `repo` and `path`,
+indexed `availableTags`, and reference metadata. `query` and `generate` accept
+`--name <reference>` or `--repo <repo> --path <path> --target <reference>`.
+Use `--anchor-tag <tag>` to select a specific initial definition. Without a target,
+`query` pins the exact file; type/member queries follow repository/path moves by
+fully qualified type identity.
+
+## Select a source
+
+Search text and `--name` accept an API reference, a file path, or a full repository
+prefix followed by the search text. For example:
+
+```sh
+android-api-diff query --name "platform/frameworks/base/core/java/android/content/pm/UserInfo.java"
+android-api-diff query --name "platform/frameworks/base/UserInfo.name"
+```
+
+A recognized repository prefix limits matching to that repository before matching
+the remaining text. Use the complete name, such as `platform/frameworks/base`,
+not the shorthand `base`. Repository-prefixed searches stay within that repository;
+use an unprefixed API reference to follow cross-repository moves. An explicit
+`--repo ... --path ... --target ...` selects the initial definition and still follows
+type identity across moves; it is not equivalent to a repository-prefixed search.
+
+When a file path appears in multiple repositories, including in different historical
+tags, use `repo/path` to identify the intended repository. A unique path can remain
+repository-relative. File-path queries inspect files, not a member formerly entered
+in the search text; use an API reference or `--target` for member queries.
+
+Default selection ranks suffix first (`.java` before `.aidl`, including `I`-prefixed
+interfaces), then repository (`platform/frameworks/base` before other repositories),
+then configured path preferences, with repository/path lexical order breaking ties.
+Simple searches choose the first matching definition rather than requiring manual
+selection for duplicate names. Inspect the selected source in the result and use
+explicit source options when the user intends another definition. Explicit selection
+and known historical redirect/superseded-definition rules remain applicable.
+
+## Interpret version coverage
+
+Read `result.tags` for each tag's actual source and status. `unknown` and
+`ambiguous` are not evidence of API absence. The bundled index contains audited
+snapshots, not every enumerated release tag. Code generation rejects incomplete
+or ambiguous histories. Candidate metadata alone does not establish availability.
 
 For `query`, describe range endpoints as the first or last tag checked in the
 current snapshot. A `last-checked` endpoint is not a promise that no later
