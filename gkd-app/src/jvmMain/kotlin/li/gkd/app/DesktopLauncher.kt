@@ -379,9 +379,9 @@ fun runDesktop(args: Array<String>) {
                                 GkDesktopBackHandler(overlay = true, onBack = dismiss)
                             },
                     ) {
-                        // The JVM resource environment reads Locale.getDefault(); recreate resource
-                        // consumers on language changes.
-                        key(size.locale) {
+                        val locale by
+                            li.gkd.app.settings.AppLanguage.locale.collectAsStateWithLifecycle()
+                        li.gkd.app.ui.component.GkLanguageEnvironment(locale) {
                             Surface(Modifier.fillMaxSize()) {
                                 GkAndroidWindow(
                                     size.copy(dark = darkTheme),

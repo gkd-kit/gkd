@@ -61,6 +61,7 @@ import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.launchLogged
 import li.gkd.db.A11yEventLog
 import li.gkd.db.Db
+import org.jetbrains.compose.resources.stringResource
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
@@ -77,14 +78,15 @@ class EventService : OverlayWindowService(positionKey = "event") {
     override fun ComposeContent() {
         if (minimized) {
             val alpha = 0.75f
+            val restoreLabel = stringResource(Res.string.event_log_window_restore)
             GkIcon(
                 imageVector = GkIcons.ExpandContent,
-                contentDescription = Res.string.event_log_window_restore.getSync(),
+                contentDescription = restoreLabel,
                 modifier =
                     Modifier.clip(MaterialTheme.shapes.small)
                         .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha))
                         .semantics {
-                            onClick(label = Res.string.event_log_window_restore.getSync()) {
+                            onClick(label = restoreLabel) {
                                 minimized = false
                                 true
                             }
@@ -113,14 +115,17 @@ class EventService : OverlayWindowService(positionKey = "event") {
                 ) {
                     ClosableTitle(
                         title =
-                            if (
-                                A11yService.isRunning.collectAsStateWithLifecycle().value ||
-                                    uiAutomationFlow.collectAsStateWithLifecycle().value != null
-                            )
-                                Res.string.event_service_label.getSync()
-                            else Res.string.event_service_no_permission.getSync(),
+                            stringResource(
+                                if (
+                                    A11yService.isRunning.collectAsStateWithLifecycle().value ||
+                                        uiAutomationFlow.collectAsStateWithLifecycle().value != null
+                                )
+                                    Res.string.event_service_label
+                                else Res.string.event_service_no_permission,
+                            ),
                         onMinimizeRequest = { minimized = true },
-                        minimizeContentDescription = Res.string.event_log_window_minimize.getSync(),
+                        minimizeContentDescription =
+                            stringResource(Res.string.event_log_window_minimize),
                     )
                     val textStyle = MaterialTheme.typography.labelSmall
                     CompositionLocalProvider(
@@ -153,7 +158,13 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
                                     if (count > 0) {
-                                        Text(text = Res.string.event_pending_count.getSync(count))
+                                        Text(
+                                            text =
+                                                stringResource(
+                                                    Res.string.event_pending_count,
+                                                    count,
+                                                ),
+                                        )
                                     }
                                     GkIconButton(
                                         imageVector = GkIcons.ArrowDownward,
@@ -204,7 +215,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
         }
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.event_service_label.getSync(),
+            name = Res.string.event_service_label,
         )
     }
 

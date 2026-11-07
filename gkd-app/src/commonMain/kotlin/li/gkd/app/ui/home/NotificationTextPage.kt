@@ -2,14 +2,12 @@ package li.gkd.app.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -17,21 +15,26 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import li.gkd.app.META
 import li.gkd.app.notif.formatNotificationTemplate
 import li.gkd.app.resources.*
 import li.gkd.app.rule.ruleGroupState
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.state.Loadable
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkPageBottomSpace
-import li.gkd.app.ui.component.GkSwitch
 import li.gkd.app.ui.component.GkTemplateVariableRow
+import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.navigation.GkEditor
 import li.gkd.app.ui.page.EditorSaveResult
 import li.gkd.app.ui.page.EditorSession
@@ -45,6 +48,9 @@ fun NotificationTextPage() {
     val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val vm = viewModel { NotificationTextViewModel() }
+    val focusManager = LocalFocusManager.current
+    var titleFocused by remember { mutableStateOf(false) }
+    var subtitleFocused by remember { mutableStateOf(false) }
     val rules by ruleGroupState.collectAsStateWithLifecycle()
     val count by SettingsRepository.actionCount.collectAsStateWithLifecycle()
     val groups = rules.value?.groups
@@ -58,9 +64,21 @@ fun NotificationTextPage() {
         )
     }
 
-    val enabled by vm.enabled.collectAsStateWithLifecycle()
+    val titleEnabled by vm.titleEnabled.collectAsStateWithLifecycle()
+    val subtitleEnabled by vm.subtitleEnabled.collectAsStateWithLifecycle()
     val title by vm.title.collectAsStateWithLifecycle()
     val text by vm.text.collectAsStateWithLifecycle()
+    val defaultText =
+        when (val state = rules) {
+            Loadable.Loading -> stringResource(Res.string.config_loading)
+            is Loadable.Failure -> stringResource(Res.string.data_load_failed)
+            is Loadable.Ready -> {
+                val summary =
+                    dashboardSummary(state.value.groups) ?: stringResource(Res.string.rules_empty)
+                if (count > 0) stringResource(Res.string.action_count_summary, summary, count)
+                else summary
+            }
+        }
 
     GkEditor(
         EditorSession(
@@ -87,35 +105,20 @@ fun NotificationTextPage() {
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                Column(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .toggleable(
-                                value = enabled,
-                                role = Role.Switch,
-                                onValueChange = { vm.setEnabled(it) },
-                            )
-                            .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text(
-                            stringResource(Res.string.notification_text_custom),
-                            modifier = Modifier.weight(1f),
-                        )
-                        GkSwitch(checked = enabled, onCheckedChange = null)
+            GkTextSwitch(
+                title = stringResource(Res.string.notification_title_custom),
+                checked = titleEnabled,
+                onCheckedChange = { enabled ->
+                    if (!enabled && titleFocused) {
+                        focusManager.clearFocus()
+                        host.hideIme()
                     }
-                }
-            }
+                    vm.setTitleEnabled(enabled)
+                },
+                paddingDisabled = true,
+            )
             OutlinedTextField(
+                enabled = titleEnabled,
                 value = title,
                 onValueChange = { vm.setTitle(it.filter { c -> c !in "\n\r" }.take(32)) },
                 label = { Text(stringResource(Res.string.notification_title_label)) },
@@ -128,12 +131,25 @@ fun NotificationTextPage() {
                         textAlign = TextAlign.End,
                     )
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().onFocusChanged { titleFocused = it.isFocused },
+            )
+            GkTextSwitch(
+                title = stringResource(Res.string.notification_subtitle_custom),
+                checked = subtitleEnabled,
+                onCheckedChange = { enabled ->
+                    if (!enabled && subtitleFocused) {
+                        focusManager.clearFocus()
+                        host.hideIme()
+                    }
+                    vm.setSubtitleEnabled(enabled)
+                },
+                paddingDisabled = true,
             )
             OutlinedTextField(
+                enabled = subtitleEnabled,
                 value = text,
                 onValueChange = { vm.setText(it.take(64)) },
-                label = { Text(stringResource(Res.string.notification_body_label)) },
+                label = { Text(stringResource(Res.string.notification_subtitle_label)) },
                 placeholder = { Text(stringResource(Res.string.template_text_input_hint)) },
                 minLines = 2,
                 maxLines = 4,
@@ -144,9 +160,13 @@ fun NotificationTextPage() {
                         textAlign = TextAlign.End,
                     )
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier.fillMaxWidth().onFocusChanged { subtitleFocused = it.isFocused },
             )
-            NotificationTextPreview(renderPreview(title), renderPreview(text))
+            NotificationTextPreview(
+                if (titleEnabled) renderPreview(title) else META.appName,
+                if (subtitleEnabled) renderPreview(text) else defaultText,
+            )
             NotificationTemplateVariables()
             GkPageBottomSpace()
         }
@@ -176,10 +196,12 @@ private fun NotificationTextPreview(title: String, text: String) {
                 title,
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            if (text.isNotEmpty()) {
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }

@@ -57,6 +57,24 @@ sealed class DarkThemeOption(
     }
 }
 
+sealed class LanguageOption(
+    override val value: String?,
+    override val labelResource: StringResource,
+) : Option<String?> {
+    override val options
+        get() = objects
+
+    data object FollowSystem : LanguageOption(null, Res.string.language_follow_system)
+
+    data object Chinese : LanguageOption("zh", Res.string.language_chinese)
+
+    data object English : LanguageOption("en", Res.string.language_english)
+
+    companion object {
+        val objects by lazy { listOf(FollowSystem, Chinese, English) }
+    }
+}
+
 sealed interface BinaryOption : Option<Int> {
     fun include(flag: Int): Boolean = (value and flag) != 0
 

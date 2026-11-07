@@ -94,4 +94,4 @@ Text(stringResource(Res.string.app_count, apps.size.toString()))
 
 领域和存储错误保留语义、参数与原因，由共享 UI 映射资源；订阅/规则使用 `SubscriptionException`，仓库不接收文案适配器。默认订阅名称只用于创建缺失记录，已有用户名称优先。
 
-普通 Android Kotlin 文案同样使用 Compose Resources；只有系统标签和构建变体等需要原生 ID 的内容留在 gkd-android 的 res 中。`validateStringResources` 只校验占位符，官方插件负责访问器、限定符和打包。翻译使用官方语言目录；当前只有默认中文资源。
+普通 Android Kotlin 文案同样使用 Compose Resources；只有系统标签和构建变体等需要原生 ID 的内容留在 gkd-android 的 res 中。`validateStringResources` 校验占位符、翻译参数及复数的 other 分支，官方插件负责访问器、限定符和打包。默认资源为英文，简体中文位于 `values-zh`。语言选择保存在 `SettingsStore.languageTag`，`null` 表示跟随系统；Android 13 及以上与系统应用语言双向同步，Desktop 的模拟语言作为“跟随系统”的输入。

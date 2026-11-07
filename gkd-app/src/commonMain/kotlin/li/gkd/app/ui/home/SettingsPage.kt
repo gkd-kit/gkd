@@ -10,19 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import li.gkd.app.META
-import li.gkd.app.model.findOption
 import li.gkd.app.notif.formatNotificationTemplate
 import li.gkd.app.resources.*
 import li.gkd.app.rule.ruleGroupState
@@ -31,7 +24,6 @@ import li.gkd.app.state.Loadable
 import li.gkd.app.ui.MainViewModel
 import li.gkd.app.ui.component.GkPageBottomSpace
 import li.gkd.app.ui.component.GkSettingItem
-import li.gkd.app.ui.component.GkTextMenu
 import li.gkd.app.ui.component.GkTextSwitch
 import li.gkd.app.ui.component.GkTopAppBar
 import li.gkd.app.ui.component.gkTopAppBarScroll
@@ -41,15 +33,14 @@ import li.gkd.app.ui.navigation.ActionToastRoute
 import li.gkd.app.ui.navigation.AdvancedPageRoute
 import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
+import li.gkd.app.ui.navigation.InterfaceSettingsRoute
 import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.navigation.TouchOptimizationRoute
-import li.gkd.app.ui.option.DarkThemeOption
 import li.gkd.app.ui.page.BackupDialog
 import li.gkd.app.ui.page.GkBackupDialogs
 import li.gkd.app.ui.platform.LocalUiHost
-import li.gkd.app.ui.platform.dynamicColorAvailable
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.titleItemPadding
 import org.jetbrains.compose.resources.getString
@@ -64,11 +55,6 @@ fun settingsPage(
     val scope = rememberCoroutineScope()
     val appName = META.appName
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    var selectedTheme by
-        remember(store.enableDarkTheme) {
-            mutableStateOf(store.enableDarkTheme)
-        }
-    var themeUpdateJob by remember { mutableStateOf<Job?>(null) }
     val backupDialog by vm.backupDialog.collectAsStateWithLifecycle()
     GkBackupDialogs(
         dialog = backupDialog,
@@ -161,7 +147,8 @@ fun settingsPage(
 
                 val title =
                     if (store.useCustomNotifText) format(store.customNotifTitle) else appName
-                val text = if (store.useCustomNotifText) format(store.customNotifText) else summary
+                val text =
+                    if (store.useCustomNotifSubtitle) format(store.customNotifText) else summary
                 GkSettingItem(
                     stringResource(Res.string.notification_text),
                     subtitle =
@@ -232,48 +219,16 @@ fun settingsPage(
                 }
 
                 Text(
-                    text = stringResource(Res.string.settings_appearance),
-                    modifier = Modifier.titleItemPadding(),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-
-                GkTextMenu(
-                    title = stringResource(Res.string.theme_mode),
-                    option = DarkThemeOption.objects.findOption(selectedTheme),
-                    onOptionChange = { option ->
-                        selectedTheme = option.value
-                        themeUpdateJob?.cancel()
-                        themeUpdateJob =
-                            mainVm.scope.launch {
-                                // Let the menu close before changing the application's colors.
-                                delay(300)
-                                SettingsRepository.updateSettings {
-                                    it.copy(enableDarkTheme = option.value)
-                                }
-                            }
-                    },
-                )
-
-                if (dynamicColorAvailable()) {
-                    GkTextSwitch(
-                        title = stringResource(Res.string.dynamic_colors),
-                        checked = store.enableDynamicColor,
-                        onCheckedChange = {
-                            SettingsRepository.updateSettings { store ->
-                                store.copy(enableDynamicColor = it)
-                            }
-                        },
-                    )
-                }
-
-                Text(
                     text = stringResource(Res.string.settings_other),
                     modifier = Modifier.titleItemPadding(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
 
+                GkSettingItem(
+                    title = stringResource(Res.string.settings_interface),
+                    onClick = { mainVm.navigator.navigate(InterfaceSettingsRoute) },
+                )
                 GkSettingItem(
                     title = stringResource(Res.string.backup_restore),
                     onClick = {

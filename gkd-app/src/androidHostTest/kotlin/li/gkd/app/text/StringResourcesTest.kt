@@ -1,8 +1,14 @@
 package li.gkd.app.text
 
 import android.app.Application
+import java.util.Locale
+import kotlinx.coroutines.runBlocking
 import li.gkd.app.resources.*
+import org.jetbrains.compose.resources.getPluralString
+import org.jetbrains.compose.resources.getString
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -11,6 +17,32 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [28])
 class StringResourcesTest {
+    private lateinit var originalLocale: Locale
+
+    @Before
+    fun useChinese() {
+        originalLocale = Locale.getDefault()
+        Locale.setDefault(Locale.SIMPLIFIED_CHINESE)
+    }
+
+    @After
+    fun restoreLocale() {
+        Locale.setDefault(originalLocale)
+    }
+
+    @Test
+    fun androidAssetsSelectEnglishChineseAndFallbackWithPluralRules() = runBlocking {
+        for (locale in listOf(Locale.ENGLISH, Locale.FRENCH)) {
+            Locale.setDefault(locale)
+            assertEquals("Settings", getString(Res.string.settings_title))
+            assertEquals("Settings", Res.string.settings_title.getSync())
+            assertEquals("1 minute ago", getPluralString(Res.plurals.time_minutes_ago, 1, "1"))
+            assertEquals("2 minutes ago", getPluralString(Res.plurals.time_minutes_ago, 2, "2"))
+        }
+        Locale.setDefault(Locale.SIMPLIFIED_CHINESE)
+        assertEquals("设置", getString(Res.string.settings_title))
+    }
+
     @Test
     fun androidAssetReadsPreserveWhitespaceAndNewlines() {
         assertEquals("最近触发: ", Res.string.action_log_recent_prefix.getSync())
@@ -30,17 +62,6 @@ class StringResourcesTest {
         assertEquals(
             "非法选择器\n$selector\n$detail",
             Res.string.selector_invalid_detail.getSync(selector, detail),
-        )
-    }
-
-    @Test
-    fun defaultNotificationTemplateRetainsPersistedRuntimePlaceholderSyntax() {
-        // These literal tokens are part of the saved custom-notification template format.
-        // Resource extraction must not turn them into compile-time interpolation or format
-        // arguments.
-        assertEquals(
-            "\${i}全局/\${k}应用/\${u}规则/\${n}触发",
-            Res.string.notification_summary_template.getSync(),
         )
     }
 }

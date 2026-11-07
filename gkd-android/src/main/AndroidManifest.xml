@@ -27,6 +27,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locale_config"
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="false"
@@ -61,6 +62,7 @@
 
         <activity
             android:name="li.gkd.app.MainActivity"
+            android:configChanges="locale|layoutDirection|screenLayout|orientation|screenSize|smallestScreenSize"
             android:enableOnBackInvokedCallback="false"
             android:exported="true"
             android:launchMode="singleTask"

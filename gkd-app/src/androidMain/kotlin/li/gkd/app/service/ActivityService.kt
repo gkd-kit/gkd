@@ -45,7 +45,6 @@ import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.style.iconTextSize
 import li.gkd.app.util.IntentUtils
 import li.gkd.app.util.copyText
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 class ActivityService :
@@ -140,7 +139,7 @@ class ActivityService :
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.activity_record_service.getSync(),
+            name = Res.string.activity_record_service,
         )
         onCreated {
             NotificationCatalog.activity().startForeground()
@@ -150,7 +149,7 @@ class ActivityService :
                     .distinctUntilChanged()
                     .collect { text ->
                         NotificationCatalog.activity(
-                                text = text ?: getString(Res.string.unknown),
+                                text = text,
                             )
                             .startForeground()
                     }

@@ -3,6 +3,7 @@ package li.gkd.app.settings
 import androidx.lifecycle.ViewModelStore
 import java.io.File
 import java.io.IOException
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -49,6 +50,33 @@ object SettingsRepositoryChecks {
                 ),
             ) {}
             assertEquals(original, repo.exportBackupEntries())
+            // Legacy settings omit languageTag. Language changes must persist and restore without
+            // rewriting saved notification templates, including after a failed restore.
+            assertNull(repo.settings.value.languageTag)
+            val template = repo.settings.value.customNotifText
+            repo.updateSettings { it.copy(languageTag = "en") }
+            repo.awaitPersistence()
+            assertEquals("en", diskSettings().languageTag)
+            assertEquals("en", Locale.getDefault().language)
+            assertEquals(template, diskSettings().customNotifText)
+            val englishBackup = repo.exportBackupEntries()
+            repo.updateSettings { it.copy(languageTag = "zh") }
+            repo.awaitPersistence()
+            assertFailsWith<IOException> {
+                repo.withBackupRestore(englishBackup) { throw IOException("restore interrupted") }
+            }
+            assertEquals("zh", diskSettings().languageTag)
+            assertEquals("zh", Locale.getDefault().language)
+            repo.withBackupRestore(englishBackup) {}
+            assertEquals("en", diskSettings().languageTag)
+            assertEquals("en", Locale.getDefault().language)
+            updateSystemLanguage("zh-CN")
+            assertEquals("en", Locale.getDefault().language)
+            repo.updateSettings { it.copy(languageTag = null) }
+            repo.awaitPersistence()
+            assertNull(diskSettings().languageTag)
+            assertEquals("zh", Locale.getDefault().language)
+            repo.withBackupRestore(original) {}
             checkCorruptSettingsPreservation(directory.resolve("decode-checks").apply { mkdirs() })
             repo.updateSettings {
                 it.copy(
@@ -272,10 +300,22 @@ object SettingsRepositoryChecks {
 
                 // A failed overlay write must not make successful, unrelated editor saves fail.
                 repo.saveActionToast(true, false, "Independent toast")
-                repo.saveNotificationText(true, "Independent title", "Independent notification")
+                repo.saveNotificationText(
+                    true,
+                    false,
+                    "Independent title",
+                    "Independent notification",
+                )
                 assertEquals("Independent toast", diskSettings().actionToast)
                 assertEquals("Independent title", diskSettings().customNotifTitle)
                 assertEquals("Independent notification", diskSettings().customNotifText)
+                assertTrue(diskSettings().useCustomNotifText)
+                assertFalse(diskSettings().useCustomNotifSubtitle)
+                // The subtitle flag is independent; an enabled empty body must survive storage.
+                repo.saveNotificationText(false, true, "Independent title", "")
+                assertFalse(diskSettings().useCustomNotifText)
+                assertTrue(diskSettings().useCustomNotifSubtitle)
+                assertEquals("", diskSettings().customNotifText)
                 val independentWhitelist =
                     AppWhitelistViewModel().also {
                         owner.put("independent-whitelist", it)

@@ -19,6 +19,7 @@ import li.gkd.app.ui.settings.AdvancedPage
 import li.gkd.app.ui.settings.AppWhitelistPage
 import li.gkd.app.ui.settings.DebugSettingsPage
 import li.gkd.app.ui.settings.ExternalCallsPage
+import li.gkd.app.ui.settings.InterfaceSettingsPage
 import li.gkd.app.ui.settings.KeepAlivePage
 import li.gkd.app.ui.settings.QuickSettingsTilesPage
 import li.gkd.app.ui.settings.ServiceScopeAppListPage
@@ -81,6 +82,7 @@ fun GkAppNavigation() {
                 BlockA11ySetupRoute -> BlockA11ySetupPage()
                 AdvancedPageRoute -> AdvancedPage(entry)
                 DebugSettingsRoute -> DebugSettingsPage()
+                InterfaceSettingsRoute -> InterfaceSettingsPage()
                 KeepAliveRoute -> KeepAlivePage()
                 TouchOptimizationRoute -> TouchOptimizationPage()
                 MatchDebugRoute -> MatchDebugPage()

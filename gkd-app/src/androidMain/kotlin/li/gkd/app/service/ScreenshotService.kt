@@ -47,7 +47,7 @@ class ScreenshotService : LifecycleHookService() {
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.screenshot_service.getSync(),
+            name = Res.string.screenshot_service,
         )
         useStopServiceReceiver()
         onCreated {

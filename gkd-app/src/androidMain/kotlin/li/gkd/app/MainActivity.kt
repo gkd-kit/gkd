@@ -9,13 +9,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
+import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
@@ -39,10 +39,8 @@ import li.gkd.app.ui.component.LocalTopBarWindowInsets
 import li.gkd.app.ui.createMainViewModel
 import li.gkd.app.ui.share.ActivityImeController
 import li.gkd.app.ui.share.ActivityResultRequests
-import li.gkd.app.ui.share.FixedWindowInsets
 import li.gkd.app.ui.theme.installThemedSplashScreen
 import li.gkd.app.util.AndroidTarget
-import li.gkd.app.util.BarUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.mapState
 import li.gkd.app.util.tryStartActivity
@@ -58,8 +56,6 @@ class MainActivity : ComponentActivity() {
     val imeController = ActivityImeController(this)
     private val activityResultHost = ActivityResultRequests.Host(this)
     private val permissionRequestHost = PermissionRequests.Host(this)
-
-    var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusHeight()))
 
     init {
         useMainActivityLifecycle()
@@ -126,11 +122,12 @@ class MainActivity : ComponentActivity() {
         }
         StatusService.autoStart()
         setContent {
-            val latestInsets = TopAppBarDefaults.windowInsets
-            val density = LocalDensity.current
-            if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
-                topBarWindowInsets = FixedWindowInsets(latestInsets)
-            }
+            // Keep app bars stable when fullscreen hides system bars, while following window
+            // changes.
+            val topBarWindowInsets =
+                WindowInsets.systemBarsIgnoringVisibility
+                    .union(WindowInsets.displayCutout)
+                    .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
             CompositionLocalProvider(
                 LocalTopBarWindowInsets provides topBarWindowInsets,
             ) {

@@ -25,6 +25,7 @@ import li.gkd.app.util.launchLogged
 import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeConfig
 import priv.kit.core.PrivilegeServerInfo
+import priv.kit.core.userservice.PrivilegeUserServiceProcess
 import priv.kit.core.userservice.PrivilegeUserServiceSpec
 
 val currentUserId by lazy { Process.myUserHandle().hashCode() }
@@ -38,7 +39,7 @@ private val userServiceSpec =
     PrivilegeUserServiceSpec(
         serviceClassName = UserService::class.java.name,
         version = 8, // Bump whenever the UserService implementation or its AIDL contract changes.
-        embedded = true,
+        process = PrivilegeUserServiceProcess.EMBEDDED,
     )
 
 private suspend fun clearPrivilegeContext(context: PrivilegeContext) {

@@ -308,7 +308,7 @@ class TrackService : LifecycleHookService(), SavedStateRegistryOwner {
         useLogLifecycle()
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.track_overlay.getSync(),
+            name = Res.string.track_overlay,
         )
         useStopServiceReceiver()
         onCreated {

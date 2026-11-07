@@ -50,7 +50,7 @@ class ButtonService :
     init {
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.snapshot_button_service.getSync(),
+            name = Res.string.snapshot_button_service,
         )
         onCreated {
             NotificationCatalog.button().startForeground()

@@ -85,6 +85,8 @@ data class ActionLogRoute(
 
 @Serializable data object DebugSettingsRoute : AppRoute
 
+@Serializable data object InterfaceSettingsRoute : AppRoute
+
 @Serializable data object KeepAliveRoute : AppRoute
 
 @Serializable data object TouchOptimizationRoute : AppRoute

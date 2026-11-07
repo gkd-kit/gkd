@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.animation.doOnEnd
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
@@ -49,7 +50,9 @@ import li.gkd.app.app
 import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.permission.PermissionStates
 import li.gkd.app.resources.*
+import li.gkd.app.settings.AppLanguage
 import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.ui.component.GkAndroidLanguageEnvironment
 import li.gkd.app.ui.component.GkIcon
 import li.gkd.app.ui.component.GkIcons
 import li.gkd.app.ui.icon.DragPan
@@ -194,14 +197,17 @@ abstract class OverlayWindowService(
             setViewTreeSavedStateRegistryOwner(this@OverlayWindowService)
             setViewTreeLifecycleOwner(this@OverlayWindowService)
             setContent {
-                AppTheme(invertedTheme = true) {
-                    Box(
-                        modifier =
-                            Modifier.drawWithContent {
-                                if (!shareContext.overlayContentHidden) drawContent()
-                            },
-                    ) {
-                        ComposeContent()
+                val locale by AppLanguage.locale.collectAsStateWithLifecycle()
+                GkAndroidLanguageEnvironment(locale) {
+                    AppTheme(invertedTheme = true) {
+                        Box(
+                            modifier =
+                                Modifier.drawWithContent {
+                                    if (!shareContext.overlayContentHidden) drawContent()
+                                },
+                        ) {
+                            ComposeContent()
+                        }
                     }
                 }
             }

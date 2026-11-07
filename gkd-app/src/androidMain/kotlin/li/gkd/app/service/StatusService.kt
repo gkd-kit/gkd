@@ -27,6 +27,7 @@ import li.gkd.app.priv.privilegeServiceStatusFlow
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.resources.*
 import li.gkd.app.rule.RuleSummary
+import li.gkd.app.settings.AppLanguage
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.SettingsRepository.actionCount
 import li.gkd.app.settings.SettingsRepository.settings
@@ -78,28 +79,28 @@ class StatusService : LifecycleHookService() {
                     store.useA11y -> getString(Res.string.a11y_stopped)
                     else -> getString(Res.string.automation_stopped)
                 }
-            Triple(title, text, defaultStatusNotification.uri)
+            Triple(title, text, null)
         } else if (!store.enableMatch) {
             Triple(title, getString(Res.string.rule_matching_pause), "gkd://page?tab=1")
-        } else if (store.useCustomNotifText) {
+        } else if (store.useCustomNotifSubtitle) {
             Triple(
                 title,
                 store.customNotifText.replaceNotificationTemplate(ruleSummary, count),
-                defaultStatusNotification.uri,
+                null,
             )
         } else {
-            Triple(title, RuleSummary.statusText(ruleSummary, count), defaultStatusNotification.uri)
+            Triple(title, RuleSummary.statusText(ruleSummary, count), null)
         }
     }
 
     init {
         useServicePresence(
             stateFlow = isRunning,
-            name = Res.string.persistent_notification.getSync(),
+            name = Res.string.persistent_notification,
             showStartToast = !app.justStarted,
         )
         onCreated {
-            if (!defaultStatusNotification.startForeground()) return@onCreated
+            if (!NotificationCatalog.status().startForeground()) return@onCreated
             lifecycleScope.launch {
                 combine(
                         A11yService.isRunning,
@@ -143,6 +144,7 @@ class StatusService : LifecycleHookService() {
                         PermissionStates.appOpsRestrictedFlow,
                         topTaskAppIdFlow,
                         actionCount.debounce(1000L.milliseconds),
+                        AppLanguage.locale,
                     ) {
                         statusTriple()
                     }
@@ -192,5 +194,3 @@ class StatusService : LifecycleHookService() {
         }
     }
 }
-
-private val defaultStatusNotification by lazy { NotificationCatalog.status() }

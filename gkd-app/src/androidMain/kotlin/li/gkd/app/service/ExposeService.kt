@@ -1,8 +1,6 @@
 package li.gkd.app.service
 
-import android.app.Service
 import android.content.Intent
-import android.os.Binder
 import li.gkd.app.appScope
 import li.gkd.app.external.ExternalCalls
 import li.gkd.app.notif.NotificationCatalog
@@ -12,9 +10,7 @@ import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 
-class ExposeService : Service() {
-    override fun onBind(intent: Intent?): Binder? = null
-
+class ExposeService : LifecycleHookService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         appScope.launchUi {
             try {
@@ -44,9 +40,8 @@ class ExposeService : Service() {
         }
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        NotificationCatalog.expose().startForeground()
+    init {
+        onCreated { NotificationCatalog.expose().startForeground() }
     }
 
     companion object {

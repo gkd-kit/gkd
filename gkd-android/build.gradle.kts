@@ -27,7 +27,7 @@ android {
         versionName = rootProject.extra["gkdVersionName"] as String
 
         androidResources {
-            localeFilters += listOf("zh-rCN", "en")
+            localeFilters += listOf("zh", "en")
         }
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")

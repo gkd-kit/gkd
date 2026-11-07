@@ -8,12 +8,14 @@ import li.gkd.app.service.ActivityService
 import li.gkd.app.service.ButtonService
 import li.gkd.app.service.DebugService
 import li.gkd.app.service.EventService
+import li.gkd.app.service.LifecycleHookService
 import li.gkd.app.service.MatchDiagnosticService
 import li.gkd.app.service.ScreenshotService
 import li.gkd.app.service.TrackService
 import li.gkd.app.snapshot.SnapshotScreenshotStatus
 import li.gkd.app.ui.navigation.AdvancedSection
 import li.gkd.app.util.Constants
+import org.jetbrains.compose.resources.StringResource
 
 enum class ForegroundNotificationKey(
     val id: Int,
@@ -51,11 +53,19 @@ sealed interface AppNotificationSpec {
 
 data class ForegroundNotification(
     val key: ForegroundNotificationKey,
-    override val title: String,
-    override val text: String? = null,
+    private val titleValue: String = "",
+    private val textValue: String? = null,
+    private val titleResource: StringResource? = null,
+    private val textResource: StringResource? = null,
     override val uri: String? = null,
     override val stopService: KClass<out Service>? = null,
 ) : AppNotificationSpec {
+    override val title: String
+        get() = titleResource?.getSync() ?: titleValue
+
+    override val text: String?
+        get() = textResource?.getSync() ?: textValue
+
     override val id: Int
         get() = key.id
 
@@ -65,8 +75,8 @@ data class ForegroundNotification(
     override val ongoing = true
     override val autoCancel = false
 
-    context(service: Service)
-    fun startForeground() = NotificationDispatcher.startForeground(service, this)
+    context(service: LifecycleHookService)
+    fun startForeground() = service.showForegroundNotification(this)
 }
 
 data class PostedNotification(
@@ -94,10 +104,9 @@ object NotificationCatalog {
     fun matchDiagnostic(saving: Boolean = false) =
         ForegroundNotification(
             key = ForegroundNotificationKey.MatchDiagnostic,
-            title =
-                (if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing)
-                    .getSync(),
-            text = if (saving) null else Res.string.match_debug_notification_help.getSync(),
+            titleResource =
+                if (saving) Res.string.match_debug_saving else Res.string.match_debug_capturing,
+            textResource = if (saving) null else Res.string.match_debug_notification_help,
             uri = "gkd://page/matching-diagnostics",
             stopService = if (saving) null else MatchDiagnosticService::class,
         )
@@ -117,16 +126,16 @@ object NotificationCatalog {
     ) =
         ForegroundNotification(
             key = ForegroundNotificationKey.Status,
-            title = title,
-            text = text,
+            titleValue = title,
+            textValue = text,
             uri = uri,
         )
 
     fun screenshot() =
         ForegroundNotification(
             key = ForegroundNotificationKey.Screenshot,
-            title = Res.string.screenshot_capture_enabled.getSync(),
-            text = Res.string.screenshot_capture_notification_description.getSync(),
+            titleResource = Res.string.screenshot_capture_enabled,
+            textResource = Res.string.screenshot_capture_notification_description,
             uri = AdvancedSection.SnapshotSettings.uri,
             stopService = ScreenshotService::class,
         )
@@ -134,8 +143,8 @@ object NotificationCatalog {
     fun button() =
         ForegroundNotification(
             key = ForegroundNotificationKey.Button,
-            title = Res.string.snapshot_button_enabled.getSync(),
-            text = Res.string.snapshot_button_notification_description.getSync(),
+            titleResource = Res.string.snapshot_button_enabled,
+            textResource = Res.string.snapshot_button_notification_description,
             uri = AdvancedSection.SnapshotButton.uri,
             stopService = ButtonService::class,
         )
@@ -143,8 +152,8 @@ object NotificationCatalog {
     fun debug(port: Int, localNetworkIps: List<String> = emptyList()) =
         ForegroundNotification(
             key = ForegroundNotificationKey.Debug,
-            title = Res.string.debug_service_enabled.getSync(),
-            text =
+            titleResource = Res.string.debug_service_enabled,
+            textValue =
                 localNetworkIps
                     .ifEmpty { listOf(Constants.loopbackHost) }
                     .joinToString(", ") { "$it:$port" },
@@ -155,8 +164,8 @@ object NotificationCatalog {
     fun expose() =
         ForegroundNotification(
             key = ForegroundNotificationKey.Expose,
-            title = Res.string.external_call_processing.getSync(),
-            text = Res.string.external_call_notification_description.getSync(),
+            titleResource = Res.string.external_call_processing,
+            textResource = Res.string.external_call_notification_description,
         )
 
     fun snapshotSaved(
@@ -184,8 +193,9 @@ object NotificationCatalog {
     fun activity(text: String? = null) =
         ForegroundNotification(
             key = ForegroundNotificationKey.Activity,
-            title = Res.string.activity_info_showing.getSync(),
-            text = text,
+            titleResource = Res.string.activity_info_showing,
+            textValue = text,
+            textResource = if (text == null) Res.string.unknown else null,
             uri = AdvancedSection.Activity.uri,
             stopService = ActivityService::class,
         )
@@ -193,7 +203,7 @@ object NotificationCatalog {
     fun event() =
         ForegroundNotification(
             key = ForegroundNotificationKey.Event,
-            title = Res.string.a11y_events_recording.getSync(),
+            titleResource = Res.string.a11y_events_recording,
             uri = AdvancedSection.Event.uri,
             stopService = EventService::class,
         )
@@ -201,7 +211,7 @@ object NotificationCatalog {
     fun track() =
         ForegroundNotification(
             key = ForegroundNotificationKey.Track,
-            title = Res.string.track_overlay_enabled.getSync(),
+            titleResource = Res.string.track_overlay_enabled,
             uri = AdvancedSection.Track.uri,
             stopService = TrackService::class,
         )

@@ -215,15 +215,22 @@ object SettingsRepository {
         return changed
     }
 
-    suspend fun saveNotificationText(enabled: Boolean, title: String, text: String): Boolean {
+    suspend fun saveNotificationText(
+        titleEnabled: Boolean,
+        subtitleEnabled: Boolean,
+        title: String,
+        text: String,
+    ): Boolean {
         val store = settings.value
         val changed =
-            store.useCustomNotifText != enabled ||
+            store.useCustomNotifText != titleEnabled ||
+                store.useCustomNotifSubtitle != subtitleEnabled ||
                 store.customNotifTitle != title ||
                 store.customNotifText != text
         updateSettings {
             it.copy(
-                useCustomNotifText = enabled,
+                useCustomNotifText = titleEnabled,
+                useCustomNotifSubtitle = subtitleEnabled,
                 customNotifTitle = title,
                 customNotifText = text,
             )
@@ -392,6 +399,9 @@ object SettingsRepository {
         val previous = settings.value
         settingsValue.update(transform)
         val current = settings.value
+        if (previous.languageTag != current.languageTag) {
+            applyAppLanguage(current.languageTag)
+        }
         if (
             (previous.enableMatch && !current.enableMatch) ||
                 (previous.enableAutomator && !current.enableAutomator)
@@ -468,6 +478,7 @@ object SettingsRepository {
                 restores.forEach { it.awaitPersistence() }
                 val result = block()
                 restores.forEach { it.finish(true) }
+                applyAppLanguage(settings.value.languageTag)
                 result
             } catch (error: Throwable) {
                 withContext(NonCancellable) {

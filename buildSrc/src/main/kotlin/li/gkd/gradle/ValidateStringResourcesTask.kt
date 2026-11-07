@@ -28,11 +28,13 @@ abstract class ValidateStringResourcesTask : DefaultTask() {
     @TaskAction
     fun validate() {
         val source = resourceDirectory.get().asFile
+        val entries = mutableMapOf<String, MutableMap<String, Map<String, Set<String>>>>()
         source
             .listFiles()
             .orEmpty()
             .filter { it.isDirectory && it.name.startsWith("values") }
             .forEach { directory ->
+                val directoryEntries = entries.getOrPut(directory.name) { mutableMapOf() }
                 directory
                     .listFiles()
                     .orEmpty()
@@ -51,30 +53,59 @@ abstract class ValidateStringResourcesTask : DefaultTask() {
                         val root = document.documentElement
                         for (index in 0 until root.childNodes.length) {
                             val entry = root.childNodes.item(index) as? Element ?: continue
-                            require(
-                                entry.tagName in
-                                    setOf(
-                                        "string",
-                                        "plurals",
-                                        "string-array",
-                                    ),
-                            ) {
-                                "Unsupported resource: ${entry.tagName}"
-                            }
+                            if (entry.tagName !in setOf("string", "plurals", "string-array"))
+                                continue
                             val leaves =
                                 if (entry.tagName == "string") listOf(entry)
                                 else {
                                     val items = entry.getElementsByTagName("item")
                                     (0 until items.length).map { items.item(it) as Element }
                                 }
+                            if (entry.tagName == "plurals") {
+                                require(leaves.any { it.getAttribute("quantity") == "other" }) {
+                                    "${file.path}:${entry.getAttribute("name")}: missing other quantity"
+                                }
+                            }
                             leaves.forEach { leaf ->
                                 val value = leaf.textContent
                                 require(!Regex("%(?![1-9][0-9]*\\\$s)").containsMatchIn(value)) {
                                     "${file.name}:${entry.getAttribute("name")}: only numbered string placeholders are allowed; format values in Kotlin"
                                 }
                             }
+                            val key = "${entry.tagName}/${entry.getAttribute("name")}"
+                            directoryEntries[key] =
+                                leaves
+                                    .mapIndexed { index, leaf ->
+                                        val itemKey =
+                                            if (entry.tagName == "plurals")
+                                                leaf.getAttribute("quantity")
+                                            else index.toString()
+                                        itemKey to
+                                            Regex("%[1-9][0-9]*\\\$s|\\\$\\{[^}]+}")
+                                                .findAll(leaf.textContent)
+                                                .map { it.value }
+                                                .toSet()
+                                    }
+                                    .toMap()
                         }
                     }
+            }
+        val defaults = entries.getValue("values")
+        entries
+            .filterKeys { it != "values" }
+            .forEach { (directory, localized) ->
+                localized.forEach resource@{ (key, parameters) ->
+                    val original = defaults[key] ?: return@resource
+                    if (key.startsWith("plurals/")) {
+                        require(parameters.values.all { it == original.getValue("other") }) {
+                            "$directory:$key: translated plural parameters differ from default"
+                        }
+                    } else {
+                        require(parameters == original) {
+                            "$directory:$key: translated parameters differ from default"
+                        }
+                    }
+                }
             }
         // Gradle fingerprints the inputs and task implementation; this only records success.
         validationMarker.get().asFile.apply {

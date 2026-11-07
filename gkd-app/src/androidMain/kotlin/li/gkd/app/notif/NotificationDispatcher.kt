@@ -21,6 +21,9 @@ import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.componentName
 
 object NotificationDispatcher {
+    // Latest successfully published snapshots, removed when their owning service ends.
+    private val foregroundNotifications = mutableMapOf<Int, ForegroundNotification>()
+
     private val pendingIntentFlags
         get() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
@@ -67,6 +70,21 @@ object NotificationDispatcher {
         NotificationManagerCompat.from(app).notify(notification.id, build(notification))
     }
 
+    @SuppressLint("MissingPermission")
+    @Synchronized
+    fun refreshForegroundLanguages() {
+        val manager = NotificationManagerCompat.from(app)
+        // StatusService computes its translated status from its own state flow.
+        foregroundNotifications.values
+            .filter { it.key != ForegroundNotificationKey.Status }
+            .forEach { manager.notify(it.id, build(it)) }
+    }
+
+    @Synchronized
+    fun forgetForeground(id: Int) {
+        foregroundNotifications.remove(id)
+    }
+
     private fun Service.canStartForeground(): Boolean {
         if (!AndroidTarget.UPSIDE_DOWN_CAKE) return true
         val serviceInfo =
@@ -80,6 +98,7 @@ object NotificationDispatcher {
         return !usesSpecialUse || PermissionStates.foregroundServiceSpecialUse.updateAndGet()
     }
 
+    @Synchronized
     fun startForeground(service: Service, notification: ForegroundNotification): Boolean {
         if (!service.canStartForeground()) {
             service.stopSelf()
@@ -94,6 +113,7 @@ object NotificationDispatcher {
                 build(notification),
                 if (AndroidTarget.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST else -1,
             )
+            foregroundNotifications[notification.id] = notification
             true
         } catch (e: SecurityException) {
             service.canStartForeground()

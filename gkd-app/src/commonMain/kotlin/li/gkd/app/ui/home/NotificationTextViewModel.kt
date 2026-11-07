@@ -11,11 +11,18 @@ class NotificationTextViewModel : BaseViewModel() {
 
     private val initial = SettingsRepository.settings.value
 
-    val enabled: StateFlow<Boolean>
+    val titleEnabled: StateFlow<Boolean>
         field = MutableStateFlow(initial.useCustomNotifText)
 
-    fun setEnabled(value: Boolean) {
-        enabled.value = value
+    fun setTitleEnabled(value: Boolean) {
+        titleEnabled.value = value
+    }
+
+    val subtitleEnabled: StateFlow<Boolean>
+        field = MutableStateFlow(initial.useCustomNotifSubtitle)
+
+    fun setSubtitleEnabled(value: Boolean) {
+        subtitleEnabled.value = value
     }
 
     val title: StateFlow<String>
@@ -33,10 +40,16 @@ class NotificationTextViewModel : BaseViewModel() {
     }
 
     fun hasChanges() =
-        enabled.value != initial.useCustomNotifText ||
+        titleEnabled.value != initial.useCustomNotifText ||
+            subtitleEnabled.value != initial.useCustomNotifSubtitle ||
             title.value != initial.customNotifTitle ||
             text.value != initial.customNotifText
 
     suspend fun save() =
-        SettingsRepository.saveNotificationText(enabled.value, title.value, text.value)
+        SettingsRepository.saveNotificationText(
+            titleEnabled.value,
+            subtitleEnabled.value,
+            title.value,
+            text.value,
+        )
 }

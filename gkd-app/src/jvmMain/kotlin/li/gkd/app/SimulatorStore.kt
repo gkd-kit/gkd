@@ -1,6 +1,5 @@
 package li.gkd.app
 
-import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
@@ -16,7 +15,6 @@ class SimulatorStore(
 ) {
     init {
         initial.validate()
-        Locale.setDefault(Locale.forLanguageTag(initial.environment().locale))
     }
 
     var onServiceRunningChanged: ((SimulatedService, Boolean) -> Unit)? = null
@@ -24,6 +22,8 @@ class SimulatorStore(
     var onAppCatalogChanged: (() -> Unit)? = null
 
     var onTopAppChanged: ((String) -> Unit)? = null
+
+    var onLanguageChanged: ((String) -> Unit)? = null
 
     private val json = Json { encodeDefaults = true }
     private var hostBatteryPercent: Int? = null
@@ -76,7 +76,7 @@ class SimulatorStore(
         val persistent = next.persistent()
         if (persistent != previous.persistent()) save(persistent)
         if (next.environment().locale != previous.environment().locale) {
-            Locale.setDefault(Locale.forLanguageTag(next.environment().locale))
+            onLanguageChanged?.invoke(next.environment().locale)
         }
         settings.value = next
         SimulatedService.entries.forEach { service ->
