@@ -40,6 +40,26 @@ class AppRuleGroupCopyTest {
     }
 
     @Test
+    fun appImportKeepsGroupsAndScopeLinksWhenConflictingKeysOverflow() {
+        val first = group(Int.MAX_VALUE, "First")
+        val second = group(Int.MAX_VALUE, "Second", scopeKeys = listOf(Int.MIN_VALUE))
+        val linked = group(Int.MIN_VALUE, "Linked", scopeKeys = listOf(Int.MAX_VALUE))
+
+        val copied = parseCopiedApp(1L to first, 2L to second, 2L to linked)
+        val expected =
+            listOf(
+                first,
+                second.copy(key = Int.MIN_VALUE, scopeKeys = listOf(Int.MIN_VALUE + 1)),
+                linked.copy(key = Int.MIN_VALUE + 1, scopeKeys = listOf(Int.MIN_VALUE)),
+            )
+
+        assertEquals(expected, copied.groups)
+
+        val imported = destination().editResult { mergeApp(copied) }.expectValue()
+        assertEquals(expected, imported.apps.single().groups)
+    }
+
+    @Test
     fun scopeDoesNotBindToAnotherSubscriptionWhenGroupKeysAreUnique() {
         val first = group(1, "First", scopeKeys = listOf(7))
         val unrelated = group(7, "Unrelated")

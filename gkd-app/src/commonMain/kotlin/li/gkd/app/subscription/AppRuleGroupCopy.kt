@@ -12,7 +12,11 @@ fun prepareAppGroupsForCopy(groups: List<Pair<Long, RawAppGroup>>): List<RawAppG
             if (usedKeys.add(group.key)) {
                 group.key
             } else {
-                (requireNotNull(usedKeys.maxOrNull()) + 1).also(usedKeys::add)
+                var candidate = requireNotNull(usedKeys.maxOrNull()) + 1
+                while (!usedKeys.add(candidate)) {
+                    candidate++
+                }
+                candidate
             }
         (subsId to group.key) to key
     }
