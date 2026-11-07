@@ -939,7 +939,7 @@
     <string name="event_overlay_title">Accessibility event overlay</string>
     <string name="status_overlay_keep_alive">Keep alive with overlay</string>
     <string name="status_overlay_enable_title">Enable transparent keep-alive overlay?</string>
-    <string name="status_overlay_enable_description">A transparent overlay reduces system restrictions on background operation, but may cause a system “displaying over other apps” notification.</string>
+    <string name="status_overlay_enable_description">A transparent overlay reduces system restrictions on background operation, but may cause a system “displaying over other apps” notification, which you can ignore.</string>
     <string name="status_overlay_disable_title">Disable transparent keep-alive overlay?</string>
     <string name="status_overlay_disable_description">The system may restrict background operation and interrupt services.</string>
     <string name="advanced_snapshot_capture">Snapshot capture</string>

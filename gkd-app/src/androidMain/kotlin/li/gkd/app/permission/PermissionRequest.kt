@@ -71,6 +71,7 @@ class PermissionRequests(
                         AppPermission.IgnoreBatteryOptimizations ->
                             PermissionStates.ignoreBatteryOptimizations
                         AppPermission.QueryPackages -> PermissionStates.queryPackages
+                        AppPermission.DrawOverlays -> PermissionStates.drawOverlays
                     }
                 }
                 .toTypedArray(),

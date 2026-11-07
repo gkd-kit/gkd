@@ -1,61 +1,162 @@
 package li.gkd.app.platform.overlay
 
+import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.graphics.PixelFormat
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import li.gkd.app.app
+import li.gkd.app.appScope
 import li.gkd.app.logging.LogUtils
+import li.gkd.app.permission.PermissionStates
+import li.gkd.app.resources.*
+import li.gkd.app.service.A11yService
+import li.gkd.app.service.CompanionServiceController
+import li.gkd.app.settings.SettingsRepository
+import li.gkd.app.util.ToastUtils
 
 object KeepAliveOverlayCoordinator {
     enum class Source {
-        Status,
+        Application,
         Accessibility,
+        Companion,
     }
 
-    val statusAttached: StateFlow<Boolean>
-        field = MutableStateFlow(false)
-    val accessibilityAttached: StateFlow<Boolean>
-        field = MutableStateFlow(false)
+    private val applicationOverlay = MutableStateFlow<AttachedOverlay?>(null)
+    private val accessibilityOverlay = MutableStateFlow<AttachedOverlay?>(null)
+    private val companionOverlay = MutableStateFlow<AttachedOverlay?>(null)
 
-    private var statusOverlay: AttachedOverlay? = null
-    private var accessibilityOverlay: AttachedOverlay? = null
+    fun initialize() {
+        appScope.launch {
+            try {
+                combine(
+                        SettingsRepository.settings
+                            .map { it.enableStatusOverlay }
+                            .distinctUntilChanged(),
+                        PermissionStates.drawOverlays.stateFlow,
+                        combine(
+                            A11yService.isRunning,
+                            accessibilityOverlay,
+                            CompanionServiceController.instanceFlow,
+                            companionOverlay,
+                        ) { a11yRunning, a11yOverlay, companion, companionOverlay ->
+                            (a11yRunning && a11yOverlay != null) ||
+                                (companion != null && companionOverlay != null)
+                        },
+                    ) { enabled, granted, a11yAttached ->
+                        Pair(enabled && granted, a11yAttached)
+                    }
+                    .distinctUntilChanged()
+                    .collectLatest { (enabled, a11yAttached) ->
+                        when {
+                            !enabled -> release(Source.Application, app)
+                            a11yAttached -> releaseAfterHandoff(Source.Application, app)
+                            else ->
+                                acquire(
+                                        source = Source.Application,
+                                        owner = app,
+                                        context = app,
+                                        windowType =
+                                            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                                    )
+                                    .onFailure(LogUtils::d)
+                        }
+                    }
+            } finally {
+                release(Source.Application, app)
+            }
+        }
+    }
+
+    suspend fun acquireAccessibility(source: Source, service: AccessibilityService) {
+        val connectedAt = SystemClock.elapsedRealtime()
+        val retryDelays = longArrayOf(250, 750, 1500)
+        for (attempt in 0..retryDelays.size) {
+            if (attempt > 0) delay(retryDelays[attempt - 1])
+            val result =
+                acquire(
+                    source = source,
+                    owner = service,
+                    context = service,
+                    windowType = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                )
+            val elapsed = SystemClock.elapsedRealtime() - connectedAt
+            if (result.isSuccess) {
+                LogUtils.i(
+                    "$source keep-alive overlay attached: attempt=${attempt + 1}, elapsed=${elapsed}ms",
+                )
+                return
+            }
+            val retry =
+                result.exceptionOrNull() is WindowManager.BadTokenException &&
+                    attempt < retryDelays.size
+            LogUtils.w(
+                "$source keep-alive overlay failed: attempt=${attempt + 1}, elapsed=${elapsed}ms, retry=$retry",
+                result.exceptionOrNull(),
+            )
+            if (!retry) break
+        }
+        ToastUtils.show(Res.string.a11y_keep_alive_failed.getSync())
+    }
+
+    fun releaseAccessibilityAfterHandoff(source: Source, owner: Any) {
+        appScope.launch {
+            val replacement =
+                when {
+                    source != Source.Accessibility &&
+                        A11yService.isRunning.value &&
+                        accessibilityOverlay.value != null -> Source.Accessibility
+                    source != Source.Companion &&
+                        CompanionServiceController.instanceFlow.value != null &&
+                        companionOverlay.value != null -> Source.Companion
+                    SettingsRepository.settings.value.enableStatusOverlay &&
+                        PermissionStates.drawOverlays.value -> Source.Application
+                    else -> null
+                }
+            releaseAfterHandoff(source, owner, replacement)
+        }
+    }
 
     @Synchronized
-    fun acquire(
+    private fun acquire(
         source: Source,
         owner: Any,
         context: Context,
         windowType: Int,
     ): Result<Unit> {
-        val current = get(source)
+        val state = overlayState(source)
+        val current = state.value
         if (current?.owner === owner) return Result.success(Unit)
         val overlay = runCatching {
             KeepAliveOverlay(context, windowType)
         }
-            .onFailure(LogUtils::d)
             .getOrElse {
                 return Result.failure(it)
             }
         current?.overlay?.close()
-        set(source, AttachedOverlay(owner, overlay))
-        attachedState(source).value = true
+        state.value = AttachedOverlay(owner, overlay)
         return Result.success(Unit)
     }
 
-    suspend fun releaseAfterHandoff(
+    private suspend fun releaseAfterHandoff(
         source: Source,
         owner: Any,
         replacement: Source? = null,
     ) {
         if (replacement != null) {
             withTimeoutOrNull(HANDOFF_DELAY_MILLIS) {
-                attachedState(replacement).first { it }
+                overlayState(replacement).first { it != null }
             }
         }
         delay(HANDOFF_DELAY_MILLIS)
@@ -63,31 +164,19 @@ object KeepAliveOverlayCoordinator {
     }
 
     @Synchronized
-    fun release(source: Source, owner: Any) {
-        val current = get(source)
+    private fun release(source: Source, owner: Any) {
+        val state = overlayState(source)
+        val current = state.value
         if (current?.owner !== owner) return
-        set(source, null)
-        attachedState(source).value = false
+        state.value = null
         current.overlay.close()
     }
 
-    private fun get(source: Source): AttachedOverlay? =
+    private fun overlayState(source: Source): MutableStateFlow<AttachedOverlay?> =
         when (source) {
-            Source.Status -> statusOverlay
+            Source.Application -> applicationOverlay
             Source.Accessibility -> accessibilityOverlay
-        }
-
-    private fun set(source: Source, value: AttachedOverlay?) {
-        when (source) {
-            Source.Status -> statusOverlay = value
-            Source.Accessibility -> accessibilityOverlay = value
-        }
-    }
-
-    private fun attachedState(source: Source): MutableStateFlow<Boolean> =
-        when (source) {
-            Source.Status -> statusAttached
-            Source.Accessibility -> accessibilityAttached
+            Source.Companion -> companionOverlay
         }
 
     private data class AttachedOverlay(

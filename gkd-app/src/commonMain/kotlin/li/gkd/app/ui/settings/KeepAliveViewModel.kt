@@ -3,6 +3,7 @@ package li.gkd.app.ui.settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import li.gkd.app.permission.AppPermission
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.ui.MainViewModel
@@ -33,6 +34,14 @@ class KeepAliveViewModel : BaseViewModel() {
                         dismissOnRequest = true,
                     )
             if (confirmed) {
+                if (
+                    enabled &&
+                        !MainViewModel.requireCurrent()
+                            .permissions
+                            .ensurePermissions(AppPermission.DrawOverlays)
+                ) {
+                    return@launch
+                }
                 SettingsRepository.updateSettings { it.copy(enableStatusOverlay = enabled) }
             }
         }

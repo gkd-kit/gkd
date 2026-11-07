@@ -16,6 +16,8 @@ class SimulatorPermissionRequester(private val simulator: SimulatorStore) : Perm
                         simulator.settings.value.permissions.ignoreBatteryOptimizations
                     AppPermission.QueryPackages ->
                         simulator.settings.value.permissions.canQueryPackages
+                    AppPermission.DrawOverlays ->
+                        simulator.settings.value.permissions.overlayGranted
                 }
             if (!granted) {
                 ToastUtils.show(getString(Res.string.platform_action_unsupported))

@@ -151,8 +151,9 @@ class DesktopRuntime(
         val settings = SettingsRepository.settings.value
         val current = simulator.settings.value
         val enabled =
-            settings.enableAutomator &&
-                (current.services.serviceEnabled || current.services.automationRunning) &&
+            settings.useAutomation &&
+                settings.enableAutomator &&
+                current.services.automationRunning &&
                 !AppScopePolicy.blocksCompanion(
                     settings,
                     SettingsRepository.companionScopeAppList.value,

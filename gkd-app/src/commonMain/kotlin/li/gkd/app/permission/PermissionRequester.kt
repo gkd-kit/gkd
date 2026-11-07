@@ -4,6 +4,7 @@ enum class AppPermission {
     LocalNetwork,
     IgnoreBatteryOptimizations,
     QueryPackages,
+    DrawOverlays,
 }
 
 interface PermissionRequester {

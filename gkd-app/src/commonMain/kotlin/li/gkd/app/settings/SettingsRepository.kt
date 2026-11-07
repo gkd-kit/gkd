@@ -24,6 +24,7 @@ import li.gkd.app.matching.MatchInvalidationReason
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.model.isValidAppId
 import li.gkd.app.platform.requestAutomatorRestart
+import li.gkd.app.platform.requestCompanionServiceUpdate
 import li.gkd.app.storage.appStorage
 import li.gkd.selector.Selector
 import li.gkd.selector.SelectorCompileResult
@@ -416,6 +417,7 @@ object SettingsRepository {
         updateSettings {
             it.copy(automatorMode = value)
         }
+        requestCompanionServiceUpdate()
     }
 
     suspend fun awaitPersistence() {

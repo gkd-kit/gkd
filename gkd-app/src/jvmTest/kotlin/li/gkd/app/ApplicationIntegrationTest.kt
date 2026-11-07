@@ -814,12 +814,14 @@ private suspend fun assertCompanionWhitelist(runtime: DesktopRuntime) {
         assertTrue(services().automationRunning)
         assertTrue(services().running(SimulatedService.Companion))
         assertFalse(SettingsRepository.checkAppBlockMatch("partial.white"))
-        // The companion list does not disable either service in accessibility mode.
+        // Selecting accessibility mode stops the companion before the main service handoff.
         SettingsRepository.updateAutomatorMode(AutomatorMode.A11y.value)
+        assertTrue(services().automationRunning)
+        assertFalse(services().running(SimulatedService.Companion))
         runtime.applyAutomatorSettings()
         top("companion.white")
         assertTrue(services().serviceEnabled)
-        assertTrue(services().running(SimulatedService.Companion))
+        assertFalse(services().running(SimulatedService.Companion))
         assertFalse(SettingsRepository.checkAppBlockMatch("companion.white"))
         SettingsRepository.updateSettings { it.copy(enableBlockA11yAppList = true) }
         top("partial.white")
@@ -870,6 +872,7 @@ private fun assertDeferredModeHandoff(runtime: DesktopRuntime) {
         SettingsRepository.updateAutomatorMode(AutomatorMode.Automation.value)
         assertTrue(runtime.simulator.settings.value.services.serviceEnabled)
         assertFalse(runtime.simulator.settings.value.services.automationRunning)
+        assertFalse(runtime.simulator.settings.value.services.running(SimulatedService.Companion))
         runtime.simulator.update { it.copy(device = it.device.copy(topAppId = "handoff.first")) }
         assertTrue(runtime.simulator.settings.value.services.automationRunning)
         assertFalse(runtime.simulator.settings.value.services.serviceEnabled)

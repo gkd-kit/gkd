@@ -2,10 +2,17 @@ package li.gkd.app.service
 
 import android.provider.Settings
 import com.google.android.accessibility.selecttospeak.SelectToSpeakServiceCompanion
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import li.gkd.app.app
+import li.gkd.app.appScope
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.topTaskAppId
 import li.gkd.app.permission.PermissionStates
+import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.uiAutomationFlow
 import li.gkd.app.settings.AppScopePolicy
 import li.gkd.app.settings.SettingsRepository
@@ -15,7 +22,10 @@ object CompanionServiceController {
     private val component by lazy { SelectToSpeakServiceCompanion::class.componentName }
 
     @Volatile private var requested = false
-    @Volatile private var instance: SelectToSpeakServiceCompanion? = null
+    private var overlayJob: Job? = null
+
+    val instanceFlow: StateFlow<SelectToSpeakServiceCompanion?>
+        field = MutableStateFlow(null)
 
     fun onConnected(service: SelectToSpeakServiceCompanion) {
         if (!requested) {
@@ -23,13 +33,27 @@ object CompanionServiceController {
             service.disableSelf()
             return
         }
-        instance = service
+        instanceFlow.value = service
+        overlayJob?.cancel()
+        overlayJob =
+            appScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                KeepAliveOverlayCoordinator.acquireAccessibility(
+                    KeepAliveOverlayCoordinator.Source.Companion,
+                    service,
+                )
+            }
         LogUtils.i("Companion connected")
     }
 
     fun onDisconnected(service: SelectToSpeakServiceCompanion) {
-        if (instance === service) {
-            instance = null
+        if (instanceFlow.value === service) {
+            instanceFlow.value = null
+            overlayJob?.cancel()
+            overlayJob = null
+            KeepAliveOverlayCoordinator.releaseAccessibilityAfterHandoff(
+                KeepAliveOverlayCoordinator.Source.Companion,
+                service,
+            )
             LogUtils.i("Companion disconnected")
         }
     }
@@ -39,9 +63,9 @@ object CompanionServiceController {
         val appId = topTaskAppId
         val stopReason =
             when {
+                !settings.useAutomation -> "not_automation_mode"
                 !settings.enableAutomator -> "automator_disabled"
-                !A11yService.isRunning.value && uiAutomationFlow.value == null ->
-                    "no_automator_session"
+                uiAutomationFlow.value == null -> "no_automator_session"
                 AppScopePolicy.blocksCompanion(
                     settings,
                     SettingsRepository.companionScopeAppList.value,
@@ -52,7 +76,7 @@ object CompanionServiceController {
         val shouldRun = stopReason == null
         if (!shouldRun) {
             requested = false
-            instance?.let {
+            instanceFlow.value?.let {
                 LogUtils.i("Companion disable requested: reason=$stopReason, appId=$appId")
                 it.disableSelf()
                 return@launchServiceControl

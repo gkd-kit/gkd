@@ -45,6 +45,7 @@ import li.gkd.app.matching.input.initScreenEvents
 import li.gkd.app.notif.NotificationChannels
 import li.gkd.app.platform.lifecycle.MainActivityVisibility
 import li.gkd.app.platform.lifecycle.RuntimeStateSynchronizer
+import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.PrivilegeOwnerLifecycle
 import li.gkd.app.priv.gkdPrivilegeUiConfig
 import li.gkd.app.priv.initPrivilege
@@ -270,6 +271,7 @@ class App : Application() {
     }
 
     private fun initializeRuntimeComponents() {
+        KeepAliveOverlayCoordinator.initialize()
         NotificationChannels.initialize()
         PackageAppCatalog.initialize()
         initMatchingRuleObservers()

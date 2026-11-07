@@ -1,15 +1,11 @@
 package li.gkd.app.service
 
-import android.view.WindowManager
 import androidx.lifecycle.lifecycleScope
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import li.gkd.app.META
 import li.gkd.app.a11y.useA11yServiceEnabledFlow
@@ -21,7 +17,6 @@ import li.gkd.app.matching.input.topTaskAppIdFlow
 import li.gkd.app.notif.NotificationCatalog
 import li.gkd.app.notif.replaceNotificationTemplate
 import li.gkd.app.permission.PermissionStates
-import li.gkd.app.platform.overlay.KeepAliveOverlayCoordinator
 import li.gkd.app.priv.PrivilegeServiceStatus
 import li.gkd.app.priv.privilegeServiceStatusFlow
 import li.gkd.app.priv.uiAutomationFlow
@@ -104,37 +99,6 @@ class StatusService : LifecycleHookService() {
             lifecycleScope.launch {
                 combine(
                         A11yService.isRunning,
-                        KeepAliveOverlayCoordinator.accessibilityAttached,
-                        settings.map { it.enableStatusOverlay }.distinctUntilChanged(),
-                    ) { a11yRunning, a11yOverlayAttached, overlayEnabled ->
-                        Triple(a11yRunning, a11yOverlayAttached, overlayEnabled)
-                    }
-                    .distinctUntilChanged()
-                    .collectLatest {
-                        val (a11yRunning, a11yOverlayAttached, overlayEnabled) = it
-                        if (!overlayEnabled) {
-                            KeepAliveOverlayCoordinator.release(
-                                source = KeepAliveOverlayCoordinator.Source.Status,
-                                owner = this@StatusService,
-                            )
-                        } else if (a11yRunning && a11yOverlayAttached) {
-                            KeepAliveOverlayCoordinator.releaseAfterHandoff(
-                                source = KeepAliveOverlayCoordinator.Source.Status,
-                                owner = this@StatusService,
-                            )
-                        } else {
-                            KeepAliveOverlayCoordinator.acquire(
-                                source = KeepAliveOverlayCoordinator.Source.Status,
-                                owner = this@StatusService,
-                                context = this@StatusService,
-                                windowType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                            )
-                        }
-                    }
-            }
-            lifecycleScope.launch {
-                combine(
-                        A11yService.isRunning,
                         uiAutomationFlow,
                         settings,
                         SubscriptionState.ruleSummaryFlow,
@@ -157,12 +121,6 @@ class StatusService : LifecycleHookService() {
                             .startForeground()
                     }
             }
-        }
-        onDestroyed {
-            KeepAliveOverlayCoordinator.release(
-                source = KeepAliveOverlayCoordinator.Source.Status,
-                owner = this,
-            )
         }
     }
 
