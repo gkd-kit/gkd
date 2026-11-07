@@ -2,7 +2,7 @@
 
 本文说明 position 与 swipeArg 坐标表达式的语法、校验和错误契约。应用整体设计见 [应用架构](architecture.md)。
 
-订阅的坐标表达式在 commonMain 使用 `li.songe:expression:0.1.1` 编译求值。`Expression.compile` 直接解析原始表达式，随后 `validateBindings` 静态检查变量白名单并拒绝所有函数调用，不执行计算；不再保留外层语法解析或字符串改写。不绑定任何函数，也不启用库的标准函数或常量集。支持范围如下，名称区分大小写：
+订阅的坐标表达式在 commonMain 使用 `li.songe.expression:expression`编译求值，版本见 [版本目录](../gradle/libs.versions.toml)。`Expression.compile` 直接解析原始表达式，随后 `validateBindings` 静态检查变量白名单并拒绝所有函数调用，不执行计算；不再保留外层语法解析或字符串改写。不绑定任何函数，也不启用库的标准函数或常量集。支持范围如下，名称区分大小写：
 
 | 类型 | 支持范围 |
 | --- | --- |

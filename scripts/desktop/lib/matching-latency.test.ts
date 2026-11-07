@@ -92,11 +92,14 @@ test('export merges overlapping timelines once and preserves confirmation after 
     ];
     const handoff = { sequence: 2, elapsedNanos: 10e6, runId: 0, stage: 'Idle', reason: 'handoff',
       serviceConnection: { event: 'HandoffShutdownRequested', service: 'A11y', connectionId: 2, targetConnectionId: 1 } };
-    await writeFile(input, JSON.stringify({ session: { id: 'test', active: false, dropped: 7 }, events: events.slice(2), keyEvents: events.slice(1), droppedKeyEvents: 1, boundaryEvents: [events[0], handoff], droppedBoundaryEvents: 0 }));
+    await writeFile(input, JSON.stringify({ session: { id: 'test', active: false, dropped: 7 }, events: events.slice(2), keyEvents: events.slice(1), droppedKeyEvents: 1, boundaryEvents: [events[0], handoff], droppedBoundaryEvents: 0, sizeLimitBytes: 20_000_000, omittedForSize: { queryRecordings: 2 } }));
     const summary = await summarizeMatching(input, output);
     assert.equal(summary.pageLatency[0]!.completedQueries, 1);
     assert.equal(summary.pageLatency[0]!.confirmedToActionMillis, 130);
     assert.equal(summary.evidenceCoverage.boundary.count, 2);
+    assert.equal(summary.evidenceCoverage.sizeLimitBytes, 20_000_000);
+    assert.deepEqual(summary.evidenceCoverage.omittedForSize, { queryRecordings: 2 });
+    assert.ok(summary.warnings.some(value => value.includes('文件体积预算')));
     assert.equal(summary.serviceTimeline[0]!.targetConnectionId, 1);
     assert.equal(summary.serviceTimeline[0]!.atMillis, 10);
     assert.equal(summary.evidenceCoverage.key.firstMillis, 100);
@@ -104,6 +107,23 @@ test('export merges overlapping timelines once and preserves confirmation after 
     const saved = JSON.parse(await readFile(output, 'utf8'));
     assert.equal(saved.pageLatency[0].confirmedToActionMillis, 130);
     assert.deepEqual(saved.pageLatency[0].queries[0].nodeReads, [1]);
+    const capture = JSON.parse(await readFile(input, 'utf8'));
+    capture.files = { events: 'events.jsonl', keyEvents: 'key-events.jsonl', boundaryEvents: 'boundary-events.jsonl', queryRecordings: 'query-recordings.jsonl', systemRecording: 'system-recording.json' };
+    for (const key of ['events', 'keyEvents', 'boundaryEvents', 'queryRecordings']) {
+      await writeFile(join(directory, capture.files[key]), (capture[key] ?? []).map((event: unknown) => JSON.stringify(event)).join('\n'));
+      delete capture[key];
+    }
+    await writeFile(join(directory, 'system-recording.json'), 'null');
+    capture.files.accessibilitySettings = 'accessibility-settings.jsonl';
+    const setting = { notifiedAt: 1, readAt: 2, trigger: 'changed', userId: 0, name: 'accessibility_enabled', value: '0', sourcePackage: 'android' };
+    await writeFile(join(directory, 'accessibility-settings.jsonl'), JSON.stringify(setting) + '\n');
+    await writeFile(input, JSON.stringify(capture));
+    const splitSummary = await summarizeMatching(input, output);
+    assert.deepEqual(splitSummary.accessibilitySettings, [setting]);
+    assert.equal(splitSummary.evidenceCoverage.accessibilitySettings.count, 1);
+    assert.deepEqual(splitSummary.pageLatency, summary.pageLatency);
+    assert.deepEqual(splitSummary.serviceTimeline, summary.serviceTimeline);
+
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

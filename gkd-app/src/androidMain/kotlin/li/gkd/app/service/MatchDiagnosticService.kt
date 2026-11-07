@@ -15,6 +15,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import li.gkd.app.app
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.diagnostics.AccessibilitySettingsRecorder
 import li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
 import li.gkd.app.matching.diagnostics.MatchDiagnosticState
 import li.gkd.app.notif.NotificationCatalog
@@ -78,7 +79,22 @@ class MatchDiagnosticService : LifecycleHookService() {
                     )
                 sessionId = session.id
                 reply?.send(0, Bundle().apply { putString("id", session.id) })
-                coordinator.diagnostics.state.first { it?.id != session.id || !it.active }
+                AccessibilitySettingsRecorder()
+                    .collect(
+                        untilStopped = {
+                            coordinator.diagnostics.state.first {
+                                it?.id != session.id || !it.active
+                            }
+                        },
+                        onCollected = { records, dropped ->
+                            coordinator.stopDiagnostics(session.id)
+                            coordinator.diagnostics.finishAccessibilitySettings(
+                                session.id,
+                                records,
+                                dropped,
+                            )
+                        },
+                    )
                 NotificationCatalog.matchDiagnostic(saving = true).startForeground()
                 MatchDiagnosticFiles.state.first { it.containsKey(session.id) }
                 MatchDiagnosticFiles.flush()

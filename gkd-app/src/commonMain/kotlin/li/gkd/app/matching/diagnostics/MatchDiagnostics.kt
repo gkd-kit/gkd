@@ -174,7 +174,7 @@ class MatchDiagnostics(
     private var operationStatistics = MatchOperationStatisticsRecorder()
     private val nodeSnapshotTimes = mutableMapOf<MatchNodeReadFailure, Long>()
     private var origin = 0L
-    private var capacity = 2000
+    private var capacity = 20_000
     private var snapshotSequence = 0L
     private var lastRules: ForegroundRuleSnapshot? = null
     private var definitionSequence = 0L
@@ -192,6 +192,30 @@ class MatchDiagnostics(
         val queries: List<MatchQueryEvidence>,
         val operationStatistics: MatchOperationStatisticsRecorder,
     )
+
+    private var accessibilitySettings = emptyList<AccessibilitySettingRecord>()
+    private var droppedAccessibilitySettings = 0L
+
+    fun finishAccessibilitySettings(
+        id: String,
+        records: List<AccessibilitySettingRecord>,
+        dropped: Long,
+    ) =
+        synchronized(lock) {
+            val previous = stoppedSessions[id]
+            if (previous != null) {
+                previous.capture =
+                    previous.capture.copy(
+                        accessibilitySettings = records,
+                        droppedAccessibilitySettings = dropped,
+                    )
+            } else {
+                requireSession(id)
+                accessibilitySettings = records
+                droppedAccessibilitySettings = dropped
+            }
+            if (!session(id).active) onStoppedCapture(export(id))
+        }
 
     private val stoppedSessions = linkedMapOf<String, StoppedSession>()
     private var droppedQueryRecordings = 0L
@@ -211,7 +235,7 @@ class MatchDiagnostics(
         policy: MatchTimingPolicy,
         detailed: Boolean = false,
         ruleFilter: String? = null,
-        capacity: Int = 2000,
+        capacity: Int = 20_000,
         recordQueries: Boolean = false,
         recordSystem: Boolean = false,
         initialRules: List<MatchRuleIndex>? = null,
@@ -245,6 +269,8 @@ class MatchDiagnostics(
             events.clear()
             keyEvents.clear()
             boundaryEvents.clear()
+            accessibilitySettings = emptyList()
+            droppedAccessibilitySettings = 0
             droppedBoundaryEvents = 0
             droppedKeyEvents = 0
             ruleSnapshots.clear()
@@ -617,6 +643,18 @@ class MatchDiagnostics(
                                 )
                                     1
                                 else 0,
+                        boundaryEvents =
+                            if (event.isBoundaryTrace())
+                                (capture.boundaryEvents + event).takeLast(previous.capacity)
+                            else capture.boundaryEvents,
+                        droppedBoundaryEvents =
+                            capture.droppedBoundaryEvents +
+                                if (
+                                    event.isBoundaryTrace() &&
+                                        capture.boundaryEvents.size == previous.capacity
+                                )
+                                    1
+                                else 0,
                     )
             } else {
                 if (events.size == capacity) {
@@ -771,7 +809,7 @@ class MatchDiagnostics(
     }
 
     private fun retainKeyEvent(event: MatchTrace) {
-        if (event.serviceConnection != null || event.pageObservation != null) {
+        if (event.isBoundaryTrace()) {
             if (boundaryEvents.size == capacity) {
                 boundaryEvents.removeFirst()
                 droppedBoundaryEvents++
@@ -839,6 +877,8 @@ class MatchDiagnostics(
                     droppedKeyEvents = droppedKeyEvents,
                     boundaryEvents = boundaryEvents.toList(),
                     droppedBoundaryEvents = droppedBoundaryEvents,
+                    accessibilitySettings = accessibilitySettings,
+                    droppedAccessibilitySettings = droppedAccessibilitySettings,
                 ),
             )
         }

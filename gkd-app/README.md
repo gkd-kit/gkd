@@ -67,7 +67,7 @@ pnpm app-tools device-install --serial SERIAL
 pnpm app-tools device-install --release
 ```
 
-命令位于 `scripts/desktop`，默认执行 `:gkd-android:assembleGkdDebug`；`--release` 执行 `:gkd-android:packageGkdRelease`（不上传构建产物），随后直接复用公共安装流程，不启动调试服务。省略 `--serial` 时跳过离线或未授权设备；单台更新失败会保留原因，继续其余设备，最后汇总失败。安装前暂停自动化，相同 APK 按 SHA-256 跳过，不同则覆盖更新；仅确认已核对身份的本次安装弹窗。每台设备结束时恢复并核对本次设置字段，GKD 本体不加入临时测试应用清理列表。Release 安装会暂停已存在的 Debug 和 Release 自动化；Release 恢复记录位于 `.local/device-recovery/release/`，失败后可运行 `pnpm app-tools device-recovery --serial SERIAL --operation restore --release`。此命令替代已删除的 `.local/install.ps1`。
+命令位于 `scripts/desktop`，默认执行 `:gkd-android:assembleGkdDebug`；`--release` 执行 `:gkd-android:packageGkdRelease`（不上传构建产物），随后直接复用公共安装流程，不启动调试服务。省略 `--serial` 时跳过离线或未授权设备；单台更新失败会保留原因，继续其余设备，最后汇总失败。安装前暂停自动化，相同 APK 按 SHA-256 跳过，不同则覆盖更新；仅确认已核对身份的本次安装弹窗。每台设备结束时恢复并核对本次设置字段，GKD 本体不加入临时测试应用清理列表。Release 安装会暂停已存在的 Debug 和 Release 自动化；Release 恢复记录位于 `.local/device-recovery/release/`，失败后可运行 `pnpm app-tools device-recovery --serial SERIAL --operation restore --release`。
 
 ## 导入设备资料
 
@@ -99,7 +99,7 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 `GET /desktop/simulator` 读取配置，`POST /desktop/simulator` 替换配置，`POST /desktop/simulator/patch` 仅合并提供的字段。分组为 `device`、`permissions`、`services`、`prompts`、`privilege`。配置更新保留页面草稿；`POST /desktop/scenario` 重建页面及其 ViewModel/草稿，但保留持久化数据与模拟配置。
 
-`device.width/height` 是内容视口 dp，`density` 为相对系统 DPI 的倍率，`fontScale` 单独控制字体。`locale` 影响格式化，当前资源只有默认中文。系统栏实时绘制：时间取本机时钟，电量取 Windows 系统，网络和充电为模拟值。隐藏状态栏仍保留挖孔安全高度；隐藏导航栏移除底部系统留白。
+`device.width/height` 是内容视口 dp，`density` 为相对系统 DPI 的倍率，`fontScale` 单独控制字体。`locale` 提供“跟随系统”时的语言与格式化环境，支持 `zh-CN` 和 `en`；应用语言设置优先于模拟系统语言。共享资源默认为英文，简体中文资源位于 `values-zh`。系统栏实时绘制：时间取本机时钟，电量取 Windows 系统，网络和充电为模拟值。隐藏状态栏仍保留挖孔安全高度；隐藏导航栏移除底部系统留白。
 
 样本可放在当前会话 profile 的 `fixtures.json`，包含 `actionLogs`、`activityLogs`、`eventLogs`、`snapshots` 数组，字段对应 gkd-db 实体。快照图片放在同级 `snapshot/<id>/<id>.png` 或 `.webp`。使用稳定 id，首次成功导入后不重复导入；更换测试样本使用新的隔离会话。
 
@@ -111,9 +111,9 @@ adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.actio
 
 生产页面的服务开关已接入 Desktop 生命周期管理，包括常驻通知、快照按钮、界面、事件、轨迹、截屏、HTTP、无障碍和自动化服务。HTTP 使用真实服务端，其他服务使用生命周期模拟。F12 控制窗口的“服务生命周期（模拟）”可配置成功、失败或手动完成，以及授权同意、取消或弹窗确认。截屏服务默认弹出模拟授权框；手动启动保持“启动中”，直到投递连接完成或失败事件。
 
-运行状态由 `SimulatorStore` 统一提供，页面重载不会停止服务；退出 Desktop 后不恢复运行状态。模拟条件会保存到会话 `simulator.json`。模拟不执行 Android 自动化、真实截屏或悬浮窗。调试服务复用 Android 的共享检查路由，实际监听 `0.0.0.0:<httpServerPort>`（默认 8888），支持本机和局域网 IPv4 访问，浏览器、应用诊断和桌面控制共用该监听。页面显示并可打开 `127.0.0.1` 及真实局域网 IPv4 地址，进入页面或切换调试服务时重新读取网卡地址；修改端口时重启监听，关闭时释放端口，并按“自动清空内存订阅”设置清理 HTTP 订阅。快照列表/文件读取、删除和订阅更新使用真实 Repository/DAO；`captureSnapshot`、`execSelector` 返回不支持，设备信息标识 Desktop。特权模拟断开会结束依赖它的自动化模拟。
+运行状态由 `SimulatorStore` 统一提供，页面重载不会停止服务；退出 Desktop 后不恢复运行状态。模拟条件会保存到会话 `simulator.json`。模拟不执行 Android 自动化、真实截屏或悬浮窗。调试服务复用 Android 的共享检查路由，监听与连接文件见[启动与验证](#启动与验证)。页面显示并可打开 `127.0.0.1` 及真实局域网 IPv4 地址，进入页面或切换调试服务时重新读取网卡地址；修改端口时重启监听，关闭时释放端口，并按“自动清空内存订阅”设置清理 HTTP 订阅。快照列表/文件读取、删除和订阅更新使用真实 Repository/DAO；`captureSnapshot`、`execSelector` 返回不支持，设备信息标识 Desktop。特权模拟断开会结束依赖它的自动化模拟。
 
-工具默认读取日常会话 `.local/desktop/debug-server.json`；隔离宿主请使用启动日志中的连接文件，下列示例显式使用隔离会话连接文件，请替换 `<会话>`；也可使用 `--port` 指定该实例的实际端口：
+工具默认连接日常会话；隔离宿主须用启动日志中的 `--connection` 文件或实际 `--port`。下例请替换 `<会话>`：
 
 ```powershell
 $connection = ".local/tests/desktop/<会话>/debug-server.json"
@@ -131,7 +131,7 @@ pnpm app-tools service-stop --service Activity --connection "$connection"
 
 `GET /desktop/services` 返回各服务的 `plans`、`runtime` 和 `[simulation]` 日志。`POST /desktop/services/command` 关闭 `Debug` 时先返回 HTTP 202，再关闭整个监听；重新开启需使用应用页面或 F12 控制窗口。其他命令接收 `{"service":"Activity","enabled":true}`；`POST /desktop/services/event` 接收 `service`、`type`、`attempt` 及可选 `reason`。HTTP 不接受模拟完成/故障事件，也不使用模拟启动结果，其状态由真实端口绑定结果决定。其他服务事件类型为 `Authorized`、`Cancelled`、`Connected`、`Failed`（启动失败或运行中异常终止），`attempt` 使用当前服务返回的编号，旧请求的完成事件会被忽略。
 
-模拟条件通过控制窗口或 `/desktop/simulator/patch` 设置，例如 `{"services":{"plans":{"Activity":{"startResult":"Manual"}}}}`。服务枚举为 `Status`、`Button`、`Activity`、`Event`、`Track`、`Screenshot`、`Debug`、`Accessibility`、`Automation`。`/desktop/simulator` 替换配置保留现有服务运行状态，`/desktop/simulator/patch` 不接受 `services.runtime/logs`；启停与故障使用服务命令/事件。验证页面按钮时仍通过 `/desktop/action` 操作真实控件。
+模拟条件通过控制窗口或 `/desktop/simulator/patch` 设置，例如 `{"services":{"plans":{"Activity":{"startResult":"Manual"}}}}`。服务枚举为 `Status`、`Button`、`Activity`、`Event`、`Track`、`Screenshot`、`Debug`、`Accessibility`、`Companion`、`Automation`。`/desktop/simulator` 替换配置保留现有服务运行状态，`/desktop/simulator/patch` 不接受 `services.runtime/logs`；启停与故障使用服务命令/事件。验证页面按钮时仍通过 `/desktop/action` 操作真实控件。
 
 ### 控件与数据接口
 

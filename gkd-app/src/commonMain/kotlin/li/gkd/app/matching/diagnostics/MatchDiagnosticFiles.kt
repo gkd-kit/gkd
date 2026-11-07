@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
 import li.gkd.app.app.applicationScope
 import li.gkd.app.logging.LogUtils
 import li.gkd.app.storage.appStorage
@@ -33,7 +34,45 @@ class MatchDiagnosticFileStore(private val directory: File) {
         val target = captureDirectory.resolve("diagnostic.json")
         val temporary = Files.createTempFile(captureDirectory.toPath(), "capture-", ".tmp")
         try {
-            temporary.toFile().writeText(JsonUtils.keepingNulls.encodeToString(capture))
+            val prepared = prepareDiagnosticCapture(capture)
+            val sections =
+                linkedMapOf(
+                    "accessibilitySettings" to "accessibility-settings.jsonl",
+                    "events" to "events.jsonl",
+                    "keyEvents" to "key-events.jsonl",
+                    "boundaryEvents" to "boundary-events.jsonl",
+                    "queryRecordings" to "query-recordings.jsonl",
+                )
+            captureDirectory
+                .resolve(sections.getValue("accessibilitySettings"))
+                .writeDiagnosticRecords(prepared.accessibilitySettings)
+            captureDirectory
+                .resolve(sections.getValue("events"))
+                .writeDiagnosticRecords(prepared.events)
+            captureDirectory
+                .resolve(sections.getValue("keyEvents"))
+                .writeDiagnosticRecords(prepared.keyEvents)
+            captureDirectory
+                .resolve(sections.getValue("boundaryEvents"))
+                .writeDiagnosticRecords(prepared.boundaryEvents)
+            captureDirectory
+                .resolve(sections.getValue("queryRecordings"))
+                .writeDiagnosticRecords(prepared.queryRecordings)
+            captureDirectory
+                .resolve("system-recording.json")
+                .writeText(JsonUtils.keepingNulls.encodeToString(prepared.systemRecording))
+            val encoded =
+                JsonUtils.keepingNulls.encodeToJsonElement(prepared.metadataOnly()).jsonObject
+            val metadata =
+                JsonObject(
+                    encoded.filterKeys { it !in sections && it != "systemRecording" } +
+                        ("files" to
+                            JsonObject(
+                                sections.mapValues { JsonPrimitive(it.value) } +
+                                    ("systemRecording" to JsonPrimitive("system-recording.json")),
+                            )),
+                )
+            temporary.toFile().writeText(metadata.toString())
             Files.move(temporary, target.toPath(), StandardCopyOption.REPLACE_EXISTING)
         } finally {
             Files.deleteIfExists(temporary)
@@ -148,4 +187,13 @@ object MatchDiagnosticFiles {
                 block()
             }
         }
+}
+
+private inline fun <reified T> File.writeDiagnosticRecords(records: List<T>) {
+    bufferedWriter().use { writer ->
+        for (record in records) {
+            writer.write(JsonUtils.keepingNulls.encodeToString(record))
+            writer.write("\n")
+        }
+    }
 }

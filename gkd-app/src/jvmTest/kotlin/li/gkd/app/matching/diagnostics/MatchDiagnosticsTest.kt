@@ -32,6 +32,40 @@ import li.gkd.app.subscription.UsedSubsEntry
 import li.gkd.db.SubsItem
 
 class MatchDiagnosticsTest {
+    /** Issue 1522: successful reads after recovery must not evict the preceding failures. */
+    @Test
+    fun foregroundFailuresSurviveRecoveryTrafficAndLateFailureStaysInOriginalSession() {
+        val diagnostics = MatchDiagnostics()
+        val session = diagnostics.start(MatchTimingPolicy(), capacity = 10)
+        val task = MatchTaskObservation(1, "onTaskMovedToFront(info)", "app", "Main")
+        diagnostics.record(0, MatchStage.Root, "task_result_applied", taskObservation = task)
+        diagnostics.entry("root_read", "root_unavailable")
+        diagnostics.entry("foreground_confirmation", "foreground_wait_expired")
+        val pending = diagnostics.beginOperation("ActiveWindow")!!
+        repeat(40) {
+            diagnostics.entry("root_read", "root_ready")
+            diagnostics.record(1, MatchStage.Selector, "matches[0]:miss")
+            diagnostics.endOperation(diagnostics.beginOperation("Query"), "not_matched")
+        }
+        diagnostics.stop(session.id)
+        val capture = diagnostics.export(session.id)
+        assertTrue(capture.session.dropped > 0)
+        assertTrue(capture.droppedKeyEvents > 0)
+        assertEquals(
+            listOf("task_result_applied", "root_unavailable", "foreground_wait_expired"),
+            capture.boundaryEvents.map { it.reason },
+        )
+        assertEquals(task, capture.boundaryEvents.first().taskObservation)
+        val next = diagnostics.start(MatchTimingPolicy())
+        diagnostics.endOperation(pending, "java.lang.SecurityException: denied")
+        val previous = diagnostics.export(session.id)
+        assertEquals(
+            "java.lang.SecurityException: denied",
+            previous.boundaryEvents.last().operation?.outcome,
+        )
+        assertTrue(diagnostics.export(next.id).boundaryEvents.isEmpty())
+    }
+
     /**
      * Repeated failures retain their events, but stack collection is bounded and resets per
      * session.

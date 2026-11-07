@@ -1,3 +1,4 @@
+import { dirname, resolve } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { matchingLatency, type LatencyTrace } from '../lib/matching-latency.ts';
 
@@ -97,6 +98,20 @@ function object(value: unknown): Record<string, unknown> {
 /** Reads the shared diagnostic capture. Never interprets completion as a successful match. */
 export async function summarizeMatching(input: string, output?: string) {
   const capture = object(JSON.parse(await readFile(input, 'utf8')));
+  if (capture.files) {
+    const files = object(capture.files);
+    if (files.accessibilitySettings !== undefined) {
+      if (files.accessibilitySettings !== 'accessibility-settings.jsonl') throw new Error('Invalid accessibility settings file');
+      capture.accessibilitySettings = (await readFile(resolve(dirname(input), 'accessibility-settings.jsonl'), 'utf8')).split('\n').filter(Boolean).map(line => JSON.parse(line));
+    }
+    if (files.systemRecording !== "system-recording.json") throw new Error("Invalid system recording file");
+    capture.systemRecording = JSON.parse(await readFile(resolve(dirname(input), "system-recording.json"), "utf8"));
+    for (const [key, name] of Object.entries({ events: 'events.jsonl', keyEvents: 'key-events.jsonl', boundaryEvents: 'boundary-events.jsonl', queryRecordings: 'query-recordings.jsonl' })) {
+      if (files[key] !== name) throw new Error(`Invalid diagnostic section: ${key}`);
+      const text = await readFile(resolve(dirname(input), name), 'utf8');
+      capture[key] = text.split('\n').filter(Boolean).map(line => JSON.parse(line));
+    }
+  }
   const session = object(capture.session);
   if (
     typeof session.id !== 'string' ||
@@ -155,6 +170,8 @@ export async function summarizeMatching(input: string, output?: string) {
       '事件不完整：存在覆盖或序号缺口，不能据此断言某个阶段从未发生。',
     );
   if (capture.droppedRuleSnapshots) warnings.push('部分规则快照已被覆盖。');
+  if (Object.keys(object(capture.omittedForSize)).length)
+    warnings.push('导出达到文件体积预算，部分记录已删减；详见 evidenceCoverage.omittedForSize。');
   if (!Array.isArray(capture.keyEvents))
     warnings.push(
       '此记录没有独立关键时间线或节点来源，缺失的延迟边界保持未知。',
@@ -164,9 +181,9 @@ export async function summarizeMatching(input: string, output?: string) {
       '关键时间线也达到容量上限；摘要中的首次时间仅指保留下来的首次观测。',
     );
   if (!Array.isArray(capture.boundaryEvents))
-    warnings.push('此记录没有独立服务交接时间线。');
+    warnings.push('此记录没有独立边界与故障时间线。');
   if (capture.droppedBoundaryEvents)
-    warnings.push('服务交接时间线达到容量上限，早期边界可能缺失。');
+    warnings.push('边界与故障时间线达到容量上限，早期证据可能缺失。');
   const recordings = (
     Array.isArray(capture.queryRecordings) ? capture.queryRecordings : []
   ).map((value) => {
@@ -669,7 +686,11 @@ export async function summarizeMatching(input: string, output?: string) {
         atMillis: event.elapsedNanos / 1e6,
         ...event.serviceConnection,
       })),
+    accessibilitySettings: capture.accessibilitySettings ?? [],
     evidenceCoverage: {
+      accessibilitySettings: { available: Array.isArray(capture.accessibilitySettings), count: Array.isArray(capture.accessibilitySettings) ? capture.accessibilitySettings.length : 0, dropped: capture.droppedAccessibilitySettings ?? null },
+      sizeLimitBytes: capture.sizeLimitBytes ?? null,
+      omittedForSize: object(capture.omittedForSize),
       boundary: {
         available: Array.isArray(capture.boundaryEvents),
         count: boundaryEvents.length,

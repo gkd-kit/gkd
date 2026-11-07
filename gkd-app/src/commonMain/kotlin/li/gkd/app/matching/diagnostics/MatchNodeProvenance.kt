@@ -161,6 +161,22 @@ fun MatchTrace.isKeyTrace(): Boolean =
             operation?.name in keyOperationNames ||
             (operation == null && (stage != MatchStage.Idle || entrySource in keyEntrySources)))
 
+/** Failures and foreground/service evidence survive successful query and node traffic. */
+fun MatchTrace.isBoundaryTrace(): Boolean =
+    serviceConnection != null ||
+        pageObservation != null ||
+        taskObservation != null ||
+        nodePressure != null ||
+        stage == MatchStage.Failed ||
+        action?.result == false ||
+        reason in boundaryFailureReasons ||
+        operation?.outcome?.let { it !in successfulOperationOutcomes } == true
+
+private val boundaryFailureReasons =
+    setOf("root_unavailable", "foreground_wait_expired", "window_identity_pending")
+private val successfulOperationOutcomes =
+    setOf("returned", "null", "false", "matched", "not_matched", "success")
+
 private val keyOperationNames =
     setOf("Query", "Action", "RootWait", "SourceWait", "NodeRead:Root", "NodeRead:Source")
 private val keyEntrySources = setOf("root_read", "source_read")

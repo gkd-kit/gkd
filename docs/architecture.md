@@ -53,7 +53,7 @@ Android/Desktop 采用单主界面设计，根 `MainViewModel` 由主界面的 V
 
 ## 数据读写与兼容
 
-订阅坐标表达式由 `li.songe:expression` 编译、静态校验并在动作注入前求值；选择器由 `gkd-selector` 独立处理。语法、错误处理和验证工具见 [规则坐标表达式](rule-expressions.md)。
+订阅坐标表达式由 `li.songe.expression:expression` 编译、静态校验并在动作注入前求值；选择器由 `gkd-selector` 独立处理。语法、错误处理和验证工具见 [规则坐标表达式](rule-expressions.md)。
 
 | 数据 | 读取 | 写入与一致性 |
 | --- | --- | --- |
