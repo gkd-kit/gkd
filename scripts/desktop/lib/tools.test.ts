@@ -57,9 +57,9 @@ test('summary distinguishes cumulative timings from evicted detail and exposes r
     assert.equal(summary.operationStatistics?.completed, 100);
     assert.equal(summary.operationStatistics?.totals[0]?.meanMillis, 10);
     assert.equal(summary.operationStatistics?.totals[0]?.slowest.durationMillis, 90);
-    assert.equal(summary.coverage.events.firstElapsedMillis, 500);
-    assert.equal(summary.coverage.system.lastElapsedMillis, 20);
-    assert.equal(summary.coverage.queries.firstElapsedMillis, null);
+    assert.equal(summary.evidenceCoverage.retention.events.firstElapsedMillis, 500);
+    assert.equal(summary.evidenceCoverage.retention.systemSteps.lastElapsedMillis, 20);
+    assert.equal(summary.evidenceCoverage.retention.queryRecordings.firstElapsedMillis, null);
     assert.equal(summary.entryTotals[0].count, 123);
     assert.ok(summary.warnings.some(w => w.includes('分组上限')));
     assert.equal(summary.operations.length, 0);
@@ -344,7 +344,7 @@ test('offline summary distinguishes incomplete traces, cancellation cleanup and 
     await writeFile(input, JSON.stringify({ session: { id: 'empty', active: false }, events: [] }));
     const empty = await summarizeMatching(input);
     assert.ok(empty.warnings.some(warning => warning.includes('没有采集到事件')));
-    assert.equal(empty.evidenceCoverage.key.available, false);
+    assert.equal(empty.evidenceCoverage.retention.keyEvents.available, false);
     assert.deepEqual(empty.pageLatency, []);
     await writeFile(input, JSON.stringify({ session: { id: 'disconnected', active: false },
       events: [event(1, 1, 0, 'Action', 'action_started'), event(2, 1, 20, 'Cancelling', 'service_disconnected')],

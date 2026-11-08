@@ -180,3 +180,10 @@ private val successfulOperationOutcomes =
 private val keyOperationNames =
     setOf("Query", "Action", "RootWait", "SourceWait", "NodeRead:Root", "NodeRead:Source")
 private val keyEntrySources = setOf("root_read", "source_read")
+
+fun MatchTrace.isQueryFault(): Boolean =
+    serviceConnection?.event == MatchServiceEvent.Disconnected ||
+        stage == MatchStage.Failed ||
+        action?.result == false ||
+        reason in boundaryFailureReasons ||
+        operation?.outcome?.let { it !in successfulOperationOutcomes } == true

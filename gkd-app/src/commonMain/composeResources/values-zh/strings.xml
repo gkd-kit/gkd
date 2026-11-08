@@ -1175,6 +1175,8 @@
     <string name="match_debug_notification_help">点击查看诊断，可在通知中停止采集</string>
     <string name="match_debug_saved_notification_help">点击查看诊断记录</string>
     <string name="match_debug_saving">正在保存诊断…</string>
+    <string name="match_debug_finishing">正在结束诊断…</string>
+    <string name="match_debug_save_failed">保存失败，点击重试</string>
     <string name="match_debug_idle">未开始</string>
     <string name="match_debug_collect">诊断采集</string>
     <string name="match_debug_intro">记录运行过程，帮助排查问题</string>

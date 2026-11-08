@@ -1,3 +1,4 @@
+import { expandMatchingCapture } from '../lib/matching-capture.ts';
 import { dirname, resolve } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { matchingLatency, type LatencyTrace } from '../lib/matching-latency.ts';
@@ -97,7 +98,7 @@ function object(value: unknown): Record<string, unknown> {
 
 /** Reads the shared diagnostic capture. Never interprets completion as a successful match. */
 export async function summarizeMatching(input: string, output?: string) {
-  const capture = object(JSON.parse(await readFile(input, 'utf8')));
+  let capture = object(JSON.parse(await readFile(input, 'utf8')));
   if (capture.files) {
     const files = object(capture.files);
     if (files.accessibilitySettings !== undefined) {
@@ -106,13 +107,58 @@ export async function summarizeMatching(input: string, output?: string) {
     }
     if (files.systemRecording !== "system-recording.json") throw new Error("Invalid system recording file");
     capture.systemRecording = JSON.parse(await readFile(resolve(dirname(input), "system-recording.json"), "utf8"));
-    for (const [key, name] of Object.entries({ events: 'events.jsonl', keyEvents: 'key-events.jsonl', boundaryEvents: 'boundary-events.jsonl', queryRecordings: 'query-recordings.jsonl' })) {
+    if (capture.formatVersion === 2) {
+      if (files.queryPlans !== 'query-plans.json') throw new Error('Invalid query plans file');
+      capture.queryPlans = JSON.parse(await readFile(resolve(dirname(input), 'query-plans.json'), 'utf8'));
+    }
+    const queryFiles = capture.formatVersion === 2
+      ? { querySummaries: 'query-summaries.jsonl', queryDetails: 'query-details.jsonl' }
+      : { queryRecordings: 'query-recordings.jsonl' };
+    for (const [key, name] of Object.entries({ events: 'events.jsonl', keyEvents: 'key-events.jsonl', boundaryEvents: 'boundary-events.jsonl', ...queryFiles })) {
       if (files[key] !== name) throw new Error(`Invalid diagnostic section: ${key}`);
       const text = await readFile(resolve(dirname(input), name), 'utf8');
       capture[key] = text.split('\n').filter(Boolean).map(line => JSON.parse(line));
     }
   }
+  capture = expandMatchingCapture(capture);
   const session = object(capture.session);
+  const omissions = object(capture.omittedForSize ?? {});
+  const system = capture.systemRecording ? object(capture.systemRecording) : null;
+  const retention = Object.fromEntries([
+    ['events', session.dropped],
+    ['keyEvents', capture.droppedKeyEvents],
+    ['boundaryEvents', capture.droppedBoundaryEvents],
+    ['queryRecordings', capture.droppedQueryRecordings],
+    ['querySummaries', capture.droppedQuerySummaries],
+    ['accessibilitySettings', capture.droppedAccessibilitySettings],
+    ['systemSteps', undefined],
+  ].map(([section, dropped]) => {
+    const name = String(section);
+    const values = name === 'systemSteps' ? system?.steps : capture[name];
+    const records = (Array.isArray(values) ? values.map(object) : [])
+      .filter(record => name !== 'queryRecordings' || record.detailsRetained !== false);
+    const exportDropped = Number(omissions[name] ?? 0);
+    const times = records.flatMap(record => [record.time ?? record.startedAt ?? record.notifiedAt, record.endedAt])
+      .filter((time): time is number => typeof time === 'number' && Number.isFinite(time));
+    const elapsed = name === 'systemSteps'
+      ? records.map(record => typeof record.timeMillis === 'number' && typeof system?.startedAtMillis === 'number'
+        ? record.timeMillis - system.startedAtMillis : null)
+      : name.endsWith('Events') || name === 'events'
+        ? records.map(record => typeof record.elapsedNanos === 'number' ? record.elapsedNanos / 1e6 : null)
+        : times.map(time => typeof session.startedAt === 'number' ? time - session.startedAt : null);
+    const elapsedTimes = elapsed.filter((time): time is number => typeof time === 'number' && Number.isFinite(time));
+    return [name, {
+      available: Array.isArray(values),
+      count: records.length,
+      memoryDropped: typeof dropped === 'number' ? Math.max(0, dropped - exportDropped) : null,
+      exportDropped,
+      firstAt: times.length ? Math.min(...times) : null,
+      lastAt: times.length ? Math.max(...times) : null,
+      firstElapsedMillis: elapsedTimes.length ? Math.min(...elapsedTimes) : null,
+      lastElapsedMillis: elapsedTimes.length ? Math.max(...elapsedTimes) : null,
+      ...(name === 'systemSteps' ? { incomplete: system?.incomplete ?? null } : {}),
+    }];
+  }));
   if (
     typeof session.id !== 'string' ||
     typeof session.active !== 'boolean' ||
@@ -170,7 +216,7 @@ export async function summarizeMatching(input: string, output?: string) {
       '事件不完整：存在覆盖或序号缺口，不能据此断言某个阶段从未发生。',
     );
   if (capture.droppedRuleSnapshots) warnings.push('部分规则快照已被覆盖。');
-  if (Object.keys(object(capture.omittedForSize)).length)
+  if (Object.keys(omissions).length)
     warnings.push('导出达到文件体积预算，部分记录已删减；详见 evidenceCoverage.omittedForSize。');
   if (!Array.isArray(capture.keyEvents))
     warnings.push(
@@ -204,6 +250,9 @@ export async function summarizeMatching(input: string, output?: string) {
       },
     );
     return {
+      queryId: recording.queryId ?? null,
+      detailsRetained: recording.detailsRetained !== false,
+      retainedFor: recording.retainedFor ?? null,
       runId: recording.runId,
       rule: recording.rule,
       operationId: recording.operationId ?? null,
@@ -221,7 +270,7 @@ export async function summarizeMatching(input: string, output?: string) {
         ? recording.operations
         : []
       ).map((value) => object(value) as NonNullable<Trace['operation']>),
-      attributeNodeCount: new Set(
+      attributeNodeCount: recording.detailsRetained === false ? null : new Set(
         calls
           .filter((call) => call.operation === 'attr')
           .flatMap((call) =>
@@ -231,7 +280,7 @@ export async function summarizeMatching(input: string, output?: string) {
               : [],
           ),
       ).size,
-      callCount: calls.length,
+      callCount: recording.detailsRetained === false ? null : calls.length,
       calls,
       completed: recording.completed !== false,
       incomplete: recording.incomplete ?? null,
@@ -239,7 +288,8 @@ export async function summarizeMatching(input: string, output?: string) {
     };
   });
   if (capture.droppedQueryRecordings)
-    warnings.push('查询录制达到会话上限，部分查询没有节点访问记录。');
+    warnings.push('查询详情因内存或导出额度被裁剪；摘要可能仍在，detailsRetained=false 不表示没有节点调用。');
+  if (capture.droppedQuerySummaries) warnings.push('查询摘要达到容量或导出上限，部分历史摘要已丢失。');
   if (recordings.some((recording) => !recording.completed))
     warnings.push(
       '部分查询仍未完成；已保留读取到的数据，result 为空不代表未命中。',
@@ -341,9 +391,6 @@ export async function summarizeMatching(input: string, output?: string) {
       };
     },
   );
-  const system = capture.systemRecording
-    ? object(capture.systemRecording)
-    : null;
   const timeline = (Array.isArray(system?.steps) ? system.steps : []).map(
     (value) => object(value),
   );
@@ -571,48 +618,6 @@ export async function summarizeMatching(input: string, output?: string) {
     warnings.push(
       '本记录未采集全程调用统计，耗时排名仅代表保留下来的详细片段。',
     );
-  const range = (values: unknown[]) => {
-    const times = values.filter(
-      (value): value is number =>
-        typeof value === 'number' && Number.isFinite(value),
-    );
-    return {
-      firstElapsedMillis: times.length ? Math.min(...times) : null,
-      lastElapsedMillis: times.length ? Math.max(...times) : null,
-    };
-  };
-  const coverage = {
-    events: {
-      ...range(events.map((event) => event.elapsedNanos / 1_000_000)),
-      retained: events.length,
-      dropped: session.dropped ?? 0,
-    },
-    queries: {
-      ...range(
-        recordings
-          .flatMap((q) => [q.startedAt, q.endedAt])
-          .map((time) =>
-            typeof time === 'number' && typeof session.startedAt === 'number'
-              ? time - session.startedAt
-              : null,
-          ),
-      ),
-      retained: recordings.length,
-      dropped: capture.droppedQueryRecordings ?? 0,
-    },
-    system: {
-      ...range(
-        timeline.map((step) =>
-          typeof step.timeMillis === 'number' &&
-          typeof system?.startedAtMillis === 'number'
-            ? step.timeMillis - system.startedAtMillis
-            : null,
-        ),
-      ),
-      retained: timeline.length,
-      incomplete: system?.incomplete ?? null,
-    },
-  };
   const result = {
     input,
     session: {
@@ -626,7 +631,6 @@ export async function summarizeMatching(input: string, output?: string) {
       trackingComplete: session.trackingComplete ?? null,
     },
     warnings,
-    coverage,
     entryTotals: Array.isArray(capture.entries) ? capture.entries : [],
     operationStatistics: statistics
       ? {
@@ -636,7 +640,7 @@ export async function summarizeMatching(input: string, output?: string) {
         }
       : null,
     statisticsNote:
-      '全程统计覆盖本会话已返回且成功建立跟踪的调用，包含停止后的返回；并发跟踪和分组遗漏分别见 omittedOperations、operationStatistics.omitted。Query/SelectorQuery 按规则分组，其余按 API 名称分组。不同层级与并发调用的耗时可能重叠，不能相加当作运行总耗时。最慢调用保留关联 ID，其详细事件可能已被覆盖。coverage 为保留详情的起止范围，不代表区间内连续完整；查询范围由墙钟换算，其余使用单调时钟。',
+      '全程统计覆盖本会话已返回且成功建立跟踪的调用，包含停止后的返回；并发跟踪和分组遗漏分别见 omittedOperations、operationStatistics.omitted。Query/SelectorQuery 按规则分组，其余按 API 名称分组。不同层级与并发调用的耗时可能重叠，不能相加当作运行总耗时。最慢调用保留关联 ID，其详细事件可能已被覆盖。保留范围与丢失情况见 evidenceCoverage.retention。',
     openOperations,
     omittedOperations: session.omittedOperations ?? 0,
     slowestOperations: operations
@@ -688,39 +692,10 @@ export async function summarizeMatching(input: string, output?: string) {
       })),
     accessibilitySettings: capture.accessibilitySettings ?? [],
     evidenceCoverage: {
-      accessibilitySettings: { available: Array.isArray(capture.accessibilitySettings), count: Array.isArray(capture.accessibilitySettings) ? capture.accessibilitySettings.length : 0, dropped: capture.droppedAccessibilitySettings ?? null },
+      retention,
+      retentionNote: '每类记录只在此汇总。firstAt/lastAt 为 Unix 毫秒；firstElapsedMillis/lastElapsedMillis 为相对开始时间，事件和系统步骤使用单调时钟，查询和设置记录由墙钟换算。缺失为 null，范围内不保证连续完整；无事件不等于丢失。memoryDropped 是采集覆盖计数，事件缓冲可能重叠，不能相加；exportDropped 是按体积裁剪数量。旧格式没有独立查询摘要，available=false。',
       sizeLimitBytes: capture.sizeLimitBytes ?? null,
-      omittedForSize: object(capture.omittedForSize),
-      boundary: {
-        available: Array.isArray(capture.boundaryEvents),
-        count: boundaryEvents.length,
-        dropped: capture.droppedBoundaryEvents ?? null,
-      },
-      detail: {
-        count: detailEvents.length,
-        dropped: session.dropped ?? 0,
-        firstMillis:
-          detailEvents[0]?.elapsedNanos == null
-            ? null
-            : detailEvents[0].elapsedNanos / 1e6,
-        lastMillis:
-          detailEvents.at(-1)?.elapsedNanos == null
-            ? null
-            : detailEvents.at(-1)!.elapsedNanos / 1e6,
-      },
-      key: {
-        available: Array.isArray(capture.keyEvents),
-        count: keyEvents.length,
-        dropped: capture.droppedKeyEvents ?? null,
-        firstMillis:
-          keyEvents[0]?.elapsedNanos == null
-            ? null
-            : keyEvents[0].elapsedNanos / 1e6,
-        lastMillis:
-          keyEvents.at(-1)?.elapsedNanos == null
-            ? null
-            : keyEvents.at(-1)!.elapsedNanos / 1e6,
-      },
+      omittedForSize: omissions,
     },
     pageLatency: matchingLatency(events),
     pageLatencyNote:
@@ -741,6 +716,7 @@ export async function summarizeMatching(input: string, output?: string) {
     recentConditions: conditions.slice(-20),
     omittedConditions: Math.max(0, conditions.length - 20),
     queryRecordings: recordings,
+    droppedQuerySummaries: capture.droppedQuerySummaries ?? 0,
     droppedQueryRecordings: capture.droppedQueryRecordings ?? 0,
     systemRecording: system
       ? {

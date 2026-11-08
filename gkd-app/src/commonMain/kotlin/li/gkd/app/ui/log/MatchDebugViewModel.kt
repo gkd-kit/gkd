@@ -44,6 +44,10 @@ class MatchDebugViewModel : BaseViewModel() {
     val selection = MultiSelectionState<Long>()
     val records = Db.matchDiagnosticRecordDao.observeAll().stateLoadable()
 
+    fun retrySaving() {
+        scope.launchUi { MatchDiagnosticFiles.flush() }
+    }
+
     fun delete(records: List<MatchDiagnosticRecord>) {
         scope.launchUi {
             val main = MainViewModel.requireCurrent()

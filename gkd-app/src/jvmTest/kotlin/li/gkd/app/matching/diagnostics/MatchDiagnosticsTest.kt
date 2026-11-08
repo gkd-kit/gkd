@@ -548,8 +548,13 @@ class MatchDiagnosticsTest {
         // An in-flight query may complete during action cleanup, after Stop.
         diagnostics.registerQuery(session.id, MatchQueryEvidence(query(40)))
         val capture = diagnostics.export(session.id)
-        assertEquals((9L..40L).toList(), capture.queryRecordings.map { it.runId })
+        assertEquals(
+            (9L..40L).toList(),
+            capture.queryRecordings.filter { it.detailsRetained }.map { it.runId },
+        )
         assertEquals(9L, capture.droppedQueryRecordings)
+        assertEquals(41, capture.queryRecordings.size)
+        assertEquals(0L, capture.droppedQuerySummaries)
         assertEquals(
             capture,
             Json.decodeFromString<MatchDiagnosticCapture>(Json.encodeToString(capture)),

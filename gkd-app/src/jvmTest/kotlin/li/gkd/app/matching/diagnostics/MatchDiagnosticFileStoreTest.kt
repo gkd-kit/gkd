@@ -27,8 +27,7 @@ class MatchDiagnosticFileStoreTest {
                 .copy(
                     entries = List(1_000) { MatchEntrySummary("source-$it", "汉".repeat(1_000), 1) },
                 )
-        val restored =
-            Json.decodeFromString<MatchDiagnosticCapture>(encodeDiagnosticCapture(capture))
+        val restored = decodeArchive(encodeDiagnosticCapture(capture))
         assertEquals(capture.boundaryEvents, restored.boundaryEvents)
         assertTrue(restored.entries.size in 1 until capture.entries.size)
         assertEquals(capture.entries.last(), restored.entries.last())
@@ -38,7 +37,52 @@ class MatchDiagnosticFileStoreTest {
         )
         assertEquals(
             restored,
-            Json.decodeFromString<MatchDiagnosticCapture>(encodeDiagnosticCapture(restored)),
+            decodeArchive(encodeDiagnosticCapture(restored)),
+        )
+    }
+
+    private fun decodeArchive(text: String): MatchDiagnosticCapture {
+        val root = Json.parseToJsonElement(text).jsonObject
+        val plans = root.getValue("queryPlans").jsonArray
+        val details =
+            root.getValue("queryDetails").jsonArray.associateBy {
+                it.jsonObject.getValue("queryId")
+            }
+        val queries =
+            root.getValue("querySummaries").jsonArray.map { value ->
+                val summary = value.jsonObject
+                val detail = details[summary.getValue("queryId")]?.jsonObject
+                val texts = detail?.get("texts")?.jsonArray ?: JsonArray(emptyList())
+                fun expand(value: JsonElement): JsonElement =
+                    when (value) {
+                        is JsonArray -> JsonArray(value.map(::expand))
+                        is JsonObject -> {
+                            val ref = value["valueRef"]?.jsonPrimitive?.int
+                            JsonObject(
+                                value
+                                    .filterKeys { it != "valueRef" }
+                                    .mapValues { expand(it.value) } +
+                                    if (ref == null) emptyMap() else mapOf("value" to texts[ref]),
+                            )
+                        }
+                        else -> value
+                    }
+                JsonObject(
+                    summary.filterKeys { it != "planId" } +
+                        mapOf(
+                            "plan" to plans[summary.getValue("planId").jsonPrimitive.int],
+                            "calls" to expand(detail?.get("calls") ?: JsonArray(emptyList())),
+                            "operations" to
+                                expand(detail?.get("operations") ?: JsonArray(emptyList())),
+                        ),
+                )
+            }
+        return li.gkd.app.util.JsonUtils.default.decodeFromJsonElement(
+            JsonObject(
+                root.filterKeys {
+                    it !in setOf("formatVersion", "queryPlans", "queryDetails", "querySummaries")
+                } + ("queryRecordings" to JsonArray(queries)),
+            ),
         )
     }
 
@@ -46,7 +90,7 @@ class MatchDiagnosticFileStoreTest {
         val metadata = Json.parseToJsonElement(readText()).jsonObject
         val sections =
             metadata.getValue("files").jsonObject.mapValues { (key, name) ->
-                if (key == "systemRecording")
+                if (name.jsonPrimitive.content.endsWith(".json"))
                     Json.parseToJsonElement(
                         parentFile.resolve(name.jsonPrimitive.content).readText(),
                     )
@@ -63,7 +107,7 @@ class MatchDiagnosticFileStoreTest {
     }
 
     private fun canonical(capture: MatchDiagnosticCapture) =
-        Json.decodeFromString<MatchDiagnosticCapture>(encodeDiagnosticCapture(capture))
+        decodeArchive(encodeDiagnosticCapture(capture))
 
     /** Large Unicode node recordings share a 20 MB file budget with independent event timelines. */
     @Test
@@ -93,7 +137,9 @@ class MatchDiagnosticFileStoreTest {
                     "rule",
                     MatchSelectorPlan(listOf("[text]")),
                     MatchRecordedValue(MatchRecordedValueType.Reference, reference = 1),
-                    List(30) { call },
+                    List(30) { index ->
+                        call.copy(result = call.result!!.copy(value = call.result.value + index))
+                    },
                     null,
                     null,
                     null,
@@ -102,7 +148,14 @@ class MatchDiagnosticFileStoreTest {
                 diagnostics
                     .export(session.id)
                     .copy(
-                        queryRecordings = List(32) { query.copy(runId = it.toLong()) },
+                        queryRecordings =
+                            List(32) {
+                                query.copy(
+                                    runId = it.toLong(),
+                                    queryId = it + 1L,
+                                    retainedFor = if (it == 0) "query_failed" else null,
+                                )
+                            },
                         accessibilitySettings =
                             List(2_000) { index ->
                                 AccessibilitySettingRecord(
@@ -117,6 +170,12 @@ class MatchDiagnosticFileStoreTest {
                             },
                     )
             assertTrue(capture.events.size > 2_000)
+            // Queries exceeding the old 2 MB ceiling fit when other sections leave room.
+            val smaller = capture.copy(queryRecordings = capture.queryRecordings.takeLast(8))
+            val shared = decodeArchive(prepareDiagnosticArchive(smaller).toString())
+            assertEquals(smaller.queryRecordings, shared.queryRecordings)
+            assertEquals(smaller.boundaryEvents, shared.boundaryEvents)
+            assertEquals(0, shared.omittedForSize["queryRecordings"] ?: 0)
             val store = MatchDiagnosticFileStore(directory)
             val saved = store.save(capture)!!
             val file = store.directory(saved.id).resolve("diagnostic.json")
@@ -129,31 +188,62 @@ class MatchDiagnosticFileStoreTest {
                 file.parentFile.walkTopDown().filter { it.isFile }.sumOf { it.length() },
                 saved.sizeBytes,
             )
-            val restored = Json.decodeFromString<MatchDiagnosticCapture>(file.readCapture())
+            val restored = decodeArchive(file.readCapture())
             assertEquals(20_000_000, restored.sizeLimitBytes)
             val storedEvents = restored.events + restored.keyEvents + restored.boundaryEvents
             assertEquals(storedEvents.size, storedEvents.map { it.sequence }.toSet().size)
-            assertTrue(file.parentFile.resolve("events.jsonl").length() <= 10_000_000)
-            assertTrue(file.parentFile.resolve("key-events.jsonl").length() <= 4_000_000)
             assertTrue(file.parentFile.resolve("boundary-events.jsonl").length() <= 2_000_000)
-            assertTrue(file.parentFile.resolve("query-recordings.jsonl").length() <= 2_000_000)
+            assertTrue(
+                file.parentFile.resolve("query-details.jsonl").length() > 2_000_000,
+                "Queries borrow unused detail and boundary space",
+            )
             assertTrue(file.parentFile.resolve("system-recording.json").length() <= 1_000_000)
-            assertTrue(file.parentFile.resolve("accessibility-settings.jsonl").length() <= 500_000)
-            assertTrue(restored.droppedAccessibilitySettings > 0)
             assertEquals(1999L, restored.accessibilitySettings.last().notifiedAt)
             assertEquals(capture.boundaryEvents, restored.boundaryEvents)
             assertEquals(0L, restored.droppedBoundaryEvents)
             assertTrue(restored.keyEvents.size > 2_000)
-            assertTrue(restored.omittedForSize.getValue("keyEvents") > 0)
             assertTrue(restored.omittedForSize.getValue("queryRecordings") > 0)
             assertEquals(31L, restored.queryRecordings.last().runId)
-            assertEquals(32L - restored.queryRecordings.size, restored.droppedQueryRecordings)
+            assertEquals(
+                32,
+                restored.queryRecordings.size,
+                "Detail trimming must not erase query summaries",
+            )
+            assertTrue(
+                restored.queryRecordings.first().detailsRetained,
+                "Fault detail precedes newer ordinary queries in the export budget",
+            )
+            assertTrue(restored.queryRecordings.last().detailsRetained)
+            // Unused query slots are returned to other sections, including small event records.
+            val payloadBytes =
+                file.parentFile
+                    .listFiles()!!
+                    .filter { it.name != "diagnostic.json" }
+                    .sumOf { it.length() }
+            val candidates = capture.keyEvents.filter { !it.isBoundaryTrace() }
+            if (restored.keyEvents.size < candidates.size) {
+                val next = candidates[candidates.size - restored.keyEvents.size - 1]
+                val nextBytes =
+                    li.gkd.app.util.JsonUtils.default
+                        .encodeToJsonElement(next)
+                        .toString()
+                        .toByteArray()
+                        .size
+                assertTrue(
+                    19_500_000L - payloadBytes < nextBytes + 1024,
+                    "Reusable fragments must return to the shared pool",
+                )
+            }
+            assertEquals(
+                32L - restored.queryRecordings.count { it.detailsRetained },
+                restored.droppedQueryRecordings,
+            )
             // HTTP uses this exact encoder; limiting a saved capture again must not double-count
             // loss.
             assertEquals(canonical(capture), restored)
             assertEquals(
                 restored,
-                Json.decodeFromString<MatchDiagnosticCapture>(encodeDiagnosticCapture(restored)),
+                decodeArchive(encodeDiagnosticCapture(restored)),
             )
         } finally {
             directory.deleteRecursively()
@@ -186,7 +276,7 @@ class MatchDiagnosticFileStoreTest {
             )
             assertEquals(
                 canonical(capture),
-                Json.decodeFromString<MatchDiagnosticCapture>(file.readCapture()),
+                decodeArchive(file.readCapture()),
             )
             val attachment = file.parentFile.resolve("attachments/evidence.txt")
             attachment.parentFile.mkdirs()
@@ -303,7 +393,7 @@ class MatchDiagnosticFileStoreTest {
             diagnostics.captureRuntime(runtime.copy(engine = runtime.engine.copy(attached = false)))
             diagnostics.endOperation(operation, "returned")
             val file = directory.listFiles()!!.single().resolve("diagnostic.json")
-            val restored = Json.decodeFromString<MatchDiagnosticCapture>(file.readCapture())
+            val restored = decodeArchive(file.readCapture())
             assertEquals(canonical(diagnostics.export(session.id)), restored)
             assertEquals(runtime, restored.runtime)
             assertEquals(stopped.runtimeCapturedAt, restored.runtimeCapturedAt)
@@ -320,7 +410,7 @@ class MatchDiagnosticFileStoreTest {
                 file.readCapture().contains("\"droppedQueryRecordings\":0"),
                 "Diagnostic files must include defaults just like HTTP",
             )
-            assertTrue(file.readCapture().contains("\"foreground\":null"))
+            assertFalse(file.readCapture().contains("\"foreground\":null"))
             diagnostics.endOperation(operation, "duplicate")
             diagnostics.recordRequest(session.id, request)
             assertEquals(2, writes)
@@ -369,7 +459,7 @@ class MatchDiagnosticFileStoreTest {
                 runCurrent()
                 assertEquals(1, captures.size)
                 val unfinished =
-                    Json.decodeFromString<MatchDiagnosticCapture>(
+                    decodeArchive(
                         directory.listFiles()!!.single().resolve("diagnostic.json").readCapture(),
                     )
                 assertFalse(unfinished.session.active)
@@ -380,7 +470,7 @@ class MatchDiagnosticFileStoreTest {
                 runCurrent()
                 assertEquals(2, captures.size)
                 val restored =
-                    Json.decodeFromString<MatchDiagnosticCapture>(
+                    decodeArchive(
                         directory.listFiles()!!.single().resolve("diagnostic.json").readCapture(),
                     )
                 assertEquals(canonical(captures.last()), restored)
@@ -449,7 +539,7 @@ class MatchDiagnosticFileStoreTest {
                     .isDirectory,
             )
             directory.listFiles()!!.forEach {
-                Json.decodeFromString<MatchDiagnosticCapture>(
+                decodeArchive(
                     it.resolve("diagnostic.json").readCapture(),
                 )
             }
@@ -461,7 +551,7 @@ class MatchDiagnosticFileStoreTest {
             retryStore.save(capture)
             assertEquals(
                 capture,
-                Json.decodeFromString<MatchDiagnosticCapture>(
+                decodeArchive(
                     blocked.listFiles()!!.single().resolve("diagnostic.json").readCapture(),
                 ),
             )

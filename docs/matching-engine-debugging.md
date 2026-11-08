@@ -18,21 +18,22 @@ Android 使用 `MatchDiagnosticService` 前台服务，页面与 HTTP/CLI 共用
 
 ### 文件与额度
 
-单次诊断生成文件合计不超过 **20,000,000 个 UTF-8 字节**。各类独立限额，不互相借用，剩余空间用于文件清单等开销：
+单次诊断生成文件合计不超过 **20,000,000 个 UTF-8 字节**。各类先获得下表的保底额度（数据不足时只占实际大小），未使用额度进入共享池。共享池依次补充查询摘要、查询详情、普通事件、关键事件、边界与故障、系统步骤、无障碍设置变化；元数据与清单保留独立空间：
 
-| 文件 | 内容 | 额度 |
+| 文件 | 内容 | 保底额度 |
 | --- | --- | --- |
 | `diagnostic.json` | 会话、统计和文件清单 | 其他信息预算 490 KB，另留清单开销 |
-| `events.jsonl` | 普通事件 | 10 MB |
+| `events.jsonl` | 普通事件 | 9 MB |
 | `key-events.jsonl` | 关键过程 | 4 MB |
 | `boundary-events.jsonl` | 边界与故障 | 2 MB |
-| `query-recordings.jsonl` | 节点查询录制 | 2 MB |
+| `query-summaries.jsonl` + `query-plans.json` | 查询摘要与共享选择器计划 | 合计 1 MB |
+| `query-details.jsonl` | 节点查询详情及查询内文本字典 | 2 MB |
 | `system-recording.json` | 系统步骤 | 1 MB |
 | `accessibility-settings.jsonl` | 无障碍设置变化 | 500 KB |
 
-事件按“边界与故障 → 关键 → 普通”互斥归类，导出只存一份。事件与查询保留最新完整记录；系统步骤保留前缀，截短时标记 `incomplete`。`omittedForSize` 分项记录体积删减数量。HTTP 保留整包 JSON，使用相同分类与预算；摘要脚本兼容整包格式及目录内的分类文件。
+事件按“边界与故障 → 关键 → 普通”互斥归类，导出只存一份。事件与查询摘要保留最新完整记录；查询详情先保留被标记的故障/慢查询现场，再保留最近记录；系统步骤保留前缀，截短时标记 `incomplete`。`omittedForSize` 分项记录体积删减数量。摘要统一在 `evidenceCoverage.retention` 按类别列出可用性、内存覆盖、导出裁剪计数和保留记录的起止时间；`firstAt/lastAt` 为 Unix 毫秒，`firstElapsedMillis/lastElapsedMillis` 为相对时间，缺失为 null；范围内不保证连续完整，空白也不证明丢失。每轮按实际保留字节数重新分配剩余额度，直到没有类别能再装入完整记录。HTTP 保留整包 JSON，使用相同分类与预算；摘要脚本兼容整包格式及目录内的分类文件。
 
-UI、HTTP 与 CLI 都保存轻量 `initialRules`，包含开始时已启用且有效的订阅 ID、版本和规则 ID；未加载为 null，已加载但无规则为空列表，不代表后续配置历史。外部规则标识为 `订阅ID/类型/应用ID/分组key/规则key`：应用类型为 `2`、全局类型为 `3`，全局应用 ID 为 `*`，无规则 key 时使用 `index:索引`。
+UI、HTTP 与 CLI 都保存轻量 `initialRules`，包含开始时已启用且有效的订阅 ID、版本和规则 ID；未加载时字段缺省（旧格式为 null），已加载但无规则为空列表，不代表后续配置历史。外部规则标识为 `订阅ID/类型/应用ID/分组key/规则key`：应用类型为 `2`、全局类型为 `3`，全局应用 ID 为 `*`，无规则 key 时使用 `index:索引`。
 
 诊断默认关闭，不额外创建记录、读取诊断时钟或节点。条件详情和节点录制可能含界面文本；单次请求还可能携带订阅和模拟树。复现后及时停止，分享前检查敏感内容。
 
@@ -241,7 +242,7 @@ SSE 从同一有界缓冲读取，不直接订阅执行线程；客户端慢不�
 
 共享诊断页现在展示服务模式、屏幕/锁屏、Task 与节点来源、确认/待确认界面、当前运行和下一次唤醒。可编辑时序 JSON 并应用到活动诊断会话；停止或拥有该会话的服务退出时恢复会话开始前的参数。运行中的查询保留其策略快照，后续查询使用新参数；引擎补查从原调度起点重算，规则 matchDelay/actionDelay 不被改写。
 
-`query_started` 事件携带该次查询的 policy，参数变化记录为 policy_updated；session.policy 始终是会话开始时的参数。活动会话导出时刷新 runtime；停止时冻结 runtime，停止后的导出和收尾更新不再刷新它。该快照由各来源依次观察组成，不是原子系统状态。Desktop 的 foreground=null 明确表示没有 Android 前台观察。
+`query_started` 事件携带该次查询的 policy，参数变化记录为 policy_updated；session.policy 始终是会话开始时的参数。活动会话导出时刷新 runtime；停止时冻结 runtime，停止后的导出和收尾更新不再刷新它。该快照由各来源依次观察组成，不是原子系统状态。Desktop 不提供 Android 前台观察，导出省略空的 foreground 字段（旧格式为 null）。
 
 ```shell
 pnpm app-tools matching-debug --connection "$connection" --operation engine
@@ -342,7 +343,7 @@ SQL 仅统计 GKD Debug 主进程正式测量的同线程区间，并把嵌套�
 
 诊断页默认采集节点访问。CLI 的 `--record-queries --rule ID` 仅记录指定规则；`--record-system` 包含全部参与查询。关闭采集时不创建节点访问记录，不增加节点读取。
 
-`queryRecordings` 保留选择器计划、源节点、实际调用参数、返回值、异常与最终结果。每份查询独立保留 `startedAt`、`endedAt`、`durationNanos` 和 `outcome`（matched/not_matched/failed/cancelled），未完成时结束时间、耗时和终态为空；摘要不依赖事件环形缓冲。这里的耗时是选择器查询范围，不包含整个运行的其他等待或动作。每条调用的 `startedNanos` 相对该查询记录开始，`durationNanos` 测量实际委托调用，不包含结果序列化；同时记录线程、异常类型及消息。
+归档格式 `formatVersion=2` 将查询拆成 `querySummaries`、`queryDetails` 和 `queryPlans`。摘要与详情通过会话内 `queryId` 关联，共同字段只在摘要保存；`planId` 引用共享选择器计划。每份详情的 `texts` 保存重复且至少 64 字符的文本，记录值的 `valueRef` 引用该查询的文本表。摘要工具自动还原为 `queryRecordings`，保留选择器计划、源节点、实际调用参数、返回值、异常与最终结果；旧整包和分类文件仍可读取。导出省略值为 null 的可空模型字段，读取时按 nullable 语义处理缺省值；动态 JSON 中显式的 null 值仍保留，空数组与未知仍有区别。每份查询独立保留 `startedAt`、`endedAt`、`durationNanos` 和 `outcome`（matched/not_matched/failed/cancelled），未完成时结束时间、耗时和终态为空；摘要不依赖事件环形缓冲。这里的耗时是选择器查询范围，不包含整个运行的其他等待或动作。每条调用的 `startedNanos` 相对该查询记录开始，`durationNanos` 测量实际委托调用，不包含结果序列化；同时记录线程、异常类型及消息。
 
 查询的 `operationId` 关联 `SelectorQuery` 操作；关键节点调用的 `operationId` 关联 `Selector.*` 操作，等待记录的 `parentOperationId` 可关联到该调用。查询内成功的 Selector 调用不再重复写事件；等待与实际读取的完成详情保存在查询的 `operations` 中，开始/完成不再重复写事件。异常和停止后收尾仍进入事件流。调用及物理读取详情共用原有字符容量预算，截断会标记 `incomplete`，摘要仍会收尾。未返回的关键调用在 `session.openOperations` 中保留参数、运行、规则、线程和开始时间，即使完成记录尚未产生也能查看。
 
@@ -350,9 +351,9 @@ SQL 仅统计 GKD Debug 主进程正式测量的同线程区间，并把嵌套�
 
 运行级 `Query`、`Action` 操作记录完整查询与动作函数耗时、结果和失败。动作耗时包含它的异步等待与收尾，不等于触摸注入 API 本身的耗时，也不证明物理触点已释放。节点点击/长按、全局返回、dispatchGesture 提交与 GestureCallbackWait 分别计时；特权 tap/swipe/keyevent 路径记录调用方等待耗时，不宣称是远端服务内部的单次注入耗时。动作协程携带父操作关联，切到 IO 线程或不可取消收尾时仍关联原 runId 和规则。
 
-普通查询采集最多 8 次；系统诊断滚动保留最近 32 次。每次最多 10000 个调用、约 100 万字符，单个文本最多 16384 字符。超限记录 `incomplete` 和丢弃计数，实际匹配继续。数据只覆盖实际访问过的节点，不是完整 UI 树。
+两种模式均保留最近 2,000 次轻量查询摘要；普通采集保留最近 8 次详情，系统诊断保留最近 32 次详情。失败、断连以及耗时至少 500 ms 的查询会保留附近详情（查询自身及前后各 2 次；服务故障保留此前 3 次及之后 2 次），额外保护名额最多 16 次。未完成的查询等待实际结束再释放详情。`retainedFor` 说明现场保留原因，`detailsRetained=false` 表示仅有摘要，不表示没有节点调用。每次最多 10000 个调用、约 100 万字符，单个文本最多 16384 字符。超限记录 `incomplete` 和丢弃计数，实际匹配继续。数据只覆盖实际访问过的节点，不是完整 UI 树。
 
-覆盖旧查询时累计 `droppedQueryRecordings`。进行中的查询也可导出已读取的值：`completed=false` 表示尚未结束，此时 `result=null` 不代表未命中；结束后更新同一条记录。导出不等待节点调用，也不保留平台节点引用。
+覆盖详情时累计 `droppedQueryRecordings`，覆盖摘要另累计 `droppedQuerySummaries`。进行中的查询也可导出已读取的值：`completed=false` 表示尚未结束，此时结果缺省或为 null 不代表未命中；结束后更新同一条记录。导出不等待节点调用，也不保留平台节点引用。
 
 离线分析无需启动 Desktop 或连接手机：
 
@@ -380,7 +381,7 @@ watch 现在将 `--after SEQUENCE` 作为 Last-Event-ID 发送，重连可以接
 
 诊断页统一采集；HTTP 使用 `recordSystem: true`，CLI 使用 `--record-system`。系统步骤保留实际调度命令及效果、规则状态前后值、共享计数/冷却关联、动作开始、取消、返回/异常和执行结束。初始与最终状态包含服务代次、任务、延迟和策略，用来解释采集边界。数据不包含平台可执行对象。
 
-系统步骤的采集缓冲最多 20,000 条、估算大小上限 16,000,000 字节，超限标记 incomplete；导出另按 1 MB 独立额度保留完整步骤前缀。查询录制在系统采集模式下保留最近 32 次，导出另受 2 MB 额度限制。诊断不能证明未采集的历史，也不会按旧记录再次执行动作。
+系统步骤的采集缓冲最多 20,000 条、估算大小上限 16,000,000 字节，超限标记 incomplete；导出以 1 MB 为保底额度，可借用共享空间，保留完整步骤前缀。查询摘要与详情分别受内存数量及导出保底额度限制，均可借用共享空间。诊断不能证明未采集的历史，也不会按旧记录再次执行动作。
 
 停止时先保存不可变现场，包含未返回操作和 `sealed=false` 的系统记录；收尾完成后更新同一会话文件。分享日志会等待已排队的文件写入，不等待动作结束。为保留旧会话收尾和避免串会话，新采集仍需等待当前会话收尾；这不妨碍保存、分享当前现场。普通自动匹配不会因为停止诊断而被取消；诊断拥有的请求按原生命周期取消。
 

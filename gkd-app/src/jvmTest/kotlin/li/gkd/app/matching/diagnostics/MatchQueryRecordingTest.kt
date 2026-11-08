@@ -369,7 +369,11 @@ class MatchQueryRecordingTest {
         diagnostics.registerQuery(session.id, recording.evidence)
         repeat(2100) { diagnostics.record(42, MatchStage.Idle, "noise") }
         val retained = diagnostics.export(session.id).queryRecordings.single()
-        assertEquals(data, retained, "Query timing and result survive trace ring overwrite")
+        assertEquals(
+            data.copy(queryId = retained.queryId, retainedFor = retained.retainedFor),
+            retained,
+            "Query timing and result survive trace ring overwrite",
+        )
         assertEquals(data, Json.decodeFromString<MatchQueryRecording>(Json.encodeToString(data)))
     }
 
@@ -803,12 +807,15 @@ class MatchQueryRecordingTest {
                     )
                 repeat(10) { assertSame(simulation.root, nodes.match(rule, simulation.root)) }
                 val capture = diagnostics.export(session.id)
-                assertEquals(8, capture.queryRecordings.size)
+                assertEquals(10, capture.queryRecordings.size)
+                assertEquals(8, capture.queryRecordings.count { it.detailsRetained })
                 assertEquals(2, capture.droppedQueryRecordings)
                 assertTrue(
-                    capture.queryRecordings.all {
-                        it.failure == null && it.incomplete == null && it.calls.isNotEmpty()
-                    },
+                    capture.queryRecordings
+                        .filter { it.detailsRetained }
+                        .all {
+                            it.failure == null && it.incomplete == null && it.calls.isNotEmpty()
+                        },
                 )
                 diagnostics.stop(session.id)
                 val next = diagnostics.start(MatchTimingPolicy())

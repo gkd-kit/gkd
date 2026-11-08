@@ -2,29 +2,31 @@ package li.gkd.app.matching.diagnostics
 
 import java.io.OutputStream
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.encodeToStream
+import kotlinx.serialization.json.*
 import li.gkd.app.util.JsonUtils
 
 private const val EXPORT_LIMIT_BYTES = 20_000_000
-private const val DETAIL_LIMIT_BYTES = 10_000_000L
-private const val KEY_LIMIT_BYTES = 4_000_000L
-private const val BOUNDARY_LIMIT_BYTES = 2_000_000L
+private const val KEY_BASELINE_BYTES = 4_000_000L
+private const val BOUNDARY_BASELINE_BYTES = 2_000_000L
 
 /** Shared by file and HTTP export. Serialization never runs on the event admission path. */
 fun encodeDiagnosticCapture(value: MatchDiagnosticCapture): String =
-    JsonUtils.keepingNulls.encodeToString(prepareDiagnosticCapture(value))
+    prepareDiagnosticArchive(value).toString()
 
-fun prepareDiagnosticCapture(value: MatchDiagnosticCapture): MatchDiagnosticCapture =
+fun prepareDiagnosticArchive(value: MatchDiagnosticCapture): JsonObject =
     value
         .copy(
+            queryRecordings =
+                value.queryRecordings.mapIndexed { index, query ->
+                    if (query.queryId == 0L) query.copy(queryId = index + 1L) else query
+                },
             events = value.events.filter { !it.isKeyTrace() && !it.isBoundaryTrace() },
             keyEvents = value.keyEvents.filter { !it.isBoundaryTrace() },
         )
         .limitExportSize()
 
 /** Exclude separately stored payloads when measuring or writing session metadata. */
-fun MatchDiagnosticCapture.metadataOnly(): MatchDiagnosticCapture =
+private fun MatchDiagnosticCapture.metadataOnly(): MatchDiagnosticCapture =
     copy(
         events = emptyList(),
         keyEvents = emptyList(),
@@ -46,81 +48,189 @@ private inline fun <reified T> retainNewest(values: List<T>, budget: Long): List
     return values.takeLast(count)
 }
 
-private fun MatchDiagnosticCapture.limitExportSize(): MatchDiagnosticCapture {
+/** Reallocates only unused bytes; another section's retained evidence is never displaced. */
+private class DiagnosticBudget<T>(
+    baseline: Long,
+    private val select: (Long) -> T,
+    private val measure: (T) -> Long,
+) {
+    var value = select(baseline)
+        private set
+
+    var bytes = measure(value)
+        private set
+
+    fun expand(available: Long): Long {
+        val next = select(bytes + available)
+        if (next == value) return 0
+        val before = bytes
+        value = next
+        bytes = measure(value)
+        return bytes - before
+    }
+}
+
+private fun <T> retainRecent(values: List<T>, budget: Long, measure: (List<T>) -> Long): List<T> {
+    if (measure(values) <= budget) return values
+    var low = 0
+    var high = values.size
+    while (low < high) {
+        val middle = (low + high + 1) / 2
+        if (measure(values.takeLast(middle)) <= budget) low = middle else high = middle - 1
+    }
+    return values.takeLast(low)
+}
+
+private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
     val omissions = omittedForSize.toMutableMap()
     fun omitted(section: String, count: Int) {
         if (count > 0) omissions[section] = (omissions[section] ?: 0) + count
     }
-    fun retainTimeline(section: String, values: List<MatchTrace>, budget: Long): List<MatchTrace> {
-        val retained = retainNewest(values, budget)
-        omitted(section, values.size - retained.size)
-        return retained
-    }
+    fun timeline(values: List<MatchTrace>, baseline: Long) =
+        DiagnosticBudget(
+            baseline,
+            { retainNewest(values, it) },
+            { jsonBytes(it) },
+        )
+    fun summaryBytes(records: List<MatchQueryRecording>) =
+        jsonBytes(
+            JsonObject(querySummarySections(records.map { it.copy(detailsRetained = false) })),
+        )
+    val summaries =
+        DiagnosticBudget(
+            1_000_000L,
+            { budget -> retainRecent(queryRecordings, budget, ::summaryBytes) },
+            ::summaryBytes,
+        )
+    val encodedDetails =
+        queryRecordings
+            .filter { it.detailsRetained }
+            .sortedWith(
+                compareBy<MatchQueryRecording> { it.retainedFor != null }.thenBy { it.queryId },
+            )
+            .map(::queryDetailJson)
+    val details =
+        DiagnosticBudget(
+            2_000_000L,
+            { budget ->
+                val ids = summaries.value.mapTo(mutableSetOf()) { it.queryId }
+                retainNewest(
+                    encodedDetails.filter { it.getValue("queryId").jsonPrimitive.long in ids },
+                    budget,
+                )
+            },
+            { jsonBytes(it) },
+        )
+    val detail = timeline(events, 9_000_000L)
+    val keys = timeline(keyEvents, KEY_BASELINE_BYTES)
+    val boundaries = timeline(boundaryEvents, BOUNDARY_BASELINE_BYTES)
+    val system =
+        DiagnosticBudget(
+            1_000_000L,
+            { budget ->
+                systemRecording?.let { recording ->
+                    if (jsonBytes(recording) <= budget) return@let recording
+                    var bytes =
+                        jsonBytes(
+                            recording.copy(
+                                steps = emptyList(),
+                                incomplete = recording.incomplete ?: "export_size_limit",
+                            ),
+                        )
+                    val steps =
+                        recording.steps
+                            .asSequence()
+                            .withIndex()
+                            .takeWhile { (index, step) ->
+                                bytes += jsonBytes(step) + if (index == 0) 0 else 1
+                                bytes <= budget
+                            }
+                            .map { it.value }
+                            .toList()
+                    recording.copy(
+                        steps = steps,
+                        incomplete =
+                            if (steps.size < recording.steps.size)
+                                recording.incomplete ?: "export_size_limit"
+                            else recording.incomplete,
+                    )
+                }
+            },
+            { jsonBytes(it) },
+        )
+    val settings =
+        DiagnosticBudget(500_000L, { retainNewest(accessibilitySettings, it) }, { jsonBytes(it) })
+    val sections = listOf(summaries, details, detail, keys, boundaries, system, settings)
+    var remaining = 19_500_000L - sections.sumOf { it.bytes }
+    do {
+        var used = 0L
+        for (section in sections) {
+            val extra = section.expand(remaining)
+            remaining -= extra
+            used += extra
+        }
+    } while (used > 0 && remaining > 0)
 
-    // Independent budgets: successful matching cannot consume foreground/failure evidence space.
-    val detail = retainTimeline("events", events, DETAIL_LIMIT_BYTES)
-    val keys = retainTimeline("keyEvents", keyEvents, KEY_LIMIT_BYTES)
-    val boundaries = retainTimeline("boundaryEvents", boundaryEvents, BOUNDARY_LIMIT_BYTES)
+    val retainedIds =
+        details.value.mapTo(mutableSetOf()) { it.getValue("queryId").jsonPrimitive.long }
+    val queries =
+        summaries.value.map {
+            if (it.queryId in retainedIds) it
+            else it.copy(calls = emptyList(), operations = emptyList(), detailsRetained = false)
+        }
+    val lostDetails = queryRecordings.count { it.detailsRetained } - retainedIds.size
+    omitted("queryRecordings", lostDetails)
+    omitted("querySummaries", queryRecordings.size - queries.size)
+    omitted("events", events.size - detail.value.size)
+    omitted("keyEvents", keyEvents.size - keys.value.size)
+    omitted("boundaryEvents", boundaryEvents.size - boundaries.value.size)
+    omitted("systemSteps", (systemRecording?.steps?.size ?: 0) - (system.value?.steps?.size ?: 0))
+    omitted("accessibilitySettings", accessibilitySettings.size - settings.value.size)
     var capture =
         copy(
-            session = session.copy(dropped = session.dropped + events.size - detail.size),
-            events = detail,
-            keyEvents = keys,
-            droppedKeyEvents = droppedKeyEvents + keyEvents.size - keys.size,
-            boundaryEvents = boundaries,
-            droppedBoundaryEvents = droppedBoundaryEvents + boundaryEvents.size - boundaries.size,
+            session = session.copy(dropped = session.dropped + events.size - detail.value.size),
+            events = detail.value,
+            keyEvents = keys.value,
+            boundaryEvents = boundaries.value,
+            queryRecordings = queries,
+            droppedQueryRecordings = droppedQueryRecordings + lostDetails,
+            droppedQuerySummaries = droppedQuerySummaries + queryRecordings.size - queries.size,
+            droppedKeyEvents = droppedKeyEvents + keyEvents.size - keys.value.size,
+            droppedBoundaryEvents =
+                droppedBoundaryEvents + boundaryEvents.size - boundaries.value.size,
+            systemRecording = system.value,
+            accessibilitySettings = settings.value,
+            droppedAccessibilitySettings =
+                droppedAccessibilitySettings + accessibilitySettings.size - settings.value.size,
             sizeLimitBytes = EXPORT_LIMIT_BYTES,
             omittedForSize = omissions.toMap(),
         )
-    val queries = retainNewest(capture.queryRecordings, 2_000_000L)
-    omitted("queryRecordings", capture.queryRecordings.size - queries.size)
-    val recording =
-        capture.systemRecording?.let { recording ->
-            var stepBytes =
-                jsonBytes(
-                    recording.copy(
-                        steps = emptyList(),
-                        incomplete = recording.incomplete ?: "export_size_limit",
-                    ),
-                )
-            val steps =
-                recording.steps.takeWhile {
-                    stepBytes += jsonBytes(it) + 1
-                    stepBytes <= 1_000_000L
-                }
-            omitted("systemSteps", recording.steps.size - steps.size)
-            recording.copy(
-                steps = steps,
-                incomplete =
-                    if (steps.size < recording.steps.size)
-                        recording.incomplete ?: "export_size_limit"
-                    else recording.incomplete,
-            )
-        }
-    capture =
-        capture.copy(
-            queryRecordings = queries,
-            droppedQueryRecordings =
-                capture.droppedQueryRecordings + capture.queryRecordings.size - queries.size,
-            systemRecording = recording,
-            omittedForSize = omissions.toMap(),
+    val retainedDetails = details.value.associateBy { it.getValue("queryId").jsonPrimitive.long }
+    val payload =
+        mapOf(
+            "events" to JsonUtils.default.encodeToJsonElement(capture.events),
+            "keyEvents" to JsonUtils.default.encodeToJsonElement(capture.keyEvents),
+            "boundaryEvents" to JsonUtils.default.encodeToJsonElement(capture.boundaryEvents),
+            "accessibilitySettings" to
+                JsonUtils.default.encodeToJsonElement(capture.accessibilitySettings),
+            "systemRecording" to JsonUtils.default.encodeToJsonElement(capture.systemRecording),
+            "queryDetails" to JsonArray(queries.mapNotNull { retainedDetails[it.queryId] }),
+        ) + querySummarySections(queries)
+    fun metadata() =
+        JsonObject(
+            JsonUtils.default.encodeToJsonElement(capture.metadataOnly()).jsonObject.filterKeys {
+                it !in payload && it != "queryRecordings"
+            } + ("formatVersion" to JsonPrimitive(2)),
         )
-    val settings = retainNewest(capture.accessibilitySettings, 500_000L)
-    omitted("accessibilitySettings", capture.accessibilitySettings.size - settings.size)
-    capture =
-        capture.copy(
-            accessibilitySettings = settings,
-            droppedAccessibilitySettings =
-                capture.droppedAccessibilitySettings + capture.accessibilitySettings.size -
-                    settings.size,
-            omittedForSize = omissions.toMap(),
-        )
-    var bytes = jsonBytes(capture.metadataOnly())
-    val payloadBytes = jsonBytes(capture) - bytes
+    var encodedMetadata = metadata()
+    var bytes = jsonBytes(encodedMetadata)
+    // Combining two nonempty objects removes two braces and adds one separator.
+    val payloadBytes = jsonBytes(JsonObject(payload)) - 1
     val effectiveLimit = minOf(490_000L, EXPORT_LIMIT_BYTES - payloadBytes)
     fun replace(next: MatchDiagnosticCapture) {
         capture = next.copy(omittedForSize = omissions.toMap())
-        bytes = jsonBytes(capture.metadataOnly())
+        encodedMetadata = metadata()
+        bytes = jsonBytes(encodedMetadata)
     }
 
     // Metadata has its own budget; it cannot consume any timeline or recording allowance.
@@ -189,7 +299,7 @@ private fun MatchDiagnosticCapture.limitExportSize(): MatchDiagnosticCapture {
     check(bytes <= effectiveLimit) {
         "Diagnostic metadata exceeds its $effectiveLimit-byte budget"
     }
-    return capture
+    return JsonObject(encodedMetadata + payload)
 }
 
 /** Count actual UTF-8 JSON bytes without allocating a serialized copy of the entire capture. */
@@ -209,6 +319,6 @@ private class JsonByteCounter : OutputStream() {
 @OptIn(ExperimentalSerializationApi::class)
 private inline fun <reified T> jsonBytes(value: T): Long {
     val counter = JsonByteCounter()
-    JsonUtils.keepingNulls.encodeToStream(value, counter)
+    JsonUtils.default.encodeToStream(value, counter)
     return counter.size
 }

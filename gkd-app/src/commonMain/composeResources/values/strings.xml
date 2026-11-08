@@ -1181,6 +1181,8 @@
     <string name="match_debug_notification_help">Tap to view diagnostics. Stop recording from this notification.</string>
     <string name="match_debug_saved_notification_help">Tap to view diagnostic records</string>
     <string name="match_debug_saving">Saving diagnostics…</string>
+    <string name="match_debug_finishing">Finishing diagnostics…</string>
+    <string name="match_debug_save_failed">Save failed. Tap to retry.</string>
     <string name="match_debug_idle">Not started</string>
     <string name="match_debug_collect">Diagnostic recording</string>
     <string name="match_debug_intro">Record runtime behavior to help troubleshoot issues</string>

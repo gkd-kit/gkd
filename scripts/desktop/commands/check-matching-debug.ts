@@ -1,3 +1,4 @@
+import { expandMatchingCapture } from '../lib/matching-capture.ts';
 import assert from 'node:assert/strict';
 import { setTimeout as pause } from 'node:timers/promises';
 import { DesktopClient } from '../lib/desktop-client.ts';
@@ -81,14 +82,14 @@ export async function checkMatchingDebug(client: DesktopClient) {
     assert.ok(Date.now() - started >= 400, 'Cancellation must wait for simulated physical cleanup');
     const events = await json(`${path}/events?after=0`);
     assert.ok(events.events.some((event: { reason: string }) => event.reason === 'matches[0]:hit'));
-    const exported = await json(`${path}/export`, {});
+    const exported = expandMatchingCapture(await json(`${path}/export`, {}));
     assert.equal(exported.runs.length, 2);
     assert.ok(Array.isArray(exported.ruleSnapshots) && Array.isArray(exported.entries));
     assert.ok(exported.scope.includes('observed_evidence_only'));
     assert.equal(exported.queryRecordings.length, 2);
     assert.equal(exported.queryRecordings[0].runId, matched.engineRunId, 'Requests must link to engine events and recordings');
     for (const recording of exported.queryRecordings) {
-      assert.equal(recording.failure, null);
+      assert.ok(recording.failure == null);
       assert.ok(recording.operationId > 0);
       assert.ok(recording.calls.every((call: { durationNanos: number; startedNanos: number }) => call.durationNanos >= 0 && call.startedNanos >= 0));
     }
@@ -144,7 +145,7 @@ export async function checkMatchingDebug(client: DesktopClient) {
       'A replacement session must wait for the old request to publish its terminal state');
     assert.equal((await terminal('session-stop')).phase, 'cancelled');
     assert.ok(Date.now() - sessionStoppedAt >= 400, 'Session stop must retain the request until action cleanup');
-    const capture = await json(`${path}/export`, {});
+    const capture = expandMatchingCapture(await json(`${path}/export`, {}));
     const streamed = await stream;
     assert.equal(streamed.status, 200);
     const pages = streamed.body.toString().split('\n').filter(line => line.startsWith('data: '))

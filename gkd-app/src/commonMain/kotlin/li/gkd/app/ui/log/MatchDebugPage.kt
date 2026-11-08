@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -27,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
@@ -47,6 +49,8 @@ import li.gkd.app.app.AppInfoRepository
 import li.gkd.app.app.launcherAppIdFlow
 import li.gkd.app.error.messageResource
 import li.gkd.app.matching.MatchingRuntime
+import li.gkd.app.matching.diagnostics.MatchDiagnosticFiles
+import li.gkd.app.matching.diagnostics.MatchDiagnosticSaveState
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
 import li.gkd.app.ui.MainViewModel
@@ -80,10 +84,15 @@ fun MatchDebugPage() {
         )
     val active = current.second
     val records by vm.records.collectAsStateWithLifecycle()
+    val saves by MatchDiagnosticFiles.state.collectAsStateWithLifecycle()
     val selected by vm.selected.collectAsStateWithLifecycle()
     val selection by vm.selection.state.collectAsStateWithLifecycle()
     val allRecords = records.value.orEmpty()
     val keys = allRecords.mapTo(mutableSetOf()) { it.id }
+    val saving =
+        saves.values.lastOrNull {
+            !it.saved || !it.trackingComplete || it.startedAt !in keys
+        }
     val selectedKeys = selection.selectedKeys intersect keys
     val targets = allRecords.filter { it.id in selectedKeys }
     val pageScrollState = rememberListScrollState()
@@ -141,6 +150,8 @@ fun MatchDebugPage() {
                 DiagnosticCaptureCard(
                     active = active,
                     startedAt = current.third,
+                    saving = saving,
+                    onRetry = vm::retrySaving,
                     enabled = !selection.active,
                     onClick = {
                         if (active)
@@ -161,7 +172,7 @@ fun MatchDebugPage() {
                         )
                     }
                 is Loadable.Ready -> {
-                    if (state.value.isEmpty())
+                    if (state.value.isEmpty() && saving == null)
                         item {
                             Text(
                                 stringResource(
@@ -591,6 +602,8 @@ private fun diagnosticDuration(millis: Long): String {
 private fun DiagnosticCaptureCard(
     active: Boolean,
     startedAt: Long?,
+    saving: MatchDiagnosticSaveState?,
+    onRetry: () -> Unit,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
@@ -611,6 +624,39 @@ private fun DiagnosticCaptureCard(
                 )
                 if (active && startedAt != null) {
                     DiagnosticCaptureDuration(startedAt)
+                } else if (saving != null) {
+                    val failed = saving.error != null
+                    val color =
+                        if (failed) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    val density = LocalDensity.current
+                    Row(
+                        modifier =
+                            if (failed) Modifier.clickable(role = Role.Button, onClick = onRetry)
+                            else Modifier,
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        if (!failed)
+                            CircularProgressIndicator(
+                                modifier =
+                                    Modifier.size(with(density) { 14.sp.toDp() })
+                                        .clearAndSetSemantics {},
+                                strokeWidth = with(density) { 1.5.sp.toDp() },
+                                color = color,
+                            )
+                        Text(
+                            stringResource(
+                                when {
+                                    failed -> Res.string.match_debug_save_failed
+                                    !saving.trackingComplete -> Res.string.match_debug_finishing
+                                    else -> Res.string.match_debug_saving
+                                },
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = color,
+                        )
+                    }
                 } else {
                     Text(
                         stringResource(Res.string.match_debug_idle),

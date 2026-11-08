@@ -62,6 +62,9 @@ data class MatchQueryRecording(
     val durationNanos: Long? = null,
     val outcome: String? = null,
     val operations: List<MatchOperation> = emptyList(),
+    val queryId: Long = 0,
+    val detailsRetained: Boolean = true,
+    val retainedFor: String? = null,
 )
 
 /**
@@ -426,6 +429,6 @@ private inline fun <N : Any> recordQuery(
             failure ?: if (result == null) "not_matched" else "matched",
         )
         recording.finish(result, failure, cancelled)
-        diagnostics.finishQuery(session.id)
+        diagnostics.finishQuery(session.id, recording.evidence)
     }
 }

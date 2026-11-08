@@ -30,7 +30,7 @@ class AccessibilitySettingRecordTest {
             JsonUtils.keepingNulls.decodeFromString<AccessibilitySettingRecord>(encoded),
         )
         val capture =
-            JsonUtils.keepingNulls.decodeFromString<MatchDiagnosticCapture>(
+            JsonUtils.default.decodeFromString<MatchDiagnosticCapture>(
                 encodeDiagnosticCapture(diagnostics.export(session.id)),
             )
         assertEquals(listOf(baseline), capture.accessibilitySettings)

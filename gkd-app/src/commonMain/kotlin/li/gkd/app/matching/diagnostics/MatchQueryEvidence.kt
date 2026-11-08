@@ -14,6 +14,31 @@ class MatchQueryEvidence(initial: MatchQueryRecording? = null) {
     val completed: Boolean
         get() = synchronized(lock) { header?.completed == true }
 
+    val detailsRetained: Boolean
+        get() = synchronized(lock) { header?.detailsRetained != false }
+
+    val retainedFor: String?
+        get() = synchronized(lock) { header?.retainedFor }
+
+    fun identify(id: Long) = synchronized(lock) { header = checkNotNull(header).copy(queryId = id) }
+
+    fun protect(reason: String?) =
+        synchronized(lock) {
+            header = checkNotNull(header).copy(retainedFor = reason)
+        }
+
+    fun releaseDetails(): Boolean =
+        synchronized(lock) {
+            if (header?.detailsRetained != true || header?.completed != true)
+                return@synchronized false
+            calls.clear()
+            operations.clear()
+            header =
+                checkNotNull(header)
+                    .copy(calls = emptyList(), operations = emptyList(), detailsRetained = false)
+            true
+        }
+
     fun begin(value: MatchQueryRecording) =
         synchronized(lock) {
             header = value
@@ -23,7 +48,7 @@ class MatchQueryEvidence(initial: MatchQueryRecording? = null) {
 
     fun append(call: MatchNodeCall) =
         synchronized(lock) {
-            if (incomplete != null) return@synchronized
+            if (incomplete != null || header?.detailsRetained == false) return@synchronized
             characters +=
                 call.operation.wireValue.length +
                     call.arguments.sumOf { it.value.length + 32 } +
@@ -38,6 +63,7 @@ class MatchQueryEvidence(initial: MatchQueryRecording? = null) {
 
     fun operation(value: MatchOperation) =
         synchronized(lock) {
+            if (header?.detailsRetained == false) return@synchronized
             characters +=
                 value.name.length +
                     value.arguments.sumOf { it.value.length + 32 } +
@@ -71,12 +97,12 @@ class MatchQueryEvidence(initial: MatchQueryRecording? = null) {
             }
         }
 
-    fun snapshot(): MatchQueryRecording =
+    fun snapshot(includeDetails: Boolean = true): MatchQueryRecording =
         synchronized(lock) {
             checkNotNull(header)
                 .copy(
-                    calls = calls.toList(),
-                    operations = operations.toList(),
+                    calls = if (includeDetails) calls.toList() else emptyList(),
+                    operations = if (includeDetails) operations.toList() else emptyList(),
                     incomplete = incomplete,
                 )
         }

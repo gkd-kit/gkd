@@ -1,3 +1,4 @@
+import { expandMatchingCapture } from '../lib/matching-capture.ts';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -47,12 +48,13 @@ export async function checkDiagnosticPerformance(serial: string, appId: string, 
           await until(() => request(`debug/sessions/${session.id}/runs/${requestId}`), r => ['completed', 'failed', 'cancelled'].includes(r.phase), 'Query completion');
         }
       } finally { await request(`debug/sessions/${session.id}/stop`, {}); }
-      const capture = await request(`debug/sessions/${session.id}/export`, {});
+      const archive = await request(`debug/sessions/${session.id}/export`, {});
+      const capture = expandMatchingCapture(archive);
       const file = `${folder}/capture.json`;
-      await writeFile(file, JSON.stringify(capture));
+      await writeFile(file, JSON.stringify(archive));
       await summarizeMatching(file, `${folder}/summary.json`);
       assert.equal(capture.queryRecordings.length, 3);
-      assert.ok(capture.queryRecordings.every((q: any) => q.completed && q.durationNanos > 0 && q.outcome === 'not_matched' && q.incomplete === null));
+      assert.ok(capture.queryRecordings.every((q: any) => q.completed && q.durationNanos > 0 && q.outcome === 'not_matched' && q.incomplete == null));
       assert.equal(capture.session.openOperations.length, 0);
       console.log('Capture:', { dropped: capture.session.dropped, events: capture.events.length,
         queries: capture.queryRecordings.map((q: any) => ({ millis: q.durationNanos / 1e6, calls: q.calls.length, operations: q.operations.length })) });
