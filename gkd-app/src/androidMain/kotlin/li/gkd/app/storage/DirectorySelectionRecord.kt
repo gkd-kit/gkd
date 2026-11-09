@@ -17,6 +17,7 @@ enum class StorageSelectionReason {
     InternalMarkerExists,
     ExternalAvailable,
     ExternalNullFallback,
+    RecoveredFromExternal,
 }
 
 @Serializable
