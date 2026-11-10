@@ -462,7 +462,28 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 coordinator.diagnostics.entry("consume_event", "stale_event_before_source")
                 return
             }
-            val page = AndroidForegroundState.currentPage
+            val page = AndroidForegroundState.withTopActivityLock {
+                val currentPage = AndroidForegroundState.currentPage
+                // Skip root and source reads for content changes in a confirmed window
+                // when matching is disabled or no rules apply. Window transitions and
+                // foreground conflicts still need node evidence.
+                if (
+                    latestEvent.key.kind == MatchEventKind.Content &&
+                        !AndroidForegroundState.foregroundPending &&
+                        rootNode?.page === currentPage &&
+                        windows.isCurrentKnownWindow(latestEvent.windowId, latestEvent.key.appId) &&
+                        (!SettingsRepository.settings.value.enableMatch ||
+                            foregroundRulesFlow.value.currentRules.isEmpty())
+                ) {
+                    null
+                } else {
+                    currentPage
+                }
+            }
+            if (page == null) {
+                coordinator.diagnostics.entry("consume_event", "confirmed_content_without_matching")
+                return
+            }
             // Root and source Binder reads run independently, outside the matching lane.
             requestRoot(MatchNodeReadReason.Event)
             coordinator.diagnostics.entry("source_read", "source_read_started")

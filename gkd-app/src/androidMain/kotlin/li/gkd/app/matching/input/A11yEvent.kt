@@ -32,9 +32,12 @@ class A11yEvent(
     val key: MatchEventKey,
     val sourceTimeMillis: Long,
     val time: Long,
-    private var event: AccessibilityEvent?,
+    event: AccessibilityEvent,
     val diagnosticEventId: Long? = null,
 ) : AutoCloseable {
+    val windowId = event.windowId
+    private var event: AccessibilityEvent? = event
+
     @Suppress("DEPRECATION")
     fun takeSource(): AccessibilityNodeInfo? {
         // Transfer ownership before Binder: cleanup must never wait for a stalled source read.
