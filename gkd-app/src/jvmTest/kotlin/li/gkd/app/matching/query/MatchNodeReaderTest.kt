@@ -498,6 +498,36 @@ class MatchNodeReaderTest {
     }
 
     @Test
+    fun consecutiveReadsReuseTheLastAvailableSlot() = runBlocking {
+        val reader = MatchNodeReader()
+        val release = CountDownLatch(1)
+        val entered = List(3) { CompletableDeferred<Unit>() }
+        try {
+            val jobs = entered.map { signal ->
+                launch {
+                    reader.query {
+                        reader.read(5000) {
+                            signal.complete(Unit)
+                            release.await()
+                        }
+                    }
+                }
+            }
+            withTimeout(5000) { entered.forEach { it.await() } }
+            reader.query {
+                repeat(100) { value ->
+                    assertEquals(value, reader.read { value })
+                }
+            }
+            release.countDown()
+            withTimeout(5000) { jobs.forEach { it.join() } }
+        } finally {
+            release.countDown()
+            reader.close()
+        }
+    }
+
+    @Test
     fun cancelledReadsKeepTheirCapacityUntilPhysicalReturn() = runBlocking {
         val reader = MatchNodeReader()
         val release = CountDownLatch(1)

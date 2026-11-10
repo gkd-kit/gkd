@@ -1,10 +1,11 @@
 package li.gkd.app.matching.query
 
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.FutureTask
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -39,6 +40,8 @@ class MatchNodeReadUnavailable(val reason: MatchNodeReadFailure, cause: Throwabl
 class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoCloseable {
     // Keep identities even when workers were created before diagnostic recording began.
     private val threads = CopyOnWriteArrayList<Thread>()
+    // Queued and running reads share the same admission limit.
+    private val readSlots = Semaphore(NODE_READ_CAPACITY)
     // Android retains an AccessibilityInteractionClient per thread ID. Keep these
     // threads for the reader's lifetime rather than leaving clients behind on idle expiry.
     private val executor =
@@ -47,7 +50,9 @@ class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoC
             NODE_READ_CAPACITY,
             0,
             TimeUnit.SECONDS,
-            SynchronousQueue(),
+            // Avoid SynchronousQueue handoffs. On Android, submissions kept failing while all
+            // workers waited in take() (discussion #1530, similar symptoms in issue #1516).
+            ArrayBlockingQueue(NODE_READ_CAPACITY),
             { task ->
                 Thread(task, "match-node-read").apply {
                     isDaemon = true
@@ -101,11 +106,28 @@ class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoC
                     threadName = "match-node-read",
                 )
         try {
+            var readStarted = false
+            val readNode: () -> T = {
+                readStarted = true
+                try {
+                    block()
+                } finally {
+                    // Free the slot before FutureTask makes the result available to its caller.
+                    readSlots.release()
+                }
+            }
             val future =
-                if (trace == null || physical == null) FutureTask(block)
-                else diagnosticTask(trace, physical, block)
+                if (trace == null || physical == null) FutureTask(readNode)
+                else diagnosticTask(trace, physical, readNode)
             try {
-                executor.execute(future)
+                submit {
+                    try {
+                        future.run()
+                    } finally {
+                        // A task cancelled before it starts never enters readNode.
+                        if (!readStarted) readSlots.release()
+                    }
+                }
             } catch (error: RejectedExecutionException) {
                 trace?.endOperation(physical, "not_started: ${error.javaClass.simpleName}")
                 val reason =
@@ -147,6 +169,18 @@ class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoC
             throw error
         } finally {
             trace?.endOperationAsync(wait, outcome)
+        }
+    }
+
+    private fun submit(task: Runnable) {
+        if (!readSlots.tryAcquire()) {
+            throw RejectedExecutionException("All $NODE_READ_CAPACITY node read slots are occupied")
+        }
+        try {
+            executor.execute(task)
+        } catch (error: RejectedExecutionException) {
+            readSlots.release()
+            throw error
         }
     }
 
