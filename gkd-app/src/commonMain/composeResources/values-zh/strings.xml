@@ -1205,4 +1205,22 @@
     <string name="companion_paused_apps_title">暂停伴生</string>
     <string name="companion_paused_apps_description">自动化模式下，进入勾选的应用时暂停伴生无障碍，可避免因伴生服务触发的无障碍检测提示</string>
     <string name="companion_help_description">伴生无障碍帮助自动化在部分应用中正常运行，也有助于 GKD 在后台持续运行。GKD 会自动启停它\n\n它是特殊配置的轻量无障碍服务，日常运行开销可忽略不计\n\n自动化模式下，如果某个应用提示已开启无障碍，可以在「暂停伴生」中勾选它。进入该应用时暂停伴生，离开后恢复</string>
+    <string name="snapshot_node_overlap">此处有 %1$s 个层叠节点</string>
+    <string name="snapshot_node_show_tree">显示节点树</string>
+    <string name="snapshot_node_hide_tree">隐藏节点树</string>
+    <string name="snapshot_node_exit_inspect">退出检查</string>
+    <string name="snapshot_node_inspect">检查节点</string>
+    <string name="snapshot_node_load_failed">无法加载节点</string>
+    <string name="snapshot_node_retry">重试</string>
+    <string name="snapshot_node_empty">此快照没有节点</string>
+    <string name="snapshot_node_copy">复制属性</string>
+    <string name="snapshot_node_show_full_value">查看完整值</string>
+    <string name="snapshot_node_properties">查看节点属性</string>
+    <string name="snapshot_node_parent">父节点</string>
+    <string name="snapshot_node_before_sibling">前置兄弟</string>
+    <string name="snapshot_node_after_sibling">后置兄弟</string>
+    <string name="snapshot_node_first_child">第一个子节点</string>
+    <string name="snapshot_node_property_quick_find">可快速查找</string>
+    <string name="snapshot_node_expand">展开</string>
+    <string name="snapshot_node_collapse">收起</string>
 </resources>

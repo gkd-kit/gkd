@@ -6,6 +6,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -32,7 +33,7 @@ actual fun GkFullscreenDialog(
 actual fun UiHost.hideIme(): Boolean = imeController.requestHide()
 
 @Composable
-actual fun UiHost.GkSystemBars(visible: Boolean) {
+actual fun UiHost.GkSystemBars(visible: Boolean, fullscreen: Boolean) {
     val context = this
     val controller = remember {
         WindowCompat.getInsetsController(context.window, context.window.decorView)
@@ -49,8 +50,20 @@ actual fun UiHost.GkSystemBars(visible: Boolean) {
             controller.show(WindowInsetsCompat.Type.statusBars())
         }
     }
-    LaunchedEffect(visible) {
-        if (visible) {
+    if (fullscreen) {
+        DisposableEffect(controller) {
+            val navigationBars = WindowInsetsCompat.Type.navigationBars()
+            val wasVisible =
+                ViewCompat.getRootWindowInsets(context.window.decorView)?.isVisible(navigationBars)
+                    ?: true
+            controller.hide(navigationBars)
+            onDispose {
+                if (wasVisible) controller.show(navigationBars) else controller.hide(navigationBars)
+            }
+        }
+    }
+    LaunchedEffect(visible, fullscreen) {
+        if (visible && !fullscreen) {
             controller.show(WindowInsetsCompat.Type.statusBars())
         } else {
             controller.hide(WindowInsetsCompat.Type.statusBars())

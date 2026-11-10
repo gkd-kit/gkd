@@ -1211,4 +1211,23 @@
     <string name="companion_paused_apps_title">Pause companion</string>
     <string name="companion_paused_apps_description">In automation mode, pause companion accessibility in the selected apps to avoid accessibility detection notices caused by the companion service</string>
     <string name="companion_help_description">Companion accessibility helps automation work in some apps and helps keep GKD running in the background. GKD starts and stops it automatically.\n\nIt is a specially configured lightweight accessibility service with negligible overhead in everyday use.\n\nIn automation mode, if an app detects accessibility, select it under Pause companion. The companion service pauses when you enter that app and resumes when you leave.</string>
+    <string name="snapshot_node_overlap">%1$s overlapping nodes</string>
+    <string name="snapshot_node_overlap_details">#%1$s · %2$s</string>
+    <string name="snapshot_node_show_tree">Show node tree</string>
+    <string name="snapshot_node_hide_tree">Hide node tree</string>
+    <string name="snapshot_node_exit_inspect">Exit node inspection</string>
+    <string name="snapshot_node_inspect">Inspect nodes</string>
+    <string name="snapshot_node_load_failed">Could not load nodes</string>
+    <string name="snapshot_node_retry">Retry</string>
+    <string name="snapshot_node_empty">No nodes in this snapshot</string>
+    <string name="snapshot_node_copy">Copy properties</string>
+    <string name="snapshot_node_show_full_value">Show full value</string>
+    <string name="snapshot_node_properties">View node properties</string>
+    <string name="snapshot_node_parent">Parent node</string>
+    <string name="snapshot_node_before_sibling">Previous sibling</string>
+    <string name="snapshot_node_after_sibling">Next sibling</string>
+    <string name="snapshot_node_first_child">First child</string>
+    <string name="snapshot_node_property_quick_find">Supports quick find</string>
+    <string name="snapshot_node_expand">Expand</string>
+    <string name="snapshot_node_collapse">Collapse</string>
 </resources>

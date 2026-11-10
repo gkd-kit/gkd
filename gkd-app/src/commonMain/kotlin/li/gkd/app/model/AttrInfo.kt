@@ -25,4 +25,7 @@ data class AttrInfo(
     val childCount: Int,
     val index: Int,
     val depth: Int,
-)
+) {
+    val hasArea: Boolean
+        get() = right > left && bottom > top
+}

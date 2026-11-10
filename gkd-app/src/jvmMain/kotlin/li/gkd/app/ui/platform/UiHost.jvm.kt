@@ -46,7 +46,7 @@ actual fun GkFullscreenDialog(
 actual fun UiHost.hideIme(): Boolean = this.state.dismissIme()
 
 @Composable
-actual fun UiHost.GkSystemBars(visible: Boolean) {
+actual fun UiHost.GkSystemBars(visible: Boolean, fullscreen: Boolean) {
     val state = this.state
     val old = remember { state.environment.android.statusBarVisible }
     DisposableEffect(Unit) {
@@ -60,11 +60,24 @@ actual fun UiHost.GkSystemBars(visible: Boolean) {
             }
         }
     }
-    LaunchedEffect(visible) {
+    if (fullscreen) {
+        DisposableEffect(state) {
+            val wasVisible = state.environment.android.navigationBarVisible
+            state.simulatorCommand {
+                state.simulator.updateAndroid { it.copy(navigationBarVisible = false) }
+            }
+            onDispose {
+                state.simulatorCommand {
+                    state.simulator.updateAndroid { it.copy(navigationBarVisible = wasVisible) }
+                }
+            }
+        }
+    }
+    LaunchedEffect(visible, fullscreen) {
         state.simulatorCommand {
             state.simulator.updateAndroid {
                 it.copy(
-                    statusBarVisible = visible,
+                    statusBarVisible = visible && !fullscreen,
                 )
             }
         }

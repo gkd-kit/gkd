@@ -19,14 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 
 @Composable
-private fun CustomIconButton(
+fun GkSizedIconButton(
     onClick: () -> Unit,
+    size: Dp,
     modifier: Modifier = Modifier,
     onClickLabel: String? = null,
-    size: Dp = 40.dp,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
     interactionSource: MutableInteractionSource? = null,
@@ -64,20 +63,22 @@ fun GkSizedIconButton(
     imageVector: ImageVector,
     contentDescription: String? = null,
     tint: Color = LocalContentColor.current,
+    enabled: Boolean = true,
 ) =
     GkTooltipIconButtonBox(
         contentDescription = contentDescription,
     ) {
-        CustomIconButton(
+        GkSizedIconButton(
             size = size,
             onClickLabel = onClickLabel,
             onClick = onClick,
+            enabled = enabled,
+            colors = IconButtonDefaults.iconButtonColors(contentColor = tint),
         ) {
             GkIcon(
                 modifier = Modifier.size(iconSize),
                 imageVector = imageVector,
                 contentDescription = contentDescription,
-                tint = tint,
             )
         }
     }

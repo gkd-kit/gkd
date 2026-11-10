@@ -12,9 +12,11 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ import li.gkd.app.ui.navigation.ImagePreviewRoute
 import li.gkd.app.ui.navigation.SnapshotPageRoute
 import li.gkd.app.ui.navigation.SnapshotPreviewRoute
 import li.gkd.app.ui.page.GkImagePreviewContent
+import li.gkd.app.ui.platform.GkBackHandler
 import li.gkd.app.ui.platform.GkSystemBars
 import li.gkd.app.ui.platform.LocalUiHost
 import org.jetbrains.compose.resources.stringResource
@@ -54,6 +57,10 @@ fun SnapshotPreviewPage(
     val imageLoader = appImageLoader()
     val replaceRoute: (AppRoute) -> Unit = { mainVm.navigator.navigate(it, true) }
     val vm = viewModel { SnapshotViewModel() }
+    val inspection = viewModel { SnapshotPreviewViewModel() }
+    val nodeState by inspection.tree.collectAsStateWithLifecycle()
+    val selection by inspection.selection.collectAsStateWithLifecycle()
+    val (selectedNode, candidates) = selection
     val shareProgress by vm.shareProgress.collectAsStateWithLifecycle()
 
     val loadableState by vm.uiState.collectAsStateWithLifecycle()
@@ -73,9 +80,51 @@ fun SnapshotPreviewPage(
                     rememberPagerState(initialPage = initialPage) {
                         previewSnapshots.size
                     }
+                val currentSnapshot = previewSnapshots[pagerState.currentPage]
+                val currentImageUri = currentSnapshot.image().path
+                var inspecting by remember { mutableStateOf(false) }
+                var inspectionSession by remember { mutableIntStateOf(0) }
+                var treeVisible by remember { mutableStateOf(true) }
+                var locateRequest by remember {
+                    mutableStateOf<SnapshotNodeLocateRequest?>(null)
+                }
+                var propertiesVisible by
+                    remember(currentSnapshot.id, imageVersion) {
+                        mutableStateOf(false)
+                    }
+                val currentTree = nodeState.value?.takeIf { it.snapshot.id == currentSnapshot.id }
+                val selectedForSnapshot = selectedNode?.let { currentTree?.nodes?.get(it) }
+                LaunchedEffect(currentSnapshot.id, imageVersion) {
+                    locateRequest = null
+                    inspection.load(currentSnapshot.id)
+                }
+                LaunchedEffect(inspecting, currentSnapshot.id, currentTree) {
+                    if (inspecting) inspection.selectFirstNodeIfNone(currentSnapshot.id)
+                }
+                fun exitInspection() {
+                    inspecting = false
+                    propertiesVisible = false
+                    locateRequest = null
+                    inspection.clearSelection()
+                }
+
+                fun showNodeProperties(id: Int) {
+                    inspection.select(id)
+                    propertiesVisible = true
+                }
+
+                fun revealSelectedNode(id: Int) {
+                    treeVisible = true
+                    locateRequest = SnapshotNodeLocateRequest(id)
+                }
+
+                val onBack: () -> Unit = {
+                    if (inspecting) exitInspection() else mainVm.navigator.pop()
+                }
+                GkBackHandler(enabled = inspecting, onBack = onBack)
                 GkImagePreviewContent(
                     imageLoader = imageLoader,
-                    systemBars = { host.GkSystemBars(it) },
+                    systemBars = { host.GkSystemBars(it, fullscreen = inspecting) },
                     route =
                         ImagePreviewRoute(
                             items =
@@ -85,7 +134,26 @@ fun SnapshotPreviewPage(
                         ),
                     pagerState = pagerState,
                     imageVersion = imageVersion,
-                    onBack = mainVm.navigator::pop,
+                    fullscreen = inspecting,
+                    pagingEnabled = !inspecting,
+                    onBack = onBack,
+                    onImageTap =
+                        if (inspecting) {
+                            { uri, point ->
+                                if (uri == currentImageUri) {
+                                    inspection.hit(
+                                        point.x,
+                                        point.y,
+                                        onSelected = ::revealSelectedNode,
+                                    )
+                                }
+                            }
+                        } else null,
+                    imageOverlay = { uri, bounds ->
+                        if (inspecting && currentTree != null && uri == currentImageUri) {
+                            GkSnapshotNodeOutline(currentTree, selectedForSnapshot?.id, bounds)
+                        }
+                    },
                     titleContent = { index ->
                         previewSnapshots.getOrNull(index)?.let { item ->
                             val appName =
@@ -119,86 +187,146 @@ fun SnapshotPreviewPage(
                         }
                     },
                     actionContent = { _, index ->
-                        val item = previewSnapshots.getOrNull(index)
-                        if (item != null) {
+                        previewSnapshots.getOrNull(index)?.let { item ->
+                            val colors =
+                                IconButtonDefaults.iconButtonColors(contentColor = Color.White)
+                            GkIconButton(
+                                imageVector = GkIcons.FrameInspect,
+                                contentDescription =
+                                    stringResource(Res.string.snapshot_node_inspect),
+                                colors = colors,
+                                onClick = {
+                                    vm.actionRequest.value?.let(vm::dismissActions)
+                                    inspectionSession++
+                                    inspecting = true
+                                    treeVisible = true
+                                },
+                            )
                             GkIconButton(
                                 imageVector = GkIcons.MoreVert,
                                 contentDescription = stringResource(Res.string.more_label),
-                                colors =
-                                    IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                                colors = colors,
                                 onClick = { vm.showActions(item.id) },
                             )
                         }
                     },
                 )
 
-                val actionSnapshot = actionRequest?.let { request ->
-                    previewSnapshots.find { it.id == request.key }
-                }
-                GkRetainedSheet(
-                    request = actionRequest,
-                    snapshot = actionSnapshot,
-                    missing = actionRequest != null && actionSnapshot == null,
-                    onDismissRequest = { request ->
-                        vm.dismissActions(request)
-                    },
-                ) { _, snapshot, sheetState, dismiss ->
-                    val routeAfterDelete =
-                        if (previewSnapshots.size == 1) {
-                            null
-                        } else {
-                            val currentIndex = previewSnapshots.indexOfFirst {
-                                it.id == snapshot.id
-                            }
-                            val targetIndex =
-                                if (currentIndex < previewSnapshots.lastIndex) {
-                                    currentIndex + 1
-                                } else {
-                                    currentIndex - 1
-                                }
-                            route.copy(
-                                snapshotId = previewSnapshots[targetIndex].id,
-                                snapshotIds = route.snapshotIds.filterNot { it == snapshot.id },
-                            )
-                        }
-                    val actions =
-                        host.snapshotActions(
-                            mainVm,
-                            vm,
-                            { imageVersion++ },
-                            {
-                                if (routeAfterDelete == null) {
-                                    mainVm.navigator.pop()
-                                } else {
-                                    replaceRoute(routeAfterDelete)
-                                }
-                            },
-                            {
-                                if (routeAfterDelete == null) {
-                                    if (mainVm.navigator.topRoute == SnapshotPageRoute)
-                                        mainVm.navigator.navigate(route)
-                                } else if (mainVm.navigator.topRoute == routeAfterDelete) {
-                                    replaceRoute(route)
-                                }
-                            },
+                if (inspectionSession > 0)
+                    key(inspectionSession) {
+                        GkSnapshotNodeTreeSheet(
+                            visible = inspecting && treeVisible,
+                            state = nodeState,
+                            selectedId = selectedForSnapshot?.id,
+                            onSelect = inspection::select,
+                            onShowProperties = ::showNodeProperties,
+                            locateRequest = locateRequest,
+                            onHide = { treeVisible = false },
+                            onRetry = { inspection.load(currentSnapshot.id) },
                         )
-                    GkSnapshotActionsSheet(
-                        imageLoader,
-                        snapshot = snapshot,
-                        appName =
-                            catalog.snapshot?.apps?.get(snapshot.appId)?.name ?: snapshot.appId,
-                        sheetState = sheetState,
-                        onDismissRequest = dismiss,
-                        onShare = {
-                            vm.shareSnapshots(listOf(snapshot), host.snapshotPlatformActions())
-                        },
-                        shareEnabled = shareProgress == null,
-                        onSaveToDownloads = { actions.saveToDownloads(snapshot) },
-                        onUpload = { actions.upload(snapshot) },
-                        onSaveToAlbum = { actions.saveToAlbum(snapshot) },
-                        onReplace = { actions.replace(snapshot) },
-                        onDelete = { actions.delete(snapshot) },
+                    }
+                if (inspecting) {
+                    SnapshotInspectionTools(
+                        treeVisible = treeVisible,
+                        onTreeVisibilityChange = { treeVisible = it },
+                        onExit = ::exitInspection,
                     )
+                }
+                if (inspecting && currentTree != null) {
+                    if (propertiesVisible && selectedForSnapshot != null) {
+                        GkSnapshotNodePropertiesDialog(
+                            currentTree,
+                            selectedForSnapshot,
+                            onSelect = {
+                                inspection.select(it)
+                                if (treeVisible) locateRequest = SnapshotNodeLocateRequest(it)
+                            },
+                            onShowValue = mainVm.textDialog::showText,
+                            onDismiss = { propertiesVisible = false },
+                        )
+                    }
+                    if (candidates.isNotEmpty()) {
+                        GkSnapshotOverlapDialog(
+                            currentTree,
+                            candidates,
+                            selectedId = selectedForSnapshot?.id,
+                            onSelect = {
+                                inspection.select(it)
+                                revealSelectedNode(it)
+                            },
+                            onDismiss = inspection::dismissCandidates,
+                        )
+                    }
+                }
+                if (!inspecting) {
+                    val actionSnapshot = actionRequest?.let { request ->
+                        previewSnapshots.find { it.id == request.key }
+                    }
+                    GkRetainedSheet(
+                        request = actionRequest,
+                        snapshot = actionSnapshot,
+                        missing = actionRequest != null && actionSnapshot == null,
+                        onDismissRequest = { request ->
+                            vm.dismissActions(request)
+                        },
+                    ) { _, snapshot, sheetState, dismiss ->
+                        val routeAfterDelete =
+                            if (previewSnapshots.size == 1) {
+                                null
+                            } else {
+                                val currentIndex = previewSnapshots.indexOfFirst {
+                                    it.id == snapshot.id
+                                }
+                                val targetIndex =
+                                    if (currentIndex < previewSnapshots.lastIndex) {
+                                        currentIndex + 1
+                                    } else {
+                                        currentIndex - 1
+                                    }
+                                route.copy(
+                                    snapshotId = previewSnapshots[targetIndex].id,
+                                    snapshotIds = route.snapshotIds.filterNot { it == snapshot.id },
+                                )
+                            }
+                        val actions =
+                            host.snapshotActions(
+                                mainVm,
+                                vm,
+                                { imageVersion++ },
+                                {
+                                    if (routeAfterDelete == null) {
+                                        mainVm.navigator.pop()
+                                    } else {
+                                        replaceRoute(routeAfterDelete)
+                                    }
+                                },
+                                {
+                                    if (routeAfterDelete == null) {
+                                        if (mainVm.navigator.topRoute == SnapshotPageRoute)
+                                            mainVm.navigator.navigate(route)
+                                    } else if (mainVm.navigator.topRoute == routeAfterDelete) {
+                                        replaceRoute(route)
+                                    }
+                                },
+                            )
+                        GkSnapshotActionsSheet(
+                            imageLoader,
+                            snapshot = snapshot,
+                            appName =
+                                catalog.snapshot?.apps?.get(snapshot.appId)?.name ?: snapshot.appId,
+                            sheetState = sheetState,
+                            onDismissRequest = dismiss,
+                            onShare = {
+                                vm.shareSnapshots(listOf(snapshot), host.snapshotPlatformActions())
+                            },
+                            shareEnabled = shareProgress == null,
+                            onSaveToDownloads = { actions.saveToDownloads(snapshot) },
+                            onUpload = { actions.upload(snapshot) },
+                            onSaveToAlbum = { actions.saveToAlbum(snapshot) },
+                            onReplace = { actions.replace(snapshot) },
+                            onDelete = { actions.delete(snapshot) },
+                        )
+                    }
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize()) {

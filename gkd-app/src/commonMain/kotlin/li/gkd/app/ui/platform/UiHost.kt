@@ -26,4 +26,4 @@ expect fun GkFullscreenDialog(
 
 expect fun UiHost.hideIme(): Boolean
 
-@Composable expect fun UiHost.GkSystemBars(visible: Boolean)
+@Composable expect fun UiHost.GkSystemBars(visible: Boolean, fullscreen: Boolean = false)
