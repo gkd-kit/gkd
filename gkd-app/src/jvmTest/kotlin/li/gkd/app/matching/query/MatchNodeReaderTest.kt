@@ -1,6 +1,8 @@
 package li.gkd.app.matching.query
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.FutureTask
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -268,6 +270,25 @@ class MatchNodeReaderTest {
         val release = CountDownLatch(1)
         try {
             assertEquals(7, reader.query { reader.read { 7 } })
+            var formatted = 0
+            val failure =
+                object : IllegalStateException("read failed") {
+                    override fun toString(): String {
+                        formatted++
+                        return "read failed"
+                    }
+                }
+            // FutureTask itself may stringify the cause when wrapping it in ExecutionException.
+            val task = FutureTask<Unit> { throw failure }
+            task.run()
+            assertFailsWith<ExecutionException> { task.get() }
+            val futureFormatting = formatted
+            formatted = 0
+            assertSame(
+                failure,
+                assertFailsWith<IllegalStateException> { reader.read { throw failure } },
+            )
+            assertEquals(futureFormatting, formatted)
             assertEquals(
                 MatchNodeReadFailure.Timeout,
                 assertFailsWith<MatchNodeReadUnavailable> {

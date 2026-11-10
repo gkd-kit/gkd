@@ -2,7 +2,9 @@ package li.gkd.app.matching
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -359,6 +361,47 @@ class MatchCoordinatorTest {
         } finally {
             coordinator.close()
         }
+    }
+
+    @Test
+    fun workFormatsFailuresOnlyForStartedDiagnosticOperations() = runTest {
+        val diagnostics = MatchDiagnostics()
+        val work = MatchWork(1, MatchTimingPolicy(), diagnostics) { true }
+        var formatted = 0
+        val failure =
+            object : IllegalStateException("work failed") {
+                override fun toString(): String {
+                    formatted++
+                    return "work failed"
+                }
+            }
+
+        assertSame(
+            failure,
+            assertFailsWith<IllegalStateException> { work.match<Any>(null) { throw failure } },
+        )
+        assertSame(
+            failure,
+            assertFailsWith<IllegalStateException> {
+                work.performAction(GkdAction("*", action = "click")) { throw failure }
+            },
+        )
+        assertEquals(0, formatted)
+
+        val session = diagnostics.start(MatchTimingPolicy())
+        assertSame(
+            failure,
+            assertFailsWith<IllegalStateException> {
+                work.match<Any>(null) {
+                    diagnostics.stop(session.id)
+                    throw failure
+                }
+            },
+        )
+        assertEquals(1, formatted)
+        val completion = diagnostics.export(session.id).events.last()
+        assertEquals("operation_finished_after_stop", completion.reason)
+        assertEquals("work failed", completion.operation?.outcome)
     }
 
     @Test

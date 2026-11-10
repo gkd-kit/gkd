@@ -3,17 +3,14 @@ package li.gkd.app.matching.diagnostics
 import java.io.OutputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
+import li.gkd.app.matching.input.MatchTimingPolicy
 import li.gkd.app.util.JsonUtils
 
-private const val EXPORT_LIMIT_BYTES = 20_000_000
-private const val KEY_BASELINE_BYTES = 4_000_000L
-private const val BOUNDARY_BASELINE_BYTES = 2_000_000L
+const val MATCH_DIAGNOSTIC_EXPORT_LIMIT_BYTES = 40_000_000
+private const val METADATA_ALLOWANCE_BYTES = 500_000L
 
 /** Shared by file and HTTP export. Serialization never runs on the event admission path. */
-fun encodeDiagnosticCapture(value: MatchDiagnosticCapture): String =
-    prepareDiagnosticArchive(value).toString()
-
-fun prepareDiagnosticArchive(value: MatchDiagnosticCapture): JsonObject =
+fun prepareDiagnosticArchive(value: MatchDiagnosticCapture): MatchDiagnosticArchive =
     value
         .copy(
             queryRecordings =
@@ -48,6 +45,136 @@ private inline fun <reified T> retainNewest(values: List<T>, budget: Long): List
     return values.takeLast(count)
 }
 
+/** An object becomes [shape index, values...]. A JSON array uses -1 in place of the shape. */
+private class DiagnosticShapes {
+    private val shapes = linkedMapOf<Set<String>, Int>()
+    private val fields = mutableListOf<JsonArray>()
+    private val arrayTag = JsonPrimitive(-1)
+    var bytes = 2L
+        private set
+
+    val size: Int
+        get() = fields.size
+
+    fun table(count: Int = size) = JsonArray(fields.take(count))
+
+    fun pack(value: JsonElement): JsonElement =
+        when (value) {
+            is JsonObject -> {
+                val index =
+                    shapes[value.keys]
+                        ?: run {
+                            val names = JsonArray(value.keys.map(::JsonPrimitive))
+                            bytes += jsonBytes(names) + 1
+                            fields.add(names)
+                            shapes[value.keys.toSet()] = fields.lastIndex
+                            fields.lastIndex
+                        }
+                JsonArray(
+                    listOf(JsonPrimitive(index)) +
+                        fields[index].map {
+                            pack(value.getValue(it.jsonPrimitive.content))
+                        },
+                )
+            }
+            is JsonArray -> JsonArray(listOf(arrayTag) + value.map(::pack))
+            else -> value
+        }
+}
+
+private data class EncodedRow(val text: String, val bytes: Int) {
+    constructor(value: JsonElement) : this(value.toString())
+
+    private constructor(text: String) : this(text, text.toByteArray(Charsets.UTF_8).size)
+}
+
+private data class EncodedTimeline(
+    val rows: List<EncodedRow>,
+    val strings: JsonArray,
+    val shapes: JsonArray?,
+    val bytes: Long,
+)
+
+/** Keeps encoded rows across shared-budget passes and examines at most one row past the limit. */
+private class TimelineEncoder(
+    values: List<MatchTrace>,
+    private val repeated: Set<String>,
+    private val sessionPolicy: MatchTimingPolicy,
+    packed: Boolean,
+) {
+    private val remaining = values.asReversed().iterator()
+    private val rows = mutableListOf<EncodedRow>()
+    private val indices = mutableMapOf<String, Int>()
+    private val strings = mutableListOf<JsonPrimitive>()
+    private val shapes = if (packed) DiagnosticShapes() else null
+    private var stringBytes = 2L
+    private var acceptedStringCount = 0
+    private var acceptedShapeCount = 0
+    private var bytes = 4L + (shapes?.bytes ?: 0L)
+    private var pending: EncodedRow? = null
+    private var pendingBytes = 0L
+
+    fun retain(budget: Long): EncodedTimeline {
+        while (pending != null || remaining.hasNext()) {
+            if (pending == null) {
+                val before = stringBytes + (shapes?.bytes ?: 0L)
+                val row = encode(remaining.next())
+                pending = row
+                pendingBytes = row.bytes + 1L + stringBytes + (shapes?.bytes ?: 0L) - before
+            }
+            if (bytes + pendingBytes > budget) break
+            rows.add(checkNotNull(pending))
+            pending = null
+            bytes += pendingBytes
+            acceptedStringCount = strings.size
+            acceptedShapeCount = shapes?.size ?: 0
+        }
+        return EncodedTimeline(
+            rows.toList().asReversed(),
+            JsonArray(strings.take(acceptedStringCount)),
+            shapes?.table(acceptedShapeCount),
+            bytes,
+        )
+    }
+
+    private fun encode(trace: MatchTrace): EncodedRow {
+        fun reference(value: String?): JsonPrimitive? {
+            if (value == null || value !in repeated) return null
+            val index =
+                indices.getOrPut(value) {
+                    val entry = JsonPrimitive(value)
+                    stringBytes += jsonBytes(entry) + 1
+                    strings.add(entry)
+                    strings.lastIndex
+                }
+            return JsonPrimitive(index)
+        }
+        val fields = JsonUtils.default.encodeToJsonElement(trace).jsonObject.toMutableMap()
+        reference(trace.rule)?.let { fields["rule"] = it }
+        reference(trace.condition?.selector)?.let {
+            fields["condition"] =
+                JsonObject(fields.getValue("condition").jsonObject + ("selector" to it))
+        }
+        reference(trace.operation?.rule)?.let {
+            fields["operation"] =
+                JsonObject(fields.getValue("operation").jsonObject + ("rule" to it))
+        }
+        if (trace.input?.policy == sessionPolicy) {
+            fields["input"] = JsonObject(fields.getValue("input").jsonObject - "policy")
+        }
+        val row = JsonObject(fields)
+        return EncodedRow(shapes?.pack(row) ?: row)
+    }
+}
+
+private fun packedQueryDetail(query: MatchQueryRecording): EncodedRow {
+    val shapes = DiagnosticShapes()
+    val row = shapes.pack(queryDetailJson(query))
+    return EncodedRow(JsonArray(listOf(shapes.table(), row)))
+}
+
+private fun rowsBytes(rows: List<EncodedRow>): Long = 2L + rows.sumOf { it.bytes + 1L }
+
 /** Reallocates only unused bytes; another section's retained evidence is never displaced. */
 private class DiagnosticBudget<T>(
     baseline: Long,
@@ -81,17 +208,57 @@ private fun <T> retainRecent(values: List<T>, budget: Long, measure: (List<T>) -
     return values.takeLast(low)
 }
 
-private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
+class MatchDiagnosticArchive(
+    val metadata: JsonObject,
+    private val sections: Map<String, JsonElement>,
+    private val encodedRows: Map<String, List<String>>,
+) {
+    fun writeSection(name: String, lines: Boolean, output: Appendable) {
+        val rows = encodedRows[name]
+        if (rows != null) {
+            if (lines) rows.forEach { output.append(it).append('\n') }
+            else rows.joinTo(output, separator = ",", prefix = "[", postfix = "]")
+        } else {
+            val value = sections.getValue(name)
+            if (lines) value.jsonArray.forEach { output.append(it.toString()).append('\n') }
+            else output.append(value.toString())
+        }
+    }
+
+    fun writeJson(output: Appendable) {
+        output.append('{')
+        metadata.entries.joinTo(output, separator = ",") { (name, value) ->
+            "${JsonPrimitive(name)}:$value"
+        }
+        for (name in sections.keys + encodedRows.keys) {
+            output.append(',').append(JsonPrimitive(name).toString()).append(':')
+            writeSection(name, lines = false, output)
+        }
+        output.append('}')
+    }
+}
+
+private fun MatchDiagnosticCapture.limitExportSize(): MatchDiagnosticArchive {
     val omissions = omittedForSize.toMutableMap()
     fun omitted(section: String, count: Int) {
         if (count > 0) omissions[section] = (omissions[section] ?: 0) + count
     }
-    fun timeline(values: List<MatchTrace>, baseline: Long) =
-        DiagnosticBudget(
-            baseline,
-            { retainNewest(values, it) },
-            { jsonBytes(it) },
-        )
+    fun timeline(
+        values: List<MatchTrace>,
+        baseline: Long,
+        packed: Boolean = false,
+    ): DiagnosticBudget<EncodedTimeline> {
+        val repeated = mutableSetOf<String>()
+        val seen = mutableSetOf<String>()
+        for (trace in values) {
+            for (value in
+                listOfNotNull(trace.rule, trace.operation?.rule, trace.condition?.selector)) {
+                if (value.length >= 16 && !seen.add(value)) repeated.add(value)
+            }
+        }
+        val encoder = TimelineEncoder(values, repeated, session.policy, packed)
+        return DiagnosticBudget(baseline, encoder::retain, { it.bytes })
+    }
     fun summaryBytes(records: List<MatchQueryRecording>) =
         jsonBytes(
             JsonObject(querySummarySections(records.map { it.copy(detailsRetained = false) })),
@@ -102,31 +269,39 @@ private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
             { budget -> retainRecent(queryRecordings, budget, ::summaryBytes) },
             ::summaryBytes,
         )
-    val encodedDetails =
+    val detailCandidates =
         queryRecordings
             .filter { it.detailsRetained }
             .sortedWith(
                 compareBy<MatchQueryRecording> { it.retainedFor != null }.thenBy { it.queryId },
             )
-            .map(::queryDetailJson)
+            .asReversed()
+    val encodedDetails = mutableMapOf<Long, EncodedRow>()
     val details =
         DiagnosticBudget(
-            2_000_000L,
+            4_000_000L,
             { budget ->
                 val ids = summaries.value.mapTo(mutableSetOf()) { it.queryId }
-                retainNewest(
-                    encodedDetails.filter { it.getValue("queryId").jsonPrimitive.long in ids },
-                    budget,
-                )
+                buildMap {
+                    var bytes = 2L
+                    for (query in detailCandidates) {
+                        if (query.queryId !in ids) continue
+                        val row =
+                            encodedDetails.getOrPut(query.queryId) { packedQueryDetail(query) }
+                        if (bytes + row.bytes + 1 > budget) break
+                        put(query.queryId, row)
+                        bytes += row.bytes + 1
+                    }
+                }
             },
-            { jsonBytes(it) },
+            { 2L + it.values.sumOf { row -> row.bytes + 1L } },
         )
-    val detail = timeline(events, 9_000_000L)
-    val keys = timeline(keyEvents, KEY_BASELINE_BYTES)
-    val boundaries = timeline(boundaryEvents, BOUNDARY_BASELINE_BYTES)
+    val detail = timeline(events, 9_000_000L, packed = true)
+    val keys = timeline(keyEvents, 18_000_000L)
+    val boundaries = timeline(boundaryEvents, 4_000_000L)
     val system =
         DiagnosticBudget(
-            1_000_000L,
+            3_000_000L,
             { budget ->
                 systemRecording?.let { recording ->
                     if (jsonBytes(recording) <= budget) return@let recording
@@ -161,7 +336,8 @@ private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
     val settings =
         DiagnosticBudget(500_000L, { retainNewest(accessibilitySettings, it) }, { jsonBytes(it) })
     val sections = listOf(summaries, details, detail, keys, boundaries, system, settings)
-    var remaining = 19_500_000L - sections.sumOf { it.bytes }
+    var remaining =
+        MATCH_DIAGNOSTIC_EXPORT_LIMIT_BYTES - METADATA_ALLOWANCE_BYTES - sections.sumOf { it.bytes }
     do {
         var used = 0L
         for (section in sections) {
@@ -171,8 +347,7 @@ private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
         }
     } while (used > 0 && remaining > 0)
 
-    val retainedIds =
-        details.value.mapTo(mutableSetOf()) { it.getValue("queryId").jsonPrimitive.long }
+    val retainedIds = details.value.keys
     val queries =
         summaries.value.map {
             if (it.queryId in retainedIds) it
@@ -181,52 +356,63 @@ private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
     val lostDetails = queryRecordings.count { it.detailsRetained } - retainedIds.size
     omitted("queryRecordings", lostDetails)
     omitted("querySummaries", queryRecordings.size - queries.size)
-    omitted("events", events.size - detail.value.size)
-    omitted("keyEvents", keyEvents.size - keys.value.size)
-    omitted("boundaryEvents", boundaryEvents.size - boundaries.value.size)
+    val timelines =
+        mapOf(
+            "events" to detail.value,
+            "keyEvents" to keys.value,
+            "boundaryEvents" to boundaries.value,
+        )
+    val lostEvents = events.size - detail.value.rows.size
+    val lostKeyEvents = keyEvents.size - keys.value.rows.size
+    val lostBoundaryEvents = boundaryEvents.size - boundaries.value.rows.size
+    omitted("events", lostEvents)
+    omitted("keyEvents", lostKeyEvents)
+    omitted("boundaryEvents", lostBoundaryEvents)
     omitted("systemSteps", (systemRecording?.steps?.size ?: 0) - (system.value?.steps?.size ?: 0))
     omitted("accessibilitySettings", accessibilitySettings.size - settings.value.size)
     var capture =
         copy(
-            session = session.copy(dropped = session.dropped + events.size - detail.value.size),
-            events = detail.value,
-            keyEvents = keys.value,
-            boundaryEvents = boundaries.value,
+            session = session.copy(dropped = session.dropped + lostEvents),
             queryRecordings = queries,
             droppedQueryRecordings = droppedQueryRecordings + lostDetails,
             droppedQuerySummaries = droppedQuerySummaries + queryRecordings.size - queries.size,
-            droppedKeyEvents = droppedKeyEvents + keyEvents.size - keys.value.size,
-            droppedBoundaryEvents =
-                droppedBoundaryEvents + boundaryEvents.size - boundaries.value.size,
+            droppedKeyEvents = droppedKeyEvents + lostKeyEvents,
+            droppedBoundaryEvents = droppedBoundaryEvents + lostBoundaryEvents,
             systemRecording = system.value,
             accessibilitySettings = settings.value,
             droppedAccessibilitySettings =
                 droppedAccessibilitySettings + accessibilitySettings.size - settings.value.size,
-            sizeLimitBytes = EXPORT_LIMIT_BYTES,
+            sizeLimitBytes = MATCH_DIAGNOSTIC_EXPORT_LIMIT_BYTES,
             omittedForSize = omissions.toMap(),
         )
-    val retainedDetails = details.value.associateBy { it.getValue("queryId").jsonPrimitive.long }
+    val archiveRows =
+        timelines.mapValues { it.value.rows } +
+            ("queryDetails" to queries.mapNotNull { details.value[it.queryId] })
     val payload =
         mapOf(
-            "events" to JsonUtils.default.encodeToJsonElement(capture.events),
-            "keyEvents" to JsonUtils.default.encodeToJsonElement(capture.keyEvents),
-            "boundaryEvents" to JsonUtils.default.encodeToJsonElement(capture.boundaryEvents),
+            "traceStrings" to JsonObject(timelines.mapValues { it.value.strings }),
+            "eventShapes" to checkNotNull(detail.value.shapes),
             "accessibilitySettings" to
                 JsonUtils.default.encodeToJsonElement(capture.accessibilitySettings),
             "systemRecording" to JsonUtils.default.encodeToJsonElement(capture.systemRecording),
-            "queryDetails" to JsonArray(queries.mapNotNull { retainedDetails[it.queryId] }),
         ) + querySummarySections(queries)
     fun metadata() =
         JsonObject(
             JsonUtils.default.encodeToJsonElement(capture.metadataOnly()).jsonObject.filterKeys {
-                it !in payload && it != "queryRecordings"
-            } + ("formatVersion" to JsonPrimitive(2)),
+                it !in payload && it !in archiveRows && it != "queryRecordings"
+            } + ("formatVersion" to JsonPrimitive(4)),
         )
     var encodedMetadata = metadata()
     var bytes = jsonBytes(encodedMetadata)
-    // Combining two nonempty objects removes two braces and adds one separator.
-    val payloadBytes = jsonBytes(JsonObject(payload)) - 1
-    val effectiveLimit = minOf(490_000L, EXPORT_LIMIT_BYTES - payloadBytes)
+    // Each payload field follows metadata with a comma, its quoted name and a colon.
+    val payloadBytes =
+        payload.entries.sumOf { (name, value) ->
+            jsonBytes(JsonPrimitive(name)) + 2 + jsonBytes(value)
+        } +
+            archiveRows.entries.sumOf { (name, rows) ->
+                jsonBytes(JsonPrimitive(name)) + 2 + rowsBytes(rows)
+            }
+    val effectiveLimit = minOf(490_000L, MATCH_DIAGNOSTIC_EXPORT_LIMIT_BYTES - payloadBytes)
     fun replace(next: MatchDiagnosticCapture) {
         capture = next.copy(omittedForSize = omissions.toMap())
         encodedMetadata = metadata()
@@ -299,7 +485,11 @@ private fun MatchDiagnosticCapture.limitExportSize(): JsonObject {
     check(bytes <= effectiveLimit) {
         "Diagnostic metadata exceeds its $effectiveLimit-byte budget"
     }
-    return JsonObject(encodedMetadata + payload)
+    return MatchDiagnosticArchive(
+        encodedMetadata,
+        payload,
+        archiveRows.mapValues { it.value.map(EncodedRow::text) },
+    )
 }
 
 /** Count actual UTF-8 JSON bytes without allocating a serialized copy of the entire capture. */

@@ -18,20 +18,26 @@ Android 使用 `MatchDiagnosticService` 前台服务，页面与 HTTP/CLI 共用
 
 ### 文件与额度
 
-单次诊断生成文件合计不超过 **20,000,000 个 UTF-8 字节**。各类先获得下表的保底额度（数据不足时只占实际大小），未使用额度进入共享池。共享池依次补充查询摘要、查询详情、普通事件、关键事件、边界与故障、系统步骤、无障碍设置变化；元数据与清单保留独立空间：
+单次诊断生成文件合计不超过 **40,000,000 个 UTF-8 字节**。各类先获得下表的保底额度（数据不足时只占实际大小），未使用额度进入共享池。共享池依次补充查询摘要、查询详情、普通事件、关键事件、边界与故障、系统步骤、无障碍设置变化；元数据与清单保留独立空间：
 
 | 文件 | 内容 | 保底额度 |
 | --- | --- | --- |
 | `diagnostic.json` | 会话、统计和文件清单 | 其他信息预算 490 KB，另留清单开销 |
 | `events.jsonl` | 普通事件 | 9 MB |
-| `key-events.jsonl` | 关键过程 | 4 MB |
-| `boundary-events.jsonl` | 边界与故障 | 2 MB |
+| `key-events.jsonl` | 关键过程 | 18 MB |
+| `boundary-events.jsonl` | 边界与故障 | 4 MB |
 | `query-summaries.jsonl` + `query-plans.json` | 查询摘要与共享选择器计划 | 合计 1 MB |
-| `query-details.jsonl` | 节点查询详情及查询内文本字典 | 2 MB |
-| `system-recording.json` | 系统步骤 | 1 MB |
+| `query-details.jsonl` | 节点查询详情及查询内文本字典 | 4 MB |
+| `system-recording.json` | 系统步骤 | 3 MB |
 | `accessibility-settings.jsonl` | 无障碍设置变化 | 500 KB |
 
 事件按“边界与故障 → 关键 → 普通”互斥归类，导出只存一份。事件与查询摘要保留最新完整记录；查询详情先保留被标记的故障/慢查询现场，再保留最近记录；系统步骤保留前缀，截短时标记 `incomplete`。`omittedForSize` 分项记录体积删减数量。摘要统一在 `evidenceCoverage.retention` 按类别列出可用性、内存覆盖、导出裁剪计数和保留记录的起止时间；`firstAt/lastAt` 为 Unix 毫秒，`firstElapsedMillis/lastElapsedMillis` 为相对时间，缺失为 null；范围内不保证连续完整，空白也不证明丢失。每轮按实际保留字节数重新分配剩余额度，直到没有类别能再装入完整记录。HTTP 保留整包 JSON，使用相同分类与预算；摘要脚本兼容整包格式及目录内的分类文件。
+
+录制时普通和边界缓冲各保留最多 20,000 条，关键缓冲保留最多 60,000 条。边界时间线保留前台进入待确认、冲突、恢复和被拒绝的节点窗口，包含证据来源、前台身份和可用的窗口 ID。
+
+归档格式 `formatVersion=3` 用 `trace-strings.json` 保存各事件时间线的字典。规则和选择器字段为数字时，按所在时间线的字典下标还原。与会话相同的输入策略由摘要工具从会话还原。字典占用计入对应时间线的额度。
+
+归档格式 `formatVersion=4` 把普通事件和查询详情中的对象编码为 `[字段表下标, 值…]`。原本的数组用 `-1` 作为首项，空数组和显式 null 均可还原。普通事件共用 `event-shapes.json`，每条查询详情以 `[本查询字段表, 编码记录]` 独立存储。关键事件和边界日志仍保留具名字段。保存和 HTTP 导出逐行写出预编码记录，字段表计入相应的文件额度。
 
 UI、HTTP 与 CLI 都保存轻量 `initialRules`，包含开始时已启用且有效的订阅 ID、版本和规则 ID；未加载时字段缺省（旧格式为 null），已加载但无规则为空列表，不代表后续配置历史。外部规则标识为 `订阅ID/类型/应用ID/分组key/规则key`：应用类型为 `2`、全局类型为 `3`，全局应用 ID 为 `*`，无规则 key 时使用 `index:索引`。
 
@@ -343,7 +349,7 @@ SQL 仅统计 GKD Debug 主进程正式测量的同线程区间，并把嵌套�
 
 诊断页默认采集节点访问。CLI 的 `--record-queries --rule ID` 仅记录指定规则；`--record-system` 包含全部参与查询。关闭采集时不创建节点访问记录，不增加节点读取。
 
-归档格式 `formatVersion=2` 将查询拆成 `querySummaries`、`queryDetails` 和 `queryPlans`。摘要与详情通过会话内 `queryId` 关联，共同字段只在摘要保存；`planId` 引用共享选择器计划。每份详情的 `texts` 保存重复且至少 64 字符的文本，记录值的 `valueRef` 引用该查询的文本表。摘要工具自动还原为 `queryRecordings`，保留选择器计划、源节点、实际调用参数、返回值、异常与最终结果；旧整包和分类文件仍可读取。导出省略值为 null 的可空模型字段，读取时按 nullable 语义处理缺省值；动态 JSON 中显式的 null 值仍保留，空数组与未知仍有区别。每份查询独立保留 `startedAt`、`endedAt`、`durationNanos` 和 `outcome`（matched/not_matched/failed/cancelled），未完成时结束时间、耗时和终态为空；摘要不依赖事件环形缓冲。这里的耗时是选择器查询范围，不包含整个运行的其他等待或动作。每条调用的 `startedNanos` 相对该查询记录开始，`durationNanos` 测量实际委托调用，不包含结果序列化；同时记录线程、异常类型及消息。
+归档格式 `formatVersion=2` 起将查询拆成 `querySummaries`、`queryDetails` 和 `queryPlans`。摘要与详情通过会话内 `queryId` 关联，共同字段只在摘要保存；`planId` 引用共享选择器计划。每份详情的 `texts` 保存重复且至少 64 字符的文本，记录值的 `valueRef` 引用该查询的文本表。摘要工具自动还原为 `queryRecordings`，保留选择器计划、源节点、实际调用参数、返回值、异常与最终结果；旧整包和分类文件仍可读取。导出省略值为 null 的可空模型字段，读取时按 nullable 语义处理缺省值；动态 JSON 中显式的 null 值仍保留，空数组与未知仍有区别。每份查询独立保留 `startedAt`、`endedAt`、`durationNanos` 和 `outcome`（matched/not_matched/failed/cancelled），未完成时结束时间、耗时和终态为空；摘要不依赖事件环形缓冲。这里的耗时是选择器查询范围，不包含整个运行的其他等待或动作。每条调用的 `startedNanos` 相对该查询记录开始，`durationNanos` 测量实际委托调用，不包含结果序列化；同时记录线程、异常类型及消息。
 
 查询的 `operationId` 关联 `SelectorQuery` 操作；关键节点调用的 `operationId` 关联 `Selector.*` 操作，等待记录的 `parentOperationId` 可关联到该调用。查询内成功的 Selector 调用不再重复写事件；等待与实际读取的完成详情保存在查询的 `operations` 中，开始/完成不再重复写事件。异常和停止后收尾仍进入事件流。调用及物理读取详情共用原有字符容量预算，截断会标记 `incomplete`，摘要仍会收尾。未返回的关键调用在 `session.openOperations` 中保留参数、运行、规则、线程和开始时间，即使完成记录尚未产生也能查看。
 

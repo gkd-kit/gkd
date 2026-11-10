@@ -4,7 +4,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
@@ -18,8 +17,8 @@ import li.gkd.app.matching.MatchCoordinator
 import li.gkd.app.matching.MatchingRuntime
 import li.gkd.app.matching.diagnostics.MatchDebugSnapshot
 import li.gkd.app.matching.diagnostics.MatchDiagnosticState
-import li.gkd.app.matching.diagnostics.encodeDiagnosticCapture
 import li.gkd.app.matching.diagnostics.matchForegroundSnapshot
+import li.gkd.app.matching.diagnostics.prepareDiagnosticArchive
 import li.gkd.app.util.JsonUtils
 
 @Serializable
@@ -105,10 +104,8 @@ fun Route.matchDebugRoutes(
         debugPost("/sessions/{id}/export") {
             val id = requireNotNull(call.parameters["id"])
             val capture = coordinator.exportDiagnostics(id)
-            call.respondText(
-                encodeDiagnosticCapture(capture),
-                ContentType.Application.Json,
-            )
+            val archive = prepareDiagnosticArchive(capture)
+            call.respondTextWriter(ContentType.Application.Json) { archive.writeJson(this) }
         }
         debugGet("/sessions/{id}/stream") {
             val id = requireNotNull(call.parameters["id"])

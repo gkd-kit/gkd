@@ -141,6 +141,6 @@ data class MatchDiagnosticCapture(
     val droppedBoundaryEvents: Long = 0,
     val accessibilitySettings: List<AccessibilitySettingRecord> = emptyList(),
     val droppedAccessibilitySettings: Long = 0,
-    val sizeLimitBytes: Int = 20_000_000,
+    val sizeLimitBytes: Int = MATCH_DIAGNOSTIC_EXPORT_LIMIT_BYTES,
     val omittedForSize: Map<String, Int> = emptyMap(),
 )

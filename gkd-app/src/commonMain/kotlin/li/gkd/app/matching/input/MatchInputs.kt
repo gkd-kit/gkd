@@ -35,6 +35,7 @@ sealed interface MatchInput {
     data class Foreground(
         val source: ForegroundSource,
         val identity: ForegroundIdentity,
+        val windowId: Int? = null,
     ) : MatchInput
 
     @Serializable

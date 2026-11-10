@@ -166,6 +166,7 @@ object AndroidForegroundState {
         activityId: String?,
         scene: ActivityScene = ActivityScene.A11y,
         sourceTimeMillis: Long? = null,
+        windowId: Int? = null,
         @CallSite loc: String = "",
     ): Boolean =
         synchronized(lock) {
@@ -179,7 +180,7 @@ object AndroidForegroundState {
                 val identity = ForegroundIdentity(appId, activityId)
                 val inputDecision =
                     MatchingRuntime.inputs.accept(
-                        MatchInput.Foreground(source, identity),
+                        MatchInput.Foreground(source, identity, windowId),
                         MatchingRuntime.coordinator.policy.value,
                         sourceTimeMillis,
                     )
@@ -355,8 +356,17 @@ fun updateTopActivity(
     activityId: String?,
     scene: ActivityScene = ActivityScene.A11y,
     sourceTimeMillis: Long? = null,
+    windowId: Int? = null,
     @CallSite loc: String = "",
-) = AndroidForegroundState.updateTopActivity(appId, activityId, scene, sourceTimeMillis, loc)
+) =
+    AndroidForegroundState.updateTopActivity(
+        appId,
+        activityId,
+        scene,
+        sourceTimeMillis,
+        windowId,
+        loc,
+    )
 
 val lastTriggerTime: Long
     get() = RuleExecutionHost.runtime.lastTriggerTime

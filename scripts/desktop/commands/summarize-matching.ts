@@ -107,11 +107,20 @@ export async function summarizeMatching(input: string, output?: string) {
     }
     if (files.systemRecording !== "system-recording.json") throw new Error("Invalid system recording file");
     capture.systemRecording = JSON.parse(await readFile(resolve(dirname(input), "system-recording.json"), "utf8"));
-    if (capture.formatVersion === 2) {
+    if (capture.formatVersion === 4) {
+      if (files.eventShapes !== 'event-shapes.json') throw new Error('Invalid event shapes file');
+      capture.eventShapes = JSON.parse(await readFile(resolve(dirname(input), 'event-shapes.json'), 'utf8'));
+    }
+    if (capture.formatVersion === 3 || capture.formatVersion === 4) {
+      if (files.traceStrings !== 'trace-strings.json') throw new Error('Invalid trace strings file');
+      capture.traceStrings = JSON.parse(await readFile(resolve(dirname(input), 'trace-strings.json'), 'utf8'));
+    }
+    const hasQuerySections = capture.formatVersion === 2 || capture.formatVersion === 3 || capture.formatVersion === 4;
+    if (hasQuerySections) {
       if (files.queryPlans !== 'query-plans.json') throw new Error('Invalid query plans file');
       capture.queryPlans = JSON.parse(await readFile(resolve(dirname(input), 'query-plans.json'), 'utf8'));
     }
-    const queryFiles = capture.formatVersion === 2
+    const queryFiles = hasQuerySections
       ? { querySummaries: 'query-summaries.jsonl', queryDetails: 'query-details.jsonl' }
       : { queryRecordings: 'query-recordings.jsonl' };
     for (const [key, name] of Object.entries({ events: 'events.jsonl', keyEvents: 'key-events.jsonl', boundaryEvents: 'boundary-events.jsonl', ...queryFiles })) {

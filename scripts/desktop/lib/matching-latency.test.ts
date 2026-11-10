@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { summarizeMatching } from '../commands/summarize-matching.ts';
+import { expandMatchingCapture } from './matching-capture.ts';
 import { matchingLatency, type LatencyTrace, type NodeProvenance } from './matching-latency.ts';
 
 test('same-page updates and legacy observations cannot replace a missing confirmation', () => {
@@ -205,6 +206,61 @@ test('compact query sections restore plans and texts while distinguishing missin
     await writeFile(input, JSON.stringify({ ...capture, files }));
     const split = await summarizeMatching(input, output);
     assert.deepEqual(split.queryRecordings, summary.queryRecordings);
+    const traceStrings: Record<string, string[]> = { events: [], keyEvents: ['subscription/rule'], boundaryEvents: [] };
+    const policy = { rootWaitMillis: 500 };
+    const keyEvent = {
+      sequence: 1, time: 1100, elapsedNanos: 100e6, runId: 2, stage: 'Root',
+      reason: 'foreground_conflict', rule: 0, operation: { rule: 0 }, input: { sequence: 1 },
+    };
+    const expanded = expandMatchingCapture({
+      formatVersion: 3, traceStrings, session: { policy },
+      events: [], keyEvents: [keyEvent], boundaryEvents: [],
+      queryPlans: [], querySummaries: [], queryDetails: [],
+    });
+    assert.equal(expanded.keyEvents[0].rule, 'subscription/rule');
+    assert.equal(expanded.keyEvents[0].operation.rule, 'subscription/rule');
+    files.traceStrings = 'trace-strings.json';
+    await writeFile(join(directory, files.traceStrings), JSON.stringify(traceStrings));
+    await writeFile(join(directory, files.keyEvents!), JSON.stringify({
+      ...keyEvent, operation: undefined,
+    }));
+    await writeFile(input, JSON.stringify({
+      ...capture, formatVersion: 3, session: { ...capture.session, policy }, files,
+    }));
+    const compact = await summarizeMatching(input, output);
+    assert.deepEqual(compact.inputs[0]!.input, { sequence: 1, policy });
+    assert.deepEqual(compact.queryRecordings, summary.queryRecordings);
+    const eventShapes = [['sequence', 'elapsedNanos', 'runId', 'stage', 'reason', 'rule', 'evidence']];
+    const event = [0, 2, 200e6, 2, 'Selector', 'test', 0, [-1, null, [-1]]];
+    const packedDetails = [
+      [
+        ['queryId', 'texts', 'operations', 'calls'],
+        ['operation', 'arguments', 'result', 'durationNanos'],
+        ['type', 'valueRef'],
+      ],
+      [0, 2, [-1, sharedText], [-1], [-1, [1, 'attr', [-1, [2, 'string', 0]], [2, 'string', 0], 600e6]]],
+    ];
+    traceStrings.events!.push('subscription/rule');
+    files.eventShapes = 'event-shapes.json';
+    await writeFile(join(directory, files.traceStrings), JSON.stringify(traceStrings));
+    await writeFile(join(directory, files.eventShapes), JSON.stringify(eventShapes));
+    await writeFile(join(directory, files.events!), JSON.stringify(event));
+    await writeFile(join(directory, files.queryDetails!), JSON.stringify(packedDetails));
+    const v4 = { ...capture, formatVersion: 4, session: { ...capture.session, policy }, files };
+    await writeFile(input, JSON.stringify(v4));
+    const packed = await summarizeMatching(input, output);
+    assert.deepEqual(packed.queryRecordings, summary.queryRecordings);
+    assert.equal(packed.counts.events, 2);
+    const restored = expandMatchingCapture({
+      ...v4, eventShapes, traceStrings, events: [event], keyEvents: [keyEvent], boundaryEvents: [],
+      queryPlans: [], querySummaries: [], queryDetails: [],
+    });
+    assert.equal(restored.events[0].rule, 'subscription/rule');
+    assert.deepEqual(restored.events[0].evidence, [null, []]);
+    await writeFile(join(directory, files.events!), JSON.stringify([1, ...event.slice(1)]));
+    await assert.rejects(summarizeMatching(input, output), /Invalid diagnostic row shape/);
+    await writeFile(input, JSON.stringify({ ...v4, formatVersion: 3 }));
+    await writeFile(join(directory, files.events!), '');
     await writeFile(join(directory, 'query-details.jsonl'), '');
     await assert.rejects(summarizeMatching(input, output), /Missing retained query detail/);
     await writeFile(join(directory, 'query-details.jsonl'), JSON.stringify({

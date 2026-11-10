@@ -24,6 +24,7 @@ import li.gkd.app.matching.diagnostics.MatchNodeReadReason
 import li.gkd.app.matching.diagnostics.MatchNodeRole
 import li.gkd.app.matching.diagnostics.MatchNodeSource
 import li.gkd.app.matching.diagnostics.MatchNodeSummary
+import li.gkd.app.matching.diagnostics.MatchRejectedWindow
 import li.gkd.app.matching.diagnostics.MatchServiceEvent
 import li.gkd.app.matching.diagnostics.MatchStage
 import li.gkd.app.matching.diagnostics.MatchWindowEvent
@@ -215,7 +216,8 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             coordinator.diagnostics.record(
                 0,
                 MatchStage.Root,
-                "accessibility_event_received",
+                if (event.eventType == STATE_CHANGED) "accessibility_window_state_received"
+                else "accessibility_event_received",
                 windowEvent =
                     MatchWindowEvent(
                         event.eventType,
@@ -309,6 +311,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     a11yEvent.key.appId,
                     a11yEvent.key.name,
                     sourceTimeMillis = a11yEvent.sourceTimeMillis,
+                    windowId = a11yEvent.windowId,
                 )
             }
         }
@@ -510,7 +513,12 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                         latestEvent.sourceTimeMillis < stateEvent.sourceTimeMillis) ||
                     node.packageName?.toString() != latestEvent.key.appId
             ) {
-                coordinator.diagnostics.entry("consume_event", "stale_or_mismatched_source")
+                recordRejectedWindow(
+                    "consume_event",
+                    "stale_or_mismatched_source",
+                    node,
+                    latestEvent,
+                )
                 return
             }
             val accepted = AndroidForegroundState.withTopActivityLock {
@@ -525,18 +533,30 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                     latestEvent.key.appId != foreground.confirmed.appId &&
                         latestEvent.key.appId != foreground.pending?.appId
                 ) {
-                    coordinator.diagnostics.entry("consume_event", "source_foreground_mismatch")
+                    recordRejectedWindow(
+                        "consume_event",
+                        "source_foreground_mismatch",
+                        node,
+                        latestEvent,
+                    )
                     return@withTopActivityLock false
                 }
                 // A delayed source from another window must not confirm the active page.
-                if (!windows.isCurrentKnownWindow(node.windowId, latestEvent.key.appId)) {
-                    coordinator.diagnostics.entry("consume_event", "source_window_mismatch")
+                val windowId = node.windowId
+                if (!windows.isCurrentKnownWindow(windowId, latestEvent.key.appId)) {
+                    recordRejectedWindow(
+                        "consume_event",
+                        "source_window_mismatch",
+                        node,
+                        latestEvent,
+                    )
                     return@withTopActivityLock false
                 }
                 updateTopActivity(
                     latestEvent.key.appId,
                     windows.identity?.activityId,
                     ActivityScene.Nodes,
+                    windowId = windowId,
                 )
                 if (
                     AndroidForegroundState.foregroundPending ||
@@ -572,6 +592,25 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
         it.page === AndroidForegroundState.currentPage &&
             !it.node.isExpired(1000) &&
             windows.isCurrentKnownWindow(it.node.windowId, it.node.packageName?.toString())
+    }
+
+    private fun recordRejectedWindow(
+        source: String,
+        reason: String,
+        node: AccessibilityNodeInfo,
+        event: A11yEvent? = null,
+    ) {
+        if (!coordinator.diagnostics.enabled) return
+        coordinator.diagnostics.entry(
+            source,
+            reason,
+            rejectedWindow =
+                MatchRejectedWindow(
+                    node.packageName?.toString(),
+                    node.windowId,
+                    event?.diagnosticEventId,
+                ),
+        )
     }
 
     private var rootRequest: Job? = null
@@ -613,19 +652,22 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                                 return@withTopActivityLock false
                             val appId =
                                 node.packageName?.toString() ?: return@withTopActivityLock false
+                            val windowId = node.windowId
                             val foreground = AndroidForegroundState.foregroundSnapshot()
-                            if (windows.observeRoot(node.windowId, appId, foreground.confirmed)) {
+                            if (windows.observeRoot(windowId, appId, foreground.confirmed)) {
                                 AndroidForegroundState.onWindowChanged()
                             }
                             val identity = windows.identity
                             if (identity == null) {
-                                coordinator.diagnostics.entry(
-                                    "root_read",
-                                    "window_identity_pending",
-                                )
+                                recordRejectedWindow("root_read", "window_identity_pending", node)
                                 return@withTopActivityLock false
                             }
-                            updateTopActivity(appId, identity.activityId, ActivityScene.Nodes)
+                            updateTopActivity(
+                                appId,
+                                identity.activityId,
+                                ActivityScene.Nodes,
+                                windowId = windowId,
+                            )
                             if (
                                 AndroidForegroundState.foregroundPending ||
                                     currentTopActivity.appId != appId
@@ -644,7 +686,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                             coordinator.diagnostics.entry("root_read", "root_ready")
                             startQueryJob()
                         } else {
-                            coordinator.diagnostics.entry("root_read", "stale_or_mismatched_root")
+                            recordRejectedWindow("root_read", "stale_or_mismatched_root", node)
                         }
                     }
                     .also { rootRequest = it }

@@ -129,7 +129,8 @@ class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoC
                     }
                 }
             } catch (error: RejectedExecutionException) {
-                trace?.endOperation(physical, "not_started: ${error.javaClass.simpleName}")
+                if (physical != null)
+                    trace?.endOperation(physical, "not_started: ${error.javaClass.simpleName}")
                 val reason =
                     if (executor.isShutdown) MatchNodeReadFailure.ReaderClosed
                     else MatchNodeReadFailure.CapacityExceeded
@@ -165,10 +166,10 @@ class MatchNodeReader(private val diagnostics: MatchDiagnostics? = null) : AutoC
                 future.cancel(false)
             }
         } catch (error: Throwable) {
-            outcome = error.toString()
+            if (wait != null) outcome = error.toString()
             throw error
         } finally {
-            trace?.endOperationAsync(wait, outcome)
+            if (wait != null) trace.endOperationAsync(wait, outcome)
         }
     }
 

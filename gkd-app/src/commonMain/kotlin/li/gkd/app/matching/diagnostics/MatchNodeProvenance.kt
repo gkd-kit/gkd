@@ -1,6 +1,9 @@
 package li.gkd.app.matching.diagnostics
 
 import kotlinx.serialization.Serializable
+import li.gkd.app.matching.input.ForegroundDecisionReason
+import li.gkd.app.matching.input.MatchEventKind
+import li.gkd.app.matching.input.MatchInput
 import li.gkd.app.settings.AutomatorMode
 
 @Serializable
@@ -125,6 +128,9 @@ data class MatchWindowEvent(
 )
 
 @Serializable
+data class MatchRejectedWindow(val appId: String?, val windowId: Int, val eventId: Long? = null)
+
+@Serializable
 data class MatchActionTarget(
     val windowId: Int,
     val appId: String?,
@@ -166,11 +172,27 @@ fun MatchTrace.isBoundaryTrace(): Boolean =
     serviceConnection != null ||
         pageObservation != null ||
         taskObservation != null ||
+        rejectedWindow != null ||
+        reason == "accessibility_window_state_received" ||
+        (input?.input as? MatchInput.Accessibility)?.key?.kind == MatchEventKind.WindowState ||
+        inputDecision?.foreground?.let { decision ->
+            inputDecision.cancelWork || decision.reason in foregroundBoundaryReasons
+        } == true ||
         nodePressure != null ||
         stage == MatchStage.Failed ||
         action?.result == false ||
         reason in boundaryFailureReasons ||
         operation?.outcome?.let { it !in successfulOperationOutcomes } == true
+
+private val foregroundBoundaryReasons =
+    setOf(
+        ForegroundDecisionReason.ForegroundConflict,
+        ForegroundDecisionReason.NodesConfirmed,
+        ForegroundDecisionReason.SurfaceConfirmed,
+        ForegroundDecisionReason.StaleObservationDiscarded,
+        ForegroundDecisionReason.SystemSurfaceEntered,
+        ForegroundDecisionReason.SystemSurfaceExited,
+    )
 
 private val boundaryFailureReasons =
     setOf("root_unavailable", "foreground_wait_expired", "window_identity_pending")

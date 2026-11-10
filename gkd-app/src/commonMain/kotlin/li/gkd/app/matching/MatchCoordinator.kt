@@ -680,7 +680,7 @@ class MatchWork(
                 if (operation == null) block()
                 else withContext(MatchActionOperation(diagnostics, operation)) { block() }
             } catch (error: Throwable) {
-                diagnostics.endOperation(operation, error.toString())
+                if (operation != null) diagnostics.endOperation(operation, error.toString())
                 onAction(
                     rule,
                     action,
@@ -693,7 +693,8 @@ class MatchWork(
                 )
                 throw error
             }
-        diagnostics.endOperation(operation, if (result.result) "success" else "failed_result")
+        if (operation != null)
+            diagnostics.endOperation(operation, if (result.result) "success" else "failed_result")
         onAction(rule, action, MatchActionOutcome(MatchActionOutcomeKind.Returned, result))
         return result
     }
@@ -708,11 +709,12 @@ class MatchWork(
             try {
                 block()
             } catch (error: Throwable) {
-                diagnostics.endOperation(operation, error.toString())
+                if (operation != null) diagnostics.endOperation(operation, error.toString())
                 onQuery(rule, MatchQueryOutcome(failure = error.javaClass.name))
                 throw error
             }
-        diagnostics.endOperation(operation, if (result == null) "not_matched" else "matched")
+        if (operation != null)
+            diagnostics.endOperation(operation, if (result == null) "not_matched" else "matched")
         onQuery(rule, MatchQueryOutcome(matched = result != null))
         return result
     }

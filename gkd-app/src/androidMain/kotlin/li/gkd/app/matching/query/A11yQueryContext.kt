@@ -411,14 +411,14 @@ class A11yQueryContext(
         args: () -> List<Any> = { emptyList() },
         noinline block: () -> T,
     ): T {
-        val trace = diagnostics
+        val trace = diagnostics?.takeIf { it.enabled }
         val runId = queryRunId
-        val rule = if (trace?.enabled == true) currentRule?.matchIdentity() ?: "manual" else null
+        val rule = if (trace != null) currentRule?.matchIdentity() ?: "manual" else null
         val page = queryPage
         val collector = metrics
-        val observation = MatchNodeObservation.current()
+        val observation = if (trace != null) MatchNodeObservation.current() else null
         val arguments =
-            if (trace?.enabled == true)
+            if (trace != null)
                 args().map { value ->
                     observation?.value?.invoke(value)
                         ?: when (value) {
@@ -448,7 +448,7 @@ class A11yQueryContext(
                     arguments = arguments,
                     block = read,
                 )
-            } else if (trace?.enabled == true)
+            } else if (trace != null)
                 trace.observeOperation(
                     operation.name,
                     runId,

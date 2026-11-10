@@ -107,7 +107,9 @@ class MatchDiagnosticRetentionTest {
         assertFalse("calls" in summary)
         assertFalse("plan" in summary)
         assertFalse("failure" in summary)
-        val detail = archive.getValue("queryDetails").jsonArray.first().jsonObject
+        val row = archive.getValue("queryDetails").jsonArray.first()
+        val (shapes, packed) = row.jsonArray
+        val detail = expandPackedDiagnosticRow(packed, shapes.jsonArray).jsonObject
         assertFalse("rule" in detail)
         assertEquals(listOf(JsonPrimitive(text)), detail.getValue("texts").jsonArray.toList())
         assertTrue(
@@ -115,6 +117,20 @@ class MatchDiagnosticRetentionTest {
                 it.jsonObject.getValue("result").jsonObject["valueRef"] == JsonPrimitive(0)
             },
         )
-        assertTrue(detail.toString().toByteArray().size < text.toByteArray().size * 10)
+        assertTrue(row.toString().toByteArray().size < text.toByteArray().size * 10)
     }
+}
+
+fun encodeDiagnosticCapture(value: MatchDiagnosticCapture): String = buildString {
+    prepareDiagnosticArchive(value).writeJson(this)
+}
+
+fun expandPackedDiagnosticRow(value: JsonElement, shapes: JsonArray): JsonElement {
+    if (value !is JsonArray) return value
+    val index = value.first().jsonPrimitive.int
+    val fields = value.drop(1).map { expandPackedDiagnosticRow(it, shapes) }
+    if (index == -1) return JsonArray(fields)
+    val names = shapes[index].jsonArray
+    require(names.size == fields.size)
+    return JsonObject(names.mapIndexed { i, key -> key.jsonPrimitive.content to fields[i] }.toMap())
 }

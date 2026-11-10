@@ -39,23 +39,22 @@ class MatchDiagnosticFileStore(private val directory: File) {
                     "events" to "events.jsonl",
                     "keyEvents" to "key-events.jsonl",
                     "boundaryEvents" to "boundary-events.jsonl",
+                    "traceStrings" to "trace-strings.json",
+                    "eventShapes" to "event-shapes.json",
                     "querySummaries" to "query-summaries.jsonl",
                     "queryDetails" to "query-details.jsonl",
                     "queryPlans" to "query-plans.json",
                     "systemRecording" to "system-recording.json",
                 )
             for ((key, name) in sections) {
-                val value = archive.getValue(key)
                 val file = captureDirectory.resolve(name)
-                if (name.endsWith(".jsonl")) {
-                    file.bufferedWriter().use { writer ->
-                        value.jsonArray.forEach { writer.appendLine(it.toString()) }
-                    }
-                } else file.writeText(value.toString())
+                file.bufferedWriter().use { writer ->
+                    archive.writeSection(key, lines = name.endsWith(".jsonl"), writer)
+                }
             }
             val metadata =
                 JsonObject(
-                    archive.filterKeys { it !in sections } +
+                    archive.metadata +
                         ("files" to JsonObject(sections.mapValues { JsonPrimitive(it.value) })),
                 )
             temporary.toFile().writeText(metadata.toString())

@@ -16,6 +16,9 @@ import li.gkd.app.matching.input.MatchTimingPolicy
 import li.gkd.app.matching.query.MatchNodeReadFailure
 import li.gkd.app.model.ActionResult
 
+private const val DEFAULT_TRACE_CAPACITY = 20_000
+private const val DEFAULT_KEY_TRACE_CAPACITY = 60_000
+
 @Serializable
 enum class MatchStage {
     Idle,
@@ -117,6 +120,7 @@ data class MatchTrace(
     val actionTarget: MatchActionTarget? = null,
     val taskObservation: MatchTaskObservation? = null,
     val eventBatch: MatchEventBatch? = null,
+    val rejectedWindow: MatchRejectedWindow? = null,
 )
 
 @Serializable
@@ -174,7 +178,10 @@ class MatchDiagnostics(
     private var operationStatistics = MatchOperationStatisticsRecorder()
     private val nodeSnapshotTimes = mutableMapOf<MatchNodeReadFailure, Long>()
     private var origin = 0L
-    private var capacity = 20_000
+    private var capacity = DEFAULT_TRACE_CAPACITY
+    private val keyCapacity: Int
+        get() = if (capacity == DEFAULT_TRACE_CAPACITY) DEFAULT_KEY_TRACE_CAPACITY else capacity
+
     private var snapshotSequence = 0L
     private var lastRules: ForegroundRuleSnapshot? = null
     private var definitionSequence = 0L
@@ -188,6 +195,7 @@ class MatchDiagnostics(
         var capture: MatchDiagnosticCapture,
         val origin: Long,
         val capacity: Int,
+        val keyCapacity: Int,
         var sequence: Long,
         val queries: List<MatchQueryEvidence>,
         val operationStatistics: MatchOperationStatisticsRecorder,
@@ -238,13 +246,13 @@ class MatchDiagnostics(
         policy: MatchTimingPolicy,
         detailed: Boolean = false,
         ruleFilter: String? = null,
-        capacity: Int = 20_000,
+        capacity: Int = DEFAULT_TRACE_CAPACITY,
         recordQueries: Boolean = false,
         recordSystem: Boolean = false,
         initialRules: List<MatchRuleIndex>? = null,
     ): MatchDiagnosticState =
         synchronized(lock) {
-            require(capacity in 10..20_000)
+            require(capacity in 10..DEFAULT_TRACE_CAPACITY)
             require(!detailed || recordSystem || !ruleFilter.isNullOrBlank()) {
                 "Detailed tracing requires a rule filter or system recording"
             }
@@ -261,6 +269,7 @@ class MatchDiagnostics(
                         export(previous.id),
                         origin,
                         this.capacity,
+                        keyCapacity,
                         sequence,
                         queryRecordings.toList(),
                         operationStatistics,
@@ -462,6 +471,7 @@ class MatchDiagnostics(
         runId: Long = 0,
         eventDrop: MatchEventDrop? = null,
         nodePressure: MatchNodePressure? = null,
+        rejectedWindow: MatchRejectedWindow? = null,
     ) {
         if (!enabled) return
         synchronized(lock) {
@@ -475,6 +485,7 @@ class MatchDiagnostics(
                 entrySource = source,
                 eventDrop = eventDrop,
                 nodePressure = nodePressure,
+                rejectedWindow = rejectedWindow,
             )
         }
     }
@@ -667,13 +678,13 @@ class MatchDiagnostics(
                         events = (if (dropped) capture.events.drop(1) else capture.events) + event,
                         keyEvents =
                             if (event.isKeyTrace())
-                                (capture.keyEvents + event).takeLast(previous.capacity)
+                                (capture.keyEvents + event).takeLast(previous.keyCapacity)
                             else capture.keyEvents,
                         droppedKeyEvents =
                             capture.droppedKeyEvents +
                                 if (
                                     event.isKeyTrace() &&
-                                        capture.keyEvents.size == previous.capacity
+                                        capture.keyEvents.size == previous.keyCapacity
                                 )
                                     1
                                 else 0,
@@ -732,7 +743,7 @@ class MatchDiagnostics(
                 arguments,
                 sessionId,
                 recording,
-            )
+            ) ?: return block()
         try {
             val result = block()
             endOperation(
@@ -775,6 +786,7 @@ class MatchDiagnostics(
         actionTarget: MatchActionTarget? = null,
         taskObservation: MatchTaskObservation? = null,
         eventBatch: MatchEventBatch? = null,
+        rejectedWindow: MatchRejectedWindow? = null,
     ) {
         if (!enabled) return
         synchronized(lock) {
@@ -814,6 +826,7 @@ class MatchDiagnostics(
                     actionTarget,
                     taskObservation,
                     eventBatch,
+                    rejectedWindow,
                 )
             retainKeyEvent(event)
             val dropped =
@@ -852,7 +865,7 @@ class MatchDiagnostics(
             boundaryEvents.addLast(event)
         }
         if (!event.isKeyTrace()) return
-        if (keyEvents.size == capacity) {
+        if (keyEvents.size == keyCapacity) {
             keyEvents.removeFirst()
             droppedKeyEvents++
         }
