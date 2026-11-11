@@ -94,6 +94,10 @@ class RuleCompilationTest {
     fun positionPreservesAnchorPriorityButRejectsEveryInvalidSuppliedField() {
         val bounds = RuleBounds(10, 20, 110, 220)
         assertEquals(
+            60f to 170f,
+            position(left = "width/2", bottom = "height/4").calc(bounds, ScreenSize(1080, 2400)),
+        )
+        assertEquals(
             35f to 70f,
             position(
                     left = "width/4",

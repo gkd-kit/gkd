@@ -19,25 +19,27 @@ import li.gkd.app.ui.navigation.SnapshotSettingsRoute
 @OptIn(ExperimentalCoroutinesApi::class)
 class DiagnosticNavigationTest {
     @Test
-    fun savedNotificationReusesRecordEntryAndRemovesPagesAboveIt() = runTest {
+    fun currentAndLegacyNotificationsReuseRecordEntryAndRemovePagesAboveIt() = runTest {
         val navigator = AppNavigator(this)
-        val link = GkdLink.Page(MatchDebugRoute)
-        navigator.openPage(link)
+        val current = GkdLink.Page(MatchDebugRoute)
+        val legacy = GkdLink.parse("gkd://page/1?section=diagnostics") as GkdLink.Page
+        navigator.openPage(current)
         runCurrent()
         val records = navigator.topEntry
-        navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.Http))
-        runCurrent()
-
-        navigator.openPage(link)
-        runCurrent()
-        assertSame(records, navigator.topEntry)
-        assertEquals(listOf(HomeRoute, MatchDebugRoute), navigator.backStack.map { it.route })
-        assertNull(records.advancedSectionRequest.value)
-
-        navigator.openPage(link)
-        runCurrent()
-        assertSame(records, navigator.topEntry)
-        assertEquals(2, navigator.backStack.size)
+        for (link in listOf(current, legacy)) {
+            navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.Http))
+            runCurrent()
+            repeat(2) {
+                navigator.openPage(link)
+                runCurrent()
+                assertSame(records, navigator.topEntry)
+                assertEquals(
+                    listOf(HomeRoute, MatchDebugRoute),
+                    navigator.backStack.map { it.route },
+                )
+                assertNull(records.advancedSectionRequest.value)
+            }
+        }
     }
 
     @Test
@@ -72,24 +74,5 @@ class DiagnosticNavigationTest {
         assertSame(advanced, navigator.topEntry)
         assertEquals(listOf(HomeRoute, AdvancedPageRoute), navigator.backStack.map { it.route })
         assertEquals(AdvancedSection.Event, advanced.advancedSectionRequest.value)
-    }
-
-    @Test
-    fun legacyNotificationReusesDiagnosticPage() = runTest {
-        val navigator = AppNavigator(this)
-        navigator.openPage(GkdLink.Page(MatchDebugRoute))
-        runCurrent()
-        val diagnostic = navigator.topEntry
-        navigator.openPage(GkdLink.Page(AdvancedPageRoute, AdvancedSection.Http))
-        runCurrent()
-
-        val link = GkdLink.parse("gkd://page/1?section=diagnostics") as GkdLink.Page
-        repeat(2) {
-            navigator.openPage(link)
-            runCurrent()
-            assertSame(diagnostic, navigator.topEntry)
-            assertEquals(listOf(HomeRoute, MatchDebugRoute), navigator.backStack.map { it.route })
-            assertNull(diagnostic.advancedSectionRequest.value)
-        }
     }
 }

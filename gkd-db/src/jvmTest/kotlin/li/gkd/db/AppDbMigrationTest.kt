@@ -454,14 +454,16 @@ class AppDbMigrationTest {
     }
 
     @Test
-    fun eventTextLoadsUnchangedIncludingMalformedJsonAndLegacyEmptyText() = runBlocking {
+    fun eventTextRoundTripsThroughDaoAlongsideMalformedAndLegacyRecords() = runBlocking {
         val databaseName = "malformed-event-text.db"
+        val newText = """["written","by DAO"]"""
         val expectedText =
             mapOf(
                 1 to "{broken",
                 2 to """["first","second"]""",
                 3 to "",
                 4 to "[]",
+                5 to newText,
             )
         // A malformed record must not prevent the same page's valid and legacy records from
         // loading.
@@ -481,13 +483,23 @@ class AppDbMigrationTest {
         }
         val database = openDatabase(databaseName)
         try {
+            val dao = database.a11yEventLogDao()
+            dao.insert(
+                listOf(
+                    A11yEventLog(
+                        id = 5,
+                        ctime = 5,
+                        type = 3,
+                        appId = "sample.app",
+                        name = "sample.Event",
+                        desc = null,
+                        text = newText,
+                    ),
+                ),
+            )
+            assertEquals(expectedText.size, dao.count().first())
             val result =
-                database
-                    .a11yEventLogDao()
-                    .pagingSource()
-                    .load(
-                        PagingSource.LoadParams.Refresh<Int>(null, 10, false),
-                    )
+                dao.pagingSource().load(PagingSource.LoadParams.Refresh<Int>(null, 10, false))
             assertIs<PagingSource.LoadResult.Page<Int, A11yEventLog>>(result)
             assertEquals(expectedText, result.data.associate { it.id to it.text })
         } finally {
@@ -497,59 +509,6 @@ class AppDbMigrationTest {
             expectedText.forEach { (id, text) ->
                 assertEquals(text, it.queryText("SELECT text FROM a11y_event_log WHERE id = $id"))
             }
-        }
-    }
-
-    @Test
-    fun flowPagingAndRawEventTextStorageWorkOnJvm() = runBlocking {
-        val databaseName = "room3-query-adapters.db"
-        val expectedText = """["first","second"]"""
-        val database = openDatabase(databaseName)
-        try {
-            database
-                .a11yEventLogDao()
-                .insert(
-                    listOf(
-                        A11yEventLog(
-                            id = 1,
-                            ctime = 2,
-                            type = 3,
-                            appId = "sample.app",
-                            name = "sample.Event",
-                            desc = null,
-                            text = expectedText,
-                        ),
-                    ),
-                )
-
-            assertEquals(1, database.a11yEventLogDao().count().first())
-            when (
-                val result =
-                    database
-                        .a11yEventLogDao()
-                        .pagingSource()
-                        .load(
-                            PagingSource.LoadParams.Refresh(
-                                key = null,
-                                loadSize = 10,
-                                placeholdersEnabled = false,
-                            ),
-                        )
-            ) {
-                is PagingSource.LoadResult.Page -> {
-                    assertEquals(1, result.data.size)
-                    assertEquals(expectedText, result.data.single().text)
-                }
-
-                is PagingSource.LoadResult.Error -> throw result.throwable
-                is PagingSource.LoadResult.Invalid ->
-                    error("PagingSource became invalid before loading")
-            }
-        } finally {
-            database.close()
-        }
-        BundledSQLiteDriver().open(databasePath(databaseName).toString()).use {
-            assertEquals(expectedText, it.queryText("SELECT text FROM a11y_event_log WHERE id = 1"))
         }
     }
 }

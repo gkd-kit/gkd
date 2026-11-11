@@ -60,6 +60,30 @@ class SelectorSyntaxTest {
                 "(A) || (B)",
                 "(A) && (B)",
                 "(A) || (B) && !(C)",
+                "*",
+                "TextView",
+                "@TextView[a=1][b^='2'][c*='a'||d.length>7&&e=false][!(f=true)][g.plus(1)>0]",
+                "A -(1,2,3) B",
+                "A +(3n+1) B",
+                "A <<2 B",
+                "N ->1 B > A",
+                "(A + B) || (M > N)",
+                "(A + B) && (M > N)",
+                "!(A + B)",
+                "@LinearLayout > TextView[id=`com.byted.pangle:id/tt_item_tv`][text=`不感兴趣`]",
+                "TextView[text=\"\\\\\\n\"]",
+                "TextView[text~=`(?is).*abc.*`]",
+                "[null=parent]",
+                "[parent=null]",
+                "View[a.b(c,d).e(f).g(1,2,true)=null]",
+                "View[a>1&&b>1&&c>1||d>1&&x^='1']",
+                "@View[a=1][b!=2][c>=3][d<=4][e^='x'][f!^='x'][g*='x'][h!*='x'][i$='x'][j!$='x'][k~='x'][l!~='x']",
+                "A +(3n) B",
+                "A +3n B",
+                "A >(1n+0) B",
+                "A >n B",
+                "N ->(1,2) B > A",
+                "View[a()=null][a.b.c='x']",
             )
 
         sources.forEach { source ->
@@ -167,6 +191,19 @@ class SelectorSyntaxTest {
                 "|| (A)",
                 "((A)",
                 "(A))",
+                "div>img",
+                "[!!(a=true)]",
+                "[a.1=true]",
+                "[a.null=true]",
+                "[a.true=true]",
+                "[a()()=true]",
+                "[a=+1]",
+                "[a=01]",
+                "[a=-01]",
+                "View[a(1,)=2]",
+                "A +(2,2) B",
+                "View[text~=1]",
+                "View[text~=pattern]",
             )
 
         sources.forEach { source ->
@@ -276,77 +313,6 @@ class SelectorSyntaxTest {
                 assertIs<SelectorCompileResult.Failure>(Selector.compile(case.source), case.source)
             assertEquals(case.expected, failure.error.expected, case.source)
             assertEquals(SourceRange(case.start, case.end), failure.error.range, case.source)
-        }
-    }
-
-    @Test
-    fun documentedSelectorsCompile() {
-        val sources =
-            listOf(
-                "*",
-                "TextView",
-                "@TextView[a=1][b^='2'][c*='a'||d.length>7&&e=false][!(f=true)][g.plus(1)>0]",
-                "A + B",
-                "A -(1,2,3) B",
-                "A +(3n+1) B",
-                "A <<2 B",
-                "N ->1 B > A",
-                "(A + B) || (M > N)",
-                "(A + B) && (M > N)",
-                "!(A + B)",
-                "@LinearLayout > TextView[id=`com.byted.pangle:id/tt_item_tv`][text=`不感兴趣`]",
-                "TextView[text=\"\\\\\\n\"]",
-                "TextView[text~=`(?is).*abc.*`]",
-                "[null=parent]",
-                "[parent=null]",
-                "View[a.b(c,d).e(f).g(1,2,true)=null]",
-                "View[a>1&&b>1&&c>1||d>1&&x^='1']",
-                "@View[a=1][b!=2][c>=3][d<=4][e^='x'][f!^='x'][g*='x'][h!*='x'][i$='x'][j!$='x'][k~='x'][l!~='x']",
-                "A +(3n) B",
-                "A +3n B",
-                "A +(+3) B",
-                "A +(2n-1) B",
-                "A +(-n+4) B",
-                "A >(1n+0) B",
-                "A >n B",
-                "A B",
-                "N ->(1,2) B > A",
-                "View[a()=null][a.b.c='x']",
-                "A +(1) B",
-            )
-
-        sources.forEach { source ->
-            val result = Selector.compile(source)
-            assertIs<SelectorCompileResult.Success>(result, source)
-        }
-    }
-
-    @Test
-    fun documentedInvalidSelectorsFail() {
-        val sources =
-            listOf(
-                "div>img",
-                "[!!(a=true)]",
-                "[a.1=true]",
-                "[a.null=true]",
-                "[a.true=true]",
-                "[a()()=true]",
-                "[a=+1]",
-                "A || (B)",
-                "(A) || B",
-                "[a=01]",
-                "[a=-01]",
-                "View[a(1,)=2]",
-                "A +(2,1) B",
-                "A +(0) B",
-                "A +(1,) B",
-                "A +(2,2) B",
-                "View[text~=1]",
-                "View[text~=pattern]",
-            )
-
-        sources.forEach { source ->
-            assertIs<SelectorCompileResult.Failure>(Selector.compile(source), source)
         }
     }
 

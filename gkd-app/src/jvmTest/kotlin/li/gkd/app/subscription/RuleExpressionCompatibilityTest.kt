@@ -1,6 +1,5 @@
 package li.gkd.app.subscription
 
-import java.lang.management.ManagementFactory
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlinx.serialization.json.*
@@ -50,6 +49,7 @@ class RuleExpressionCompatibilityTest {
             "1e-3",
             "1E+2",
             "0.5*width",
+            "width*0.5 + (20-2)/2",
             "2*(width+1)",
             "7%3",
             "-7%3",
@@ -114,6 +114,7 @@ class RuleExpressionCompatibilityTest {
             "ln(1)",
             "round(1.5)",
             "2(width+1)",
+            "2width",
             "width height",
             "widthheight",
             "width2",
@@ -122,6 +123,7 @@ class RuleExpressionCompatibilityTest {
             "[2+3]",
             "{2+3}",
             ".5",
+            "width*.5",
             "2.",
             "1.e2",
             "--2",
@@ -145,6 +147,7 @@ class RuleExpressionCompatibilityTest {
             "PI",
             "E",
             "screen.width",
+            "screenwidth/2",
             "math.min(1,2)",
             "width\u00a0*0.5",
         )
@@ -236,15 +239,17 @@ class RuleExpressionCompatibilityTest {
         )
     }
 
-    @Volatile private var sink = 0.0
-
     @Test
     fun staticBindingValidationFindsErrorsBeyondArithmeticAndRepeatedCalls() {
         for (source in
             listOf(
                 "min(width,100)",
+                "min(1,2)",
                 "max(height,100)",
+                "max(1,2)",
                 "clamp(width,0,screenWidth)",
+                "clamp(width,0,100)",
+                "clamp(1,max(2,3),4)",
                 "1/0 + clamp(1,2,3)",
                 "min(1,2)+min(3,4)",
                 "max(1,min(2,3))",
@@ -350,7 +355,7 @@ class RuleExpressionCompatibilityTest {
     @Test
     fun evaluationKeepsErrorLocationsAndRandomBinding() {
         val bounds = RuleBounds(0, 0, 100, 200)
-        for (source in listOf("1 / 0", "1 % 0", "1 / -0")) {
+        for (source in listOf("1 / 0", "1 % 0", "1 / -0", "1 % -0")) {
             val position = RawSubscription.Position(null, null, null, null, source, "0")
             assertTrue(position.isValid)
             val error =
@@ -367,109 +372,5 @@ class RuleExpressionCompatibilityTest {
             compileRuleExpression("random-random")!!.evaluate(bounds, ScreenSize(100, 200)),
             0.0,
         )
-    }
-
-    @Test
-    fun benchmarkCompilationAndIsolatedEvaluation() {
-        // Match the replaced production path: copy the template and bind variables directly.
-        fun legacy(source: String): (RuleBounds, ScreenSize) -> Double {
-            val template = requireNotNull(old(source))
-            return { bounds, screenSize ->
-                Expression(template)
-                    .setVariable("left", bounds.left.toDouble())
-                    .setVariable("top", bounds.top.toDouble())
-                    .setVariable("right", bounds.right.toDouble())
-                    .setVariable("bottom", bounds.bottom.toDouble())
-                    .setVariable("width", bounds.width().toDouble())
-                    .setVariable("height", bounds.height().toDouble())
-                    .setVariable("screenWidth", screenSize.width.toDouble())
-                    .setVariable("screenHeight", screenSize.height.toDouble())
-                    .setVariable("random", Random.nextDouble())
-                    .evaluate()
-            }
-        }
-        val oldCompiled = corpus.map(::legacy)
-        val adapted = corpus.map { requireNotNull(compileRuleExpression(it)) }
-        val bean = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
-        val thread = Thread.currentThread().threadId()
-        fun measure(operations: Int, block: () -> Double): Pair<Double, Double> {
-            val bytes = bean.getThreadAllocatedBytes(thread)
-            val start = System.nanoTime()
-            sink = block()
-            return (System.nanoTime() - start).toDouble() / operations to
-                (bean.getThreadAllocatedBytes(thread) - bytes).toDouble() / operations
-        }
-        val compileIterations = 25
-        val evaluationIterations = 1000
-        fun run(engine: String, compile: Boolean): Pair<Double, Double> =
-            measure(corpus.size * if (compile) compileIterations else evaluationIterations) {
-                var total = 0.0
-                repeat(if (compile) compileIterations else evaluationIterations) { round ->
-                    corpus.indices.forEach { index ->
-                        val bounds = RuleBounds(round, round + 1, round + 321, round + 647)
-                        total +=
-                            if (engine == "exp4j") {
-                                val expression =
-                                    if (compile) legacy(corpus[index]) else oldCompiled[index]
-                                expression(bounds, ScreenSize(1080 + round, 2400 + round))
-                            } else {
-                                val expression =
-                                    if (compile) compileRuleExpression(corpus[index])!!
-                                    else adapted[index]
-                                expression.evaluate(bounds, ScreenSize(1080 + round, 2400 + round))
-                            }
-                    }
-                }
-                total
-            }
-        val report = buildJsonArray {
-            for (compile in listOf(false, true)) {
-                val samples =
-                    mutableMapOf(
-                        "exp4j" to mutableListOf<Pair<Double, Double>>(),
-                        "expression" to mutableListOf(),
-                    )
-                var checksum: Double? = null
-                repeat(10) { round ->
-                    val order =
-                        if (round % 2 == 0) samples.keys.toList() else samples.keys.reversed()
-                    order.forEach { engine ->
-                        val result = run(engine, compile)
-                        if (checksum == null) checksum = sink
-                        else assertEquals(checksum, sink, abs(checksum) * 1e-12)
-                        if (round >= 5) samples.getValue(engine).add(result)
-                    }
-                }
-                samples.forEach { (engine, values) ->
-                    add(
-                        buildJsonObject {
-                            put("engine", engine)
-                            put("operation", if (compile) "compile_and_evaluate" else "evaluate")
-                            put(
-                                "operationsPerSample",
-                                corpus.size *
-                                    if (compile) compileIterations else evaluationIterations,
-                            )
-                            put("medianNanos", values.map { it.first }.sorted()[2])
-                            put("medianBytes", values.map { it.second }.sorted()[2])
-                        },
-                    )
-                }
-            }
-        }
-        val file = TestFiles.root.resolve("expression-benchmark.json")
-        file.writeText(
-            buildJsonObject {
-                put("java", System.getProperty("java.runtime.version"))
-                put("os", "${System.getProperty("os.name")} ${System.getProperty("os.arch")}")
-                put("subscriptionExpressions", corpus.size)
-                put("warmupRounds", 5)
-                put("measuredRounds", 5)
-                put("samples", report)
-            }
-                .toString(),
-        )
-        println("EXPRESSION_BENCHMARK=$file")
-        assertTrue(sink.isFinite())
     }
 }
