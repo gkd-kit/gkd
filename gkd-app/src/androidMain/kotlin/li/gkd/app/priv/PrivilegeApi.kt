@@ -14,6 +14,7 @@ import li.gkd.app.logging.LogUtils
 import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.updateTopActivity
 import li.gkd.app.permission.PermissionStates
+import li.gkd.app.priv.shizuku.GkdShizukuExternalStartProvider
 import li.gkd.app.resources.*
 import li.gkd.app.service.StatusService
 import li.gkd.app.service.currentAppBlocked
@@ -25,6 +26,9 @@ import priv.kit.core.Privilege
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.userservice.PrivilegeUserServiceProcess
 import priv.kit.core.userservice.PrivilegeUserServiceSpec
+import priv.kit.ui.PrivilegeUi
+import priv.kit.ui.PrivilegeUiStartMethod
+import rikka.shizuku.Shizuku
 
 val currentUserId by lazy { Process.myUserHandle().hashCode() }
 
@@ -126,6 +130,18 @@ fun initPrivilege() {
                 ToastUtils.show(Res.string.privilege_service_state_update_failed.getSync(e.message))
             }
             if (disconnected) requestPrivilegeRecovery()
+        }
+    }
+    Shizuku.addBinderReceivedListener {
+        appScope.launchLogged(Dispatchers.IO) {
+            val shizukuStartMethod =
+                PrivilegeUiStartMethod.External(GkdShizukuExternalStartProvider.id)
+            if (
+                PrivilegeUi.getLastStartMethod() == shizukuStartMethod &&
+                    GkdShizukuExternalStartProvider.snapshot(app).canStart
+            ) {
+                recoverPrivilege(ignoreCooldown = true)
+            }
         }
     }
 }

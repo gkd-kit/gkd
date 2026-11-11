@@ -9,7 +9,7 @@ import li.gkd.app.util.launchLogged
 import priv.kit.core.Privilege
 import priv.kit.ui.PrivilegeUi
 
-private const val RECOVERY_COOLDOWN_MILLIS = 10 * 60 * 1000L
+private const val RECOVERY_COOLDOWN_MILLIS = 3_000L
 private val recoveryMutex = Mutex()
 private var recoveryAllowedAt = 0L
 
@@ -17,11 +17,14 @@ fun requestPrivilegeRecovery() {
     appScope.launchLogged(Dispatchers.IO) { recoverPrivilege() }
 }
 
-suspend fun recoverPrivilege() = recoveryMutex.withLock {
+suspend fun recoverPrivilege(ignoreCooldown: Boolean = false) = recoveryMutex.withLock {
     Privilege.serverState.value?.let {
         return@withLock it
     }
-    if (SystemClock.elapsedRealtime() < recoveryAllowedAt || !PrivilegeUi.desiredEnabled.value) {
+    if (
+        !PrivilegeUi.desiredEnabled.value ||
+            (!ignoreCooldown && SystemClock.elapsedRealtime() < recoveryAllowedAt)
+    ) {
         return@withLock null
     }
     PrivilegeUi.startSilently(gkdPrivilegeUiConfig).also { serverInfo ->
