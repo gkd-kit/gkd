@@ -13,7 +13,6 @@ import com.google.android.accessibility.selecttospeak.SelectToSpeakService
 import com.google.android.accessibility.selecttospeak.SelectToSpeakServicePrivileged
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -198,13 +197,12 @@ abstract class A11yService : AccessibilityService(), AndroidAutomationSession {
 
     private fun attachKeepAliveOverlay() {
         keepAliveOverlayJob?.cancel()
-        keepAliveOverlayJob =
-            scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                KeepAliveOverlayCoordinator.acquireAccessibility(
-                    KeepAliveOverlayCoordinator.Source.Accessibility,
-                    this@A11yService,
-                )
-            }
+        keepAliveOverlayJob = scope.launch {
+            KeepAliveOverlayCoordinator.acquireAccessibility(
+                KeepAliveOverlayCoordinator.Source.Accessibility,
+                this@A11yService,
+            )
+        }
     }
 
     override fun onCreate() {
