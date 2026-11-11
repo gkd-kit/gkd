@@ -130,6 +130,24 @@ class FileLogWriterTest {
     }
 
     @Test
+    fun migratedLogsExpireButAreNeverSelectedForAppending() = fixture { root ->
+        val time = System.currentTimeMillis()
+        val date = time.format("yyyyMMdd")
+        val expired =
+            root.resolve("gkd-20000101-migrated.log").apply {
+                writeText("expired")
+                assertTrue(setLastModified(time - 8.days.inWholeMilliseconds))
+            }
+        val migrated = root.resolve("gkd-$date-7-migrated.log").apply { writeText("old log") }
+        FileLogWriter(root, metadata).use { writer ->
+            writer.append("tag", "thread", "loc", listOf("new log"), time)
+        }
+        assertFalse(expired.exists())
+        assertEquals("old log", migrated.readText())
+        assertTrue(root.resolve("gkd-$date.log").readText().contains("new log"))
+    }
+
+    @Test
     fun queueBoundsPreferErrorsAndFlushIncludesLossSummary() = fixture { root ->
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)

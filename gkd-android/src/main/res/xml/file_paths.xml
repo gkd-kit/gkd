@@ -2,7 +2,4 @@
     <cache-path
         name="cache_path"
         path="." />
-    <external-cache-path
-        name="external_cache_path"
-        path="." />
 </paths>

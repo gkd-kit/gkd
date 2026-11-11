@@ -67,7 +67,7 @@ pnpm app-tools device-install --serial SERIAL
 pnpm app-tools device-install --release
 ```
 
-命令位于 `scripts/desktop`，默认执行 `:gkd-android:assembleGkdDebug`；`--release` 执行 `:gkd-android:packageGkdRelease`（不上传构建产物），随后直接复用公共安装流程，不启动调试服务。省略 `--serial` 时跳过离线或未授权设备；单台更新失败会保留原因，继续其余设备，最后汇总失败。安装前暂停自动化，相同 APK 按 SHA-256 跳过，不同则覆盖更新；仅确认已核对身份的本次安装弹窗。每台设备结束时恢复并核对本次设置字段，GKD 本体不加入临时测试应用清理列表。Release 安装会暂停已存在的 Debug 和 Release 自动化；Release 恢复记录位于 `.local/device-recovery/release/`，失败后可运行 `pnpm app-tools device-recovery --serial SERIAL --operation restore --release`。
+命令位于 `scripts/desktop`，默认执行 `:gkd-android:assembleGkdDebug`。`--release` 执行 `:gkd-android:packageGkdRelease`，随后复用公共安装流程。省略 `--serial` 时跳过离线或未授权设备。相同 APK 按 SHA-256 跳过，不同则覆盖更新。Debug 在安装前暂停自动化，结束时恢复并核对本次设置字段。Release 在安装期间停止应用进程，通过正常启动恢复运行，设置由应用保管。旧版 Release 的未完成恢复记录可用 `pnpm app-tools device-recovery --serial SERIAL --operation status --release` 查看，并在应用内恢复。
 
 ## 导入设备资料
 
@@ -91,7 +91,7 @@ pnpm app-tools capture-profile --install --screens
 adb shell am start -n li.songe.gkd.debug/li.gkd.app.MainActivity -a li.gkd.action.EXPORT_DESKTOP_PROFILE --es requestId profile-example-1
 ```
 
-每次使用新的 1–64 位字母、数字或连字符 requestId。外部 files 下的 `development/desktop-profile/<requestId>/status.json` 返回 running/success/failed 及失败原因，成功后拉取 `profile.zip`。导出等待实际窗口布局，串行执行；Activity 销毁会取消，相同 ID 不重复执行，超过一天的请求在下次导出时清理。ZIP 包含 `profile.json`、`apps.json`、`settings.json`、`seed.json`、`subscriptions/*.json` 和 `icons/*.png`；字体由工具单独拉取。资料格式变化后重新导出。
+每次使用新的 1–64 位字母、数字或连字符 requestId。内部 `cache/development/desktop-profile/<requestId>/status.json` 返回 running/success/failed 及失败原因，工具通过 `adb run-as` 读取状态和 `profile.zip`。导出等待实际窗口布局，串行执行。Activity 销毁会取消，相同 ID 不重复执行，超过一天的请求在下次导出时清理。ZIP 包含 `profile.json`、`apps.json`、`settings.json`、`seed.json`、`subscriptions/*.json` 和 `icons/*.png`。字体由工具单独拉取。资料格式变化后重新导出。
 
 ## 模拟环境与数据
 

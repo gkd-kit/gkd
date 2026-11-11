@@ -9,7 +9,6 @@ import li.gkd.app.ui.component.MultiSelectionState
 import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.state.BaseViewModel
-import li.gkd.db.Db
 import li.gkd.db.MatchDiagnosticRecord
 import org.jetbrains.compose.resources.getString
 
@@ -42,7 +41,7 @@ class MatchDebugViewModel : BaseViewModel() {
     }
 
     val selection = MultiSelectionState<Long>()
-    val records = Db.matchDiagnosticRecordDao.observeAll().stateLoadable()
+    val records = MatchDiagnosticFiles.observeRecords().stateLoadable()
 
     fun retrySaving() {
         scope.launchUi { MatchDiagnosticFiles.flush() }

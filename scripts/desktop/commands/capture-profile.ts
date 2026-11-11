@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile, unlink, rename } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile, rename } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { unzipSync } from 'fflate';
 import { dirname, join } from 'node:path';
@@ -12,7 +12,7 @@ export interface CaptureOptions {
   serial?: string; apps?: string; install: boolean; screens: boolean; output: string;
 }
 const packageName = 'li.songe.gkd.debug';
-const remote = `/sdcard/Android/data/${packageName}/files`;
+const remote = 'cache/development/desktop-profile';
 
 // Persisted Android settings protocol; must match AutomatorMode.A11y.value.
 const a11yAutomatorMode = 1;
@@ -38,12 +38,14 @@ export async function captureProfile(options: CaptureOptions, repo: string) {
       const current = await readStore(adb);
       if (current.enableAutomator !== false || current.automatorMode !== a11yAutomatorMode) throw new Error('Automation must remain disabled before export');
       const id = randomUUID();
-      const request = `${remote}/development/desktop-profile/${id}`;
+      const request = `${remote}/${id}`;
       await adb('shell', 'am', 'start', '-n', mainActivity, '-a', 'li.gkd.action.EXPORT_DESKTOP_PROFILE', '--es', 'requestId', id);
       let complete = false;
       for (let i = 0; i < 300; i++) {
         check();
-        const data = (await adb('shell', `cat '${request}/status.json' 2>/dev/null || true`)).toString().trim();
+        const data = (await adb('shell',
+          `run-as ${packageName} sh -c 'if [ -f ${request}/status.json ]; then cat ${request}/status.json; fi'`
+        )).toString().trim();
         if (data) {
           const status = JSON.parse(data);
           if (status.requestId !== id) throw new Error('Export request ID mismatch');
@@ -53,10 +55,7 @@ export async function captureProfile(options: CaptureOptions, repo: string) {
         await pause(500);
       }
       if (!complete) throw new Error(`Device export timed out: ${id}`);
-      const archive = join(staging, 'profile.zip');
-      await adb('pull', `${request}/profile.zip`, archive);
-      await extractProfile(await readFile(archive), staging);
-      await unlink(archive);
+      await extractProfile(await adb('exec-out', 'run-as', packageName, 'cat', `${request}/profile.zip`), staging);
       check();
       if (options.apps) {
         const inventory = JSON.parse((await readFile(options.apps, 'utf8')).replace(/^\uFEFF/, ''));

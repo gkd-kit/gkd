@@ -40,7 +40,12 @@ fun storageExportMetadata(): String {
             )
             put("internal", app.filesDir.absolutePath)
             put("markerNow", app.filesDir.resolve(".gkd").isFile)
-            put("externalDiagnosticOnly", externalDirectoryInfo(app.getExternalFilesDir(null)))
+            put(
+                "external",
+                externalDirectoryInfo(
+                    AndroidStorage.directorySelectionRecord.externalResult?.let(::File),
+                ),
+            )
         },
     )
 }
@@ -95,16 +100,7 @@ fun recordStartupLog(
         )
         put("markerAfter", internalFiles.resolve(".gkd").isFile)
         put("internal", internalFiles.absolutePath)
-        // When a marker bypasses selection, this observation must not be mistaken for its input.
-        put(
-            if (!directorySelectionRecord.markerBefore) "external" else "externalDiagnosticOnly",
-            run {
-                val observed =
-                    if (!directorySelectionRecord.markerBefore) external
-                    else app.getExternalFilesDir(null)
-                externalDirectoryInfo(observed)
-            },
-        )
+        if (!directorySelectionRecord.markerBefore) put("external", externalDirectoryInfo(external))
     }
     try {
         // Do not access AndroidStorage or LogUtils here: both depend on this lazy initialization.

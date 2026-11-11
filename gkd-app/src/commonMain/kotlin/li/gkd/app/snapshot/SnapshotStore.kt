@@ -9,6 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -21,6 +23,7 @@ import li.gkd.app.logging.LogUtils
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.snapshot.platform.prepareSnapshotReplacement
 import li.gkd.app.storage.ExportFileNames
+import li.gkd.app.storage.HistoryDirectory
 import li.gkd.app.storage.SnapshotIssue
 import li.gkd.app.storage.StorageException
 import li.gkd.app.storage.ZipArchive
@@ -46,6 +49,16 @@ object SnapshotStore {
     private val mutationMutex = Mutex()
     private val fileLayout by lazy { SnapshotFileLayout(appStorage().snapshot) }
 
+    fun observeSnapshots() = flow {
+        appStorage().awaitHistoryMigration(HistoryDirectory.Snapshot)
+        emitAll(Db.snapshotDao.query())
+    }
+
+    private suspend fun <T> withMigratedFiles(block: suspend () -> T): T {
+        appStorage().awaitHistoryMigration(HistoryDirectory.Snapshot)
+        return mutationMutex.withLock { block() }
+    }
+
     suspend fun save(snapshot: ComplexSnapshot, screenshot: ByteArray) =
         save(
             snapshot.id,
@@ -67,7 +80,7 @@ object SnapshotStore {
         snapshotId: Long,
         githubAssetId: Int,
         screenshotModifiedAt: Long,
-    ): Boolean = mutationMutex.withLock {
+    ): Boolean = withMigratedFiles {
         withContext(Dispatchers.IO) {
             val screenshot = fileLayout.committed(snapshotId).screenshotFile
             if (!screenshot.isFile || screenshot.lastModified() != screenshotModifiedAt) {
@@ -77,7 +90,7 @@ object SnapshotStore {
         }
     }
 
-    suspend fun getMinSnapshot(id: Long): JsonObject = mutationMutex.withLock {
+    suspend fun getMinSnapshot(id: Long): JsonObject = withMigratedFiles {
         val files = fileLayout.committed(id)
         val cachedText =
             withContext(Dispatchers.IO) {
@@ -92,7 +105,7 @@ object SnapshotStore {
                         null
                     }
                 }
-            if (cachedSnapshot != null) return@withLock cachedSnapshot
+            if (cachedSnapshot != null) return@withMigratedFiles cachedSnapshot
         }
         val text = withContext(Dispatchers.IO) { files.snapshotFile.readText() }
         val snapshotJson =
@@ -113,7 +126,7 @@ object SnapshotStore {
     }
 
     suspend fun delete(snapshot: Snapshot) {
-        mutationMutex.withLock {
+        withMigratedFiles {
             currentCoroutineContext().ensureActive()
             withContext(NonCancellable + Dispatchers.IO) {
                 val directory = fileLayout.committed(snapshot.id).directory
@@ -130,7 +143,7 @@ object SnapshotStore {
     }
 
     suspend fun replaceScreenshot(snapshot: Snapshot, newBytes: ByteArray): Boolean =
-        mutationMutex.withLock {
+        withMigratedFiles {
             withContext(Dispatchers.IO) {
                 val files = fileLayout.committed(snapshot.id)
                 val temporary =
@@ -173,23 +186,22 @@ object SnapshotStore {
             }
         }
 
-    suspend fun createUploadArchive(snapshotId: Long): SnapshotUploadArchive =
-        mutationMutex.withLock {
-            val screenshotModifiedAt =
-                withContext(Dispatchers.IO) {
-                    fileLayout.committed(snapshotId).screenshotFile.lastModified()
-                }
-            SnapshotUploadArchive(
-                file = createArchiveLocked(snapshotId),
-                screenshotModifiedAt = screenshotModifiedAt,
-            )
-        }
+    suspend fun createUploadArchive(snapshotId: Long): SnapshotUploadArchive = withMigratedFiles {
+        val screenshotModifiedAt =
+            withContext(Dispatchers.IO) {
+                fileLayout.committed(snapshotId).screenshotFile.lastModified()
+            }
+        SnapshotUploadArchive(
+            file = createArchiveLocked(snapshotId),
+            screenshotModifiedAt = screenshotModifiedAt,
+        )
+    }
 
     suspend fun createArchive(
         snapshotId: Long,
         appId: String? = null,
         activityId: String? = null,
-    ): File = mutationMutex.withLock {
+    ): File = withMigratedFiles {
         createArchiveLocked(snapshotId, appId, activityId)
     }
 
@@ -265,7 +277,7 @@ object SnapshotStore {
         id: Long,
         write: (SnapshotFileLayout.Files) -> Unit,
         publish: suspend () -> Unit,
-    ): Unit = mutationMutex.withLock {
+    ): Unit = withMigratedFiles {
         withContext(Dispatchers.IO) {
             commitSnapshotDirectory(
                 fileLayout,

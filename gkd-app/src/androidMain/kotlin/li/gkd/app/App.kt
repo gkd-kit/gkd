@@ -228,6 +228,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        AndroidStorage.initialize()
         syncSystemLanguage()
         AndroidToastUtils.init()
         installCrashHandler()

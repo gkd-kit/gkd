@@ -90,10 +90,12 @@ export async function deviceInstall(serial?: string, release = false) {
           const packages = (await adb('shell', 'pm', 'list', 'packages', 'li.songe.gkd')).toString().split(/\r?\n/);
           const installRelease = async () => {
             if (packages.includes('package:li.songe.gkd')) {
-              await createDeviceAutomation('li.songe.gkd').withAutomationPaused(adb, folder, install, undefined, { reopenApp: false });
-            } else {
-              await install();
+              const recovery = await createDeviceAutomation('li.songe.gkd').automationRecoveryStatus(adb);
+              if (recovery.record) throw new Error(`Restore the saved Release automation settings before upgrading: ${recovery.path}`);
+              // Release settings are private. Stop the process for the install without editing them.
+              await adb('shell', 'am', 'force-stop', 'li.songe.gkd');
             }
+            await install();
           };
           if (packages.includes('package:li.songe.gkd.debug')) {
             await withAutomationPaused(adb, folder, installRelease, undefined, { reopenApp: false });

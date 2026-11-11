@@ -120,7 +120,7 @@ export async function installWithConfirmation(adb: Adb, apk: string, identity: I
 
 /** Add confirmation to actual installs only; unchanged APKs never enter this adapter. */
 export function withInstallConfirmation(adb: Adb, signal?: AbortSignal): Adb {
-  return async (...args) => {
+  const confirmed: Adb = async (...args) => {
     if (args[0] !== 'install') return adb(...args);
     if (args.length !== 6 || args[1] !== '-r' || args[2] !== '-t' || args[3] !== '--pkg') throw new Error('Expected an explicit target package for installation');
     const identity = await readApkIdentity(args[5]!, args[4]!);
@@ -128,4 +128,6 @@ export function withInstallConfirmation(adb: Adb, signal?: AbortSignal): Adb {
     await mkdir(parent, { recursive: true });
     return installWithConfirmation(adb, args[5]!, identity, await mkdtemp(join(parent, 'attempt-')), signal);
   };
+  if (adb.withInput) confirmed.withInput = adb.withInput;
+  return confirmed;
 }

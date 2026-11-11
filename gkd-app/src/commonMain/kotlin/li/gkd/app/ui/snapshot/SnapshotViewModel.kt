@@ -18,7 +18,6 @@ import li.gkd.app.ui.component.SheetRequest
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.state.BaseViewModel
 import li.gkd.app.util.ToastUtils
-import li.gkd.db.Db
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
 
@@ -43,7 +42,7 @@ class SnapshotViewModel : BaseViewModel() {
 
     val selection = MultiSelectionState<Long>()
 
-    val uiState = Db.snapshotDao.query().stateLoadable()
+    val uiState = SnapshotStore.observeSnapshots().stateLoadable()
 
     val shareProgress: StateFlow<SnapshotShareProgress?>
         field = MutableStateFlow(null)

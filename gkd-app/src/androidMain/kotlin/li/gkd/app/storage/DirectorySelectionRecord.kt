@@ -15,7 +15,8 @@ data class DirectorySelectionRecord(
 @Serializable
 enum class StorageSelectionReason {
     InternalMarkerExists,
-    ExternalAvailable,
+    ExternalEmpty,
+    ExternalMigration,
     ExternalNullFallback,
 }
 

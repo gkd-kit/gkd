@@ -7,6 +7,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import li.gkd.app.app.applicationScope
 import li.gkd.app.logging.LogUtils
+import li.gkd.app.storage.HistoryDirectory
 import li.gkd.app.storage.appStorage
 import li.gkd.db.Db
 import li.gkd.db.MatchDiagnosticRecord
@@ -138,6 +141,11 @@ object MatchDiagnosticFiles {
 
     fun directory(record: MatchDiagnosticRecord): File = store.directory(record.id)
 
+    fun observeRecords() = flow {
+        appStorage().awaitHistoryMigration(HistoryDirectory.MatchDiagnostics)
+        emitAll(Db.matchDiagnosticRecordDao.observeAll())
+    }
+
     suspend fun delete(records: List<MatchDiagnosticRecord>) = withSavedFiles {
         records.forEach { record ->
             store.delete(record.id)
@@ -152,6 +160,7 @@ object MatchDiagnosticFiles {
 
     suspend fun <T> withSavedFiles(block: suspend () -> T): T =
         withContext(Dispatchers.IO) {
+            appStorage().awaitHistoryMigration(HistoryDirectory.MatchDiagnostics)
             writing.withLock {
                 while (true) {
                     val capture = synchronized(lock) { pending.values.firstOrNull() } ?: break

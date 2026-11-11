@@ -246,7 +246,7 @@ class FileLogWriter(
         }
     }
 
-    private val managedName = Regex("gkd-[0-9]{8}(?:-[0-9]+)?\\.log")
+    private val managedName = Regex("gkd-[0-9]{8}(?:-[0-9]+)?(?:-migrated)?\\.log")
 
     private fun managedFiles() =
         directory.listFiles().orEmpty().filter { it.isFile && managedName.matches(it.name) }
@@ -280,7 +280,10 @@ class FileLogWriter(
                     currentDate = date
                     part =
                         managedFiles()
-                            .filter { it.name.startsWith("gkd-$date") }
+                            .filter {
+                                it.name.startsWith("gkd-$date") &&
+                                    !it.name.endsWith("-migrated.log")
+                            }
                             .maxOfOrNull {
                                 it.nameWithoutExtension
                                     .removePrefix("gkd-$date")

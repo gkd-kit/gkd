@@ -19,11 +19,9 @@ import li.gkd.app.service.StatusService
 import li.gkd.app.service.currentAppBlocked
 import li.gkd.app.service.switchA11yServiceForPrivilegeChange
 import li.gkd.app.settings.SettingsRepository
-import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 import priv.kit.core.Privilege
-import priv.kit.core.PrivilegeConfig
 import priv.kit.core.PrivilegeServerInfo
 import priv.kit.core.userservice.PrivilegeUserServiceProcess
 import priv.kit.core.userservice.PrivilegeUserServiceSpec
@@ -110,7 +108,6 @@ suspend fun recoverPrivilegeContext() {
 }
 
 fun initPrivilege() {
-    PrivilegeConfig.crashLogDirectory = AndroidStorage.privilegeCrashDirectory
     PrivilegeOwnerLifecycle.initialize()
 
     appScope.launchLogged(Dispatchers.IO) {

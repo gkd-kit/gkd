@@ -1,5 +1,6 @@
 package li.gkd.app.ui.crash
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +10,8 @@ import li.gkd.app.crash.CrashData
 import li.gkd.app.crash.FileCrashStorage
 import li.gkd.app.resources.*
 import li.gkd.app.state.Loadable
+import li.gkd.app.storage.HistoryDirectory
+import li.gkd.app.storage.appStorage
 import li.gkd.app.ui.state.BaseViewModel
 import org.jetbrains.compose.resources.getString
 
@@ -38,13 +41,22 @@ class CrashReportViewModel(
 
     private val initialLoadJob =
         scope.launch(Dispatchers.IO) {
-            crashDataState.value = Loadable.Ready(FileCrashStorage.load())
+            crashDataState.value =
+                try {
+                    appStorage().awaitHistoryMigration(HistoryDirectory.Crash)
+                    Loadable.Ready(FileCrashStorage.load())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Loadable.Failure(e)
+                }
         }
 
     suspend fun deleteCrash(crashData: CrashData) {
         initialLoadJob.join()
         val deleted =
             withContext(Dispatchers.IO) {
+                appStorage().awaitHistoryMigration(HistoryDirectory.Crash)
                 FileCrashStorage.delete(crashData)
             }
         if (deleted) {
@@ -63,6 +75,7 @@ class CrashReportViewModel(
         initialLoadJob.join()
         val deleted =
             withContext(Dispatchers.IO) {
+                appStorage().awaitHistoryMigration(HistoryDirectory.Crash)
                 FileCrashStorage.deleteAll()
             }
         crashDataState.value =

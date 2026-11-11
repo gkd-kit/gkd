@@ -10,20 +10,24 @@ import li.gkd.db.MatchDiagnosticRecord
 
 data class LogArchiveInputs(
     val metadata: Map<String, () -> String>,
-    val additionalDirectories: List<File> = emptyList(),
+    val privilegeCrashFiles: List<File> = emptyList(),
 )
 
 expect fun logArchiveInputs(): LogArchiveInputs
 
 /** An empty selection includes all saved diagnostic records. */
-suspend fun createLogArchive(diagnostics: List<MatchDiagnosticRecord> = emptyList()): File =
-    MatchDiagnosticFiles.withSavedFiles {
+suspend fun createLogArchive(diagnostics: List<MatchDiagnosticRecord> = emptyList()): File {
+    val storage = appStorage()
+    storage.awaitHistoryMigration(HistoryDirectory.Log)
+    storage.awaitHistoryMigration(HistoryDirectory.Crash)
+    return MatchDiagnosticFiles.withSavedFiles {
         val inputs = logArchiveInputs()
         val records = diagnostics.ifEmpty { Db.matchDiagnosticRecordDao.observeAll().first() }
         LogArchive.build(
             inputs.metadata +
                 ("log-writer.json" to { JsonUtils.keepingNulls.encodeToString(LogUtils.status()) }),
-            inputs.additionalDirectories,
+            inputs.privilegeCrashFiles,
             records.map { MatchDiagnosticFiles.directory(it) },
         )
     }
+}

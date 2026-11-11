@@ -78,6 +78,7 @@ import li.gkd.app.network.AppLinks
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.snapshot.SnapshotDisplayMode
+import li.gkd.app.snapshot.SnapshotStore
 import li.gkd.app.state.Loadable
 import li.gkd.app.time.format
 import li.gkd.app.ui.MainViewModel
@@ -103,7 +104,6 @@ import li.gkd.app.ui.share.launchUi
 import li.gkd.app.ui.style.scaffoldPadding
 import li.gkd.app.ui.upload.createSnapshotUploadItem
 import li.gkd.app.util.ToastUtils
-import li.gkd.db.Db
 import li.gkd.db.Snapshot
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -162,7 +162,7 @@ fun SnapshotPage() {
 
     fun showCurrentLinks(targetIds: List<Long>) {
         vm.scope.launchUi {
-            val byId = Db.snapshotDao.query().first().associateBy { it.id }
+            val byId = SnapshotStore.observeSnapshots().first().associateBy { it.id }
             showLinks(targetIds.mapNotNull(byId::get))
         }
     }

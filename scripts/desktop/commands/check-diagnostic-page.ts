@@ -71,14 +71,16 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
           assert.equal(response.status, 200, response.body.toString());
           return JSON.parse(response.body.toString());
         };
-        const existingRecords = (await adb('shell', 'ls', `/sdcard/Android/data/${pkg}/files/matching-diagnostics`)).toString().trim().split(/\s+/).filter(Boolean);
-        const sharedPath = `/sdcard/Android/data/${pkg}/cache/shared`;
-        const sharedNames = async () => (await adb('shell', 'ls', sharedPath)).toString().trim().split(/\s+/).filter(Boolean);
+        const diagnosticsPath = 'files/matching-diagnostics';
+        const sharedPath = 'cache/shared';
+        const listAppFiles = async (path: string) =>
+          (await adb('shell', 'run-as', pkg, 'ls', path)).toString().trim().split(/\s+/).filter(Boolean);
+        const existingRecords = await listAppFiles(diagnosticsPath);
         const verifyArchive = async (before: string[], ids: string[], label: string) => {
-          const created = (await sharedNames()).filter(name => !before.includes(name));
+          const created = (await listAppFiles(sharedPath)).filter(name => !before.includes(name));
           assert.equal(created.length, 1, 'Share must create exactly one archive');
           assert.match(created[0]!, /^gkd-log-\d{14}(?:-\d+)?\.zip$/);
-          const data = await adb('exec-out', 'cat', `${sharedPath}/${created[0]}`);
+          const data = await adb('exec-out', 'run-as', pkg, 'cat', `${sharedPath}/${created[0]}`);
           await writeFile(`${folder}/${label}.zip`, data);
           const entries = unzipSync(data);
           assert.ok(Object.keys(entries).some(name => name.startsWith("metadata/")));
@@ -148,10 +150,9 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         await until(async () => (await adb('shell', 'dumpsys', 'activity', 'services', service)).toString(), s => !s.includes('isForeground=true'), 'foreground service exits');
         const capture = await request(`debug/sessions/${id}/export`, {});
         assert.equal(capture.session.id, id);
-        const files = (await adb('shell', 'ls', `/sdcard/Android/data/${pkg}/files/matching-diagnostics`)).toString();
-        const captureDirectory = files.trim().split(/\s+/).find(name => name === String(capture.session.startedAt));
+        const captureDirectory = (await listAppFiles(diagnosticsPath)).find(name => name === String(capture.session.startedAt));
         assert.ok(captureDirectory);
-        const savedCapture = JSON.parse((await adb('shell', 'cat', `/sdcard/Android/data/${pkg}/files/matching-diagnostics/${captureDirectory}/diagnostic.json`)).toString());
+        const savedCapture = JSON.parse((await adb('shell', 'run-as', pkg, 'cat', `${diagnosticsPath}/${captureDirectory}/diagnostic.json`)).toString());
         assert.equal(savedCapture.session.id, id);
         await writeFile(`${folder}/capture.json`, JSON.stringify(capture));
         // MIUI keeps its notification long-press modal after the action has stopped the service.
@@ -173,7 +174,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         await pause(500);
         assert.ok((await dump('record-preview')).includes('分享'));
         await screenshot('record-preview');
-        const singleBefore = await sharedNames();
+        const singleBefore = await listAppFiles(sharedPath);
         await tapText('分享', 'share-record');
         await pause(1000);
         await verifyArchive(singleBefore, [id], 'single-export');
@@ -203,7 +204,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         assert.match(await dump('selected-two'), /已选 2 项/);
         await screenshot('selected-two');
         await tapText('更多', 'batch-menu');
-        const batchBefore = await sharedNames();
+        const batchBefore = await listAppFiles(sharedPath);
         await tapText('分享', 'batch-share');
         await pause(700);
         await verifyArchive(batchBefore, [timed.id, extra.id], 'batch-export');
@@ -215,7 +216,7 @@ export async function checkDiagnosticPage(serial: string, output: string, appId?
         await tapText('删除', 'batch-delete');
         assert.match(await dump('batch-delete-confirm'), /删除选中的 2 条诊断记录/);
         await tapText('删除', 'batch-delete-confirm-action');
-        const remaining = (await adb('shell', 'ls', `/sdcard/Android/data/${pkg}/files/matching-diagnostics`)).toString().trim().split(/\s+/).filter(Boolean);
+        const remaining = await listAppFiles(diagnosticsPath);
         assert.deepEqual(remaining.sort(), existingRecords.sort(), 'Only captures created by this test may be deleted');
         await screenshot('after-deletion');
         const invalid = await client.response('debug/sessions', { detailed: true }, { headers: { Authorization: `Bearer ${token}` } });

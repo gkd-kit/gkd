@@ -53,8 +53,7 @@ object DesktopProfileExport {
         val id = intent.getStringExtra("requestId")?.takeIf(requestPattern::matches) ?: return true
         activity.lifecycleScope.launch {
             mutex.withLock {
-                val root =
-                    File(checkNotNull(app.getExternalFilesDir(null)), "development/desktop-profile")
+                val root = app.cacheDir.resolve("development/desktop-profile")
                 val request = File(root, id)
                 try {
                     withContext(Dispatchers.IO) {

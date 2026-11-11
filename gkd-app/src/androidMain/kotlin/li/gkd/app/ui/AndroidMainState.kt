@@ -14,6 +14,7 @@ import li.gkd.app.platform.service.ServiceController
 import li.gkd.app.resources.*
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.FileSource
+import li.gkd.app.storage.HistoryDirectory
 import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.ui.home.BottomNavItem
 import li.gkd.app.ui.navigation.GkdLink
@@ -111,6 +112,7 @@ class AndroidMainState(
         }
 
         mainVm.scope.launchLogged(Dispatchers.IO) {
+            AndroidStorage.storage.awaitHistoryMigration(HistoryDirectory.Crash)
             val list = FileCrashStorage.takePending()
             withContext(Dispatchers.Main.immediate) { mainVm.showCrashReports(list) }
         }

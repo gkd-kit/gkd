@@ -4,7 +4,9 @@ import { join, resolve } from 'node:path';
 import { localRoot, repositoryRoot } from './local-paths.ts';
 
 type Store = Record<string, unknown>;
-export type Adb = (...args: string[]) => Promise<Buffer>;
+export type Adb = ((...args: string[]) => Promise<Buffer>) & {
+  withInput?: (input: Buffer, ...args: string[]) => Promise<Buffer>;
+};
 export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.songe.gkd') {
   const remote = `/sdcard/Android/data/${packageName}/files`;
   const storePath = `${remote}/store/store.json`;
@@ -69,7 +71,24 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
     }
   }
 
+  async function internalDebugStore(adb: Adb) {
+    if (packageName !== 'li.songe.gkd.debug') return false;
+    const state = (await adb('shell',
+      `run-as ${packageName} sh -c 'if [ -f files/.gkd ]; then printf internal; elif [ -f no_backup/external-migration/journal.json ]; then cat no_backup/external-migration/journal.json; fi'`
+    )).toString().trim();
+    if (state === 'internal') return true;
+    if (state === '') return false;
+    if (JSON.parse(state).coreCommitted === true) return true;
+    throw new Error('Start GKD Debug to finish migrating its settings before running device tools');
+  }
+
   async function readStore(adb: Adb): Promise<Store> {
+    if (await internalDebugStore(adb)) {
+      const output = await adb('shell',
+        `run-as ${packageName} sh -c 'if [ -f files/store/store.json ]; then cat files/store/store.json; else printf "{}"; fi'`
+      );
+      return JSON.parse(output.toString()) as Store;
+    }
     // Missing settings uses production defaults only when the store directory exists.
     return JSON.parse((await adb('shell',
       `if [ -f '${storePath}' ]; then cat '${storePath}'; elif [ -d '${remote}/store' ]; then printf '{}'; else exit 1; fi`
@@ -77,6 +96,13 @@ export function createDeviceAutomation(packageName: 'li.songe.gkd.debug' | 'li.s
   }
 
   async function writeStore(adb: Adb, value: Store) {
+    if (await internalDebugStore(adb)) {
+      if (!adb.withInput) throw new Error('ADB input transport is required for internal settings');
+      await adb.withInput(Buffer.from(JSON.stringify(value)), 'shell', '-T',
+        `run-as ${packageName} sh -c 'mkdir -p files/store && cat > files/store/store.json.automation-pending && mv -f files/store/store.json.automation-pending files/store/store.json'`
+      );
+      return;
+    }
     await mkdir(transferRoot, { recursive: true });
     const folder = await mkdtemp(join(transferRoot, 'store-'));
     try {

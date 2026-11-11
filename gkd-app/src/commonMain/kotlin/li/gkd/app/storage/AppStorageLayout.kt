@@ -2,11 +2,19 @@ package li.gkd.app.storage
 
 import java.io.File
 
-/** Android-compatible relative paths. Hosts supply external files/cache and private files roots. */
+enum class HistoryDirectory(val path: String) {
+    Snapshot("snapshot"),
+    MatchDiagnostics("matching-diagnostics"),
+    Crash("crash"),
+    Log("log"),
+}
+
+/** Hosts supply the files, cache and private files roots. */
 class AppStorageLayout(
     private val files: File,
     private val cache: File,
     private val privateFiles: File,
+    val awaitHistoryMigration: suspend (HistoryDirectory) -> Unit = {},
 ) {
     private fun directory(root: File, path: String) =
         root.resolve(path).apply {
@@ -26,19 +34,19 @@ class AppStorageLayout(
         get() = directory(files, "subscription")
 
     val snapshot
-        get() = directory(files, "snapshot")
+        get() = directory(files, HistoryDirectory.Snapshot.path)
 
     val log
-        get() = directory(files, "log")
+        get() = directory(files, HistoryDirectory.Log.path)
 
     val matchingDiagnostics
-        get() = directory(files, "matching-diagnostics")
+        get() = directory(files, HistoryDirectory.MatchDiagnostics.path)
 
     val crash
-        get() = directory(files, "crash")
+        get() = directory(files, HistoryDirectory.Crash.path)
 
     val crashTemp
-        get() = directory(files, "crash/temp")
+        get() = directory(files, "${HistoryDirectory.Crash.path}/temp")
 
     val privateStore
         get() = directory(privateFiles, "private-store")
