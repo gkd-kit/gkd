@@ -132,6 +132,7 @@ class ForegroundTracker(
         value: ForegroundIdentity,
         policy: MatchTimingPolicy,
         now: Long = nowMillis(),
+        activeRootLauncherAppId: String? = null,
     ): ForegroundDecision {
         if (surfaceCovered == true && value.appId != SYSTEM_UI) {
             if (source == ForegroundSource.TaskStack) task = value
@@ -187,6 +188,20 @@ class ForegroundTracker(
         val knownNodeConflictsWithPendingIdentity =
             value.activityId != null && candidate != null && candidate != value
         if (knownNodeConflictsWithPendingIdentity) {
+            // A late launcher event can arrive after the new app is already confirmed.
+            // Keep that Activity when the active root and task still agree on it.
+            if (
+                activeRootLauncherAppId != null &&
+                    candidate.appId == activeRootLauncherAppId &&
+                    pendingSource == ForegroundSource.Accessibility &&
+                    value.appId != activeRootLauncherAppId &&
+                    value == confirmed &&
+                    task?.appId == confirmed.appId
+            ) {
+                pending = null
+                pendingAppReentry = false
+                return decision(ForegroundDecisionReason.StaleObservationDiscarded)
+            }
             return decision(ForegroundDecisionReason.ForegroundConflict)
         }
         if (

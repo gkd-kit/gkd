@@ -67,6 +67,89 @@ class MatchInputsTest {
         accept(record.input, record.policy, record.receivedAtMillis, record.sourceTimeMillis)
 
     @Test
+    fun activeRootDiscardsLateLauncherEventBeforeTimeout() {
+        val launcher = ForegroundIdentity("launcher", "Home")
+        val app = ForegroundIdentity("app.a", "Main")
+        val policy = MatchTimingPolicy()
+        val root = MatchInput.Foreground(ForegroundSource.Nodes, app, windowId = 20)
+        val records =
+            listOf(
+                MatchInputRecord(
+                    1,
+                    100,
+                    null,
+                    policy,
+                    MatchInput.Foreground(ForegroundSource.TaskStack, app),
+                ),
+                MatchInputRecord(2, 110, null, policy, root),
+                MatchInputRecord(
+                    3,
+                    200,
+                    200,
+                    policy,
+                    MatchInput.Foreground(ForegroundSource.Accessibility, launcher, windowId = 12),
+                ),
+                MatchInputRecord(4, 201, null, policy, root),
+                MatchInputRecord(
+                    5,
+                    202,
+                    null,
+                    policy,
+                    root.copy(activeRootLauncherAppId = launcher.appId),
+                ),
+            )
+        val replay = Json.decodeFromString<List<MatchInputRecord>>(Json.encodeToString(records))
+        assertEquals(records, replay)
+        val reducer = MatchInputReducer(launcher)
+        val decisions = replay.map { reducer.acceptRecord(it) }
+        assertEquals(app, decisions[1].foreground?.confirmed)
+        assertEquals(launcher, decisions[2].foreground?.pending)
+        assertTrue(decisions[2].cancelWork)
+        // A legacy observation has no active-root evidence and must leave the candidate pending.
+        assertEquals(launcher, decisions[3].foreground?.pending)
+        val recovered = decisions.last()
+        assertEquals("stale_observation_discarded", recovered.reason)
+        assertEquals(app, checkNotNull(recovered.foreground).confirmed)
+        assertEquals(null, recovered.foreground.pending)
+        assertFalse(recovered.foreground.appReentered)
+        assertFalse(recovered.cancelWork)
+    }
+
+    @Test
+    fun returningToLauncherWaitsForItsRootWhenTaskAlsoChanges() {
+        val launcher = ForegroundIdentity("launcher", "Home")
+        val app = ForegroundIdentity("app.a", "Main")
+        val policy = MatchTimingPolicy()
+        val reducer = MatchInputReducer(app)
+        fun observe(source: ForegroundSource, identity: ForegroundIdentity, time: Long) =
+            reducer.accept(MatchInput.Foreground(source, identity), policy, time, null)
+
+        observe(ForegroundSource.TaskStack, app, 100)
+        observe(ForegroundSource.Accessibility, launcher, 200)
+        observe(ForegroundSource.TaskStack, launcher, 201)
+        val oldRoot =
+            reducer.accept(
+                MatchInput.Foreground(ForegroundSource.Nodes, app, 20, launcher.appId),
+                policy,
+                202,
+                null,
+            )
+        assertEquals(launcher, oldRoot.foreground?.pending)
+        assertEquals(app, oldRoot.foreground?.confirmed)
+
+        val launcherRoot =
+            reducer.accept(
+                MatchInput.Foreground(ForegroundSource.Nodes, launcher, 12, launcher.appId),
+                policy,
+                203,
+                null,
+            )
+        assertEquals(launcher, checkNotNull(launcherRoot.foreground).confirmed)
+        assertEquals(null, launcherRoot.foreground.pending)
+        assertTrue(launcherRoot.cancelWork)
+    }
+
+    @Test
     fun taskMatchingConfirmedActivityStillReplacesConflictingPendingActivity() {
         val search = ForegroundIdentity("bili", "Search")
         val reducer = MatchInputReducer(search)

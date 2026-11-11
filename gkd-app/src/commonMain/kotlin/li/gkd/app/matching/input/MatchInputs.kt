@@ -36,6 +36,8 @@ sealed interface MatchInput {
         val source: ForegroundSource,
         val identity: ForegroundIdentity,
         val windowId: Int? = null,
+        // Present only for an active-window root read with task-stack evidence available.
+        val activeRootLauncherAppId: String? = null,
     ) : MatchInput
 
     @Serializable
@@ -129,6 +131,7 @@ class MatchInputReducer(initial: ForegroundIdentity) {
                         input.identity,
                         policy,
                         receivedAtMillis,
+                        input.activeRootLauncherAppId,
                     )
                 MatchInputDecision(
                     true,

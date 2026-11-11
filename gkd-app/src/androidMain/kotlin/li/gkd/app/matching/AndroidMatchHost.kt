@@ -667,6 +667,12 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                                 identity.activityId,
                                 ActivityScene.Nodes,
                                 windowId = windowId,
+                                // Only a fresh active root can disprove a launcher window event.
+                                activeRootLauncherAppId =
+                                    launcherAppId.takeIf {
+                                        it == foreground.pending?.appId &&
+                                            privilegeContextFlow.value != null
+                                    },
                             )
                             if (
                                 AndroidForegroundState.foregroundPending ||
