@@ -1,10 +1,7 @@
 import { execFile, spawn } from 'node:child_process';
-import { join } from 'node:path';
-import { mkdir, mkdtemp } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { repositoryRoot } from '../lib/local-paths.ts';
 import { createAdb } from '../lib/device-adb.ts';
-import { createDeviceAutomation, withAutomationPaused } from '../lib/device-automation.ts';
 import { withInstallConfirmation } from '../lib/device-install.ts';
 import { installGkd } from '../lib/device-test-apps.ts';
 
@@ -77,36 +74,9 @@ export async function deviceInstall(serial?: string, release = false) {
       cancellation.signal.throwIfAborted();
       console.log(`Checking and installing GKD on ${device}`);
       try {
-        const parent = join(repositoryRoot, '.temp', 'device-install');
-        await mkdir(parent, { recursive: true });
-        const folder = await mkdtemp(join(parent, 'update-'));
         const adb = withInstallConfirmation(createAdb(device), cancellation.signal);
-        const install = async () => {
-          cancellation.signal.throwIfAborted();
-          console.log('GKD APK:', await installGkd(adb, release));
-          cancellation.signal.throwIfAborted();
-        };
-        if (release) {
-          const packages = (await adb('shell', 'pm', 'list', 'packages', 'li.songe.gkd')).toString().split(/\r?\n/);
-          const installRelease = async () => {
-            if (packages.includes('package:li.songe.gkd')) {
-              const recovery = await createDeviceAutomation('li.songe.gkd').automationRecoveryStatus(adb);
-              if (recovery.record) throw new Error(`Restore the saved Release automation settings before upgrading: ${recovery.path}`);
-              // Release settings are private. Stop the process for the install without editing them.
-              await adb('shell', 'am', 'force-stop', 'li.songe.gkd');
-            }
-            await install();
-          };
-          if (packages.includes('package:li.songe.gkd.debug')) {
-            await withAutomationPaused(adb, folder, installRelease, undefined, { reopenApp: false });
-          } else {
-            await installRelease();
-          }
-          cancellation.signal.throwIfAborted();
-          await adb('shell', 'am', 'start', '-n', 'li.songe.gkd/li.gkd.app.MainActivity');
-        } else {
-          await withAutomationPaused(adb, folder, install);
-        }
+        console.log('GKD APK:', await installGkd(adb, release));
+        cancellation.signal.throwIfAborted();
       } catch (error) {
         const failure = new Error(`Device ${device} failed`, { cause: error });
         if (cancellation.signal.aborted) throw failure;

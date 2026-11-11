@@ -454,7 +454,7 @@ pnpm app-tools device-test-apps --serial DEVICE --operation cleanup
 
 | 入口 | 安装、确认及收尾 |
 | --- | --- |
-| `device-install [--serial SERIAL]` | 构建一次 gkdDebug，再逐台复用公共安装、弹窗确认及自动化暂停恢复流程，不启动调试服务，GKD 不进入临时应用清理名单 |
+| `device-install [--serial SERIAL]` | 构建一次 gkdDebug，再逐台安装并按需确认弹窗，不启动调试服务，GKD 不进入临时应用清理名单 |
 | `device-app-debug`、`device-matching-debug`、`device-matching-benchmark`、`device-service-stop-check`、`device-query-safety` | 共用 `deviceMatchingDebug`，接入 `withInstallConfirmation`、`installApkIfChanged` 和 `withAutomationPaused`；`--attach` 不允许安装，也不重启现有进程 |
 | `capture-profile --install` | 使用相同的安装、确认和设置恢复函数；不安装额外测试应用 |
 | `device-query-safety` 的 fixture | 使用 `ensureDeviceTestApp` 记录本轮所有权；单次结束停止进程，整轮结束由 `device-test-apps cleanup` 卸载 |
