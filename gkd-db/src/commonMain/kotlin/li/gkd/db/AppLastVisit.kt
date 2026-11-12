@@ -8,16 +8,21 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "app_last_visit",
 )
+@Serializable
 data class AppLastVisit(
     @PrimaryKey @ColumnInfo(name = "app_id") val appId: String,
     @ColumnInfo(name = "last_visit_time") val lastVisitTime: Long,
 ) {
     @Dao
     interface AppLastVisitDao {
+        @Query("SELECT * FROM app_last_visit ORDER BY app_id")
+        suspend fun queryAll(): List<AppLastVisit>
+
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(vararg objects: AppLastVisit): List<Long>
 

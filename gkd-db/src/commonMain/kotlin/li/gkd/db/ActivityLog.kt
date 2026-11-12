@@ -27,6 +27,9 @@ data class ActivityLog(
     @Dao
     @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
     interface ActivityLogDao {
+        @Query("SELECT * FROM activity_log ORDER BY id DESC")
+        suspend fun queryAll(): List<ActivityLog>
+
         @Insert suspend fun insert(vararg objects: ActivityLog): List<Long>
 
         @Query("SELECT * FROM activity_log ORDER BY ctime DESC ")

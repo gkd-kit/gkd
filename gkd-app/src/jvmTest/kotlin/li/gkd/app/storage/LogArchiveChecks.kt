@@ -116,7 +116,7 @@ class LogArchiveChecks {
         assertEquals(List(expectedIds.size) { "returned" }, completed.map { it.outcome })
     }
 
-    fun archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance() {
+    fun archiveContainsMaterialsAndExpiredCacheIsCleanedByMaintenance() = runBlocking {
         try {
             val layout = appStorage()
             val privilegeCrash = layout.tempCache.resolve("priv-crash").apply { mkdirs() }
@@ -271,7 +271,7 @@ class LogArchiveChecks {
         }
     }
 
-    fun materialFailurePreservesCauseAndLeavesFilesForCacheMaintenance() {
+    fun materialFailurePreservesCauseAndLeavesFilesForCacheMaintenance() = runBlocking {
         try {
             val layout = appStorage()
             for (error in

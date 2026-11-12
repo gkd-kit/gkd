@@ -25,6 +25,8 @@ data class Snapshot(
 ) : BaseSnapshot {
     @Dao
     interface SnapshotDao {
+        @Query("SELECT * FROM snapshot ORDER BY id DESC") suspend fun queryAll(): List<Snapshot>
+
         @Insert suspend fun insert(vararg users: Snapshot): List<Long>
 
         @Delete suspend fun delete(vararg users: Snapshot): Int

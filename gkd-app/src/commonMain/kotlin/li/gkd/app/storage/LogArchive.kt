@@ -4,17 +4,20 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import li.gkd.app.logging.LogUtils
+import li.gkd.db.captureDatabaseLogSnapshot
 
 object LogArchive {
     private val layout
         get() = appStorage()
 
-    fun build(
+    suspend fun build(
         metadata: Map<String, () -> String>,
         privilegeCrashFiles: List<File> = emptyList(),
         diagnosticDirectories: List<File> = emptyList(),
     ): File {
         val directory = StorageMaintenance.temporaryDirectory(layout)
+        val database = directory.resolve("db")
+        captureDatabaseLogSnapshot().writeJsonFiles(database)
         val metadataDirectory =
             Files.createDirectory(directory.resolve("metadata").toPath()).toFile()
         val privilegeCrashes = directory.resolve("priv-crash")
@@ -44,13 +47,16 @@ object LogArchive {
                 }
                 listOf(target)
             }
-        return buildArchive(metadataDirectory, logs, listOf(privilegeCrashes) + diagnostics)
+        return buildArchive(
+            metadataDirectory,
+            logs,
+            listOf(database, privilegeCrashes) + diagnostics,
+        )
     }
 
     private fun buildArchive(metadata: File, logs: File, additionalDirectories: List<File>): File {
         val files =
             (listOf(
-                    layout.db,
                     layout.store,
                     layout.subscription,
                     logs,

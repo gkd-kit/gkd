@@ -35,6 +35,9 @@ class A11yEventLog(
     @Dao
     @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
     interface A11yEventLogDao {
+        @Query("SELECT * FROM a11y_event_log ORDER BY id DESC")
+        suspend fun queryAll(): List<A11yEventLog>
+
         @Insert suspend fun insert(objects: List<A11yEventLog>): List<Long>
 
         @Query("SELECT COUNT(*) FROM a11y_event_log") fun count(): Flow<Int>

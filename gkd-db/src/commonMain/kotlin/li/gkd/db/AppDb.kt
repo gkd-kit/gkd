@@ -9,8 +9,10 @@ import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.migration.AutoMigrationSpec
 
+internal const val AppDbVersion = 19
+
 @Database(
-    version = 19,
+    version = AppDbVersion,
     entities =
         [
             SubsItem::class,

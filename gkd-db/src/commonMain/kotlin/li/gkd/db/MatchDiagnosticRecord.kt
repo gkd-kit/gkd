@@ -2,11 +2,13 @@ package li.gkd.db
 
 import androidx.room3.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Entity(tableName = "match_diagnostic")
 @ColumnTypeConverters(MatchDiagnosticAppIdsConverter::class)
+@Serializable
 data class MatchDiagnosticRecord(
     @PrimaryKey val id: Long,
     @ColumnInfo(name = "started_at") val startedAt: Long,
@@ -24,6 +26,9 @@ class MatchDiagnosticAppIdsConverter {
 
 @Dao
 interface MatchDiagnosticRecordDao {
+    @Query("SELECT * FROM match_diagnostic ORDER BY id DESC")
+    suspend fun queryAll(): List<MatchDiagnosticRecord>
+
     @Query("SELECT * FROM match_diagnostic ORDER BY id DESC")
     fun observeAll(): Flow<List<MatchDiagnosticRecord>>
 

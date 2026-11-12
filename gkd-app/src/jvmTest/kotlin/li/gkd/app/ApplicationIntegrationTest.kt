@@ -51,6 +51,7 @@ import li.gkd.app.storage.AppStorageLayout
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.LogArchiveChecks
 import li.gkd.app.storage.appStorage
+import li.gkd.app.storage.assertDatabaseLogJsonExport
 import li.gkd.app.subscription.RawSubscriptionParser
 import li.gkd.app.subscription.SubscriptionDefaults
 import li.gkd.app.subscription.SubscriptionJson
@@ -194,6 +195,7 @@ class ApplicationIntegrationTest {
                     }
                     assertBackupSnapshotConsistency()
                     assertBackupRoundTrip(appStorage())
+                    assertDatabaseLogJsonExport()
                 }
             assertFailsWith<IllegalStateException> { isNetworkRequestAllowed() }
             assertFailsWith<IllegalStateException> { openAppCatalog() }

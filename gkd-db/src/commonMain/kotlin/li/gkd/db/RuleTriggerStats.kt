@@ -8,6 +8,7 @@ import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
 /** Local cumulative history, independent of log retention and subscription deletion. */
 @Entity(
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
     primaryKeys = ["subs_id", "group_type", "group_key", "app_id"],
     indices = [Index(value = ["app_id"])],
 )
+@Serializable
 data class RuleTriggerStats(
     @ColumnInfo(name = "subs_id") val subsId: Long,
     @ColumnInfo(name = "group_type") val groupType: Int,
@@ -26,6 +28,9 @@ data class RuleTriggerStats(
 
 @Dao
 interface RuleTriggerStatsDao {
+    @Query("SELECT * FROM rule_trigger_stats ORDER BY subs_id, group_type, group_key, app_id")
+    suspend fun queryAll(): List<RuleTriggerStats>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIfAbsent(stats: RuleTriggerStats)
 
