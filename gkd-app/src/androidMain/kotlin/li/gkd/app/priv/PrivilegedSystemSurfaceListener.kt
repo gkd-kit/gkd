@@ -1,6 +1,7 @@
 package li.gkd.app.priv
 
 import android.graphics.Matrix
+import android.os.IBinder
 import android.os.RemoteException
 import android.os.SystemClock
 import android.view.InputWindowHandle
@@ -12,6 +13,7 @@ class PrivilegedSystemSurfaceListener(private val receiver: ISystemSurfaceListen
     WindowInfosListener() {
     private var active = true
     private var previous: Int? = null
+    private var inputWindows: Array<InputWindowHandle> = emptyArray()
 
     @Synchronized
     override fun onWindowInfosChanged(
@@ -19,6 +21,7 @@ class PrivilegedSystemSurfaceListener(private val receiver: ISystemSurfaceListen
         displays: Array<DisplayInfo>,
     ) {
         if (!active) return
+        inputWindows = windows
         val received = SystemClock.uptimeMillis()
         val display = displays.firstOrNull { it.mDisplayId == 0 }
         val state =
@@ -62,6 +65,10 @@ class PrivilegedSystemSurfaceListener(private val receiver: ISystemSurfaceListen
             active = false
         }
     }
+
+    @Synchronized
+    fun windowPackage(token: IBinder): String? =
+        if (active) inputWindows.firstOrNull { it.windowToken == token }?.packageName else null
 
     fun start() {
         // Wait for a live callback: cached registration data can be empty or older than a callback

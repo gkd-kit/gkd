@@ -34,6 +34,7 @@ import li.gkd.app.matching.input.A11yEvent
 import li.gkd.app.matching.input.ActivityScene
 import li.gkd.app.matching.input.AndroidForegroundState
 import li.gkd.app.matching.input.CONTENT_CHANGED
+import li.gkd.app.matching.input.ForegroundDecisionReason
 import li.gkd.app.matching.input.ForegroundIdentity
 import li.gkd.app.matching.input.ForegroundWindowTracker
 import li.gkd.app.matching.input.MatchEventKey
@@ -71,12 +72,19 @@ import li.gkd.app.snapshot.captureScreenshotOnEvent
 import li.gkd.app.subscription.refreshSubscriptionsOnLauncher
 import li.gkd.app.util.AndroidTarget
 import li.gkd.app.util.AndroidToastUtils
+import li.gkd.app.util.Constants
 import li.gkd.app.util.monotonicTimeMillis
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 private val diagnosticConnectionIds = AtomicLong()
 private val diagnosticReadIds = AtomicLong()
 private val diagnosticEventIds = AtomicLong()
+
+private sealed interface ActiveWindowRead {
+    data class Node(val node: AccessibilityNodeInfo) : ActiveWindowRead
+
+    data class BlockedSystemUi(val windowId: Int) : ActiveWindowRead
+}
 
 class AndroidMatchHost(private val service: AndroidAutomationSession) {
     val connectionId = diagnosticConnectionIds.incrementAndGet()
@@ -489,8 +497,8 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 return
             }
             // Root and source Binder reads run independently, outside the matching lane.
-            requestRoot(MatchNodeReadReason.Event)
             val appId = latestEvent.key.appId
+            requestRoot(MatchNodeReadReason.Event, latestEvent)
             if (SettingsRepository.checkAppBlockMatch(appId)) {
                 coordinator.diagnostics.entry("source_read", "source_app_blocked")
                 return
@@ -631,95 +639,190 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     private var rootRequest: Job? = null
     private var rootRequestPage: Any? = null
 
-    private fun requestRoot(reason: MatchNodeReadReason) {
-        val page = AndroidForegroundState.currentPage
-        val job =
-            synchronized(this) {
-                if (!effective) return
-                if (rootRequest?.isCompleted == false && rootRequestPage === page) return
-                rootRequest?.cancel()
-                rootRequestPage = page
-                scope
-                    .launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
-                        coordinator.diagnostics.entry("root_read", "root_read_started")
-                        val node =
-                            try {
-                                if (!coordinator.diagnostics.enabled) {
-                                    readNode("Root", page) { readActiveWindow() }
-                                } else {
-                                    // Keep nested diagnostic publication outside the timed worker.
-                                    readA11yWindow(coordinator.diagnostics, "ActiveWindow") {
-                                        readNode("Root", page) {
-                                            service.windowNodeInfo?.setGeneratedTime()
-                                        }
-                                    }
-                                }
-                            } catch (error: MatchNodeReadUnavailable) {
-                                coordinator.diagnostics.entry("Root", checkNotNull(error.message))
-                                return@launch
-                            }
-                        if (node == null) {
-                            coordinator.diagnostics.entry("root_read", "root_unavailable")
-                            return@launch
-                        }
-                        val accepted = AndroidForegroundState.withTopActivityLock {
-                            if (!effective || page !== AndroidForegroundState.currentPage)
-                                return@withTopActivityLock false
-                            val appId =
-                                node.packageName?.toString() ?: return@withTopActivityLock false
-                            val windowId = node.windowId
-                            val foreground = AndroidForegroundState.foregroundSnapshot()
-                            if (windows.observeRoot(windowId, appId, foreground.confirmed)) {
-                                AndroidForegroundState.onWindowChanged()
-                            }
-                            val identity = windows.identity
-                            if (identity == null) {
-                                recordRejectedWindow("root_read", "window_identity_pending", node)
-                                return@withTopActivityLock false
-                            }
-                            updateTopActivity(
-                                appId,
-                                identity.activityId,
-                                ActivityScene.Nodes,
-                                windowId = windowId,
-                                // Only a fresh active root can disprove a launcher window event.
-                                activeRootLauncherAppId =
-                                    launcherAppId.takeIf {
-                                        it == foreground.pending?.appId &&
-                                            privilegeContextFlow.value != null
-                                    },
-                            )
-                            if (
-                                AndroidForegroundState.foregroundPending ||
-                                    currentTopActivity.appId != appId
-                            )
-                                return@withTopActivityLock false
-                            rootNode =
-                                observedPageNode(
-                                    AndroidForegroundState.currentPage,
-                                    node,
-                                    MatchNodeSource.Root,
-                                    reason,
-                                )
-                            true
-                        }
-                        if (accepted) {
-                            coordinator.diagnostics.entry("root_read", "root_ready")
-                            startQueryJob()
-                        } else {
-                            recordRejectedWindow("root_read", "stale_or_mismatched_root", node)
-                        }
-                    }
-                    .also { rootRequest = it }
+    private fun readActiveWindowRoot(): ActiveWindowRead.Node? =
+        service.windowNodeInfo?.setGeneratedTime()?.let { ActiveWindowRead.Node(it) }
+
+    private fun readRootAroundBlockedSystemUi(eventWindowId: Int?): ActiveWindowRead? {
+        val window = service.windowInfos.firstOrNull { it.isActive }
+        if (window != null) {
+            val windowId = window.id
+            if (windowId == eventWindowId) return ActiveWindowRead.BlockedSystemUi(windowId)
+            val appId =
+                AndroidForegroundState.withTopActivityLock { windows.knownAppId(windowId) }
+                    ?: privilegeContextFlow.value?.accessibilityWindowPackage(windowId)
+            if (appId == Constants.systemUiAppId) return ActiveWindowRead.BlockedSystemUi(windowId)
+            if (appId != null) {
+                window.root?.let {
+                    return ActiveWindowRead.Node(it.setGeneratedTime())
+                }
             }
-        job.start()
+        }
+        if (AndroidForegroundState.foregroundSnapshot().surfaceCovered == true) return null
+        return readActiveWindowRoot()
     }
 
-    private suspend fun readNode(
+    private fun confirmBlockedSystemUiWindow(page: Any, windowId: Int) {
+        AndroidForegroundState.withTopActivityLock {
+            val appId = Constants.systemUiAppId
+            if (
+                !effective ||
+                    page !== AndroidForegroundState.currentPage ||
+                    appId !in SettingsRepository.blockMatchAppList.value
+            )
+                return@withTopActivityLock
+            val foreground = AndroidForegroundState.foregroundSnapshot()
+            if (foreground.pending?.appId?.let { it != appId } == true) return@withTopActivityLock
+            val identity = windows.knownIdentity(windowId, appId) ?: ForegroundIdentity(appId)
+            if (windows.observeState(windowId, identity)) AndroidForegroundState.onWindowChanged()
+            updateTopActivity(
+                appId,
+                identity.activityId,
+                ActivityScene.ActiveWindow,
+                windowId = windowId,
+            )
+        }
+    }
+
+    private fun requestRoot(reason: MatchNodeReadReason, event: A11yEvent? = null) {
+        val job = AndroidForegroundState.withTopActivityLock {
+            if (!effective) return@withTopActivityLock null
+            val page = AndroidForegroundState.currentPage
+            if (rootRequest?.isCompleted == false && rootRequestPage === page)
+                return@withTopActivityLock null
+            val systemUi = Constants.systemUiAppId
+            val systemUiBlocked = systemUi in SettingsRepository.blockMatchAppList.value
+            val eventAppId = event?.key?.appId
+            val checkCoveredTask =
+                event?.key?.kind == MatchEventKind.Content &&
+                    eventAppId != systemUi &&
+                    privilegeContextFlow.value != null
+            val foreground =
+                if (
+                    systemUiBlocked &&
+                        (checkCoveredTask || reason == MatchNodeReadReason.ForegroundConfirmation)
+                )
+                    AndroidForegroundState.foregroundSnapshot()
+                else null
+            if (
+                checkCoveredTask &&
+                    foreground?.surfaceCovered == true &&
+                    foreground.confirmed.appId == systemUi &&
+                    foreground.pending == null &&
+                    foreground.task?.appId == eventAppId
+            ) {
+                coordinator.diagnostics.entry("root_read", "root_skipped_under_system_ui")
+                return@withTopActivityLock null
+            }
+            val blockedSystemUiWindowId =
+                if (systemUiBlocked && eventAppId == systemUi) event?.windowId else null
+            val confirmSystemUiWindow =
+                if (reason == MatchNodeReadReason.ForegroundConfirmation && foreground != null) {
+                    if (
+                        foreground.confirmed.appId == systemUi &&
+                            foreground.reason == ForegroundDecisionReason.ActiveWindowConfirmed
+                    )
+                        return@withTopActivityLock null
+                    foreground.pending?.appId == systemUi
+                } else false
+            rootRequest?.cancel()
+            rootRequestPage = page
+            scope
+                .launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
+                    coordinator.diagnostics.entry("root_read", "root_read_started")
+                    val readRoot = {
+                        if (blockedSystemUiWindowId != null || confirmSystemUiWindow)
+                            readRootAroundBlockedSystemUi(blockedSystemUiWindowId)
+                        else readActiveWindowRoot()
+                    }
+                    val result =
+                        try {
+                            if (!coordinator.diagnostics.enabled) {
+                                readNode("Root", page) {
+                                    readA11yWindow(
+                                        coordinator.diagnostics,
+                                        "ActiveWindow",
+                                        read = readRoot,
+                                    )
+                                }
+                            } else {
+                                // Keep nested diagnostic publication outside the timed worker.
+                                readA11yWindow(coordinator.diagnostics, "ActiveWindow") {
+                                    readNode("Root", page, readRoot)
+                                }
+                            }
+                        } catch (error: MatchNodeReadUnavailable) {
+                            coordinator.diagnostics.entry("Root", checkNotNull(error.message))
+                            return@launch
+                        }
+                    val node =
+                        when (result) {
+                            is ActiveWindowRead.Node -> result.node
+                            is ActiveWindowRead.BlockedSystemUi -> {
+                                confirmBlockedSystemUiWindow(page, result.windowId)
+                                return@launch
+                            }
+                            null -> {
+                                coordinator.diagnostics.entry("root_read", "root_unavailable")
+                                return@launch
+                            }
+                        }
+                    val accepted = AndroidForegroundState.withTopActivityLock {
+                        if (!effective || page !== AndroidForegroundState.currentPage)
+                            return@withTopActivityLock false
+                        val appId = node.packageName?.toString() ?: return@withTopActivityLock false
+                        val windowId = node.windowId
+                        val foreground = AndroidForegroundState.foregroundSnapshot()
+                        if (windows.observeRoot(windowId, appId, foreground.confirmed)) {
+                            AndroidForegroundState.onWindowChanged()
+                        }
+                        val identity = windows.identity
+                        if (identity == null) {
+                            recordRejectedWindow("root_read", "window_identity_pending", node)
+                            return@withTopActivityLock false
+                        }
+                        updateTopActivity(
+                            appId,
+                            identity.activityId,
+                            ActivityScene.Nodes,
+                            windowId = windowId,
+                            // Only a fresh active root can disprove a launcher window event.
+                            activeRootLauncherAppId =
+                                launcherAppId.takeIf {
+                                    it == foreground.pending?.appId &&
+                                        privilegeContextFlow.value != null
+                                },
+                        )
+                        if (
+                            AndroidForegroundState.foregroundPending ||
+                                currentTopActivity.appId != appId
+                        )
+                            return@withTopActivityLock false
+                        rootNode =
+                            observedPageNode(
+                                AndroidForegroundState.currentPage,
+                                node,
+                                MatchNodeSource.Root,
+                                reason,
+                            )
+                        true
+                    }
+                    if (accepted) {
+                        coordinator.diagnostics.entry("root_read", "root_ready")
+                        startQueryJob()
+                    } else {
+                        recordRejectedWindow("root_read", "stale_or_mismatched_root", node)
+                    }
+                }
+                .also { rootRequest = it }
+        }
+        job?.start()
+    }
+
+    private suspend fun <T> readNode(
         name: String,
         page: Any,
-        read: () -> AccessibilityNodeInfo?,
-    ): AccessibilityNodeInfo? {
+        read: () -> T?,
+    ): T? {
         val reader = MatchingRuntime.nodeReader
         val timeout = timing.rootWaitMillis
         return reader.query {
@@ -730,20 +833,28 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
     private var foregroundCheck: Job? = null
 
     @Synchronized
-    fun confirmForeground() {
-        if (foregroundCheck?.isActive == true) return
+    fun confirmForeground(restart: Boolean = false) {
+        if (foregroundCheck?.isActive == true) {
+            if (!restart) return
+            foregroundCheck?.cancel()
+        }
         foregroundCheck =
             scope.launch(Dispatchers.IO) {
                 val policy = timing
                 val deadline = monotonicTimeMillis() + policy.foregroundWaitMillis
                 do {
                     requestRoot(MatchNodeReadReason.ForegroundConfirmation)
-                    if (!AndroidForegroundState.foregroundPending) {
-                        startQueryJob()
-                        return@launch
-                    }
+                    if (!AndroidForegroundState.foregroundPending) break
                     delay(policy.foregroundRetryMillis)
-                } while (effective && monotonicTimeMillis() < deadline)
+                } while (
+                    AndroidForegroundState.foregroundPending &&
+                        effective &&
+                        monotonicTimeMillis() < deadline
+                )
+                if (!AndroidForegroundState.foregroundPending) {
+                    startQueryJob()
+                    return@launch
+                }
                 coordinator.diagnostics.entry(
                     "foreground_confirmation",
                     if (effective) "foreground_wait_expired" else "service_not_effective",

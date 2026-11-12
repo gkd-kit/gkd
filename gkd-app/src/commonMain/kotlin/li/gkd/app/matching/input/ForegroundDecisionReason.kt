@@ -20,6 +20,7 @@ enum class ForegroundDecisionReason(val wireValue: String) {
     @SerialName("app_reentered") AppReentered("app_reentered"),
     @SerialName("surface_confirmed") SurfaceConfirmed("surface_confirmed"),
     @SerialName("nodes_confirmed") NodesConfirmed("nodes_confirmed"),
+    @SerialName("active_window_confirmed") ActiveWindowConfirmed("active_window_confirmed"),
     @SerialName("stale_observation_discarded")
     StaleObservationDiscarded("stale_observation_discarded"),
     @SerialName("foreground_conflict") ForegroundConflict("foreground_conflict"),

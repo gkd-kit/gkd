@@ -14,6 +14,8 @@ import android.graphics.Bitmap
 import android.os.DeadObjectException
 import android.os.IBinder
 import android.os.Process
+import android.os.RemoteException
+import android.os.ServiceSpecificException
 import android.view.IWindowManager
 import android.window.WindowInfosListener
 import java.io.IOException
@@ -253,6 +255,17 @@ private constructor(
             .firstOrNull()
 
     fun topCpn() = topTask()?.topActivity
+
+    fun accessibilityWindowPackage(windowId: Int): String? =
+        try {
+            userService.getAccessibilityWindowPackage(windowId, currentUserId)
+        } catch (e: RemoteException) {
+            LogUtils.w("Accessibility window package lookup failed", e)
+            null
+        } catch (e: ServiceSpecificException) {
+            LogUtils.w("Accessibility window package lookup failed", e)
+            null
+        }
 
     fun getUsers(excludeDying: Boolean = true): List<AppUser> {
         return userManager.getUsers(excludeDying)

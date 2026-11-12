@@ -24,4 +24,6 @@ public interface IAccessibilityManager extends IInterface {
     void registerUiTestAutomationService(IBinder owner, IAccessibilityServiceClient client, AccessibilityServiceInfo info, int userId, int flags);
 
     void unregisterUiTestAutomationService(IAccessibilityServiceClient client);
+
+    IBinder getWindowToken(int windowId, int userId);
 }

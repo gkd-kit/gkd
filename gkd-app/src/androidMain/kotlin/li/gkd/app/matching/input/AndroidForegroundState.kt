@@ -55,6 +55,8 @@ sealed class ActivityScene {
     data object TaskStack : ActivityScene()
 
     data object Nodes : ActivityScene()
+
+    data object ActiveWindow : ActivityScene()
 }
 
 object AndroidForegroundState {
@@ -147,7 +149,11 @@ object AndroidForegroundState {
                 MatchingRuntime.coordinator.invalidate(MatchInvalidationReason.ForegroundConflict)
             }
             if (decision.reason != ForegroundDecisionReason.SurfaceUnchanged)
-                AndroidAutomationSessions.service?.matchHost?.confirmForeground()
+                AndroidAutomationSessions.service
+                    ?.matchHost
+                    ?.confirmForeground(
+                        restart = decision.reason == ForegroundDecisionReason.SystemSurfaceExited,
+                    )
         }
 
     private var lastVisitedAppId = Constants.systemUiAppId
@@ -176,6 +182,7 @@ object AndroidForegroundState {
                     when (scene) {
                         ActivityScene.TaskStack -> ForegroundSource.TaskStack
                         ActivityScene.Nodes -> ForegroundSource.Nodes
+                        ActivityScene.ActiveWindow -> ForegroundSource.ActiveWindow
                         else -> ForegroundSource.Accessibility
                     }
                 val identity = ForegroundIdentity(appId, activityId)
@@ -214,6 +221,7 @@ object AndroidForegroundState {
                     !decision.changed &&
                         !decision.appReentered &&
                         (scene == ActivityScene.Nodes ||
+                            scene == ActivityScene.ActiveWindow ||
                             scene == ActivityScene.TaskStack ||
                             decision.reason == ForegroundDecisionReason.TaskBelowConfirmedSurface ||
                             decision.reason == ForegroundDecisionReason.TaskBelowSystemSurface ||

@@ -12,6 +12,8 @@ class ForegroundWindowTracker {
     fun knownIdentity(id: Int?, app: String?): ForegroundIdentity? =
         identities[id]?.takeIf { it.appId == app }
 
+    fun knownAppId(id: Int): String? = identities[id]?.appId
+
     fun observeState(id: Int, value: ForegroundIdentity): Boolean {
         if (id < 0) return false
         val previous = identity

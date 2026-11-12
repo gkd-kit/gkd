@@ -55,6 +55,29 @@ class SystemSurfaceTest {
     }
 
     @Test
+    fun activeWindowConfirmsShadeWithoutNodesAndLateResultCannotOverrideReturn() {
+        val tracker = ForegroundTracker(app)
+        tracker.observe(ForegroundSource.TaskStack, app, policy, 1)
+        tracker.observe(ForegroundSource.Nodes, app, policy, 2)
+        tracker.observeSurface(true, 3)
+
+        val opened = tracker.observe(ForegroundSource.ActiveWindow, systemUi, policy, 4)
+        assertEquals(ForegroundDecisionReason.ActiveWindowConfirmed, opened.reason)
+        assertEquals(systemUi, opened.confirmed)
+        assertNull(opened.pending)
+        assertEquals(app.appId, opened.nodeAppId)
+        assertEquals(true, tracker.snapshot().surfaceCovered)
+
+        assertEquals(app, tracker.observeSurface(false, 5).pending)
+        assertEquals(false, tracker.snapshot().surfaceCovered)
+        val lateWindow = tracker.observe(ForegroundSource.ActiveWindow, systemUi, policy, 6)
+        assertEquals(app, lateWindow.pending)
+        val closed = tracker.observe(ForegroundSource.Nodes, app, policy, 7)
+        assertEquals(app, closed.confirmed)
+        assertNull(closed.pending)
+    }
+
+    @Test
     fun unavailableWindowListenerReleasesConstraintWithoutInventingClearState() {
         val tracker = ForegroundTracker(app)
         tracker.observeSurface(true, 1)
@@ -64,6 +87,7 @@ class SystemSurfaceTest {
             tracker.observeSurface(null, 3).reason,
         )
         assertEquals(systemUi, tracker.snapshot().confirmed)
+        assertNull(tracker.snapshot().surfaceCovered)
         tracker.observe(ForegroundSource.Accessibility, app, policy, 4)
         assertEquals(app, tracker.observe(ForegroundSource.Nodes, app, policy, 5).confirmed)
     }

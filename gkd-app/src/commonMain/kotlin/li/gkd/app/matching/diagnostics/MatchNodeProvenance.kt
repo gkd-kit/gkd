@@ -188,6 +188,7 @@ private val foregroundBoundaryReasons =
     setOf(
         ForegroundDecisionReason.ForegroundConflict,
         ForegroundDecisionReason.NodesConfirmed,
+        ForegroundDecisionReason.ActiveWindowConfirmed,
         ForegroundDecisionReason.SurfaceConfirmed,
         ForegroundDecisionReason.StaleObservationDiscarded,
         ForegroundDecisionReason.SystemSurfaceEntered,
