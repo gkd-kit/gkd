@@ -278,12 +278,8 @@ private constructor(
         }
     }
 
-    suspend fun tap(x: Float, y: Float, duration: Long = 0): Boolean? = injectInputIfPermitted {
-        if (duration > 0) {
-            inputManager.swipe(x, y, x, y, durationMillis = duration)
-        } else {
-            inputManager.tap(x, y)
-        }
+    suspend fun tap(x: Float, y: Float, durationMillis: Long): Boolean? = injectInputIfPermitted {
+        inputManager.tap(x, y, durationMillis = durationMillis)
     }
 
     suspend fun swipe(

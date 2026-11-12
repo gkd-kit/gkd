@@ -84,7 +84,7 @@ kmp-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel
 kmp-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 permissions = "com.github.getActivity:XXPermissions:28.3"
 priv-kit-ui = { module = "io.github.priv-kit:priv-ui", version.ref = "priv-kit" }
-priv-kit-input = { module = "io.github.priv-kit:priv-input", version.ref = "priv-kit" }
+priv-kit-input = { module = "io.github.priv-kit:priv-input", version = "0.21.0" }
 remap-annotation = { module = "li.songe.remap:remap-annotation", version.ref = "remap" }
 remap-processor = { module = "li.songe.remap:remap-processor", version.ref = "remap" }
 reorderable = "sh.calvin.reorderable:reorderable:3.1.0"

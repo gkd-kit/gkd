@@ -98,11 +98,14 @@ sealed class ActionPerformer(val action: String) {
                 return it
             }
             TrackService.addXyPosition(x, y)
+            val durationMillis = ViewConfiguration.getTapTimeout().toLong()
             return ActionResult(
                 action = action,
                 result =
                     privilegeContextFlow.value?.let { privilege ->
-                        observeActionOperation("PrivilegedTap") { privilege.tap(x, y) }
+                        observeActionOperation("PrivilegedTap") {
+                            privilege.tap(x, y, durationMillis)
+                        }
                     }
                         ?: run {
                             val service = a11yGestureFallback() ?: return@run false
@@ -113,7 +116,7 @@ sealed class ActionPerformer(val action: String) {
                                 GestureDescription.StrokeDescription(
                                     path,
                                     0,
-                                    ViewConfiguration.getTapTimeout().toLong(),
+                                    durationMillis,
                                 ),
                             )
                             service.awaitGesture(gestureDescription.build())
