@@ -66,9 +66,11 @@ import li.gkd.app.ui.icon.GkPrivilegeConnectionIcon
 import li.gkd.app.ui.navigation.ActionLogRoute
 import li.gkd.app.ui.navigation.ActivityLogRoute
 import li.gkd.app.ui.navigation.AppConfigRoute
+import li.gkd.app.ui.navigation.KeepAliveRoute
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.navigation.WorkModeRoute
 import li.gkd.app.ui.platform.LocalUiHost
+import li.gkd.app.ui.platform.ignoresBatteryOptimizations
 import li.gkd.app.ui.platform.setStatusServiceEnabled
 import li.gkd.app.ui.platform.switchAutomator
 import li.gkd.app.ui.style.itemHorizontalPadding
@@ -100,6 +102,7 @@ fun dashboardSummary(groups: RuleGroupSummary): String? =
 @Composable
 fun dashboardPage(
     vm: HomeViewModel,
+    latestState: Loadable<LatestActionSnapshot>,
 ): ScaffoldExt {
     val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
@@ -116,7 +119,6 @@ fun dashboardPage(
             onPrivilege = { mainVm.navigator.navigate(PrivilegeServiceRoute) },
         )
     }
-    val latestState by vm.latestState.collectAsStateWithLifecycle()
     val rules by ruleGroupState.collectAsStateWithLifecycle()
     val actionCount by SettingsRepository.actionCount.collectAsStateWithLifecycle()
     val appCatalog by AppInfoRepository.state.collectAsStateWithLifecycle()
@@ -186,54 +188,26 @@ fun dashboardPage(
                     enter = expandVertically(expandFrom = Alignment.Top),
                     exit = shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .padding(bottom = itemHorizontalPadding / 2)
-                                .semantics(mergeDescendants = true) {
-                                    onClick(label = openRestrictionDetails, action = null)
-                                },
-                        shape = MaterialTheme.shapes.large,
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                    DashboardWarningCard(
+                        title = stringResource(requireNotNull(retainedWarningTitle)),
+                        description =
+                            stringResource(
+                                if (retainedWarningTitle == Res.string.adb_permission_restricted)
+                                    Res.string.adb_restricted_privilege_notice
+                                else Res.string.permission_restricted_privilege_notice,
                             ),
+                        onClickLabel = openRestrictionDetails,
                         onClick = { vm.setShowRestrictionDetails(true) },
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(itemVerticalPadding),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Column(
-                                Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    GkIcon(GkIcons.WarningAmber)
-                                    Text(
-                                        stringResource(requireNotNull(retainedWarningTitle)),
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
-                                }
-                                Text(
-                                    stringResource(
-                                        if (
-                                            retainedWarningTitle ==
-                                                Res.string.adb_permission_restricted
-                                        )
-                                            Res.string.adb_restricted_privilege_notice
-                                        else Res.string.permission_restricted_privilege_notice,
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }
-                            GkIcon(GkIcons.KeyboardArrowRight)
-                        }
-                    }
+                    )
+                }
+                if (ignoresBatteryOptimizations() == false) {
+                    DashboardWarningCard(
+                        title = stringResource(Res.string.battery_optimization_ignore),
+                        description =
+                            stringResource(Res.string.battery_optimization_dashboard_notice),
+                        onClickLabel = stringResource(Res.string.keep_alive_strategy_open),
+                        onClick = { mainVm.navigator.navigate(KeepAliveRoute) },
+                    )
                 }
                 ServiceStatusCard(
                     stringResource(platform.subtitle(store)),
@@ -321,6 +295,47 @@ fun dashboardPage(
                 { mainVm.navigator.openWebPage(AppLinks.Home) },
             )
             GkPageBottomSpace()
+        }
+    }
+}
+
+@Composable
+private fun DashboardWarningCard(
+    title: String,
+    description: String,
+    onClickLabel: String,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier.fillMaxWidth().padding(bottom = itemHorizontalPadding / 2).semantics(
+                mergeDescendants = true,
+            ) {
+                onClick(label = onClickLabel, action = null)
+            },
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        onClick = onClick,
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(itemVerticalPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    GkIcon(GkIcons.WarningAmber)
+                    Text(title, style = MaterialTheme.typography.titleMedium)
+                }
+                Text(description, style = MaterialTheme.typography.bodyMedium)
+            }
+            GkIcon(GkIcons.KeyboardArrowRight)
         }
     }
 }

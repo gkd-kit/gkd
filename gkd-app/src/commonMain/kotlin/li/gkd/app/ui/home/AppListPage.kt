@@ -114,11 +114,11 @@ data class AppListContentState(
 @Composable
 fun appListPage(
     vm: HomeViewModel,
+    appState: Loadable<AppListSource>,
 ): ScaffoldExt {
     val host = LocalUiHost.current
     val mainVm = MainViewModel.requireCurrent()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val appState by vm.appsState.collectAsStateWithLifecycle()
     val blocked by SettingsRepository.blockMatchAppList.collectAsStateWithLifecycle()
     val controls by vm.appListState.collectAsStateWithLifecycle()
     val state = controls.content(appState, store, blocked)

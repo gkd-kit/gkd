@@ -65,17 +65,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun subsManagePage(
     vm: HomeViewModel,
-): ScaffoldExt {
-    val loadableState by vm.subscriptionsState.collectAsStateWithLifecycle()
-    return subsManageContent(vm, loadableState)
-}
-
-@Composable
-private fun subsManageContent(
-    vm: HomeViewModel,
     loadableState: Loadable<SubsManageUiState>,
 ): ScaffoldExt {
-
     val mainVm = MainViewModel.requireCurrent()
     val state = loadableState.value
     val refresh: () -> Unit = {

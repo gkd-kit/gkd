@@ -44,7 +44,7 @@ object KeepAliveOverlayCoordinator {
                         SettingsRepository.settings
                             .map { it.enableStatusOverlay }
                             .distinctUntilChanged(),
-                        PermissionStates.drawOverlays.stateFlow,
+                        PermissionStates.drawOverlays.grantedFlow,
                         combine(
                             A11yService.isRunning,
                             accessibilityOverlay,

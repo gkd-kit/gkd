@@ -69,7 +69,7 @@ fun BlockA11ySetupPage() {
     }
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val platform = dashboardPlatformState()
-    val ignoreBatteryOptimizations: Boolean = ignoresBatteryOptimizations()
+    val ignoreBatteryOptimizations = ignoresBatteryOptimizations() == true
 
     val scrollState = rememberScrollState()
     val remainingRequirements =

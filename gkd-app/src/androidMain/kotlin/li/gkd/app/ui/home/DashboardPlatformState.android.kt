@@ -27,7 +27,10 @@ actual fun dashboardPlatformState(): DashboardPlatformState {
     val a11y by A11yService.isRunning.collectAsStateWithLifecycle()
     val automation by uiAutomationFlow.collectAsStateWithLifecycle()
     val status by StatusService.isRunning.collectAsStateWithLifecycle()
-    val secure by PermissionStates.writeSecureSettings.stateFlow.collectAsStateWithLifecycle()
+    val secure by
+        PermissionStates.writeSecureSettings.grantedFlow.collectAsStateWithLifecycle(
+            initialValue = PermissionStates.writeSecureSettings.value,
+        )
     val scope = rememberCoroutineScope()
     val enabled = remember { useA11yServiceEnabledFlow(scope) }
     val a11yEnabled by enabled.collectAsStateWithLifecycle()

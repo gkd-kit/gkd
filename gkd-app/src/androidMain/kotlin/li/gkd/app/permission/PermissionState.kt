@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.gkd.app.app
 import li.gkd.app.app.AppInfoRepository
@@ -47,19 +49,18 @@ class PermissionState(
     val purpose: String?
         get() = purposeResource?.getSync()
 
-    val stateFlow: StateFlow<Boolean>
-        field = MutableStateFlow(false)
+    val checks: StateFlow<PermissionCheck?>
+        field = MutableStateFlow(null)
+    val grantedFlow = checks.map { it?.granted == true }.distinctUntilChanged()
     val value
-        get() = stateFlow.value
+        get() = lastCheck?.granted == true
 
-    @Volatile
-    var lastCheck: PermissionCheck? = null
-        private set
+    val lastCheck
+        get() = checks.value
 
     fun updateAndGet(): Boolean {
         val granted = check()
-        lastCheck = PermissionCheck(System.currentTimeMillis(), granted)
-        stateFlow.value = granted
+        checks.value = PermissionCheck(System.currentTimeMillis(), granted)
         return granted
     }
 
@@ -202,7 +203,7 @@ object PermissionStates {
     val appRestrictionsFlow by lazy {
         combine(
                 accessRestrictions,
-                foregroundServiceSpecialUse.stateFlow,
+                foregroundServiceSpecialUse.grantedFlow,
             ) { access, foregroundServiceAllowed ->
                 if (foregroundServiceAllowed) access
                 else access + AppPermissionRestriction.ForegroundService

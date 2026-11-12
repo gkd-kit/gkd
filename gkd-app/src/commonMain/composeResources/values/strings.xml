@@ -211,6 +211,7 @@
     <string name="backup_version_unsupported">Unsupported backup version: %1$s. Update the app and try again.</string>
     <string name="battery_optimization_settings_open">Open battery optimization settings</string>
     <string name="battery_optimization_ignore">Ignore battery optimization</string>
+    <string name="battery_optimization_dashboard_notice">Android may freeze GKD in the background and delay rule triggers</string>
     <string name="beta_channel_warning">Beta releases receive updates sooner\nbut may be unstable and contain more bugs.\nUse with caution.</string>
     <string name="build_channel">Build channel</string>
     <string name="categories_empty">No categories</string>
@@ -929,6 +930,7 @@
     <string name="toast_use_system_style">Use system style</string>
     <string name="total_prefix">Total </string>
     <string name="keep_alive_strategy">Keep-alive settings</string>
+    <string name="keep_alive_strategy_open">Open keep-alive settings</string>
     <string name="keep_alive_app_measures">App measures</string>
     <string name="keep_alive_system_settings">System settings</string>
     <string name="keep_alive_recents_lock">Lock in recent tasks</string>
@@ -942,6 +944,7 @@
     <string name="status_overlay_enable_description">A transparent overlay reduces system restrictions on background operation, but may cause a system “displaying over other apps” notification, which you can ignore.</string>
     <string name="status_overlay_disable_title">Disable transparent keep-alive overlay?</string>
     <string name="status_overlay_disable_description">The system may restrict background operation and interrupt services.</string>
+    <string name="advanced_troubleshooting">Troubleshooting</string>
     <string name="advanced_snapshot_capture">Snapshot capture</string>
     <string name="advanced_live_debug">Network debugging</string>
     <string name="advanced_interface_debug">UI debugging</string>
@@ -1205,7 +1208,7 @@
     <string name="match_debug_elapsed_description">Recorded for %1$s</string>
     <string name="match_debug_help_title">About diagnostics</string>
     <string name="match_debug_help_description">Diagnostics record rule matching, action results, and timings to help investigate rules that fail, trigger incorrectly, or run slowly.\n\nHow to use\n1. Start recording.\n2. Open the affected app and reproduce the issue.\n3. Return and stop recording, or stop from the notification.\n4. Tap Share on a diagnostic record to export logs with the selected record and send them to the developer. About → Export logs includes all saved diagnostic records.\n\nInclude the expected behavior, actual behavior, and steps to reproduce when reporting an issue.\n\nLogs may contain app information and screen content. Review before sharing.</string>
-    <string name="feedback_diagnostic_notice">If you can reproduce the issue, record it under Settings → Diagnostics and stop recording. Then use About → Export logs to export logs including the diagnostics. Attach them to your report with the steps to reproduce, expected behavior, and actual behavior.</string>
+    <string name="feedback_diagnostic_notice">If you can reproduce the issue, record it under Settings → Tools → Diagnostics and stop recording. Then use About → Export logs to export logs including the diagnostics. Attach them to your report with the steps to reproduce, expected behavior, and actual behavior.</string>
     <string name="companion_a11y_label">Companion accessibility</string>
     <string name="companion_scope">Companion accessibility</string>
     <string name="companion_paused_apps_title">Pause companion</string>

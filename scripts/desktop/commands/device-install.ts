@@ -57,7 +57,7 @@ async function build(signal: AbortSignal, release: boolean) {
   signal.throwIfAborted();
 }
 
-/** Build once, then update selected devices without starting a diagnostic server. */
+/** Build once, then install and open GKD on the selected devices. */
 export async function deviceInstall(serial?: string, release = false) {
   const cancellation = new AbortController();
   const interrupt = () => cancellation.abort(new Error('Device installation interrupted; no further devices will be updated'));
@@ -75,8 +75,10 @@ export async function deviceInstall(serial?: string, release = false) {
       console.log(`Checking and installing GKD on ${device}`);
       try {
         const adb = withInstallConfirmation(createAdb(device), cancellation.signal);
-        console.log('GKD APK:', await installGkd(adb, release));
+        const apk = await installGkd(adb, release);
+        console.log('GKD APK:', apk);
         cancellation.signal.throwIfAborted();
+        await adb('shell', 'am', 'start', '-n', `${apk.packageName}/li.gkd.app.MainActivity`);
       } catch (error) {
         const failure = new Error(`Device ${device} failed`, { cause: error });
         if (cancellation.signal.aborted) throw failure;

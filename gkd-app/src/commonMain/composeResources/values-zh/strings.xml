@@ -211,6 +211,7 @@
     <string name="backup_version_unsupported">不支持的备份版本: %1$s，请升级应用后重试</string>
     <string name="battery_optimization_settings_open">打开忽略电池优化设置页面</string>
     <string name="battery_optimization_ignore">忽略电池优化</string>
+    <string name="battery_optimization_dashboard_notice">系统可能在后台冻结 GKD，导致规则无法及时触发</string>
     <string name="beta_channel_warning">测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用</string>
     <string name="build_channel">构建渠道</string>
     <string name="categories_empty">暂无类别</string>
@@ -923,6 +924,7 @@
     <string name="toast_use_system_style">使用系统样式</string>
     <string name="total_prefix">共</string>
     <string name="keep_alive_strategy">保活策略</string>
+    <string name="keep_alive_strategy_open">前往保活策略</string>
     <string name="keep_alive_app_measures">应用措施</string>
     <string name="keep_alive_system_settings">系统设置</string>
     <string name="keep_alive_recents_lock">锁定最近任务</string>
@@ -936,6 +938,7 @@
     <string name="status_overlay_enable_description">开启后，使用透明悬浮窗减少系统对应用后台运行的限制，但可能触发系统“正在其它应用的上层显示内容”通知，可直接忽略。</string>
     <string name="status_overlay_disable_title">关闭透明悬浮窗保活？</string>
     <string name="status_overlay_disable_description">关闭后，应用后台运行可能受到系统限制，影响服务持续运行</string>
+    <string name="advanced_troubleshooting">问题排查</string>
     <string name="advanced_snapshot_capture">快照采集</string>
     <string name="advanced_live_debug">网络调试</string>
     <string name="advanced_interface_debug">界面调试</string>
@@ -1199,7 +1202,7 @@
     <string name="match_debug_elapsed_description">已采集 %1$s</string>
     <string name="match_debug_help_title">诊断说明</string>
     <string name="match_debug_help_description">诊断会记录应用运行时的规则匹配、操作结果和耗时，帮助排查规则未生效、误触或执行缓慢等问题。\n\n使用方法\n1. 开始采集。\n2. 前往出现问题的应用，重现问题。\n3. 返回停止采集，或在通知中停止。\n4. 点击诊断记录的「分享」，导出附带所选记录的日志，发给开发者。也可以通过「关于 → 导出日志」，导出包含所有已保存诊断记录的日志。\n\n反馈时请同时说明预期行为、实际表现和复现步骤，方便定位原因。\n\n日志可能包含应用信息和界面内容，请确认后再分享。</string>
-    <string name="feedback_diagnostic_notice">如果问题可以重现，建议先在「设置 → 诊断」中采集并停止，再通过「关于 → 导出日志」导出包含诊断记录的日志。反馈时请附上日志，并说明复现步骤、预期行为和实际表现。</string>
+    <string name="feedback_diagnostic_notice">如果问题可以重现，建议先在「设置 → 工具 → 诊断」中采集并停止，再通过「关于 → 导出日志」导出包含诊断记录的日志。反馈时请附上日志，并说明复现步骤、预期行为和实际表现。</string>
     <string name="companion_a11y_label">伴生无障碍</string>
     <string name="companion_scope">伴生无障碍</string>
     <string name="companion_paused_apps_title">暂停伴生</string>

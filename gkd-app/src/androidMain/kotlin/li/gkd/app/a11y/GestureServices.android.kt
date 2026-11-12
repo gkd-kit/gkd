@@ -46,7 +46,7 @@ actual fun observeEnabledGestureServices(): Flow<List<GestureService>> =
         .flowOn(Dispatchers.IO)
 
 actual fun observeGestureServiceWritePermission(): Flow<Boolean> =
-    PermissionStates.writeSecureSettings.stateFlow
+    PermissionStates.writeSecureSettings.grantedFlow
 
 actual suspend fun closeGestureServices(ids: Set<String>): PlatformResult<Unit> =
     withServiceControl {

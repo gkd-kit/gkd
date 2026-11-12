@@ -57,7 +57,7 @@ fun KeepAlivePage() {
     val scope = rememberCoroutineScope()
     val store by SettingsRepository.settings.collectAsStateWithLifecycle()
     val platform = dashboardPlatformState()
-    val batteryUnrestricted = ignoresBatteryOptimizations()
+    val batteryUnrestricted = ignoresBatteryOptimizations() == true
     val showKeepAlive by vm.showKeepAlive.collectAsStateWithLifecycle()
     if (showKeepAlive) {
         GkAlertDialog(

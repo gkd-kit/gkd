@@ -12,7 +12,6 @@ import li.gkd.app.subscription.RawSubscription
 import li.gkd.app.ui.component.DialogRequests
 import li.gkd.app.ui.component.ShareLogState
 import li.gkd.app.ui.component.TextDialogState
-import li.gkd.app.ui.home.HomeNavigation
 import li.gkd.app.ui.navigation.AppNavigator
 import li.gkd.app.ui.navigation.CrashReportRoute
 import li.gkd.app.ui.share.DeletionTarget
@@ -119,8 +118,6 @@ class MainViewModel(val permissions: PermissionRequester) : BaseViewModel() {
     }
 
     val ruleControlDialog = RuleControlDialogState()
-
-    val homeNavigation = HomeNavigation()
 
     val gestureServices = observeEnabledGestureServices().stateLoadable()
 

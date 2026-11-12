@@ -209,7 +209,7 @@ private fun updateScopedService(
             return@launchServiceControl
         }
         if (settings.value.useA11y) {
-            if (!PermissionStates.writeSecureSettings.stateFlow.value) {
+            if (!PermissionStates.writeSecureSettings.value) {
                 return@launchServiceControl
             }
             val component = A11yService.preferredComponent

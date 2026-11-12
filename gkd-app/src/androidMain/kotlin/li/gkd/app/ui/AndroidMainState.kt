@@ -16,7 +16,6 @@ import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.storage.FileSource
 import li.gkd.app.storage.HistoryDirectory
 import li.gkd.app.storage.StorageMaintenance
-import li.gkd.app.ui.home.BottomNavItem
 import li.gkd.app.ui.navigation.GkdLink
 import li.gkd.app.ui.navigation.PrivilegeServiceRoute
 import li.gkd.app.ui.share.ActivityResultRequests
@@ -24,7 +23,6 @@ import li.gkd.app.ui.share.importBackup as importBackupArchive
 import li.gkd.app.ui.share.launchUi
 import li.gkd.app.util.AndroidStorage
 import li.gkd.app.util.IntentUtils
-import li.gkd.app.util.ThreadUtils
 import li.gkd.app.util.ToastUtils
 import li.gkd.app.util.launchLogged
 
@@ -59,23 +57,11 @@ class AndroidMainState(
     val activityResults = ActivityResultRequests()
 
     fun handleGkdUri(uri: Uri) {
-        val notFoundToast = { ToastUtils.show(Res.string.uri_unknown.getSync(uri)) }
         when (val link = GkdLink.parse(uri.toString())) {
-            is GkdLink.Home ->
-                ThreadUtils.runMainOrPost {
-                    val tab = link.tab
-                    if (tab != null && BottomNavItem.allSubObjects.any { it.key == tab }) {
-                        mainVm.homeNavigation.selectTab(
-                            BottomNavItem.allSubObjects.first { it.key == tab },
-                        )
-                    }
-                    // MainActivity 被复用时，也需要返回首页。
-                    mainVm.navigator.popToHome()
-                }
-
+            is GkdLink.Home -> mainVm.navigator.openHome(link.tab)
             is GkdLink.Page -> mainVm.navigator.openPage(link)
             GkdLink.WeChatScanner -> IntentUtils.openWeChatScanner()
-            null -> notFoundToast()
+            null -> ToastUtils.show(Res.string.uri_unknown.getSync(uri))
         }
     }
 

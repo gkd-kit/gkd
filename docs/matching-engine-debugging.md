@@ -4,7 +4,7 @@
 
 ## 用户入口
 
-在「设置 → 诊断」开启采集，确认说明后切换到目标应用复现，通过通知栏或页面停止。采集使用当前订阅与规则配置，统一记录阶段、条件解释、节点访问、调度及动作收尾；不提供页面内的模式、规则或请求编辑器。需要缩小范围时调整原配置，或使用 HTTP/CLI。诊断不自动停止，也不改变正常匹配开关；离开页面不结束采集。
+在「设置 → 工具 → 诊断」开启采集，确认说明后切换到目标应用复现，通过通知栏或页面停止。采集使用当前订阅与规则配置，统一记录阶段、条件解释、节点访问、调度及动作收尾；不提供页面内的模式、规则或请求编辑器。需要缩小范围时调整原配置，或使用 HTTP/CLI。诊断不自动停止，也不改变正常匹配开关；离开页面不结束采集。
 
 页面顶部为采集控制和帮助入口，下方按开始时间倒序显示记录。点击记录查看时间、时长、应用和大小；长按可多选分享或删除，删除需要确认。列表来自数据库 `match_diagnostic`，不扫描或解析文件；应用按首次确认的前台观察顺序累计，不受事件淘汰影响。已登记的旧格式记录仍可操作，未登记文件不自动导入。
 
@@ -454,7 +454,7 @@ pnpm app-tools device-test-apps --serial DEVICE --operation cleanup
 
 | 入口 | 安装、确认及收尾 |
 | --- | --- |
-| `device-install [--serial SERIAL]` | 构建一次 gkdDebug，再逐台安装并按需确认弹窗，不启动调试服务，GKD 不进入临时应用清理名单 |
+| `device-install [--serial SERIAL]` | 构建一次 gkdDebug，再逐台安装、按需确认弹窗并打开主界面，不启动调试服务，GKD 不进入临时应用清理名单 |
 | `device-app-debug`、`device-matching-debug`、`device-matching-benchmark`、`device-service-stop-check`、`device-query-safety` | 共用 `deviceMatchingDebug`，接入 `withInstallConfirmation`、`installApkIfChanged` 和 `withAutomationPaused`；`--attach` 不允许安装，也不重启现有进程 |
 | `capture-profile --install` | 使用相同的安装、确认和设置恢复函数；不安装额外测试应用 |
 | `device-query-safety` 的 fixture | 使用 `ensureDeviceTestApp` 记录本轮所有权；单次结束停止进程，整轮结束由 `device-test-apps cleanup` 卸载 |

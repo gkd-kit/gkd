@@ -35,7 +35,6 @@ import li.gkd.app.ui.navigation.BlockA11yAppListRoute
 import li.gkd.app.ui.navigation.BlockA11ySetupRoute
 import li.gkd.app.ui.navigation.InterfaceSettingsRoute
 import li.gkd.app.ui.navigation.KeepAliveRoute
-import li.gkd.app.ui.navigation.MatchDebugRoute
 import li.gkd.app.ui.navigation.NotificationTextRoute
 import li.gkd.app.ui.navigation.TouchOptimizationRoute
 import li.gkd.app.ui.page.BackupDialog
@@ -240,10 +239,6 @@ fun settingsPage(
                     onClick = {
                         mainVm.navigator.navigate(AdvancedPageRoute)
                     },
-                )
-                GkSettingItem(
-                    title = stringResource(Res.string.advanced_logs_diagnostics),
-                    onClick = { mainVm.navigator.navigate(MatchDebugRoute) },
                 )
                 GkSettingItem(
                     title = stringResource(Res.string.about_title),

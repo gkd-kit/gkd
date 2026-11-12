@@ -63,7 +63,7 @@ Service commands require an isolated Desktop (--test). Services: Status, Button,
 Events: Authorized, Cancelled, Connected, Failed. Use the attempt returned by services.
 
 Device commands require adb and an installed gkdDebug app; --install also needs a built APK and skips identical installed content. Controlled capture restores automation settings in finally.
-device-install builds gkdDebug (or gkdRelease with --release) once and installs on the specified device or all connected, authorized devices in sequence. Release builds do not upload build assets.
+device-install builds gkdDebug (or gkdRelease with --release) once, then installs and opens GKD on the specified device or all connected, authorized devices in sequence. Release builds do not upload build assets.
 Query checks retain their test app across commands; finish a whole debugging round with device-test-apps --operation cleanup.
 --attach requires an already running Debug app; it preserves settings, page and shared transport. Session operations require --attach.
 If recovery fails, keep .local/device-recovery and use device-recovery after reconnecting.`);

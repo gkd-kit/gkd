@@ -104,7 +104,7 @@ class StatusService : LifecycleHookService() {
                         SubscriptionState.ruleSummaryFlow,
                         privilegeServiceStatusFlow,
                         a11yServiceEnabledFlow,
-                        PermissionStates.writeSecureSettings.stateFlow,
+                        PermissionStates.writeSecureSettings.grantedFlow,
                         PermissionStates.appOpsRestrictedFlow,
                         topTaskAppIdFlow,
                         actionCount.debounce(1000L.milliseconds),

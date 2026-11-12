@@ -24,7 +24,7 @@ actual fun privilegeAvailable() = privilegeContextFlow.collectAsStateWithLifecyc
 
 @Composable
 actual fun ignoresBatteryOptimizations() =
-    PermissionStates.ignoreBatteryOptimizations.stateFlow.collectAsStateWithLifecycle().value
+    PermissionStates.ignoreBatteryOptimizations.checks.collectAsStateWithLifecycle().value?.granted
 
 @Composable
 actual fun RefreshPermissions() {

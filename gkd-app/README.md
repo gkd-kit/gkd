@@ -67,7 +67,7 @@ pnpm app-tools device-install --serial SERIAL
 pnpm app-tools device-install --release
 ```
 
-命令位于 `scripts/desktop`，默认执行 `:gkd-android:assembleGkdDebug`。`--release` 执行 `:gkd-android:packageGkdRelease`，随后复用公共安装流程。省略 `--serial` 时跳过离线或未授权设备。设备上的 APK 与本地构建 SHA-256 一致时跳过安装，否则交给 Android 安装并核对结果。需要使用 GKD 时可在设备上打开应用。旧版 Release 的未完成恢复记录可用 `pnpm app-tools device-recovery --serial SERIAL --operation status --release` 查看，并在应用内恢复。
+命令位于 `scripts/desktop`，默认执行 `:gkd-android:assembleGkdDebug`。`--release` 执行 `:gkd-android:packageGkdRelease`，随后复用公共安装流程。省略 `--serial` 时跳过离线或未授权设备。设备上的 APK 与本地构建 SHA-256 一致时跳过安装，否则交给 Android 安装并核对结果。安装校验通过或确认 APK 相同时，自动打开对应版本的 GKD 主界面。旧版 Release 的未完成恢复记录可用 `pnpm app-tools device-recovery --serial SERIAL --operation status --release` 查看，并在应用内恢复。
 
 ## 导入设备资料
 

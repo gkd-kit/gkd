@@ -82,7 +82,7 @@ object CompanionServiceController {
                 return@launchServiceControl
             }
         }
-        if (!PermissionStates.writeSecureSettings.stateFlow.value) return@launchServiceControl
+        if (!PermissionStates.writeSecureSettings.value) return@launchServiceControl
         val names = app.getSecureA11yServices()
         val changed = if (shouldRun) names.add(component) else names.remove(component)
         if (shouldRun) {

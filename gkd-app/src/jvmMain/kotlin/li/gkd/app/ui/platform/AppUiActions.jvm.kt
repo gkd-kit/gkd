@@ -21,7 +21,7 @@ actual fun privilegeAvailable() =
         .available
 
 @Composable
-actual fun ignoresBatteryOptimizations() =
+actual fun ignoresBatteryOptimizations(): Boolean? =
     DesktopRuntime.requireCurrent()
         .simulator
         .settings

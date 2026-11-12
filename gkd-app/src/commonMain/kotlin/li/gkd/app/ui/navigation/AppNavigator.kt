@@ -4,11 +4,32 @@ import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import li.gkd.app.logging.LogUtils
+import li.gkd.app.ui.home.BottomNavItem
+import li.gkd.app.ui.home.HomeState
 import li.songe.codeorigin.CallSite
 
 class AppNavigator(private val scope: CoroutineScope) {
     val backStack: List<AppNavEntry>
         field = NavBackStack(AppNavEntry(HomeRoute))
+
+    private var homeState: HomeState? = null
+    private var pendingHomeTab: BottomNavItem? = null
+
+    val selectedHomeTab: BottomNavItem
+        get() = homeState?.selectedTab?.value ?: pendingHomeTab ?: BottomNavItem.Dashboard
+
+    fun bindHomeState(state: HomeState) {
+        homeState = state
+        pendingHomeTab?.let(state::selectTab)
+        pendingHomeTab = null
+    }
+
+    fun unbindHomeState(state: HomeState) {
+        if (homeState === state) {
+            pendingHomeTab = state.selectedTab.value
+            homeState = null
+        }
+    }
 
     val topEntry
         get() = backStack.last()
@@ -56,6 +77,12 @@ class AppNavigator(private val scope: CoroutineScope) {
                 val index = backStack.indexOfLast { it.route == route }
                 val entry =
                     if (index < 0) {
+                        if (route == MatchDebugRoute && topRoute != AdvancedPageRoute) {
+                            if (topRoute == HomeRoute) {
+                                selectHomeTab(BottomNavItem.Settings.key)
+                            }
+                            backStack.add(AppNavEntry(AdvancedPageRoute))
+                        }
                         AppNavEntry(route).also { backStack.add(it) }
                     } else {
                         backStack.subList(index + 1, backStack.size).clear()
@@ -68,16 +95,26 @@ class AppNavigator(private val scope: CoroutineScope) {
         }
     }
 
-    fun popToHome() {
-        scope.launch { backStack.subList(1, backStack.size).clear() }
+    fun openHome(tabKey: Int?) {
+        scope.launch {
+            selectHomeTab(tabKey)
+            backStack.subList(1, backStack.size).clear()
+        }
     }
 
-    fun reset(route: AppRoute? = null) {
+    fun reset(route: AppRoute? = null, homeTabKey: Int? = null) {
         scope.launch {
             backStack.clear()
             backStack.add(AppNavEntry(HomeRoute))
             if (route != null && route != HomeRoute) backStack.add(AppNavEntry(route))
+            selectHomeTab(homeTabKey)
         }
+    }
+
+    private fun selectHomeTab(tabKey: Int?) {
+        val tab = BottomNavItem.allSubObjects.firstOrNull { it.key == tabKey } ?: return
+        val state = homeState
+        if (state == null) pendingHomeTab = tab else state.selectTab(tab)
     }
 
     fun popFromFirst(predicate: (AppRoute) -> Boolean) = scope.launch {

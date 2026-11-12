@@ -5,7 +5,8 @@ import li.gkd.app.platform.PlatformResult
 
 @Composable expect fun privilegeAvailable(): Boolean
 
-@Composable expect fun ignoresBatteryOptimizations(): Boolean
+/** Null until the system has reported its battery optimization setting. */
+@Composable expect fun ignoresBatteryOptimizations(): Boolean?
 
 @Composable expect fun RefreshPermissions()
 
