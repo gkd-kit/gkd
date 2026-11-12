@@ -16,6 +16,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.gkd.app.META
+import li.gkd.app.data.subscription.SubscriptionState
 import li.gkd.app.matching.action.ActionPerformer
 import li.gkd.app.matching.diagnostics.MatchEventBatch
 import li.gkd.app.matching.diagnostics.MatchEventDrop
@@ -489,6 +490,20 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
             }
             // Root and source Binder reads run independently, outside the matching lane.
             requestRoot(MatchNodeReadReason.Event)
+            val appId = latestEvent.key.appId
+            if (SettingsRepository.checkAppBlockMatch(appId)) {
+                coordinator.diagnostics.entry("source_read", "source_app_blocked")
+                return
+            }
+            val rules = SubscriptionState.ruleSummaryFlow.value.value
+            if (
+                rules != null &&
+                    rules.appIdToRules[appId].isNullOrEmpty() &&
+                    rules.globalRules.none { it.matchActivity(appId, activityId = null) }
+            ) {
+                coordinator.diagnostics.entry("source_read", "no_rules_for_app")
+                return
+            }
             coordinator.diagnostics.entry("source_read", "source_read_started")
             val node =
                 try {
