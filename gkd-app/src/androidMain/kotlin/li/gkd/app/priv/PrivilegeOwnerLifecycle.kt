@@ -16,6 +16,7 @@ object PrivilegeOwnerLifecycle {
     private const val APP_RESTART_PASSIVE_TIMEOUT_MILLIS = 5_000L
     private var automatorEnabled = false
     private var updateInstallationActive = false
+    private var crashRestartBlocked = false
 
     fun initialize() {
         appScope.launchLogged(Dispatchers.IO, start = CoroutineStart.UNDISPATCHED) {
@@ -42,8 +43,15 @@ object PrivilegeOwnerLifecycle {
         PrivilegeConfig.configure(
             followDeathDelayMillis = FOLLOW_DEATH_DELAY_MILLIS,
             // Only the install-success callback may relaunch the app during an update.
-            activeReconnectOnOwnerDeath = automatorEnabled && !updateInstallationActive,
+            activeReconnectOnOwnerDeath =
+                automatorEnabled && !updateInstallationActive && !crashRestartBlocked,
         )
+    }
+
+    @Synchronized
+    fun blockCrashRestart() {
+        crashRestartBlocked = true
+        applyConfiguration()
     }
 
     fun prepareAppRestart() {

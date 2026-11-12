@@ -28,6 +28,20 @@ object FileCrashStorage {
         trim()
     }
 
+    fun save(record: CrashData, folder: File) {
+        folder.mkdirs()
+        folder.resolve(record.filename).writeText(json.encodeToString(record))
+        folder
+            .listFiles()
+            .orEmpty()
+            .filter { it.isFile }
+            .sortedByDescending { it.name }
+            .drop(20)
+            .forEach {
+                if (!it.delete()) LogUtils.w("删除过期崩溃日志失败: ${it.name}", null)
+            }
+    }
+
     fun load(): List<CrashData> = load(directory)
 
     private fun load(folder: File): List<CrashData> =

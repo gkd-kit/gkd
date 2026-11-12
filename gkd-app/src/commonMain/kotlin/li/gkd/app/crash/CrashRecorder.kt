@@ -8,10 +8,13 @@ data class CrashMetadata(
     val versionName: String,
 )
 
-class CrashRecorder(private val metadata: CrashMetadata) {
+class CrashRecorder(
+    private val metadata: CrashMetadata,
+    private val save: (CrashData) -> Unit = FileCrashStorage::save,
+) {
     fun record(thread: Thread, error: Throwable) {
         val now = System.currentTimeMillis()
-        FileCrashStorage.save(
+        save(
             CrashData(
                 now,
                 now,
