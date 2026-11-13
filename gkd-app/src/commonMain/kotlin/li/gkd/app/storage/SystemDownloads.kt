@@ -8,3 +8,5 @@ import li.gkd.app.platform.PlatformResult
  * caller.
  */
 expect suspend fun saveToDownloads(source: File): PlatformResult<String>
+
+expect fun canSaveToDownloadsWithoutPermissionRequest(): Boolean

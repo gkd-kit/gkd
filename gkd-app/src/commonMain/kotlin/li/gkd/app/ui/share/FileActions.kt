@@ -16,4 +16,5 @@ expect suspend fun UiHost.shareExportFile(
     create: suspend () -> File,
 ): PlatformResult<Unit>
 
-expect suspend fun UiHost.saveExportFile(file: File)
+/** Success(true) means saved; Success(false) means cancelled or permission declined. */
+expect suspend fun UiHost.saveExportFile(file: File): PlatformResult<Boolean>

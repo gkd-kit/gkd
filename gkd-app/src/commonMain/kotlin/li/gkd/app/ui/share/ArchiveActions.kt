@@ -19,13 +19,12 @@ suspend fun importBackup(source: FileSource) {
     ToastUtils.show(SettingsFeedback.backupImported(skipped))
 }
 
-suspend fun UiHost.saveArchive(create: suspend () -> File) {
+suspend fun UiHost.saveArchive(create: suspend () -> File): PlatformResult<Boolean> =
     FileExports.withTemporaryFile(
         create = create,
         delete = { StorageMaintenance.deleteSharedFile(appStorage(), it) },
         consume = { saveExportFile(it) },
     )
-}
 
 suspend fun UiHost.shareArchive(title: String, create: suspend () -> File) {
     if (shareExportFile(title, create) == PlatformResult.Unsupported) {

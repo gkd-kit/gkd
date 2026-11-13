@@ -90,21 +90,22 @@ class MainActivity : ComponentActivity() {
         tryStartActivity(Intent.createChooser(intent, title))
     }
 
-    suspend fun saveFileToDownloads(file: File) {
+    suspend fun saveFileToDownloads(file: File): PlatformResult<Boolean> {
         if (
             !mainVm.androidState.permissionRequests.ensurePermissions(
                 PermissionStates.writeExternalStorage,
             )
         ) {
-            return
+            return PlatformResult.Success(false)
         }
         val result = saveToDownloads(file)
         if (result !is PlatformResult.Success) {
             ToastUtils.show(getString(Res.string.platform_action_unsupported))
-            return
+            return PlatformResult.Unsupported
         }
         val savedName = result.value
         ToastUtils.show(getString(Res.string.file_saved_to_downloads, savedName))
+        return PlatformResult.Success(true)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

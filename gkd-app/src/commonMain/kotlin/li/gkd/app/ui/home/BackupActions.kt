@@ -1,6 +1,7 @@
 package li.gkd.app.ui.home
 
 import li.gkd.app.backup.BackupManager
+import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.ui.platform.UiHost
 import li.gkd.app.ui.share.importBackup
@@ -21,6 +22,6 @@ fun UiHost.shareAppBackup() = launchFileAction {
     shareArchive(getString(Res.string.backup_share), BackupManager::exportData)
 }
 
-fun UiHost.saveAppBackup() = launchFileAction {
-    saveArchive(BackupManager::exportData)
+fun UiHost.saveAppBackup(onSaved: () -> Unit = {}) = launchFileAction {
+    if (saveArchive(BackupManager::exportData) == PlatformResult.Success(true)) onSaved()
 }

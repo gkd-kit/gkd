@@ -14,6 +14,10 @@ import li.gkd.app.platform.PlatformResult
 import li.gkd.app.resources.*
 import li.gkd.app.util.AndroidTarget
 
+actual fun canSaveToDownloadsWithoutPermissionRequest(): Boolean =
+    AndroidTarget.Q ||
+        app.checkGrantedPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
 actual suspend fun saveToDownloads(source: File): PlatformResult<String> {
     return withContext(Dispatchers.IO) {
         if (AndroidTarget.Q) {

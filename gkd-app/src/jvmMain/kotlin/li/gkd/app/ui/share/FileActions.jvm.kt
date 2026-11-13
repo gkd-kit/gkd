@@ -23,6 +23,5 @@ actual suspend fun UiHost.shareExportFile(
     create: suspend () -> File,
 ): PlatformResult<Unit> = PlatformResult.Unsupported
 
-actual suspend fun UiHost.saveExportFile(file: File) {
-    fileActions.saveAs(file)
-}
+actual suspend fun UiHost.saveExportFile(file: File): PlatformResult<Boolean> =
+    PlatformResult.Success(fileActions.saveAs(file))

@@ -24,6 +24,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import li.gkd.app.META
+import li.gkd.app.backup.BackupManager
 import li.gkd.app.error.displayMessage
 import li.gkd.app.model.findOption
 import li.gkd.app.network.NewVersion
@@ -39,7 +40,11 @@ import li.gkd.app.resources.*
 import li.gkd.app.settings.FileSettingsStorage
 import li.gkd.app.settings.SettingsRepository
 import li.gkd.app.settings.UpdateChannel
+import li.gkd.app.storage.FileExports
+import li.gkd.app.storage.StorageMaintenance
 import li.gkd.app.storage.appStorage
+import li.gkd.app.storage.canSaveToDownloadsWithoutPermissionRequest
+import li.gkd.app.storage.saveToDownloads
 import li.gkd.app.ui.component.GkUpgradeDialogs
 import li.gkd.app.ui.component.UpdateDownloadState
 import li.gkd.app.ui.component.UpdateInstallState
@@ -68,8 +73,10 @@ class UpdateStatus(
     private var downloadJob: Job? = null
     private var downloaded: File? = null
     private var downloadedVersion: NewVersion? = null
+    private var manualBackupSaved = false
     private val installState = MutableStateFlow<UpdateInstallState>(UpdateInstallState.Idle)
     private val installCapability = privilegedPackageInstallCapability()
+
     private var versionUrl = ""
     private var lastManual = false
     private var lastCheckTime = 0L
@@ -107,6 +114,7 @@ class UpdateStatus(
                 } else if (manual || result.versionCode !in ignored) {
                     lastManual = manual
                     versionUrl = url
+                    manualBackupSaved = false
                     newVersion.value = result
                 }
             } catch (e: CancellationException) {
@@ -181,15 +189,48 @@ class UpdateStatus(
         }
     }
 
-    private fun installInternally(host: UiHost) {
+    private fun install(host: UiHost, privileged: Boolean) {
         if (installState.value is UpdateInstallState.Active) return
         val file = downloaded ?: return
         val version = downloadedVersion ?: return
         installState.value = UpdateInstallState.Active
         scope.launch {
             try {
-                when (installPackagePrivileged(file, version.versionCode, host)) {
-                    is PlatformResult.Success -> installState.value = UpdateInstallState.Success
+                if (!manualBackupSaved && canSaveToDownloadsWithoutPermissionRequest()) {
+                    try {
+                        FileExports.withTemporaryFile(
+                            create = BackupManager::exportData,
+                            delete = { StorageMaintenance.deleteSharedFile(appStorage(), it) },
+                            consume = { backup ->
+                                when (val saved = saveToDownloads(backup)) {
+                                    is PlatformResult.Success -> {
+                                        ToastUtils.show(
+                                            getString(
+                                                Res.string.file_saved_to_downloads,
+                                                saved.value,
+                                            ),
+                                        )
+                                    }
+                                    PlatformResult.Unsupported -> Unit
+                                }
+                            },
+                        )
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // Backup failure must not prevent installing the update.
+                    }
+                }
+                val result =
+                    if (privileged) {
+                        installPackagePrivileged(file, version.versionCode, host)
+                    } else {
+                        requestPackageInstall(file)
+                    }
+                when (result) {
+                    is PlatformResult.Success ->
+                        installState.value =
+                            if (privileged) UpdateInstallState.Success else UpdateInstallState.Idle
                     PlatformResult.Unsupported -> {
                         installState.value = UpdateInstallState.Idle
                         ToastUtils.show(getString(Res.string.platform_action_unsupported))
@@ -239,17 +280,8 @@ class UpdateStatus(
             installCapability = capability,
             installState = installation,
             downloadedVersion = downloadedVersion?.versionName,
-            onInternalInstall = { installInternally(host) },
-            onInstall = {
-                downloaded?.let { file ->
-                    try {
-                        if (requestPackageInstall(file) == PlatformResult.Unsupported)
-                            ToastUtils.show(Res.string.platform_action_unsupported.getSync())
-                    } catch (e: Exception) {
-                        ToastUtils.show(e.displayMessage())
-                    }
-                }
-            },
+            onInternalInstall = { install(host, privileged = true) },
+            onInstall = { install(host, privileged = false) },
         )
         GkBackupDialogs(
             dialog = backupDialog,
@@ -257,7 +289,11 @@ class UpdateStatus(
             onExport = { backupDialog = BackupDialog.Export },
             onImport = host::importAppBackup,
             onShare = host::shareAppBackup,
-            onSaveDownloads = host::saveAppBackup,
+            onSaveDownloads = {
+                host.saveAppBackup {
+                    manualBackupSaved = true
+                }
+            },
         )
     }
 }
