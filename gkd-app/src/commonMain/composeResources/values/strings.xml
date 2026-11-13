@@ -308,7 +308,7 @@
     <string name="dialog_close">Close dialog</string>
     <string name="dialog_close_description">Close %1$s</string>
     <string name="disabled">Disabled</string>
-    <string name="documentation_description">Read rule documentation and frequently asked questions</string>
+    <string name="documentation_description">User guide and FAQ · GKD.LI</string>
     <string name="documentation_open">Open GKD documentation</string>
     <string name="donate">Donate</string>
     <string name="download_abort">Cancel download</string>

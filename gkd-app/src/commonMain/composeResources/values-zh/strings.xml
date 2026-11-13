@@ -308,7 +308,7 @@
     <string name="dialog_close">关闭弹窗</string>
     <string name="dialog_close_description">关闭%1$s</string>
     <string name="disabled">已禁用</string>
-    <string name="documentation_description">查阅规则文档和常见问题</string>
+    <string name="documentation_description">使用指南与常见问题 · GKD.LI</string>
     <string name="documentation_open">打开 GKD 文档页面</string>
     <string name="donate">捐赠支持</string>
     <string name="download_abort">终止下载</string>
