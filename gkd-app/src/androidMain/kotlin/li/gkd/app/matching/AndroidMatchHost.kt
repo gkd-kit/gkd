@@ -714,7 +714,7 @@ class AndroidMatchHost(private val service: AndroidAutomationSession) {
                 return@withTopActivityLock null
             }
             val blockedSystemUiWindowId =
-                if (systemUiBlocked && eventAppId == systemUi) event?.windowId else null
+                if (systemUiBlocked && eventAppId == systemUi) event.windowId else null
             val confirmSystemUiWindow =
                 if (reason == MatchNodeReadReason.ForegroundConfirmation && foreground != null) {
                     if (
