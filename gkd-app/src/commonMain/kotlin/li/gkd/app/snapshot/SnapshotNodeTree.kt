@@ -4,7 +4,12 @@ import li.gkd.app.model.AttrInfo
 import li.gkd.app.model.ComplexSnapshot
 import li.gkd.app.model.NodeInfo
 
-data class SnapshotNodeRow(val id: Int, val depth: Int)
+data class SnapshotNodeRow(
+    val id: Int,
+    val depth: Int,
+    val isLastSibling: Boolean = true,
+    val continuationDepths: List<Int> = emptyList(),
+)
 
 data class SnapshotNodeRelations(
     val parentId: Int?,
@@ -38,8 +43,19 @@ class SnapshotNodeTree(val snapshot: ComplexSnapshot) {
             val row = stack.removeLast()
             add(row)
             if (row.id in expanded) {
-                children[row.id].orEmpty().asReversed().forEach {
-                    stack.addLast(SnapshotNodeRow(it.id, row.depth + 1))
+                val continuationDepths =
+                    if (row.depth > 0 && !row.isLastSibling) row.continuationDepths + row.depth
+                    else row.continuationDepths
+                val siblings = children[row.id].orEmpty()
+                for (index in siblings.indices.reversed()) {
+                    stack.addLast(
+                        SnapshotNodeRow(
+                            siblings[index].id,
+                            row.depth + 1,
+                            isLastSibling = index == siblings.lastIndex,
+                            continuationDepths = continuationDepths,
+                        ),
+                    )
                 }
             }
         }

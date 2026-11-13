@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
@@ -75,7 +76,7 @@ import li.gkd.app.ui.component.gkPageBottomSpace
 import li.gkd.app.util.copyText
 import org.jetbrains.compose.resources.stringResource
 
-private val NodeIndent = 8.dp
+private val NodeIndent = 16.dp
 private val NodeRowPadding = 4.dp
 private val NodeBranchSize = 24.dp
 private val NodeLeadingWidth = NodeRowPadding + NodeBranchSize
@@ -454,8 +455,10 @@ private fun rememberSnapshotNodeTreeState(
         val index = rows.indexOfFirst { it.id == target }
         if (index < 0) return@LaunchedEffect
         state.listState.scrollToItem(index)
-        val indent = NodeIndent * rows[index].depth
-        val labelStart = with(density) { (indent + NodeLeadingWidth).roundToPx() }
+        val depth = rows[index].depth
+        val indent = NodeIndent * (depth - 1).coerceAtLeast(0)
+        val leadingWidth = if (depth == 0) NodeRowPadding else NodeLeadingWidth
+        val labelStart = with(density) { (indent + leadingWidth).roundToPx() }
         val revealWidth = with(density) { NodeLabelRevealWidth.roundToPx() }
         val scroll = state.horizontalState
         val viewportEnd = scroll.value + scroll.viewportSize
@@ -485,6 +488,7 @@ private fun ColumnScope.NodeTreeContent(
         return
     }
     val selectionMarkerColor = MaterialTheme.colorScheme.primary
+    val lineColor = MaterialTheme.colorScheme.outlineVariant
     BoxWithConstraints(
         Modifier.weight(1f).fillMaxWidth().drawWithContent {
             drawContent()
@@ -504,8 +508,12 @@ private fun ColumnScope.NodeTreeContent(
     ) {
         val density = LocalDensity.current
         val deepest = remember(rows) { rows.maxOfOrNull { it.depth } ?: 0 }
+        val leadingWidth = if (deepest == 0) NodeRowPadding else NodeLeadingWidth
         val minTreeWidth =
-            maxOf(maxWidth, NodeIndent * deepest + NodeLeadingWidth + NodeLabelRevealWidth)
+            maxOf(
+                maxWidth,
+                NodeIndent * (deepest - 1).coerceAtLeast(0) + leadingWidth + NodeLabelRevealWidth,
+            )
         val minTreeWidthPx = with(density) { minTreeWidth.roundToPx() }
         val rowWidth = maxOf(minTreeWidth, with(density) { state.contentWidthPx.toDp() })
         val horizontalDrag = rememberDraggableState { delta ->
@@ -531,6 +539,8 @@ private fun ColumnScope.NodeTreeContent(
             items(rows, key = { it.id }, contentType = { "node" }) { row ->
                 val node = tree.nodes.getValue(row.id)
                 val selected = row.id == selectedId
+                val hasChildren = row.id in tree.children
+                val isExpanded = row.id in state.expanded
                 Row(
                     Modifier.widthIn(min = rowWidth)
                         .background(
@@ -544,14 +554,44 @@ private fun ColumnScope.NodeTreeContent(
                             onClick = { onSelect(row.id) },
                         )
                         .heightIn(min = 32.dp)
+                        .drawBehind {
+                            val indent = NodeIndent.toPx()
+                            val leading = NodeRowPadding.toPx() + NodeBranchSize.toPx() / 2
+                            val centerY = size.height / 2
+                            fun line(x1: Float, y1: Float, x2: Float, y2: Float) {
+                                fun x(value: Float) =
+                                    if (layoutDirection == LayoutDirection.Ltr) value
+                                    else size.width - value
+                                drawLine(
+                                    lineColor,
+                                    Offset(x(x1), y1),
+                                    Offset(x(x2), y2),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            }
+                            for (depth in row.continuationDepths) {
+                                val x = leading + indent * (depth - 1)
+                                line(x, 0f, x, size.height)
+                            }
+                            val branchX = leading + indent * (row.depth - 1)
+                            if (!hasChildren && row.depth > 0) {
+                                line(
+                                    branchX,
+                                    0f,
+                                    branchX,
+                                    if (row.isLastSibling) centerY else size.height,
+                                )
+                                val endX = branchX + NodeBranchSize.toPx() / 2 - 4.dp.toPx()
+                                line(branchX, centerY, endX, centerY)
+                            }
+                        }
                         .padding(
-                            start = NodeRowPadding + NodeIndent * row.depth,
+                            start = NodeRowPadding + NodeIndent * (row.depth - 1).coerceAtLeast(0),
                             end = NodeRowPadding,
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (row.id in tree.children) {
-                        val isExpanded = row.id in state.expanded
+                    if (hasChildren && row.depth > 0) {
                         val rotation by
                             animateFloatAsState(
                                 targetValue = if (isExpanded) 0f else -90f,
@@ -576,7 +616,7 @@ private fun ColumnScope.NodeTreeContent(
                                 modifier = Modifier.size(16.dp).rotate(rotation),
                             )
                         }
-                    } else Spacer(Modifier.width(NodeBranchSize))
+                    } else if (row.depth > 0) Spacer(Modifier.width(NodeBranchSize))
                     SnapshotNodeRowLabel(node, selected)
                 }
             }
