@@ -19,6 +19,55 @@ class ExternalStorageMigrationTest {
     @get:Rule val directory = TemporaryFolder()
 
     @Test
+    fun externalFilesOverwriteConflictingInternalFilesAcrossAllMigrationDirectories() =
+        runBlocking {
+            val external = directory.newFolder("external")
+            val internal = directory.newFolder("internal")
+            val paths =
+                listOf(
+                    "db/gkd.db",
+                    "db/gkd.db-wal",
+                    "store/store.json",
+                    "subscription/1.json",
+                    "snapshot/1/snapshot.json",
+                    "matching-diagnostics/1/diagnostic.json",
+                    "crash/report.json",
+                    "crash/temp/report.json",
+                    "log/old.log",
+                )
+            paths.forEach { path ->
+                external.write(path, "external-$path")
+                val target = if (path == "log/old.log") "log/old-migrated.log" else path
+                internal.write(target, "internal-$path")
+            }
+            internal.write("db/gkd.db-shm", "old-index")
+            internal.write("db/gkd.db.lck", "old-lock")
+            val migration = migration(internal)
+            migration.prepare { external }
+            assertTrue(migration.migrateHistory({ external }) { _, result -> result.getOrThrow() })
+            paths.forEach { path ->
+                val target = if (path == "log/old.log") "log/old-migrated.log" else path
+                assertEquals("external-$path", internal.resolve(target).readText())
+            }
+            assertFalse(internal.resolve("db/gkd.db-shm").exists())
+            assertFalse(internal.resolve("db/gkd.db.lck").exists())
+            migration.cleanUp { external }
+            assertTrue(internal.resolve(".gkd").isFile)
+        }
+
+    @Test
+    fun externalDatabaseWithoutWalRemovesTheOldInternalWal() {
+        val external = directory.newFolder("external")
+        val internal = directory.newFolder("internal")
+        external.write("db/gkd.db", "external-db")
+        internal.write("db/gkd.db", "internal-db")
+        internal.write("db/gkd.db-wal", "internal-wal")
+        migration(internal).prepare { external }
+        assertEquals("external-db", internal.resolve("db/gkd.db").readText())
+        assertFalse(internal.resolve("db/gkd.db-wal").exists())
+    }
+
+    @Test
     fun markerAndUnavailableVolumeNeverMigrateExternalData() {
         val internal = directory.newFolder("internal")
         val migration = migration(internal)
@@ -137,7 +186,7 @@ class ExternalStorageMigrationTest {
         val internal = directory.newFolder("internal")
         val oldSnapshot = external.write("snapshot/1/snapshot.json", "snapshot")
         val oldDiagnostic = external.write("matching-diagnostics/1/diagnostic.json", "diagnostic")
-        val conflict = internal.write("matching-diagnostics/1/diagnostic.json", "conflict")
+        val conflict = internal.write("matching-diagnostics/1", "blocked-directory")
         val migration = migration(internal)
         migration.prepare { external }
 
@@ -156,7 +205,10 @@ class ExternalStorageMigrationTest {
         resumed.prepare { external }
         assertTrue(resumed.migrateHistory({ external }) { _, result -> result.getOrThrow() })
         assertFalse(internal.resolve("snapshot/1/snapshot.json").exists())
-        assertEquals("diagnostic", conflict.readText())
+        assertEquals(
+            "diagnostic",
+            internal.resolve("matching-diagnostics/1/diagnostic.json").readText(),
+        )
         resumed.cleanUp { external }
         assertFalse(oldSnapshot.exists())
         assertFalse(oldDiagnostic.exists())
@@ -168,12 +220,12 @@ class ExternalStorageMigrationTest {
         val internal = directory.newFolder("internal")
         external.write("db/gkd.db", "original-db")
         external.write("store/store.json", "original-settings")
-        val conflict = internal.write("store/store.json", "other-settings")
+        val conflict = internal.write("store", "blocked-directory")
 
         assertThrows(IOException::class.java) {
             migration(internal).prepare { external }
         }
-        assertEquals("other-settings", conflict.readText())
+        assertEquals("blocked-directory", conflict.readText())
         assertFalse(internal.resolve(".gkd").exists())
         assertTrue(conflict.delete())
         migration(internal).prepare { error("The prepared core is already internal") }

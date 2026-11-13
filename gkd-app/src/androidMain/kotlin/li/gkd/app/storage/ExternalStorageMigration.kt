@@ -71,6 +71,14 @@ class ExternalStorageMigration(private val destination: File, private val work: 
                     Journal(source.absolutePath, stage(source, coreDirectories)).also(::saveJournal)
                 }
         if (!state.coreCommitted) {
+            // Never pair the external database with an old internal WAL or shared-memory index.
+            if (state.core.any { it.target == "db/gkd.db" }) {
+                listOf("db/gkd.db-wal", "db/gkd.db-shm", "db/gkd.db.lck").forEach { path ->
+                    if (state.core.none { it.target == path }) {
+                        Files.deleteIfExists(destination.resolve(path).toPath())
+                    }
+                }
+            }
             publish(state.core)
             saveJournal(state.copy(coreCommitted = true))
         }
@@ -265,12 +273,7 @@ class ExternalStorageMigration(private val destination: File, private val work: 
                             BasicFileAttributes::class.java,
                             NOFOLLOW_LINKS,
                         )
-                    if (!attributes.isRegularFile || target.digest() != entry.digest) {
-                        throw IOException(
-                            "Migration would overwrite existing data: ${entry.target}",
-                        )
-                    }
-                    continue
+                    if (attributes.isRegularFile && target.digest() == entry.digest) continue
                 } catch (e: NoSuchFileException) {
                     // Log retention can remove an already published log while migration resumes.
                     if (!keepStaged) throw e
@@ -289,7 +292,12 @@ class ExternalStorageMigration(private val destination: File, private val work: 
                     copy.forceToDisk()
                     copy
                 } else staged
-            Files.move(ready.toPath(), targetPath, StandardCopyOption.ATOMIC_MOVE)
+            Files.move(
+                ready.toPath(),
+                targetPath,
+                StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING,
+            )
         }
     }
 
