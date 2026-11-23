@@ -33,6 +33,20 @@ class AppIdentifiersTest {
     }
 
     @Test
+    fun activityIdsRejectEmptySegmentsIncludingTrailingDot() {
+        for (id in listOf("Main", ".Main", "com.example.Main", "com.example.Main\$Inner", "a._B")) {
+            assertTrue(id.isValidActivityId(), id)
+        }
+        for (id in listOf("", ".", "com.example.", "com..Main", "com.Main.", "com/Main", "a b")) {
+            assertFalse(id.isValidActivityId(), id)
+        }
+        assertEquals(
+            ExcludeData(emptyMap(), setOf("android" to "com.example.Main")),
+            ExcludeData.parse("android/com.example.Main\nandroid/com.example.\nandroid/."),
+        )
+    }
+
+    @Test
     fun persistedExclusionsRoundTripSingleSegmentIdsAndIgnoreMalformedEntries() {
         val value =
             ExcludeData(

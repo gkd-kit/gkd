@@ -39,7 +39,7 @@ fun String.isValidActivityId(): Boolean {
         val c = get(i)
         if (c == '.') {
             i++
-            if (getOrNull(i)?.isAsciiClassVar() == false) {
+            if (getOrNull(i)?.isAsciiClassVar() != true) {
                 return false
             }
         } else if (!c.isAsciiClassVar()) {
